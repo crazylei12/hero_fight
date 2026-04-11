@@ -1,0 +1,39 @@
+# Root binaries and imports
+/*.exe
+/plugin/
+/*.unitypackage
+
+# Unity generated folders
+/game/[Ll]ibrary/
+/game/[Tt]emp/
+/game/[Oo]bj/
+/game/[Ll]ogs/
+/game/[Uu]ser[Ss]ettings/
+/game/[Mm]emoryCaptures/
+/game/[Rr]ecordings/
+/game/[Bb]uild*/
+/game/[Ll]ocalSettings/
+/game/*.log
+
+# Ignore all Unity assets by default, then whitelist the project-owned areas.
+/game/Assets/**
+!/game/Assets/Scripts/
+!/game/Assets/Scripts/**
+!/game/Assets/Data/
+!/game/Assets/Data/**
+!/game/Assets/Scenes/
+!/game/Assets/Scenes/**
+
+# Keep repository-owned docs and config
+!/docs/
+!/docs/**
+!/AGENTS.md
+!/PLAN.md
+!/.gitignore
+!/game/AGENTS.md
+!/game/IMPLEMENT.md
+!/game/README.md
+!/game/Packages/
+!/game/Packages/**
+!/game/ProjectSettings/
+!/game/ProjectSettings/**

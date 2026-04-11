@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 65b49e23d4a4cda45a9a11e1d7bacd97, type: 3}
+  m_Name: Shadowstep
+  m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
+  heroId: assassin_001_shadowstep
+  displayName: Shadowstep
+  heroClass: 2
+  tags: 000000000500000002000000
+  baseStats:
+    maxHealth: 290
+    attackPower: 52
+    defense: 8
+    attackSpeed: 1.2
+    moveSpeed: 5.4
+    criticalChance: 0.2
+    criticalDamageMultiplier: 1.8
+    attackRange: 1.3
+  basicAttack:
+    damageMultiplier: 1
+    attackInterval: 0.8333333
+    rangeOverride: 1.3
+    usesProjectile: 0
+    projectileSpeed: 0
+  activeSkill: {fileID: 11400000, guid: 022eddc3b89a3fe4cb4b4bdcf101c47a, type: 2}
+  ultimateSkill: {fileID: 11400000, guid: f8fdd7d0bf480e945ba46a4ed2ba398b, type: 2}
+  aiTemplateId: assassin_default
+  usesSpecialLogic: 0
+  specialLogicNotes: 
+  visualConfig:
+    portrait: {fileID: 0}
+    battlePrefab: {fileID: 0}
+    animatorController: {fileID: 0}
+    projectilePrefab: {fileID: 0}
+    castVfxPrefab: {fileID: 0}
+    hitVfxPrefab: {fileID: 0}
+    castSfx: {fileID: 0}
+  debugNotes: Stage-01 demo hero for Assassin.

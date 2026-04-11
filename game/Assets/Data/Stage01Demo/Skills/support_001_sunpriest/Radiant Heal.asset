@@ -1,0 +1,62 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bea5ec4d01f80a948a332187ac325d06, type: 3}
+  m_Name: Radiant Heal
+  m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
+  skillId: skill_support_active_heal
+  displayName: Radiant Heal
+  description: 'Stage-01 demo skill: Radiant Heal'
+  slotType: 0
+  skillType: 2
+  targetType: 4
+  castRange: 6
+  areaRadius: 0
+  cooldownSeconds: 7
+  minTargetsToCast: 1
+  effects:
+  - effectType: 1
+    powerMultiplier: 1.5
+    radiusOverride: 0
+    durationSeconds: 0
+    tickIntervalSeconds: 1
+    followCaster: 0
+    statusEffects: []
+  allowsSelfCast: 0
+  persistentAreaVfxPrefab: {fileID: 0}
+  persistentAreaVfxScaleMultiplier: 1
+  ultimateDecision:
+    targetingType: 0
+    primaryCondition:
+      conditionType: 0
+      searchRadius: 0
+      requiredUnitCount: 1
+      healthPercentThreshold: 1
+      durationSeconds: 0
+      highValueTargetType: 0
+      requireTargetInCastRange: 1
+    secondaryCondition:
+      conditionType: 0
+      searchRadius: 0
+      requiredUnitCount: 1
+      healthPercentThreshold: 1
+      durationSeconds: 0
+      highValueTargetType: 0
+      requireTargetInCastRange: 1
+    fallback:
+      fallbackType: 0
+      triggerAfterSeconds: 0
+      overrideRequiredUnitCount: 0
+      overrideHealthPercentThreshold: -1
+      secondaryTriggerAfterSeconds: 0
+      secondaryOverrideRequiredUnitCount: 0
+      secondaryOverrideHealthPercentThreshold: -1
+    combineMode: 0
