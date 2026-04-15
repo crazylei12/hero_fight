@@ -18,7 +18,7 @@ namespace Fight.Data
         public bool enableSkills = true;
 
         [Header("Arena")]
-        public string arenaId = "arena_stage01_flat";
+        public string arenaId = Stage01ArenaSpec.ArenaId;
 
         public bool HasValidTeamCounts()
         {

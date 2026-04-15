@@ -120,7 +120,8 @@ namespace Fight.Battle
             }
 
             var moveStep = hero.MoveSpeed * deltaTime;
-            hero.CurrentPosition += offset.normalized * Mathf.Min(moveStep, Mathf.Max(0f, offset.magnitude - desiredRange));
+            var destination = hero.CurrentPosition + offset.normalized * Mathf.Min(moveStep, Mathf.Max(0f, offset.magnitude - desiredRange));
+            hero.CurrentPosition = Stage01ArenaSpec.ClampPosition(destination);
         }
 
         private static bool IsInAttackRange(RuntimeHero hero, RuntimeHero target)

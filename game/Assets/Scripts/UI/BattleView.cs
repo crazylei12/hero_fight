@@ -21,8 +21,7 @@ namespace Fight.UI
         private const float HealthBarWidth = 0.9f;
         private const float HealthBarBackgroundHeight = 0.11f;
         private const float HealthBarFillHeight = 0.07f;
-        [SerializeField] private float horizontalScale = 1.35f;
-        [SerializeField] private float verticalScale = 1.05f;
+        private const float ArenaBackgroundHeight = Stage01ArenaSpec.HeightWorldUnits;
         [SerializeField] private float heroMarkerScale = 1f;
         [SerializeField] private float prefabVisualScale = 0.9f;
         [SerializeField] private Vector3 footUiOffset = new Vector3(0f, -0.36f, 0f);
@@ -37,7 +36,6 @@ namespace Fight.UI
         [SerializeField] private bool autoCreateArena = true;
         [SerializeField] private string arenaBackgroundResourcesPath = "Battle/jjc_background";
         [SerializeField] private string arenaBackgroundProjectRelativePath = "Assets/Resources/Battle/jjc_background.png";
-        [SerializeField] private float arenaBackgroundHeight = 16f;
 
         private BattleManager battleManager;
         private readonly Dictionary<string, HeroViewState> heroViews = new Dictionary<string, HeroViewState>();
@@ -454,7 +452,7 @@ namespace Fight.UI
 
             var arenaBackground = TryLoadArenaBackgroundSprite();
             camera.orthographic = true;
-            camera.orthographicSize = 8.8f;
+            camera.orthographicSize = Stage01ArenaSpec.CameraOrthographicSize;
             camera.transform.position = new Vector3(0f, 0f, -10f);
             camera.transform.rotation = Quaternion.identity;
             camera.clearFlags = CameraClearFlags.SolidColor;
@@ -472,18 +470,18 @@ namespace Fight.UI
             if (arenaBackground != null)
             {
                 MakeSprite("Backdrop", arenaRoot, arenaBackground, Color.white, -404, new Vector3(0f, 0.4f, 0f), GetArenaBackgroundScale(arenaBackground));
-                MakeSprite("BackdropShade", arenaRoot, squareSprite, new Color(0.05f, 0.07f, 0.09f, 0.2f), -403, new Vector3(0f, 0.25f, 0f), new Vector3(28.5f, 16.4f, 1f));
-                MakeSprite("FloorTint", arenaRoot, squareSprite, new Color(0.16f, 0.12f, 0.08f, 0.32f), -398, new Vector3(0f, -0.15f, 0f), new Vector3(26.2f, 14.2f, 1f));
-                MakeSprite("Dust", arenaRoot, circleSprite, new Color(0.94f, 0.77f, 0.48f, 0.16f), -397, new Vector3(0f, -0.25f, 0f), new Vector3(19f, 10.5f, 1f));
-                MakeSprite("Ring", arenaRoot, circleSprite, new Color(0.98f, 0.83f, 0.57f, 0.12f), -396, new Vector3(0f, -0.15f, 0f), new Vector3(21.2f, 11.1f, 1f));
+                MakeSprite("BackdropShade", arenaRoot, squareSprite, new Color(0.05f, 0.07f, 0.09f, 0.2f), -403, new Vector3(0f, 0.25f, 0f), new Vector3(Stage01ArenaSpec.BackdropShadeWidthWorldUnits, Stage01ArenaSpec.BackdropShadeHeightWorldUnits, 1f));
+                MakeSprite("FloorTint", arenaRoot, squareSprite, new Color(0.16f, 0.12f, 0.08f, 0.32f), -398, new Vector3(0f, -0.15f, 0f), new Vector3(Stage01ArenaSpec.FloorWidthWorldUnits, Stage01ArenaSpec.FloorHeightWorldUnits, 1f));
+                MakeSprite("Dust", arenaRoot, circleSprite, new Color(0.94f, 0.77f, 0.48f, 0.16f), -397, new Vector3(0f, -0.25f, 0f), new Vector3(Stage01ArenaSpec.DustWidthWorldUnits, Stage01ArenaSpec.DustHeightWorldUnits, 1f));
+                MakeSprite("Ring", arenaRoot, circleSprite, new Color(0.98f, 0.83f, 0.57f, 0.12f), -396, new Vector3(0f, -0.15f, 0f), new Vector3(Stage01ArenaSpec.RingWidthWorldUnits, Stage01ArenaSpec.RingHeightWorldUnits, 1f));
             }
             else
             {
-                MakeSprite("Sky", arenaRoot, squareSprite, new Color(0.45f, 0.72f, 0.96f), -400, Vector3.zero, new Vector3(38f, 24f, 1f));
-                MakeSprite("Frame", arenaRoot, squareSprite, new Color(0.76f, 0.5f, 0.31f), -399, Vector3.zero, new Vector3(28f, 16f, 1f));
-                MakeSprite("Floor", arenaRoot, squareSprite, new Color(0.86f, 0.67f, 0.44f), -398, new Vector3(0f, -0.15f, 0f), new Vector3(26.2f, 14.2f, 1f));
-                MakeSprite("Dust", arenaRoot, circleSprite, new Color(0.8f, 0.59f, 0.35f, 0.26f), -397, new Vector3(0f, -0.25f, 0f), new Vector3(19f, 10.5f, 1f));
-                MakeSprite("Ring", arenaRoot, circleSprite, new Color(0.76f, 0.55f, 0.33f, 0.18f), -396, new Vector3(0f, -0.15f, 0f), new Vector3(21.2f, 11.1f, 1f));
+                MakeSprite("Sky", arenaRoot, squareSprite, new Color(0.45f, 0.72f, 0.96f), -400, Vector3.zero, new Vector3(Stage01ArenaSpec.SkyWidthWorldUnits, Stage01ArenaSpec.SkyHeightWorldUnits, 1f));
+                MakeSprite("Frame", arenaRoot, squareSprite, new Color(0.76f, 0.5f, 0.31f), -399, Vector3.zero, new Vector3(Stage01ArenaSpec.WidthWorldUnits, Stage01ArenaSpec.HeightWorldUnits, 1f));
+                MakeSprite("Floor", arenaRoot, squareSprite, new Color(0.86f, 0.67f, 0.44f), -398, new Vector3(0f, -0.15f, 0f), new Vector3(Stage01ArenaSpec.FloorWidthWorldUnits, Stage01ArenaSpec.FloorHeightWorldUnits, 1f));
+                MakeSprite("Dust", arenaRoot, circleSprite, new Color(0.8f, 0.59f, 0.35f, 0.26f), -397, new Vector3(0f, -0.25f, 0f), new Vector3(Stage01ArenaSpec.DustWidthWorldUnits, Stage01ArenaSpec.DustHeightWorldUnits, 1f));
+                MakeSprite("Ring", arenaRoot, circleSprite, new Color(0.76f, 0.55f, 0.33f, 0.18f), -396, new Vector3(0f, -0.15f, 0f), new Vector3(Stage01ArenaSpec.RingWidthWorldUnits, Stage01ArenaSpec.RingHeightWorldUnits, 1f));
             }
         }
 
@@ -574,7 +572,7 @@ namespace Fight.UI
                 texture,
                 new Rect(0f, 0f, texture.width, texture.height),
                 new Vector2(0.5f, 0.5f),
-                100f);
+                Stage01ArenaSpec.ImportedSpritePixelsPerUnit);
             customArenaBackgroundSprite.hideFlags = HideFlags.HideAndDontSave;
             customArenaBackgroundSourcePath = fullPath;
             return customArenaBackgroundSprite;
@@ -584,20 +582,20 @@ namespace Fight.UI
         {
             if (sprite == null || sprite.rect.height <= 0f)
             {
-                return new Vector3(28f, arenaBackgroundHeight, 1f);
+                return new Vector3(Stage01ArenaSpec.WidthWorldUnits, ArenaBackgroundHeight, 1f);
             }
 
             var spriteWorldSize = sprite.bounds.size;
             if (spriteWorldSize.x <= 0f || spriteWorldSize.y <= 0f)
             {
-                return new Vector3(28f, arenaBackgroundHeight, 1f);
+                return new Vector3(Stage01ArenaSpec.WidthWorldUnits, ArenaBackgroundHeight, 1f);
             }
 
             var aspect = sprite.rect.width / sprite.rect.height;
-            var targetWorldWidth = arenaBackgroundHeight * aspect;
+            var targetWorldWidth = ArenaBackgroundHeight * aspect;
             return new Vector3(
                 targetWorldWidth / spriteWorldSize.x,
-                arenaBackgroundHeight / spriteWorldSize.y,
+                ArenaBackgroundHeight / spriteWorldSize.y,
                 1f);
         }
 
@@ -666,13 +664,13 @@ namespace Fight.UI
 
         private Vector3 Map(Vector3 battlePos)
         {
-            return new Vector3(battlePos.x * horizontalScale, battlePos.z * verticalScale, 0f);
+            return new Vector3(battlePos.x, battlePos.z, 0f);
         }
 
         private Vector3 GetSkillAreaScale(RuntimeSkillArea area)
         {
             var radius = Mathf.Max(0f, area != null ? area.Radius : 0f);
-            return new Vector3(radius * horizontalScale * 2f, radius * verticalScale * 2f, 1f);
+            return new Vector3(radius * 2f, radius * 2f, 1f);
         }
 
         private Color GetSkillAreaColor(BattleContext context, RuntimeSkillArea area, SkillAreaViewState viewState)

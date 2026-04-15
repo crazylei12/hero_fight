@@ -725,7 +725,7 @@ namespace Fight.Editor
             input.respawnDelaySeconds = 5f;
             input.enableBattleEventLogs = true;
             input.enableSkills = enableSkills;
-            input.arenaId = "arena_stage01_flat";
+            input.arenaId = Stage01ArenaSpec.ArenaId;
 
             input.blueTeam.side = TeamSide.Blue;
             input.blueTeam.heroes.Clear();
