@@ -7,10 +7,6 @@ namespace Fight.Battle
 {
     public static class BattleBootstrapper
     {
-        private const float SpawnXOffset = 8f;
-        private const float SpawnZSpacing = 2.5f;
-        private const float CenteredRowOffset = 5f;
-
         public static List<RuntimeHero> CreateRuntimeHeroes(BattleInputConfig input)
         {
             var heroes = new List<RuntimeHero>();
@@ -40,9 +36,7 @@ namespace Fight.Battle
 
         private static Vector3 GetSpawnPosition(TeamSide side, int slotIndex)
         {
-            var x = side == TeamSide.Blue ? -SpawnXOffset : SpawnXOffset;
-            var z = (slotIndex * SpawnZSpacing) - CenteredRowOffset;
-            return new Vector3(x, 0f, z);
+            return Stage01ArenaSpec.GetSpawnPosition(side, slotIndex);
         }
     }
 }

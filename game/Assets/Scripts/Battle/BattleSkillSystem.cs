@@ -984,7 +984,7 @@ namespace Fight.Battle
                 return;
             }
 
-            caster.CurrentPosition = target.CurrentPosition - offset.normalized * 0.8f;
+            caster.CurrentPosition = Stage01ArenaSpec.ClampPosition(target.CurrentPosition - offset.normalized * 0.8f);
         }
     }
 }
