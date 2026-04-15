@@ -53,7 +53,7 @@ namespace Fight.Battle
             for (var i = 0; i < heroes.Count; i++)
             {
                 var candidate = heroes[i];
-                if (candidate.IsDead || candidate.Side == actor.Side)
+                if (candidate.IsDead || candidate.Side == actor.Side || !candidate.CanBeDirectTargeted)
                 {
                     continue;
                 }
@@ -78,7 +78,7 @@ namespace Fight.Battle
             for (var i = 0; i < heroes.Count; i++)
             {
                 var candidate = heroes[i];
-                if (candidate.IsDead || candidate.Side == actor.Side)
+                if (candidate.IsDead || candidate.Side == actor.Side || !candidate.CanBeDirectTargeted)
                 {
                     continue;
                 }
@@ -109,7 +109,7 @@ namespace Fight.Battle
             for (var i = 0; i < heroes.Count; i++)
             {
                 var candidate = heroes[i];
-                if (candidate.IsDead || candidate.Side != actor.Side)
+                if (candidate.IsDead || candidate.Side != actor.Side || !candidate.CanBeDirectTargeted)
                 {
                     continue;
                 }
@@ -141,7 +141,7 @@ namespace Fight.Battle
             for (var i = 0; i < heroes.Count; i++)
             {
                 var candidate = heroes[i];
-                if (candidate.IsDead || candidate.Side == actor.Side)
+                if (candidate.IsDead || candidate.Side == actor.Side || !candidate.CanBeDirectTargeted)
                 {
                     continue;
                 }
@@ -176,7 +176,7 @@ namespace Fight.Battle
             for (var i = 0; i < heroes.Count; i++)
             {
                 var candidate = heroes[i];
-                if (candidate.IsDead || candidate.Side == actor.Side)
+                if (candidate.IsDead || candidate.Side == actor.Side || !candidate.CanBeDirectTargeted)
                 {
                     continue;
                 }

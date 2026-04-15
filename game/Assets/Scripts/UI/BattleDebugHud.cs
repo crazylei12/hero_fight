@@ -114,6 +114,9 @@ namespace Fight.UI
                 case StatusAppliedEvent statusApplied:
                     AddLog(FormatStatusLog(statusApplied));
                     break;
+                case StatusRemovedEvent statusRemoved:
+                    AddLog(FormatStatusRemovedLog(statusRemoved));
+                    break;
                 case UnitDiedEvent died:
                     AddLog($"{FormatHeroLabel(died.Victim)} was killed by {FormatHeroLabel(died.Killer)}.");
                     break;
@@ -172,6 +175,13 @@ namespace Fight.UI
             var sourceName = FormatHeroLabel(statusApplied.Source, "Unknown");
             var skillName = statusApplied.SourceSkill != null ? statusApplied.SourceSkill.displayName : "Unknown Effect";
             return $"{sourceName} applied {statusApplied.EffectType} to {FormatHeroLabel(statusApplied.Target)} via {skillName}, duration {statusApplied.DurationSeconds:0.0}s, magnitude {statusApplied.Magnitude:0.##}.";
+        }
+
+        private string FormatStatusRemovedLog(StatusRemovedEvent statusRemoved)
+        {
+            var sourceName = FormatHeroLabel(statusRemoved.Source, "Unknown");
+            var skillName = statusRemoved.SourceSkill != null ? statusRemoved.SourceSkill.displayName : "Unknown Effect";
+            return $"{statusRemoved.EffectType} on {FormatHeroLabel(statusRemoved.Target)} expired from {sourceName} via {skillName}.";
         }
 
         private static string FormatHeroLabel(RuntimeHero hero, string fallback = "none")

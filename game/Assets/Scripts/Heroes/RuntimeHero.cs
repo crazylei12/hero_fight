@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System;
 using Fight.Data;
 using UnityEngine;
 
@@ -49,6 +50,20 @@ namespace Fight.Heroes
         public float CombatEngagedSeconds { get; private set; }
 
         public IReadOnlyList<RuntimeStatusEffect> ActiveStatusEffects => activeStatusEffects;
+
+        public bool HasHardControl => HasStatusFlag(StatusBehaviorFlags.BlocksMovement)
+            || HasStatusFlag(StatusBehaviorFlags.BlocksBasicAttacks)
+            || HasStatusFlag(StatusBehaviorFlags.BlocksSkillCasts);
+
+        public bool CanMove => !HasStatusFlag(StatusBehaviorFlags.BlocksMovement);
+
+        public bool CanAttack => !HasStatusFlag(StatusBehaviorFlags.BlocksBasicAttacks);
+
+        public bool CanCastSkills => !HasStatusFlag(StatusBehaviorFlags.BlocksSkillCasts);
+
+        public bool CanBeDirectTargeted => !HasStatusFlag(StatusBehaviorFlags.BlocksDirectTargeting);
+
+        public bool CanReceiveDamage => !HasStatusFlag(StatusBehaviorFlags.PreventsDamage);
 
         public float MaxHealth => Definition != null ? GetModifiedStat(Definition.baseStats.maxHealth, StatusEffectType.MaxHealthModifier) : 0f;
 
@@ -141,17 +156,19 @@ namespace Fight.Heroes
             activeStatusEffects.Clear();
         }
 
-        public void ApplyDamage(float amount)
+        public float ApplyDamage(float amount)
         {
-            if (amount <= 0f || IsDead)
+            if (amount <= 0f || IsDead || !CanReceiveDamage)
             {
-                return;
+                return 0f;
             }
 
+            var previousHealth = CurrentHealth;
             CurrentHealth = Mathf.Max(0f, CurrentHealth - amount);
+            return previousHealth - CurrentHealth;
         }
 
-        public void Tick(float deltaTime)
+        public void Tick(float deltaTime, Action<RuntimeStatusEffect> onPeriodicStatusTick = null, Action<RuntimeStatusEffect> onExpiredStatus = null)
         {
             if (IsDead)
             {
@@ -166,14 +183,27 @@ namespace Fight.Heroes
 
             for (var i = activeStatusEffects.Count - 1; i >= 0; i--)
             {
-                activeStatusEffects[i].Tick(deltaTime);
-                if (activeStatusEffects[i].EffectType == StatusEffectType.HealOverTime)
+                var status = activeStatusEffects[i];
+                status.Tick(deltaTime);
+
+                var pendingTickCount = status.ConsumePendingTickCount();
+                for (var tickIndex = 0; tickIndex < pendingTickCount; tickIndex++)
                 {
-                    ApplyHealing(activeStatusEffects[i].Magnitude * deltaTime);
+                    onPeriodicStatusTick?.Invoke(status);
+                    if (IsDead)
+                    {
+                        break;
+                    }
                 }
 
-                if (activeStatusEffects[i].IsExpired)
+                if (IsDead)
                 {
+                    break;
+                }
+
+                if (status.IsExpired)
+                {
+                    onExpiredStatus?.Invoke(status);
                     activeStatusEffects.RemoveAt(i);
                 }
             }
@@ -231,14 +261,16 @@ namespace Fight.Heroes
             return IsDead && RespawnRemainingSeconds <= 0f;
         }
 
-        public void ApplyHealing(float amount)
+        public float ApplyHealing(float amount)
         {
             if (amount <= 0f || IsDead)
             {
-                return;
+                return 0f;
             }
 
+            var previousHealth = CurrentHealth;
             CurrentHealth = Mathf.Min(MaxHealth, CurrentHealth + amount);
+            return CurrentHealth - previousHealth;
         }
 
         public bool HasStatus(StatusEffectType effectType)
@@ -254,11 +286,11 @@ namespace Fight.Heroes
             return false;
         }
 
-        public void ApplyStatusEffect(StatusEffectData data)
+        public bool ApplyStatusEffect(StatusEffectData data, RuntimeHero source = null, SkillData sourceSkill = null)
         {
             if (data == null || data.effectType == StatusEffectType.None)
             {
-                return;
+                return false;
             }
 
             var sameTypeCount = 0;
@@ -279,23 +311,25 @@ namespace Fight.Heroes
             {
                 if (data.refreshDurationOnReapply && refreshTarget != null)
                 {
-                    refreshTarget.Refresh(data.durationSeconds);
+                    refreshTarget.Refresh(data);
+                    return true;
                 }
 
-                return;
+                return false;
             }
 
-            activeStatusEffects.Add(new RuntimeStatusEffect(data));
+            activeStatusEffects.Add(new RuntimeStatusEffect(data, source, sourceSkill));
+            return true;
         }
 
         public bool CanUseActiveSkill()
         {
-            return Definition != null && Definition.activeSkill != null && ActiveSkillCooldownRemainingSeconds <= 0f;
+            return Definition != null && Definition.activeSkill != null && ActiveSkillCooldownRemainingSeconds <= 0f && CanCastSkills;
         }
 
         public bool CanUseUltimate()
         {
-            return Definition != null && Definition.ultimateSkill != null && !HasCastUltimate && UltimateCooldownRemainingSeconds <= 0f;
+            return Definition != null && Definition.ultimateSkill != null && !HasCastUltimate && UltimateCooldownRemainingSeconds <= 0f && CanCastSkills;
         }
 
         public void StartSkillCooldown(SkillSlotType slotType, float cooldownSeconds)
@@ -325,6 +359,19 @@ namespace Fight.Heroes
         private float GetModifiedStat(float baseValue, StatusEffectType effectType)
         {
             return baseValue * GetMultiplier(effectType);
+        }
+
+        private bool HasStatusFlag(StatusBehaviorFlags flag)
+        {
+            for (var i = 0; i < activeStatusEffects.Count; i++)
+            {
+                if ((activeStatusEffects[i].Definition.BehaviorFlags & flag) != 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private float GetMultiplier(StatusEffectType effectType)

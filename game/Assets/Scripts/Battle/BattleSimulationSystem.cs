@@ -48,7 +48,10 @@ namespace Fight.Battle
 
         private static void TickHero(BattleContext context, RuntimeHero hero, float deltaTime, BattleManager battleManager)
         {
-            hero.Tick(deltaTime);
+            hero.Tick(
+                deltaTime,
+                status => ResolvePeriodicStatusTick(context, hero, status, battleManager),
+                status => context.EventBus.Publish(new StatusRemovedEvent(status.Source, hero, status.EffectType, status.SourceSkill)));
 
             if (hero.IsDead)
             {
@@ -61,12 +64,7 @@ namespace Fight.Battle
                 return;
             }
 
-            if (hero.HasStatus(StatusEffectType.Stun))
-            {
-                return;
-            }
-
-            if (context.Input.enableSkills && BattleSkillSystem.TryCastSkill(context, hero, battleManager))
+            if (context.Input.enableSkills && hero.CanCastSkills && BattleSkillSystem.TryCastSkill(context, hero, battleManager))
             {
                 return;
             }
@@ -79,11 +77,15 @@ namespace Fight.Battle
 
             if (!IsInAttackRange(hero, currentTarget))
             {
-                MoveTowardTarget(hero, currentTarget, deltaTime);
+                if (hero.CanMove)
+                {
+                    MoveTowardTarget(hero, currentTarget, deltaTime);
+                }
+
                 return;
             }
 
-            if (hero.AttackCooldownRemainingSeconds > 0f)
+            if (!hero.CanAttack || hero.AttackCooldownRemainingSeconds > 0f)
             {
                 return;
             }
@@ -93,7 +95,7 @@ namespace Fight.Battle
 
         private static RuntimeHero SelectTargetIfNeeded(BattleContext context, RuntimeHero hero)
         {
-            if (hero.CurrentTarget != null && !hero.CurrentTarget.IsDead)
+            if (hero.CurrentTarget != null && !hero.CurrentTarget.IsDead && hero.CurrentTarget.CanBeDirectTargeted)
             {
                 return hero.CurrentTarget;
             }
@@ -127,6 +129,66 @@ namespace Fight.Battle
         private static bool IsInAttackRange(RuntimeHero hero, RuntimeHero target)
         {
             return Vector3.Distance(hero.CurrentPosition, target.CurrentPosition) <= BattleAiDirector.GetDesiredCombatRange(hero);
+        }
+
+        private static void ResolvePeriodicStatusTick(BattleContext context, RuntimeHero target, RuntimeStatusEffect status, BattleManager battleManager)
+        {
+            if (context == null || target == null || status == null || battleManager == null)
+            {
+                return;
+            }
+
+            switch (status.EffectType)
+            {
+                case StatusEffectType.HealOverTime:
+                    ResolveHealOverTime(context, target, status);
+                    break;
+                case StatusEffectType.DamageOverTime:
+                    ResolveDamageOverTime(context, target, status, battleManager);
+                    break;
+            }
+        }
+
+        private static void ResolveHealOverTime(BattleContext context, RuntimeHero target, RuntimeStatusEffect status)
+        {
+            var actualHeal = target.ApplyHealing(status.Magnitude);
+            if (actualHeal <= 0f)
+            {
+                return;
+            }
+
+            status.Source?.RecordHealing(actualHeal);
+            context.EventBus.Publish(new HealAppliedEvent(status.Source ?? target, target, actualHeal, status.SourceSkill, target.CurrentHealth));
+        }
+
+        private static void ResolveDamageOverTime(BattleContext context, RuntimeHero target, RuntimeStatusEffect status, BattleManager battleManager)
+        {
+            var actualDamage = target.ApplyDamage(status.Magnitude);
+            if (actualDamage <= 0f)
+            {
+                return;
+            }
+
+            status.Source?.RecordDamage(actualDamage);
+            context.EventBus.Publish(new DamageAppliedEvent(
+                status.Source,
+                target,
+                actualDamage,
+                DamageSourceKind.StatusEffect,
+                status.SourceSkill,
+                target.CurrentHealth));
+
+            if (target.IsDead || target.CurrentHealth <= 0f)
+            {
+                target.MarkDead(context.Input.respawnDelaySeconds);
+                status.Source?.MarkKill();
+                context.EventBus.Publish(new UnitDiedEvent(target, status.Source));
+
+                if (status.Source != null)
+                {
+                    battleManager.RegisterKill(status.Source.Side);
+                }
+            }
         }
     }
 }

@@ -23,7 +23,7 @@ namespace Fight.Battle
                 return false;
             }
 
-            if (caster.HasStatus(StatusEffectType.Stun))
+            if (!caster.CanCastSkills)
             {
                 return false;
             }
@@ -62,6 +62,12 @@ namespace Fight.Battle
             var primaryTarget = usesTemplateDecision
                 ? SelectUltimatePrimaryTarget(context, caster, skill)
                 : SelectPrimaryTarget(context, caster, skill);
+            if (!IsPrimaryTargetStillValid(skill, caster, primaryTarget))
+            {
+                ScheduleNextUltimateAttempt(context, caster);
+                return false;
+            }
+
             if (primaryTarget == null && !skill.allowsSelfCast && skill.targetType != SkillTargetType.DensestEnemyArea)
             {
                 ScheduleNextUltimateAttempt(context, caster);
@@ -128,6 +134,11 @@ namespace Fight.Battle
             }
 
             var primaryTarget = SelectPrimaryTarget(context, caster, skill);
+            if (!IsPrimaryTargetStillValid(skill, caster, primaryTarget))
+            {
+                return false;
+            }
+
             if (primaryTarget == null && !skill.allowsSelfCast && skill.targetType != SkillTargetType.DensestEnemyArea)
             {
                 return false;
@@ -253,6 +264,11 @@ namespace Fight.Battle
 
             if (skill.areaRadius <= 0f)
             {
+                if (!IsPrimaryTargetStillValid(skill, caster, primaryTarget))
+                {
+                    return results;
+                }
+
                 results.Add(primaryTarget);
                 return results;
             }
@@ -277,6 +293,26 @@ namespace Fight.Battle
             }
 
             return results;
+        }
+
+        private static bool IsPrimaryTargetStillValid(SkillData skill, RuntimeHero caster, RuntimeHero primaryTarget)
+        {
+            if (primaryTarget == null)
+            {
+                return false;
+            }
+
+            if (primaryTarget.IsDead)
+            {
+                return false;
+            }
+
+            if (primaryTarget == caster || skill == null || skill.targetType == SkillTargetType.Self || skill.targetType == SkillTargetType.DensestEnemyArea)
+            {
+                return true;
+            }
+
+            return primaryTarget.CanBeDirectTargeted;
         }
 
         private static bool IsValidTargetForSkill(SkillData skill, RuntimeHero caster, RuntimeHero candidate)
@@ -682,7 +718,7 @@ namespace Fight.Battle
                     ApplyHealToTargets(context, caster, skill, CreateLegacyHealEffect(skill), affectedTargets);
                     break;
                 case SkillType.Buff:
-                    ApplyStatusEffectsToTargets(context, caster, CreateLegacyStatusEffect(skill), affectedTargets);
+                    ApplyStatusEffectsToTargets(context, caster, skill, CreateLegacyStatusEffect(skill), affectedTargets);
                     break;
             }
         }
@@ -705,7 +741,7 @@ namespace Fight.Battle
                     ApplyHealToTargets(context, caster, skill, effect, affectedTargets);
                     break;
                 case SkillEffectType.ApplyStatusEffects:
-                    ApplyStatusEffectsToTargets(context, caster, effect, affectedTargets);
+                    ApplyStatusEffectsToTargets(context, caster, skill, effect, affectedTargets);
                     break;
                 case SkillEffectType.RepositionNearPrimaryTarget:
                     if (primaryTarget != null)
@@ -737,17 +773,22 @@ namespace Fight.Battle
             {
                 var target = targets[i];
                 var amount = HealResolver.ResolveHealAmount(caster, effect.powerMultiplier);
-                target.ApplyHealing(amount);
-                caster.RecordHealing(amount);
-                context.EventBus.Publish(new HealAppliedEvent(caster, target, amount, skill, target.CurrentHealth));
+                var actualHeal = target.ApplyHealing(amount);
+                if (actualHeal <= 0f)
+                {
+                    continue;
+                }
+
+                caster.RecordHealing(actualHeal);
+                context.EventBus.Publish(new HealAppliedEvent(caster, target, actualHeal, skill, target.CurrentHealth));
             }
         }
 
-        private static void ApplyStatusEffectsToTargets(BattleContext context, RuntimeHero caster, SkillEffectData effect, List<RuntimeHero> targets)
+        private static void ApplyStatusEffectsToTargets(BattleContext context, RuntimeHero caster, SkillData sourceSkill, SkillEffectData effect, List<RuntimeHero> targets)
         {
             for (var i = 0; i < targets.Count; i++)
             {
-                ApplyStatuses(context, caster, null, effect, targets[i]);
+                ApplyStatuses(context, caster, sourceSkill, effect, targets[i]);
             }
         }
 
@@ -761,7 +802,11 @@ namespace Fight.Battle
             for (var i = 0; i < effect.statusEffects.Count; i++)
             {
                 var status = effect.statusEffects[i];
-                target.ApplyStatusEffect(status);
+                if (!target.ApplyStatusEffect(status, caster, sourceSkill))
+                {
+                    continue;
+                }
+
                 context.EventBus.Publish(new StatusAppliedEvent(caster, target, status.effectType, status.durationSeconds, status.magnitude, sourceSkill));
             }
         }
@@ -821,12 +866,18 @@ namespace Fight.Battle
                     target.Defense,
                     context.RandomService,
                     effect.powerMultiplier);
-                target.ApplyDamage(damage);
-                caster.RecordDamage(damage);
+                var actualDamage = target.ApplyDamage(damage);
+                if (actualDamage <= 0f)
+                {
+                    ApplyStatuses(context, caster, skill, effect, target);
+                    continue;
+                }
+
+                caster.RecordDamage(actualDamage);
                 context.EventBus.Publish(new DamageAppliedEvent(
                     caster,
                     target,
-                    damage,
+                    actualDamage,
                     damageSourceKind,
                     skill,
                     target.CurrentHealth));
@@ -900,6 +951,11 @@ namespace Fight.Battle
                     continue;
                 }
 
+                if (candidate != caster && !candidate.CanBeDirectTargeted)
+                {
+                    continue;
+                }
+
                 if (includeAllies && candidate.Side != caster.Side)
                 {
                     continue;
@@ -938,7 +994,7 @@ namespace Fight.Battle
             for (var i = 0; i < heroes.Count; i++)
             {
                 var candidate = heroes[i];
-                if (candidate.IsDead || candidate.Side == caster.Side)
+                if (candidate.IsDead || candidate.Side == caster.Side || !candidate.CanBeDirectTargeted)
                 {
                     continue;
                 }
