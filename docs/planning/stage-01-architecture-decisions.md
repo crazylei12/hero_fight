@@ -116,6 +116,9 @@
 - `OnAttackPerformed`
 - `OnSkillCast`
 - `OnDamageApplied`
+- `OnHealApplied`
+- `OnStatusApplied`
+- `OnStatusRemoved`
 - `OnUnitDied`
 - `OnUnitRevived`
 - `OnScoreChanged`
@@ -130,6 +133,7 @@
 补充要求：
 - 表现层应优先消费 `技能释放`、`持续区域创建`、`持续区域脉冲`、`命中` 等事件来驱动特效
 - 周期性伤害或治疗特效的重播节奏，应与对应运行时事件或对应技能的 `tickIntervalSeconds` 保持一致
+- 状态添加、状态移除以及周期状态结算，也应尽量通过统一事件显式抛出
 
 约束：
 - 不优先使用大量脚本之间的直接相互调用替代统一事件流。
@@ -362,5 +366,6 @@
 - `docs/planning/project-foundation.md`
 - `docs/planning/stage-01-arena-decisions.md`
 - `docs/planning/stage-01-combat-rules-decisions.md`
+- `docs/planning/stage-01-status-effect-decisions.md`
 - `docs/planning/stage-01-hero-spec-decisions.md`
 - `docs/planning/stage-01-architecture-questions.md`

@@ -19,7 +19,7 @@ namespace Fight.Battle
             for (var i = context.Projectiles.Count - 1; i >= 0; i--)
             {
                 var projectile = context.Projectiles[i];
-                if (projectile.Target == null || projectile.Target.IsDead)
+                if (projectile.Target == null || projectile.Target.IsDead || !projectile.Target.CanBeDirectTargeted)
                 {
                     context.Projectiles.RemoveAt(i);
                     continue;
@@ -45,6 +45,11 @@ namespace Fight.Battle
         public static void PerformAttack(BattleContext context, RuntimeHero attacker, RuntimeHero target, BattleManager battleManager)
         {
             if (context == null || attacker == null || target == null || battleManager == null)
+            {
+                return;
+            }
+
+            if (!target.CanBeDirectTargeted)
             {
                 return;
             }
@@ -86,17 +91,22 @@ namespace Fight.Battle
 
         private static void ResolveHit(BattleContext context, RuntimeHero attacker, RuntimeHero target, float damage, BattleManager battleManager)
         {
-            if (target == null || target.IsDead)
+            if (target == null || target.IsDead || !target.CanBeDirectTargeted)
             {
                 return;
             }
 
-            target.ApplyDamage(damage);
-            attacker?.RecordDamage(damage);
+            var actualDamage = target.ApplyDamage(damage);
+            if (actualDamage <= 0f)
+            {
+                return;
+            }
+
+            attacker?.RecordDamage(actualDamage);
             context.EventBus.Publish(new DamageAppliedEvent(
                 attacker,
                 target,
-                damage,
+                actualDamage,
                 DamageSourceKind.BasicAttack,
                 null,
                 target.CurrentHealth));

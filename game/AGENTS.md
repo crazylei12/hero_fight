@@ -22,6 +22,7 @@
 - `../docs/planning/project-foundation.md`
 - `../docs/planning/stage-01-arena-decisions.md`
 - `../docs/planning/stage-01-combat-rules-decisions.md`
+- `../docs/planning/stage-01-status-effect-decisions.md`
 - `../docs/planning/stage-01-hero-spec-decisions.md`
 - `../docs/planning/stage-01-architecture-decisions.md`
 - `../docs/planning/stage-01-first-implementation-plan.md`

@@ -17,6 +17,7 @@
 - `docs/planning/project-foundation.md`
 - `docs/planning/stage-01-arena-decisions.md`
 - `docs/planning/stage-01-combat-rules-decisions.md`
+- `docs/planning/stage-01-status-effect-decisions.md`
 - `docs/planning/stage-01-hero-spec-decisions.md`
 - `docs/planning/stage-01-architecture-decisions.md`
 - `docs/planning/stage-01-first-implementation-plan.md`
@@ -235,10 +236,13 @@
 - [ ] 数值结算独立
 - [ ] 暴击通过统一随机数服务处理
 - [ ] 状态系统不要写死在技能脚本里
+- [ ] 周期状态使用统一 tick 入口
+- [ ] 硬控统一走行为门禁判断
 
 完成标准：
 - 普攻伤害能走统一结算
-- 第一种状态 `眩晕` 有统一入口
+- `眩晕` 和 `击飞` 有统一入口
+- `持续伤害` / `持续治疗` / `无敌` / `不可选中` 能通过统一状态机制表达
 
 ## 第 11 组：建立技能系统骨架
 
@@ -261,9 +265,12 @@
 - [ ] 单体伤害
 - [ ] 范围伤害
 - [ ] 单体治疗
-- [ ] 增益 Buff
+- [ ] 增益 Buff / 属性上升
+- [ ] 减益 Debuff / 属性下降
+- [ ] 持续伤害
+- [ ] 持续治疗
 - [ ] 位移
-- [ ] 眩晕
+- [ ] 眩晕 / 击飞
 
 完成标准：
 - 一个英雄可以通过统一配置释放技能并产生结果

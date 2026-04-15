@@ -15,6 +15,7 @@ namespace Fight.Battle
         BasicAttack = 1,
         Skill = 2,
         SkillAreaPulse = 3,
+        StatusEffect = 4,
     }
 
     public sealed class BattleStartedEvent : IBattleEvent
@@ -225,6 +226,29 @@ namespace Fight.Battle
         public float DurationSeconds { get; }
 
         public float Magnitude { get; }
+
+        public SkillData SourceSkill { get; }
+    }
+
+    public sealed class StatusRemovedEvent : IBattleEvent
+    {
+        public StatusRemovedEvent(
+            RuntimeHero source,
+            RuntimeHero target,
+            StatusEffectType effectType,
+            SkillData sourceSkill = null)
+        {
+            Source = source;
+            Target = target;
+            EffectType = effectType;
+            SourceSkill = sourceSkill;
+        }
+
+        public RuntimeHero Source { get; }
+
+        public RuntimeHero Target { get; }
+
+        public StatusEffectType EffectType { get; }
 
         public SkillData SourceSkill { get; }
     }
