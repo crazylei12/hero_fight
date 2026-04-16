@@ -20,7 +20,7 @@ MonoBehaviour:
   targetType: 3
   castRange: 8
   areaRadius: 3
-  cooldownSeconds: 15
+  cooldownSeconds: 0
   minTargetsToCast: 3
   effects:
   - effectType: 0

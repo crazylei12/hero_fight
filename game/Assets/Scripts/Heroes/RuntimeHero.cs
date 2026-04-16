@@ -136,8 +136,6 @@ namespace Fight.Heroes
 
         public float ActiveSkillCooldownRemainingSeconds { get; private set; }
 
-        public float UltimateCooldownRemainingSeconds { get; private set; }
-
         public bool HasCastUltimate { get; private set; }
 
         public float NextUltimateDecisionCheckTimeSeconds { get; private set; }
@@ -200,7 +198,6 @@ namespace Fight.Heroes
 
             AttackCooldownRemainingSeconds = Mathf.Max(0f, AttackCooldownRemainingSeconds - deltaTime);
             ActiveSkillCooldownRemainingSeconds = Mathf.Max(0f, ActiveSkillCooldownRemainingSeconds - deltaTime);
-            UltimateCooldownRemainingSeconds = Mathf.Max(0f, UltimateCooldownRemainingSeconds - deltaTime);
             TickForcedMovement(deltaTime);
 
             var statusSnapshot = activeStatusEffects.ToArray();
@@ -426,7 +423,7 @@ namespace Fight.Heroes
 
         public bool CanUseUltimate()
         {
-            return Definition != null && Definition.ultimateSkill != null && !HasCastUltimate && UltimateCooldownRemainingSeconds <= 0f && CanCastSkills;
+            return Definition != null && Definition.ultimateSkill != null && !HasCastUltimate && CanCastSkills;
         }
 
         public void StartSkillCooldown(SkillSlotType slotType, float cooldownSeconds)
@@ -438,7 +435,6 @@ namespace Fight.Heroes
             }
 
             HasCastUltimate = true;
-            UltimateCooldownRemainingSeconds = cooldownSeconds;
         }
 
         public void InitializeUltimateDecisionSchedule(float firstCheckTimeSeconds)
