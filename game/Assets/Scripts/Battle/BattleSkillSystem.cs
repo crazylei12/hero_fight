@@ -905,6 +905,7 @@ namespace Fight.Battle
                 }
 
                 caster.RecordDamage(actualDamage);
+                RecordIncomingThreat(context, target, caster);
                 context.EventBus.Publish(new DamageAppliedEvent(
                     caster,
                     target,
@@ -955,6 +956,16 @@ namespace Fight.Battle
                 PersistentAreaTargetType.Both => true,
                 _ => candidate.Side != caster.Side,
             };
+        }
+
+        private static void RecordIncomingThreat(BattleContext context, RuntimeHero target, RuntimeHero source)
+        {
+            if (context?.Clock == null || target == null || source == null)
+            {
+                return;
+            }
+
+            target.RecordThreat(source, context.Clock.ElapsedTimeSeconds);
         }
 
         private static void PublishStatusRemovedEvent(BattleContext context, RuntimeHero target, RuntimeStatusEffect status)

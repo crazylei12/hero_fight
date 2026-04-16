@@ -140,6 +140,12 @@ namespace Fight.Heroes
 
         public bool HasInitializedUltimateDecisionSchedule { get; private set; }
 
+        public RuntimeHero LastThreatSource { get; private set; }
+
+        public float LastThreatTimeSeconds { get; private set; }
+
+        public RuntimeHero ActiveRetreatThreatSource { get; private set; }
+
         private readonly List<RuntimeStatusEffect> activeStatusEffects = new List<RuntimeStatusEffect>();
 
         public void ResetToSpawn()
@@ -154,6 +160,7 @@ namespace Fight.Heroes
             NextUltimateDecisionCheckTimeSeconds = 0f;
             HasInitializedUltimateDecisionSchedule = false;
             activeStatusEffects.Clear();
+            ClearThreatTracking();
         }
 
         public float ApplyDamage(float amount, Action<RuntimeStatusEffect> onExpiredStatus = null)
@@ -238,6 +245,56 @@ namespace Fight.Heroes
             CurrentTarget = target;
         }
 
+        public void RecordThreat(RuntimeHero source, float currentTimeSeconds)
+        {
+            if (source == null || source == this || source.IsDead || source.Side == Side)
+            {
+                return;
+            }
+
+            LastThreatSource = source;
+            LastThreatTimeSeconds = Mathf.Max(0f, currentTimeSeconds);
+        }
+
+        public bool TryGetRecentThreat(float currentTimeSeconds, float recentWindowSeconds, out RuntimeHero threat)
+        {
+            threat = LastThreatSource;
+            if (threat == null || threat.IsDead || threat.Side == Side)
+            {
+                threat = null;
+                return false;
+            }
+
+            var threatAgeSeconds = Mathf.Max(0f, currentTimeSeconds - LastThreatTimeSeconds);
+            if (threatAgeSeconds > Mathf.Max(0f, recentWindowSeconds))
+            {
+                if (ActiveRetreatThreatSource == threat)
+                {
+                    ActiveRetreatThreatSource = null;
+                }
+
+                threat = null;
+                return false;
+            }
+
+            return true;
+        }
+
+        public bool IsRetreatingFromThreat(RuntimeHero threat)
+        {
+            return threat != null && ActiveRetreatThreatSource == threat;
+        }
+
+        public void StartThreatRetreat(RuntimeHero threat)
+        {
+            ActiveRetreatThreatSource = threat != null && !threat.IsDead ? threat : null;
+        }
+
+        public void StopThreatRetreat()
+        {
+            ActiveRetreatThreatSource = null;
+        }
+
         public void StartAttackCooldown()
         {
             AttackCooldownRemainingSeconds = AttackInterval;
@@ -267,6 +324,7 @@ namespace Fight.Heroes
             Deaths++;
             CombatEngagedSeconds = 0f;
             activeStatusEffects.Clear();
+            ClearThreatTracking();
         }
 
         public bool ReadyToRevive()
@@ -393,6 +451,13 @@ namespace Fight.Heroes
             }
 
             return absorbedDamage;
+        }
+
+        private void ClearThreatTracking()
+        {
+            LastThreatSource = null;
+            LastThreatTimeSeconds = -1f;
+            ActiveRetreatThreatSource = null;
         }
 
         private void RemoveExpiredStatuses(Action<RuntimeStatusEffect> onExpiredStatus)

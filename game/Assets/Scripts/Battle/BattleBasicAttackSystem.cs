@@ -129,6 +129,7 @@ namespace Fight.Battle
             }
 
             attacker?.RecordDamage(actualDamage);
+            RecordIncomingThreat(context, target, attacker);
             context.EventBus.Publish(new DamageAppliedEvent(
                 attacker,
                 target,
@@ -173,6 +174,16 @@ namespace Fight.Battle
                 BasicAttackTargetType.LowestHealthAlly => target.Side == attacker.Side && target.CanBeDirectTargeted,
                 _ => target.Side != attacker.Side && target.CanBeDirectTargeted,
             };
+        }
+
+        private static void RecordIncomingThreat(BattleContext context, RuntimeHero target, RuntimeHero source)
+        {
+            if (context?.Clock == null || target == null || source == null)
+            {
+                return;
+            }
+
+            target.RecordThreat(source, context.Clock.ElapsedTimeSeconds);
         }
 
         private static void PublishStatusRemovedEvent(BattleContext context, RuntimeHero target, RuntimeStatusEffect status)

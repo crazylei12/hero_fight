@@ -74,6 +74,12 @@ namespace Fight.Battle
             var currentTarget = SelectTargetIfNeeded(context, hero);
             if (currentTarget == null)
             {
+                hero.StopThreatRetreat();
+                return;
+            }
+
+            if (TryRetreatFromRecentThreat(context, hero, currentTarget, deltaTime))
+            {
                 return;
             }
 
@@ -98,6 +104,25 @@ namespace Fight.Battle
             }
 
             BattleBasicAttackSystem.PerformAttack(context, hero, currentTarget, battleManager);
+        }
+
+        private static bool TryRetreatFromRecentThreat(BattleContext context, RuntimeHero hero, RuntimeHero currentTarget, float deltaTime)
+        {
+            if (context?.Clock == null || hero == null || currentTarget == null || !hero.CanMove)
+            {
+                hero?.StopThreatRetreat();
+                return false;
+            }
+
+            if (!BattleAiDirector.ShouldRetreatFromRecentThreat(hero, currentTarget, context.Clock.ElapsedTimeSeconds, out var threat))
+            {
+                hero.StopThreatRetreat();
+                return false;
+            }
+
+            hero.StartThreatRetreat(threat);
+            MoveAwayFromThreat(hero, threat, deltaTime);
+            return true;
         }
 
         private static RuntimeHero SelectTargetIfNeeded(BattleContext context, RuntimeHero hero)
@@ -188,6 +213,22 @@ namespace Fight.Battle
             hero.CurrentPosition = Stage01ArenaSpec.ClampPosition(destination);
         }
 
+        private static void MoveAwayFromThreat(RuntimeHero hero, RuntimeHero threat, float deltaTime)
+        {
+            var retreatDirection = BattleAiDirector.GetThreatRetreatDirection(hero, threat);
+            if (retreatDirection.sqrMagnitude <= Mathf.Epsilon)
+            {
+                return;
+            }
+
+            var moveStep = hero.MoveSpeed * deltaTime;
+            var desiredDistance = BattleAiDirector.GetDesiredCombatRange(hero) + 0.2f;
+            var currentDistance = Vector3.Distance(hero.CurrentPosition, threat.CurrentPosition);
+            var distanceToGain = Mathf.Max(moveStep * 0.5f, desiredDistance - currentDistance);
+            var destination = hero.CurrentPosition + retreatDirection * Mathf.Min(moveStep, distanceToGain);
+            hero.CurrentPosition = Stage01ArenaSpec.ClampPosition(destination);
+        }
+
         private static bool IsInAttackRange(RuntimeHero hero, RuntimeHero target)
         {
             return Vector3.Distance(hero.CurrentPosition, target.CurrentPosition) <= BattleAiDirector.GetDesiredCombatRange(hero);
@@ -234,6 +275,7 @@ namespace Fight.Battle
             }
 
             status.Source?.RecordDamage(actualDamage);
+            RecordIncomingThreat(context, target, status.Source);
             context.EventBus.Publish(new DamageAppliedEvent(
                 status.Source,
                 target,
@@ -263,6 +305,16 @@ namespace Fight.Battle
             }
 
             context.EventBus.Publish(new StatusRemovedEvent(status.Source, target, status.EffectType, status.SourceSkill));
+        }
+
+        private static void RecordIncomingThreat(BattleContext context, RuntimeHero target, RuntimeHero source)
+        {
+            if (context?.Clock == null || target == null || source == null)
+            {
+                return;
+            }
+
+            target.RecordThreat(source, context.Clock.ElapsedTimeSeconds);
         }
     }
 }
