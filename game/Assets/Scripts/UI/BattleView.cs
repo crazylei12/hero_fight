@@ -17,12 +17,17 @@ namespace Fight.UI
         private const int SkillAreaCircleSortOrder = 360;
         private const int SkillAreaEffectSortOrder = 340;
         private const string ArenaRootName = "BattleArena2D";
+        private const string StunStatusLoopVfxResourcesPath = "Stage01Demo/VFX/Statuses/StunStatusLoop";
         private const float CorpseVisibleSeconds = 1f;
         private const float HealthBarWidth = 0.9f;
         private const float HealthBarBackgroundHeight = 0.11f;
         private const float HealthBarFillHeight = 0.07f;
         private const float ArenaBackgroundHeight = Stage01ArenaSpec.HeightWorldUnits;
         private const float MinAirborneEffectHeight = 0.12f;
+        private static readonly Dictionary<StatusEffectType, StatusEffectVfxConfig> StatusEffectVfxConfigs = new Dictionary<StatusEffectType, StatusEffectVfxConfig>
+        {
+            { StatusEffectType.Stun, new StatusEffectVfxConfig(StunStatusLoopVfxResourcesPath, new Vector3(0f, 1.1f, 0f), Vector3.one * 0.85f, Vector3.zero, 180) },
+        };
         [SerializeField] private float heroMarkerScale = 1f;
         [SerializeField] private float prefabVisualScale = 0.9f;
         [SerializeField] private Vector3 footUiOffset = new Vector3(0f, -0.36f, 0f);
@@ -86,6 +91,7 @@ namespace Fight.UI
             public SpriteRenderer ImpactPulse;
             public SpriteRenderer DirectionalTrail;
             public Transform FootUiRoot;
+            public Transform StatusEffectRoot;
             public SpriteRenderer HealthBack;
             public SpriteRenderer HealthFill;
             public SpriteRenderer UltimateIcon;
@@ -106,6 +112,7 @@ namespace Fight.UI
             public bool LastDeadState;
             public float DeathStartedAtSeconds = -1f;
             public float HitFlashUntilSeconds = -1f;
+            public readonly Dictionary<StatusEffectType, StatusEffectViewState> StatusEffectViews = new Dictionary<StatusEffectType, StatusEffectViewState>();
         }
 
         private sealed class SkillAreaViewState
@@ -128,6 +135,56 @@ namespace Fight.UI
             public Renderer[] Renderers;
             public Vector3 LastPosition;
             public bool HasLastPosition;
+        }
+
+        private sealed class StatusEffectViewState
+        {
+            public GameObject Root;
+            public SortingGroup SortingGroup;
+            public Renderer[] Renderers;
+            public ParticleSystem[] ParticleSystems;
+            public Vector3 BaseLocalPosition;
+            public Vector3 BaseLocalScale = Vector3.one;
+            public Quaternion BaseLocalRotation = Quaternion.identity;
+        }
+
+        private sealed class StatusEffectVfxConfig
+        {
+            private GameObject cachedLoopPrefab;
+
+            public StatusEffectVfxConfig(
+                string loopPrefabResourcesPath,
+                Vector3 localOffset,
+                Vector3 localScale,
+                Vector3 localEulerAngles,
+                int sortingOrderOffset)
+            {
+                LoopPrefabResourcesPath = loopPrefabResourcesPath;
+                LocalOffset = localOffset;
+                LocalScale = localScale;
+                LocalEulerAngles = localEulerAngles;
+                SortingOrderOffset = sortingOrderOffset;
+            }
+
+            public string LoopPrefabResourcesPath { get; }
+
+            public Vector3 LocalOffset { get; }
+
+            public Vector3 LocalScale { get; }
+
+            public Vector3 LocalEulerAngles { get; }
+
+            public int SortingOrderOffset { get; }
+
+            public GameObject LoadLoopPrefab()
+            {
+                if (cachedLoopPrefab == null && !string.IsNullOrWhiteSpace(LoopPrefabResourcesPath))
+                {
+                    cachedLoopPrefab = Resources.Load<GameObject>(LoopPrefabResourcesPath);
+                }
+
+                return cachedLoopPrefab;
+            }
         }
 
         protected virtual void Awake()
@@ -175,7 +232,8 @@ namespace Fight.UI
 
             var pos = Map(hero.CurrentPosition);
             view.Root.transform.position = pos;
-            view.SortingGroup.sortingOrder = Sort(pos.y, 0);
+            var heroSortingOrder = Sort(pos.y, 0);
+            view.SortingGroup.sortingOrder = heroSortingOrder;
             var airborneOffset = new Vector3(0f, hero.VisualHeightOffset, 0f);
             view.VisualRoot.localPosition = airborneOffset;
             if (view.FootUiRoot != null)
@@ -227,6 +285,7 @@ namespace Fight.UI
 
             UpdateForcedMovementPresentation(hero, view);
             UpdatePrefabHitFlash(hero, view);
+            SyncStatusEffects(hero, view, heroSortingOrder);
 
             if (view.AnimationDriver != null)
             {
@@ -250,6 +309,8 @@ namespace Fight.UI
             view.ImpactPulseBaseScale = view.ImpactPulse.transform.localScale;
             view.VisualRoot = new GameObject("Visual").transform;
             view.VisualRoot.SetParent(view.Root.transform, false);
+            view.StatusEffectRoot = new GameObject("StatusVfx").transform;
+            view.StatusEffectRoot.SetParent(view.VisualRoot, false);
             view.DirectionalTrail = MakeSprite("DirectionalTrail", view.VisualRoot, squareSprite, new Color(1f, 1f, 1f, 0f), 19, new Vector3(0f, -0.06f, 0f), new Vector3(0.18f, 0.18f, 1f));
 
             if (hero.Definition.visualConfig.battlePrefab != null)
@@ -605,6 +666,164 @@ namespace Fight.UI
                 ? battleManager.Context.Clock.ElapsedTimeSeconds
                 : Time.time;
             return elapsedTimeSeconds - view.DeathStartedAtSeconds >= CorpseVisibleSeconds;
+        }
+
+        private void SyncStatusEffects(RuntimeHero hero, HeroViewState view, int heroSortingOrder)
+        {
+            if (hero == null || view == null || view.StatusEffectRoot == null)
+            {
+                return;
+            }
+
+            List<StatusEffectType> activeEffectTypes = null;
+            var activeStatuses = hero.ActiveStatusEffects;
+            for (var i = 0; i < activeStatuses.Count; i++)
+            {
+                var status = activeStatuses[i];
+                if (status == null || !TryGetStatusEffectVfxConfig(status.EffectType, out var config))
+                {
+                    continue;
+                }
+
+                if (!view.StatusEffectViews.TryGetValue(status.EffectType, out var statusView))
+                {
+                    statusView = CreateStatusEffectView(status.EffectType, view, config);
+                    if (statusView == null)
+                    {
+                        continue;
+                    }
+
+                    view.StatusEffectViews.Add(status.EffectType, statusView);
+                }
+
+                ApplyStatusEffectView(statusView, config, heroSortingOrder);
+                activeEffectTypes ??= new List<StatusEffectType>();
+                if (!activeEffectTypes.Contains(status.EffectType))
+                {
+                    activeEffectTypes.Add(status.EffectType);
+                }
+            }
+
+            List<StatusEffectType> staleEffects = null;
+            foreach (var pair in view.StatusEffectViews)
+            {
+                if (activeEffectTypes != null && activeEffectTypes.Contains(pair.Key))
+                {
+                    continue;
+                }
+
+                staleEffects ??= new List<StatusEffectType>();
+                staleEffects.Add(pair.Key);
+            }
+
+            if (staleEffects == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < staleEffects.Count; i++)
+            {
+                var effectType = staleEffects[i];
+                DestroyStatusEffectView(view.StatusEffectViews[effectType]);
+                view.StatusEffectViews.Remove(effectType);
+            }
+        }
+
+        private StatusEffectViewState CreateStatusEffectView(StatusEffectType effectType, HeroViewState view, StatusEffectVfxConfig config)
+        {
+            if (view?.StatusEffectRoot == null || config == null)
+            {
+                return null;
+            }
+
+            var prefab = config.LoadLoopPrefab();
+            if (prefab == null)
+            {
+                Debug.LogWarning($"BattleView could not load status VFX prefab for {effectType} from Resources/{config.LoopPrefabResourcesPath}.");
+                return null;
+            }
+
+            var instance = Instantiate(prefab, view.StatusEffectRoot);
+            instance.name = $"{effectType}_StatusVfx";
+            RemovePrefabPhysics(instance);
+
+            var state = new StatusEffectViewState
+            {
+                Root = instance,
+                SortingGroup = instance.GetComponent<SortingGroup>(),
+                Renderers = instance.GetComponentsInChildren<Renderer>(true),
+                ParticleSystems = instance.GetComponentsInChildren<ParticleSystem>(true),
+                BaseLocalPosition = instance.transform.localPosition,
+                BaseLocalScale = instance.transform.localScale,
+                BaseLocalRotation = instance.transform.localRotation,
+            };
+
+            if (state.SortingGroup == null)
+            {
+                state.SortingGroup = instance.AddComponent<SortingGroup>();
+            }
+
+            RestartStatusEffectView(state);
+            return state;
+        }
+
+        private void ApplyStatusEffectView(StatusEffectViewState viewState, StatusEffectVfxConfig config, int heroSortingOrder)
+        {
+            if (viewState?.Root == null || config == null)
+            {
+                return;
+            }
+
+            var statusTransform = viewState.Root.transform;
+            statusTransform.localPosition = viewState.BaseLocalPosition + config.LocalOffset;
+            statusTransform.localRotation = Quaternion.Euler(config.LocalEulerAngles) * viewState.BaseLocalRotation;
+            statusTransform.localScale = new Vector3(
+                viewState.BaseLocalScale.x * config.LocalScale.x,
+                viewState.BaseLocalScale.y * config.LocalScale.y,
+                viewState.BaseLocalScale.z * config.LocalScale.z);
+
+            var sortingOrder = heroSortingOrder + config.SortingOrderOffset;
+            if (viewState.SortingGroup != null)
+            {
+                viewState.SortingGroup.sortingOrder = sortingOrder;
+            }
+            else
+            {
+                SetRendererSorting(viewState.Renderers, sortingOrder);
+            }
+        }
+
+        private static void RestartStatusEffectView(StatusEffectViewState viewState)
+        {
+            if (viewState?.ParticleSystems == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < viewState.ParticleSystems.Length; i++)
+            {
+                var particleSystem = viewState.ParticleSystems[i];
+                if (particleSystem == null)
+                {
+                    continue;
+                }
+
+                particleSystem.Clear(true);
+                particleSystem.Play(true);
+            }
+        }
+
+        private static void DestroyStatusEffectView(StatusEffectViewState viewState)
+        {
+            if (viewState?.Root != null)
+            {
+                Destroy(viewState.Root);
+            }
+        }
+
+        private static bool TryGetStatusEffectVfxConfig(StatusEffectType effectType, out StatusEffectVfxConfig config)
+        {
+            return StatusEffectVfxConfigs.TryGetValue(effectType, out config) && config != null;
         }
 
         private static void SetRendererVisibility(Renderer[] renderers, bool visible)
@@ -1136,6 +1355,14 @@ namespace Fight.UI
                     ? battleManager.Context.Clock.ElapsedTimeSeconds
                     : skillAreaView.LastPulseAtSeconds;
                 RestartSkillAreaEffect(skillAreaView);
+            }
+
+            if (battleEvent is StatusAppliedEvent statusAppliedEvent
+                && statusAppliedEvent.Target != null
+                && heroViews.TryGetValue(statusAppliedEvent.Target.RuntimeId, out var heroViewState)
+                && heroViewState.StatusEffectViews.TryGetValue(statusAppliedEvent.EffectType, out var statusEffectView))
+            {
+                RestartStatusEffectView(statusEffectView);
             }
 
             foreach (var driver in heroAnimationDrivers.Values)
