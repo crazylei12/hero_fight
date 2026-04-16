@@ -214,9 +214,9 @@ namespace Fight.Battle
                 case SkillTargetType.Self:
                     return caster;
                 case SkillTargetType.AllAllies:
-                    return caster;
+                    return FindFirstGlobalTeamTarget(context.Heroes, caster, skill, includeAllies: true);
                 case SkillTargetType.AllEnemies:
-                    return FindFirstAliveUnit(context.Heroes, caster, includeAllies: false);
+                    return FindFirstGlobalTeamTarget(context.Heroes, caster, skill, includeAllies: false);
                 case SkillTargetType.NearestEnemy:
                     return FindNearest(context.Heroes, caster, includeAllies: false, skill.castRange);
                 case SkillTargetType.LowestHealthEnemy:
@@ -276,7 +276,7 @@ namespace Fight.Battle
                         continue;
                     }
 
-                    if (!MatchesGlobalTeamTarget(skill.targetType, caster, candidate))
+                    if (!IsValidGlobalTeamTarget(skill, caster, candidate))
                     {
                         continue;
                     }
@@ -1093,7 +1093,37 @@ namespace Fight.Battle
                 : BattleAiDirector.SelectPreferredEnemyTarget(heroes, caster, maxRange);
         }
 
-        private static RuntimeHero FindFirstAliveUnit(IReadOnlyList<RuntimeHero> heroes, RuntimeHero caster, bool includeAllies)
+        private static bool IsGlobalTeamTargeting(SkillTargetType targetType)
+        {
+            return targetType == SkillTargetType.AllAllies || targetType == SkillTargetType.AllEnemies;
+        }
+
+        private static bool MatchesGlobalTeamTarget(SkillTargetType targetType, RuntimeHero caster, RuntimeHero candidate)
+        {
+            return targetType switch
+            {
+                SkillTargetType.AllAllies => candidate.Side == caster.Side,
+                SkillTargetType.AllEnemies => candidate.Side != caster.Side,
+                _ => false,
+            };
+        }
+
+        private static bool IsValidGlobalTeamTarget(SkillData skill, RuntimeHero caster, RuntimeHero candidate)
+        {
+            if (skill == null || caster == null || candidate == null)
+            {
+                return false;
+            }
+
+            if (!MatchesGlobalTeamTarget(skill.targetType, caster, candidate))
+            {
+                return false;
+            }
+
+            return !RequiresDirectTargetValidation(skill) || candidate.CanBeDirectTargeted;
+        }
+
+        private static RuntimeHero FindFirstGlobalTeamTarget(IReadOnlyList<RuntimeHero> heroes, RuntimeHero caster, SkillData skill, bool includeAllies)
         {
             for (var i = 0; i < heroes.Count; i++)
             {
@@ -1113,25 +1143,51 @@ namespace Fight.Battle
                     continue;
                 }
 
+                if (RequiresDirectTargetValidation(skill) && !candidate.CanBeDirectTargeted)
+                {
+                    continue;
+                }
+
                 return candidate;
             }
 
             return null;
         }
 
-        private static bool IsGlobalTeamTargeting(SkillTargetType targetType)
+        private static bool RequiresDirectTargetValidation(SkillData skill)
         {
-            return targetType == SkillTargetType.AllAllies || targetType == SkillTargetType.AllEnemies;
+            if (skill == null)
+            {
+                return false;
+            }
+
+            if (skill.effects != null && skill.effects.Count > 0)
+            {
+                for (var i = 0; i < skill.effects.Count; i++)
+                {
+                    if (IsDirectUnitEffect(skill.effects[i]))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            return skill.skillType != SkillType.AreaDamage && skill.skillType != SkillType.AreaHeal;
         }
 
-        private static bool MatchesGlobalTeamTarget(SkillTargetType targetType, RuntimeHero caster, RuntimeHero candidate)
+        private static bool IsDirectUnitEffect(SkillEffectData effect)
         {
-            return targetType switch
+            if (effect == null)
             {
-                SkillTargetType.AllAllies => candidate.Side == caster.Side,
-                SkillTargetType.AllEnemies => candidate.Side != caster.Side,
-                _ => false,
-            };
+                return false;
+            }
+
+            return effect.effectType == SkillEffectType.DirectDamage
+                || effect.effectType == SkillEffectType.DirectHeal
+                || effect.effectType == SkillEffectType.ApplyStatusEffects
+                || effect.effectType == SkillEffectType.ApplyForcedMovement;
         }
 
         private static RuntimeHero FindLowestHealth(IReadOnlyList<RuntimeHero> heroes, RuntimeHero caster, bool includeAllies, float maxRange)
