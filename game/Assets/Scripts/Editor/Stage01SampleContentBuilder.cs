@@ -1261,6 +1261,7 @@ namespace Fight.Editor
                 SetPrivateBool(battleBootstrap, "startBattleOnPlay", true);
                 SetPrivateBool(battleBootstrap, "addBattleHud", true);
                 SetPrivateBool(battleBootstrap, "addBattleView", true);
+                SetPrivateBool(battleBootstrap, "addBattleEventLogRecorder", true);
                 SetPrivateString(battleBootstrap, "fallbackResourcesPath", fallbackResourcesPath);
                 SetPrivateString(battleBootstrap, "resultSceneName", "Result");
             }

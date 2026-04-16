@@ -1,3 +1,4 @@
+using System;
 using Fight.Data;
 using Fight.Heroes;
 using UnityEngine;
@@ -11,6 +12,8 @@ namespace Fight.Battle
 
         private BattleContext context;
         private BattleResultData activeResult;
+
+        public event Action<BattleContext> ContextInitialized;
 
         public BattleContext Context => context;
 
@@ -85,6 +88,7 @@ namespace Fight.Battle
                 new BattleEventBus(),
                 runtimeHeroes);
 
+            ContextInitialized?.Invoke(context);
             activeResult = null;
             context.Clock.Start();
             context.EventBus.Publish(new BattleStartedEvent(inputConfig));
