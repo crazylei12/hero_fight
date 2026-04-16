@@ -26,10 +26,10 @@ namespace Fight.Editor
         private const string MainMenuScenePath = ScenesFolder + "/MainMenu.unity";
         private const string ResultScenePath = ScenesFolder + "/Result.unity";
         private const string DefaultBattleInputAssetPath = ResourcesDemoFolder + "/Stage01DemoBattleInput.asset";
-        private const string SupportPrefabPath = "Assets/Prefabs/Heroes/support_001_sunpriest/shengzhizhe.prefab";
-        private const string WarriorPrefabPath = "Assets/Prefabs/Heroes/warrior_001_bladeguard/zhanshi01.prefab";
+        private const string SupportPrefabPath = "Assets/Prefabs/Heroes/support_001_sunpriest/Sunpriest.prefab";
+        private const string WarriorPrefabPath = "Assets/Prefabs/Heroes/warrior_001_bladeguard/Bladeguard.prefab";
         private const string MagePrefabPath = "Assets/HeroEditor4D/heroes/FIREMAGE.prefab";
-        private const string TankPrefabPath = "Assets/Prefabs/Heroes/tank_001_ironwall/tank01.prefab";
+        private const string TankPrefabPath = "Assets/Prefabs/Heroes/tank_001_ironwall/Ironwall.prefab";
         private const string HeroEditorControllerPath = "Assets/HeroEditor4D/Common/Animation/Controller.controller";
         private const string FireMageProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/FireMageBasicAttackProjectile.prefab";
         private const string MageActiveAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FireMageEmberBurst.prefab";
