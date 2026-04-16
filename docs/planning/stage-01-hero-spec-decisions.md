@@ -256,7 +256,7 @@
 - `职业前缀 + 三位序号 + 英文名字`
 
 示例格式：
-- `warrior_001_bladeguard`
+- `warrior_001_skybreaker`
 - `mage_001_firemage`
 - `assassin_001_shadowstep`
 - `tank_001_ironwall`
