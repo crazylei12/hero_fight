@@ -220,9 +220,9 @@ namespace Fight.Battle
                 case SkillTargetType.NearestEnemy:
                     return FindNearest(context.Heroes, caster, includeAllies: false, skill.castRange);
                 case SkillTargetType.LowestHealthEnemy:
-                    return FindLowestHealth(context.Heroes, caster, includeAllies: false, skill.castRange);
+                    return FindLowestHealth(context.Heroes, caster, skill, includeAllies: false, skill.castRange);
                 case SkillTargetType.LowestHealthAlly:
-                    return FindLowestHealth(context.Heroes, caster, includeAllies: true, skill.castRange);
+                    return FindLowestHealth(context.Heroes, caster, skill, includeAllies: true, skill.castRange);
                 case SkillTargetType.DensestEnemyArea:
                     return FindDensestEnemyAnchor(context.Heroes, caster, skill.castRange, skill.areaRadius);
                 default:
@@ -245,9 +245,9 @@ namespace Fight.Battle
                         ? caster.CurrentTarget
                         : SelectPrimaryTarget(context, caster, skill);
                 case UltimateTargetingType.LowestHealthEnemyInRange:
-                    return FindLowestHealth(context.Heroes, caster, includeAllies: false, skill.castRange);
+                    return FindLowestHealth(context.Heroes, caster, skill, includeAllies: false, skill.castRange);
                 case UltimateTargetingType.LowestHealthAllyInRange:
-                    return FindLowestHealth(context.Heroes, caster, includeAllies: true, skill.castRange);
+                    return FindLowestHealth(context.Heroes, caster, skill, includeAllies: true, skill.castRange);
                 case UltimateTargetingType.EnemyDensestPosition:
                     return FindDensestEnemyAnchor(context.Heroes, caster, skill.castRange, skill.areaRadius);
                 case UltimateTargetingType.Self:
@@ -352,7 +352,7 @@ namespace Fight.Battle
                 return true;
             }
 
-            return primaryTarget.CanBeDirectTargeted;
+            return IsDirectTargetAllowed(skill, caster, primaryTarget);
         }
 
         private static bool IsValidTargetForSkill(SkillData skill, RuntimeHero caster, RuntimeHero candidate)
@@ -1121,7 +1121,7 @@ namespace Fight.Battle
                 return false;
             }
 
-            return !RequiresDirectTargetValidation(skill) || candidate.CanBeDirectTargeted;
+            return !RequiresDirectTargetValidation(skill) || IsDirectTargetAllowed(skill, caster, candidate);
         }
 
         private static RuntimeHero FindFirstGlobalTeamTarget(IReadOnlyList<RuntimeHero> heroes, RuntimeHero caster, SkillData skill, bool includeAllies)
@@ -1144,7 +1144,7 @@ namespace Fight.Battle
                     continue;
                 }
 
-                if (RequiresDirectTargetValidation(skill) && !candidate.CanBeDirectTargeted)
+                if (RequiresDirectTargetValidation(skill) && !IsDirectTargetAllowed(skill, caster, candidate))
                 {
                     continue;
                 }
@@ -1191,7 +1191,39 @@ namespace Fight.Battle
                 || effect.effectType == SkillEffectType.ApplyForcedMovement;
         }
 
-        private static RuntimeHero FindLowestHealth(IReadOnlyList<RuntimeHero> heroes, RuntimeHero caster, bool includeAllies, float maxRange)
+        private static bool IsDirectTargetAllowed(SkillData skill, RuntimeHero caster, RuntimeHero candidate)
+        {
+            if (candidate == null)
+            {
+                return false;
+            }
+
+            if (candidate == caster && CanSkillTargetSelf(skill, caster))
+            {
+                return true;
+            }
+
+            return candidate.CanBeDirectTargeted;
+        }
+
+        private static bool CanSkillTargetSelf(SkillData skill, RuntimeHero caster)
+        {
+            if (skill == null || caster == null)
+            {
+                return false;
+            }
+
+            if (skill.targetType == SkillTargetType.Self
+                || skill.targetType == SkillTargetType.LowestHealthAlly
+                || skill.targetType == SkillTargetType.AllAllies)
+            {
+                return true;
+            }
+
+            return skill.allowsSelfCast && IsValidTargetForSkill(skill, caster, caster);
+        }
+
+        private static RuntimeHero FindLowestHealth(IReadOnlyList<RuntimeHero> heroes, RuntimeHero caster, SkillData skill, bool includeAllies, float maxRange)
         {
             RuntimeHero best = null;
             var lowestRatio = float.MaxValue;
@@ -1203,7 +1235,7 @@ namespace Fight.Battle
                     continue;
                 }
 
-                if (!candidate.CanBeDirectTargeted)
+                if (!IsDirectTargetAllowed(skill, caster, candidate))
                 {
                     continue;
                 }
