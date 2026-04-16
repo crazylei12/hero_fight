@@ -42,10 +42,10 @@ MonoBehaviour:
     portrait: {fileID: 0}
     battlePrefab: {fileID: 33178510622993888, guid: 2d8afc1ad51aba04fae4b3303a3a7588, type: 3}
     animatorController: {fileID: 9100000, guid: c0fbc9a82051e94429aa17cc4b2f48e5, type: 2}
-    projectilePrefab: {fileID: 0}
-    projectileAlignToMovement: 0
+    projectilePrefab: {fileID: 7348018767031583934, guid: 9c004cd2ef068d744ab440fe6bdadd6e, type: 3}
+    projectileAlignToMovement: 1
     projectileEulerAngles: {x: 0, y: 0, z: 0}
     castVfxPrefab: {fileID: 0}
-    hitVfxPrefab: {fileID: 0}
+    hitVfxPrefab: {fileID: 4844699191724608927, guid: 767dc5984494cfa4d94400452e7b7847, type: 3}
     castSfx: {fileID: 0}
   debugNotes: Stage-01 support healer with ally-targeted projectile basic attacks.

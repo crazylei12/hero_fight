@@ -24,6 +24,7 @@ MonoBehaviour:
   minTargetsToCast: 2
   effects:
   - effectType: 4
+    targetMode: 0
     powerMultiplier: 0.65
     radiusOverride: 5
     durationSeconds: 5
@@ -31,9 +32,13 @@ MonoBehaviour:
     followCaster: 0
     persistentAreaPulseEffectType: 2
     persistentAreaTargetType: 1
+    forcedMovementDirection: 0
+    forcedMovementDistance: 0
+    forcedMovementDurationSeconds: 0
+    forcedMovementPeakHeight: 0
     statusEffects: []
   allowsSelfCast: 0
-  persistentAreaVfxPrefab: {fileID: 0}
+  persistentAreaVfxPrefab: {fileID: 5702795226921381977, guid: 9cd669134ce2ba243a4ebeb4e8647a3d, type: 3}
   persistentAreaVfxScaleMultiplier: 1
   persistentAreaVfxEulerAngles: {x: 0, y: 0, z: 0}
   skillAreaPresentationType: 0

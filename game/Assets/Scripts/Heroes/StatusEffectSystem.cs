@@ -78,6 +78,26 @@ namespace Fight.Heroes
             return false;
         }
 
+        public static float GetTotalShield(RuntimeHero hero)
+        {
+            if (hero == null)
+            {
+                return 0f;
+            }
+
+            var shieldAmount = 0f;
+            var statuses = hero.MutableStatusEffects;
+            for (var i = 0; i < statuses.Count; i++)
+            {
+                if (statuses[i].EffectType == StatusEffectType.Shield)
+                {
+                    shieldAmount += Mathf.Max(0f, statuses[i].Magnitude);
+                }
+            }
+
+            return shieldAmount;
+        }
+
         public static bool TryApplyStatus(RuntimeHero hero, StatusEffectData data, RuntimeHero source = null, SkillData sourceSkill = null)
         {
             if (hero == null || data == null || data.effectType == StatusEffectType.None)
