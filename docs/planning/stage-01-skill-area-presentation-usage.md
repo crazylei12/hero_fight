@@ -1,6 +1,6 @@
 # 第一阶段战斗特效表现使用说明
 
-最后更新：2026-04-15
+最后更新：2026-04-16
 
 ## 文档用途
 
@@ -428,6 +428,31 @@
 - 普攻的命中时间、速度、目标追踪仍由战斗逻辑决定
 - 表现层不能自行改伤害、改命中时机、改飞行速度
 - 对顶视角战斗，优先让 prefab 或薄驱动去适配逻辑轨迹，而不是反过来让特效决定轨迹
+
+## 单位附着状态特效的当前规则
+
+当前第一阶段已经开始接入“跟随英雄本体的状态特效”，用于让硬控或关键状态在顶视角战斗里能被快速识别。
+
+当前规则：
+
+- 状态逻辑是否存在、何时结束，仍完全由 `StatusEffectSystem` 和运行时状态列表决定
+- 表现层只根据单位当前 `ActiveStatusEffects` 去创建、同步和移除对应 VFX
+- 不要在技能逻辑里额外手写“眩晕时播放某个特效”的一次性特例
+- 单位附着状态特效如果需要运行时自动加载，当前优先放在 `game/Assets/Resources/Stage01Demo/VFX/Statuses/`
+- 即使放在 `Resources/` 路径下，也应优先使用“项目内整理后的 prefab”，不要直接长期引用资源包原始路径
+
+当前已接入示例：
+
+- `眩晕`
+  - 项目内运行时 prefab：`game/Assets/Resources/Stage01Demo/VFX/Statuses/StunStatusLoop.prefab`
+  - 素材来源：`Assets/Lana Studio/Casual RPG VFX/Prefabs/States/Stun_loop.prefab`
+  - 接入方式：`BattleView` 在英雄视图下创建并跟随该状态 VFX，状态结束后自动销毁
+
+对后续 AI 的要求：
+
+- 后续再加 `KnockUp`、`Invulnerable`、`Untargetable` 等状态表现时，优先沿用同一条“统一状态 VFX 映射”路径
+- 如果某个状态要长期存在于项目里，先整理成项目内 prefab，再接运行时映射
+- 状态 VFX 只能表达“当前单位身上有什么状态”，不能反向决定状态持续时间、控制时长或行为门禁
 
 ## 后续新增一个区域技能特效时的标准流程
 
