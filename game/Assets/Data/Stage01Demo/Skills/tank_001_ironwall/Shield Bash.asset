@@ -16,30 +16,19 @@ MonoBehaviour:
   displayName: Shield Bash
   description: 'Stage-01 demo skill: Shield Bash'
   slotType: 0
-  skillType: 7
-  targetType: 3
+  skillType: 5
+  targetType: 1
   castRange: 1.8
-  areaRadius: 1.2
+  areaRadius: 0
   cooldownSeconds: 8
-  minTargetsToCast: 2
+  minTargetsToCast: 1
   effects:
   - effectType: 0
-    powerMultiplier: 1
+    powerMultiplier: 0.8
     radiusOverride: 0
     durationSeconds: 0
     tickIntervalSeconds: 1
     followCaster: 0
-    statusEffects: []
-  - effectType: 5
-    powerMultiplier: 1
-    radiusOverride: 0
-    durationSeconds: 0
-    tickIntervalSeconds: 1
-    followCaster: 0
-    forcedMovementDirection: 0
-    forcedMovementDistance: 1.1
-    forcedMovementDurationSeconds: 0.2
-    forcedMovementPeakHeight: 0.45
     statusEffects: []
   - effectType: 2
     powerMultiplier: 1
@@ -48,8 +37,8 @@ MonoBehaviour:
     tickIntervalSeconds: 1
     followCaster: 0
     statusEffects:
-    - effectType: 11
-      durationSeconds: 0.9
+    - effectType: 1
+      durationSeconds: 1
       magnitude: 1
       maxStacks: 1
       refreshDurationOnReapply: 1

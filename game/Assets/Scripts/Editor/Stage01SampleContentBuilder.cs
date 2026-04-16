@@ -99,8 +99,8 @@ namespace Fight.Editor
                 overwriteExistingContent,
                 HeroTag.Melee, HeroTag.Dive, HeroTag.Burst);
 
-            var tankActive = CreateKnockUpSkill("skill_tank_active_shieldbash", "Shield Bash", SkillSlotType.ActiveSkill, 1.8f, 1.2f, 1.0f, 8f, 0.9f, 1.1f, 0.2f, 0.45f, overwriteExistingContent);
-            var tankUltimateSkill = CreateKnockUpSkill("skill_tank_ultimate_groundlock", "Ground Lock", SkillSlotType.Ultimate, 2.2f, 2.8f, 1.6f, 16f, 1.4f, 0.4f, 0.24f, 0.72f, overwriteExistingContent, out var tankUltimateExisted);
+            var tankActive = CreateStunSkill("skill_tank_active_shieldbash", "Shield Bash", SkillSlotType.ActiveSkill, 1.8f, 0f, 0.8f, 8f, 1f, overwriteExistingContent);
+            var tankUltimateSkill = CreateBuffSkill("skill_tank_ultimate_ironoath", "Iron Oath", SkillSlotType.Ultimate, SkillTargetType.AllAllies, 6f, 6f, 1f, 16f, StatusEffectType.DefenseModifier, 8f, 40f, overwriteExistingContent, out var tankUltimateExisted);
 
             var tank = CreateHero(
                 "tank_001_ironwall",
@@ -380,7 +380,7 @@ namespace Fight.Editor
             skill.cooldownSeconds = cooldownSeconds;
             skill.minTargetsToCast = minTargetsToCast;
             skill.effects.Clear();
-            skill.allowsSelfCast = targetType == SkillTargetType.Self;
+            skill.allowsSelfCast = targetType == SkillTargetType.Self || targetType == SkillTargetType.AllAllies;
             skill.persistentAreaVfxEulerAngles = Vector3.zero;
             skill.skillAreaPresentationType = SkillAreaPresentationType.None;
             ResetUltimateDecision(skill);
@@ -780,14 +780,31 @@ namespace Fight.Editor
                 return skill;
             }
 
+            skill.skillType = SkillType.Buff;
+            skill.targetType = SkillTargetType.AllAllies;
+            skill.castRange = 6f;
+            skill.areaRadius = 6f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = true;
+            skill.effects.Clear();
+            var effect = AddApplyStatusEffectsEffect(skill);
+            effect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.DefenseModifier,
+                durationSeconds = 8f,
+                magnitude = 40f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
+            ResetUltimateDecision(skill);
             skill.ultimateDecision.targetingType = UltimateTargetingType.EnemyDensestPosition;
-            skill.ultimateDecision.combineMode = UltimateConditionCombineMode.AllMustPass;
-            skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;
-            skill.ultimateDecision.primaryCondition.searchRadius = skill.areaRadius;
-            skill.ultimateDecision.primaryCondition.requiredUnitCount = 2;
-            skill.ultimateDecision.secondaryCondition.conditionType = UltimateConditionType.InCombatDuration;
-            skill.ultimateDecision.secondaryCondition.durationSeconds = 2f;
-            ApplyCountFallback(skill, 30f, 1, 45f, 1);
+            skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.AllyCountInRange;
+            skill.ultimateDecision.primaryCondition.searchRadius = 6f;
+            skill.ultimateDecision.primaryCondition.requiredUnitCount = 3;
+            skill.ultimateDecision.fallback.fallbackType = UltimateFallbackType.LowerPrimaryThreshold;
+            skill.ultimateDecision.fallback.triggerAfterSeconds = 45f;
+            skill.ultimateDecision.fallback.overrideRequiredUnitCount = 2;
             EditorUtility.SetDirty(skill);
             return skill;
         }
@@ -960,7 +977,38 @@ namespace Fight.Editor
             float magnitude,
             bool overwriteExistingContent)
         {
-            var skill = CreateSkill(skillId, displayName, slotType, SkillType.Buff, targetType, castRange, areaRadius, powerMultiplier, cooldownSeconds, 1, overwriteExistingContent, out var existedBefore);
+            return CreateBuffSkill(
+                skillId,
+                displayName,
+                slotType,
+                targetType,
+                castRange,
+                areaRadius,
+                powerMultiplier,
+                cooldownSeconds,
+                effectType,
+                durationSeconds,
+                magnitude,
+                overwriteExistingContent,
+                out _);
+        }
+
+        private static SkillData CreateBuffSkill(
+            string skillId,
+            string displayName,
+            SkillSlotType slotType,
+            SkillTargetType targetType,
+            float castRange,
+            float areaRadius,
+            float powerMultiplier,
+            float cooldownSeconds,
+            StatusEffectType effectType,
+            float durationSeconds,
+            float magnitude,
+            bool overwriteExistingContent,
+            out bool existedBefore)
+        {
+            var skill = CreateSkill(skillId, displayName, slotType, SkillType.Buff, targetType, castRange, areaRadius, powerMultiplier, cooldownSeconds, 1, overwriteExistingContent, out existedBefore);
             if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
             {
                 return skill;
