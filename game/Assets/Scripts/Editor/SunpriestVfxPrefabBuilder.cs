@@ -34,7 +34,7 @@ namespace Fight.Editor
         private const string LightSparkSourcePrefabPath = "Assets/Super Pixel Projectiles Pack 3/Prefabs/pj3_light_spark_small_yellow.prefab";
         private const string HealImpactSourceChildName = "plus";
         private static readonly Vector3 HealImpactLocalOffset = new Vector3(-0.36f, 0.04f, 0f);
-        private const float HealImpactLoopScale = 0.18f;
+        private const float HealImpactLoopScale = 0.54f;
         private const float HealImpactLoopDurationSeconds = 0.6f;
         private const float HealImpactLoopSimulationSpeed = 1.2f;
         private static readonly Quaternion HealImpactAdaptedRotation = Quaternion.Euler(90f, 0f, 0f);
