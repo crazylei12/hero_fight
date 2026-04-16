@@ -1103,7 +1103,17 @@ namespace Fight.Editor
         private static string GetSkillAssetPath(string skillId, string displayName)
         {
             var ownerId = GetSkillOwnerId(skillId);
-            return $"{SkillsRootFolder}/{ownerId}/{displayName}.asset";
+            var assetName = GetLegacySkillAssetNameOverride(skillId) ?? displayName;
+            return $"{SkillsRootFolder}/{ownerId}/{assetName}.asset";
+        }
+
+        private static string GetLegacySkillAssetNameOverride(string skillId)
+        {
+            return skillId switch
+            {
+                "skill_tank_ultimate_ironoath" => "Ground Lock",
+                _ => null,
+            };
         }
 
         private static string GetSkillOwnerId(string skillId)
