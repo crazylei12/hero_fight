@@ -1,4 +1,5 @@
 using Fight.Core;
+using Fight.Data;
 using Fight.Heroes;
 using UnityEngine;
 
