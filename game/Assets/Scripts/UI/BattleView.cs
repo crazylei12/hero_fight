@@ -118,6 +118,7 @@ namespace Fight.UI
             public float DeathStartedAtSeconds = -1f;
             public float HitFlashUntilSeconds = -1f;
             public readonly Dictionary<StatusEffectType, StatusEffectViewState> StatusEffectViews = new Dictionary<StatusEffectType, StatusEffectViewState>();
+            public readonly List<TransientHeroVfxState> TransientVfx = new List<TransientHeroVfxState>();
         }
 
         private sealed class SkillAreaViewState
@@ -152,6 +153,16 @@ namespace Fight.UI
             public Vector3 BaseLocalPosition;
             public Vector3 BaseLocalScale = Vector3.one;
             public Quaternion BaseLocalRotation = Quaternion.identity;
+        }
+
+        private sealed class TransientHeroVfxState
+        {
+            public GameObject Root;
+            public SortingGroup SortingGroup;
+            public Renderer[] Renderers;
+            public ParticleSystem[] ParticleSystems;
+            public int SortingOrderOffset;
+            public float ExpiresAtSeconds;
         }
 
         private sealed class StatusEffectVfxConfig
@@ -300,6 +311,7 @@ namespace Fight.UI
             UpdateForcedMovementPresentation(hero, view);
             UpdatePrefabHitFlash(hero, view);
             SyncStatusEffects(hero, view, heroSortingOrder);
+            SyncTransientVfx(hero, view, heroSortingOrder);
 
             if (view.AnimationDriver != null)
             {
@@ -1461,6 +1473,11 @@ namespace Fight.UI
                 return;
             }
 
+            if (healAppliedEvent.Target.IsDead || ShouldHideCorpse(targetView))
+            {
+                return;
+            }
+
             SpawnTransientHeroVfx(targetView, healAppliedEvent.Caster.Definition.visualConfig.hitVfxPrefab, Vector3.zero, HealEventVfxSortOrderOffset);
         }
 
@@ -1481,15 +1498,110 @@ namespace Fight.UI
             instance.name = $"{prefab.name}_Transient";
             instance.transform.localPosition += localOffset;
             RemovePrefabPhysics(instance);
+            ConfigureTransientParticleSystems(instance);
 
             var sortingGroup = instance.GetComponent<SortingGroup>();
-            if (sortingGroup == null)
+            var transientState = new TransientHeroVfxState
             {
-                sortingGroup = instance.AddComponent<SortingGroup>();
+                Root = instance,
+                SortingGroup = sortingGroup,
+                Renderers = instance.GetComponentsInChildren<Renderer>(true),
+                ParticleSystems = instance.GetComponentsInChildren<ParticleSystem>(true),
+                SortingOrderOffset = sortingOrderOffset,
+                ExpiresAtSeconds = GetElapsedTimeSeconds() + GetTransientVfxLifetime(instance),
+            };
+
+            heroView.TransientVfx.Add(transientState);
+            ApplyTransientVfxState(transientState, heroView.SortingGroup != null ? heroView.SortingGroup.sortingOrder : HeroSortBase);
+        }
+
+        private void SyncTransientVfx(RuntimeHero hero, HeroViewState heroView, int heroSortingOrder)
+        {
+            if (heroView?.TransientVfx == null || heroView.TransientVfx.Count == 0)
+            {
+                return;
             }
 
-            sortingGroup.sortingOrder = (heroView.SortingGroup != null ? heroView.SortingGroup.sortingOrder : HeroSortBase) + sortingOrderOffset;
-            Destroy(instance, GetTransientVfxLifetime(instance));
+            var elapsedSeconds = GetElapsedTimeSeconds();
+            var clearAll = hero == null || hero.IsDead || ShouldHideCorpse(heroView);
+            for (var i = heroView.TransientVfx.Count - 1; i >= 0; i--)
+            {
+                var transient = heroView.TransientVfx[i];
+                if (transient == null || transient.Root == null || clearAll || elapsedSeconds >= transient.ExpiresAtSeconds)
+                {
+                    DestroyTransientVfx(transient);
+                    heroView.TransientVfx.RemoveAt(i);
+                    continue;
+                }
+
+                ApplyTransientVfxState(transient, heroSortingOrder);
+            }
+        }
+
+        private static void ApplyTransientVfxState(TransientHeroVfxState transientState, int heroSortingOrder)
+        {
+            if (transientState == null)
+            {
+                return;
+            }
+
+            var sortingOrder = heroSortingOrder + transientState.SortingOrderOffset;
+            if (transientState.SortingGroup != null)
+            {
+                transientState.SortingGroup.sortingOrder = sortingOrder;
+            }
+            else
+            {
+                SetRendererSorting(transientState.Renderers, sortingOrder);
+            }
+        }
+
+        private static void DestroyTransientVfx(TransientHeroVfxState transientState)
+        {
+            if (transientState?.Root != null)
+            {
+                if (transientState.ParticleSystems != null)
+                {
+                    for (var i = 0; i < transientState.ParticleSystems.Length; i++)
+                    {
+                        var particleSystem = transientState.ParticleSystems[i];
+                        if (particleSystem == null)
+                        {
+                            continue;
+                        }
+
+                        particleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                        particleSystem.Clear(true);
+                    }
+                }
+
+                transientState.Root.SetActive(false);
+                Destroy(transientState.Root);
+            }
+        }
+
+        private static void ConfigureTransientParticleSystems(GameObject instance)
+        {
+            if (instance == null)
+            {
+                return;
+            }
+
+            var particleSystems = instance.GetComponentsInChildren<ParticleSystem>(true);
+            for (var i = 0; i < particleSystems.Length; i++)
+            {
+                var particleSystem = particleSystems[i];
+                if (particleSystem == null)
+                {
+                    continue;
+                }
+
+                var main = particleSystem.main;
+                main.simulationSpace = ParticleSystemSimulationSpace.Local;
+                main.scalingMode = ParticleSystemScalingMode.Hierarchy;
+                particleSystem.Clear(true);
+                particleSystem.Play(true);
+            }
         }
 
         private static float GetTransientVfxLifetime(GameObject instance)
