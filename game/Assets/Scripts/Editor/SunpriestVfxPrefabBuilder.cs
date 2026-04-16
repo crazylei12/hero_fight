@@ -27,9 +27,7 @@ namespace Fight.Editor
         private const string SunBlessingSkillAssetPath = "Assets/Data/Stage01Demo/Skills/support_001_sunpriest/Sun Blessing.asset";
 
         private const string LightProjectileSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Range_attack/Projectiles_light.prefab";
-        private const string AreaGenericOrangeSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Area_generic/Area_generic_orange.prefab";
         private const string FlashCircleSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Burst/Flash_circle.prefab";
-        private const string BurstRingsSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Burst/Burst_rings.prefab";
         private const string RegenerationHealthSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Regeneration/Regeneration_health.prefab";
         private const string RegenerationHealthLoopSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Regeneration/Regeneration_health_loop.prefab";
         private const string RegenerationHealthAreaSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Regeneration/Regeneration_health_area.prefab";
@@ -37,38 +35,6 @@ namespace Fight.Editor
         private const string OrbsGoldSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Orbs/Orbs_gold.prefab";
         private const string LightMissileSourcePrefabPath = "Assets/Super Pixel Projectiles Pack 3/Prefabs/pj3_magic_missile_small_yellow.prefab";
         private const string LightSparkSourcePrefabPath = "Assets/Super Pixel Projectiles Pack 3/Prefabs/pj3_light_spark_small_yellow.prefab";
-
-        private static readonly Vector2[] SunBlessingLoopAnchors =
-        {
-            new Vector2(0f, 0.56f),
-            new Vector2(0.56f, 0f),
-            new Vector2(0f, -0.56f),
-            new Vector2(-0.56f, 0f),
-        };
-
-        private static readonly float[] SunBlessingLoopScales =
-        {
-            0.10f,
-            0.094f,
-            0.10f,
-            0.094f,
-        };
-
-        private static readonly Vector2[] SunBlessingOrbAnchors =
-        {
-            new Vector2(0.36f, 0.36f),
-            new Vector2(0.36f, -0.36f),
-            new Vector2(-0.36f, -0.36f),
-            new Vector2(-0.36f, 0.36f),
-        };
-
-        private static readonly float[] SunBlessingOrbScales =
-        {
-            0.062f,
-            0.058f,
-            0.062f,
-            0.058f,
-        };
 
         private static bool autoBuildScheduled;
 
@@ -315,12 +281,8 @@ namespace Fight.Editor
 
         private static void BuildSunBlessingFieldPrefab(Sprite softCircleSprite)
         {
-            var areaGenericOrangePrefab = LoadRequiredAsset<GameObject>(AreaGenericOrangeSourcePrefabPath);
             var regenerationAreaLoopPrefab = LoadRequiredAsset<GameObject>(RegenerationHealthAreaLoopSourcePrefabPath);
             var regenerationAreaPrefab = LoadRequiredAsset<GameObject>(RegenerationHealthAreaSourcePrefabPath);
-            var regenerationLoopPrefab = LoadRequiredAsset<GameObject>(RegenerationHealthLoopSourcePrefabPath);
-            var burstRingsPrefab = LoadRequiredAsset<GameObject>(BurstRingsSourcePrefabPath);
-            var orbsGoldPrefab = LoadRequiredAsset<GameObject>(OrbsGoldSourcePrefabPath);
 
             var root = new GameObject("SunpriestSunBlessingField");
             root.AddComponent<SortingGroup>();
@@ -329,75 +291,49 @@ namespace Fight.Editor
                 root.transform,
                 "OuterSanctuary",
                 softCircleSprite,
-                new Color(1f, 0.9f, 0.42f, 0.13f),
+                new Color(1f, 0.93f, 0.48f, 0.1f),
                 0,
                 Vector3.zero,
-                new Vector3(1.12f, 1.12f, 1f));
+                new Vector3(1.02f, 1.02f, 1f));
             CreateSprite(
                 root.transform,
                 "SanctuaryEdge",
                 softCircleSprite,
-                new Color(1f, 0.97f, 0.78f, 0.16f),
+                new Color(1f, 0.98f, 0.8f, 0.14f),
                 1,
                 Vector3.zero,
-                new Vector3(0.98f, 0.98f, 1f));
+                new Vector3(0.86f, 0.86f, 1f));
             CreateSprite(
                 root.transform,
                 "InnerGlow",
                 softCircleSprite,
-                new Color(1f, 0.98f, 0.86f, 0.1f),
+                new Color(0.96f, 1f, 0.82f, 0.08f),
                 2,
                 Vector3.zero,
-                new Vector3(0.76f, 0.76f, 1f));
+                new Vector3(0.64f, 0.64f, 1f));
             CreateSprite(
                 root.transform,
                 "BlessingCore",
                 softCircleSprite,
-                new Color(0.8f, 1f, 0.74f, 0.08f),
+                new Color(0.84f, 1f, 0.76f, 0.05f),
                 3,
                 Vector3.zero,
-                new Vector3(0.44f, 0.44f, 1f));
+                new Vector3(0.34f, 0.34f, 1f));
 
-            var sanctuaryAura = InstantiateNestedPrefab(areaGenericOrangePrefab, root.transform, "SanctuaryAura");
-            sanctuaryAura.transform.localScale = Vector3.one * 0.11f;
-            sanctuaryAura.transform.localPosition = Vector3.zero;
-            OffsetRendererOrders(sanctuaryAura, 5);
+            var sanctuaryLoop = InstantiateNestedPrefab(regenerationAreaLoopPrefab, root.transform, "SanctuaryLoop");
+            sanctuaryLoop.transform.localScale = Vector3.one * 0.128f;
+            sanctuaryLoop.transform.localPosition = Vector3.zero;
+            OffsetRendererOrders(sanctuaryLoop, 8);
 
-            var centerRing = InstantiateNestedPrefab(burstRingsPrefab, root.transform, "CenterRing");
-            centerRing.transform.localScale = Vector3.one * 0.12f;
-            centerRing.transform.localPosition = Vector3.zero;
-            OffsetRendererOrders(centerRing, 8);
-
-            var areaLoop = InstantiateNestedPrefab(regenerationAreaLoopPrefab, root.transform, "AreaLoop");
-            areaLoop.transform.localScale = Vector3.one * 0.1f;
-            areaLoop.transform.localPosition = Vector3.zero;
-            OffsetRendererOrders(areaLoop, 9);
+            var sanctuaryLoopInner = InstantiateNestedPrefab(regenerationAreaLoopPrefab, root.transform, "SanctuaryLoopInner");
+            sanctuaryLoopInner.transform.localScale = Vector3.one * 0.092f;
+            sanctuaryLoopInner.transform.localPosition = Vector3.zero;
+            OffsetRendererOrders(sanctuaryLoopInner, 10);
 
             var areaPulse = InstantiateNestedPrefab(regenerationAreaPrefab, root.transform, "AreaPulse");
-            areaPulse.transform.localScale = Vector3.one * 0.085f;
+            areaPulse.transform.localScale = Vector3.one * 0.074f;
             areaPulse.transform.localPosition = Vector3.zero;
-            OffsetRendererOrders(areaPulse, 10);
-
-            for (var i = 0; i < SunBlessingLoopAnchors.Length; i++)
-            {
-                var anchor = SunBlessingLoopAnchors[i];
-                var scale = SunBlessingLoopScales[i];
-
-                var healLoop = InstantiateNestedPrefab(regenerationLoopPrefab, root.transform, $"HealLoop_{i:D2}");
-                healLoop.transform.localPosition = new Vector3(anchor.x, anchor.y, 0f);
-                healLoop.transform.localScale = Vector3.one * scale;
-                OffsetRendererOrders(healLoop, 12 + (i % 2));
-            }
-
-            for (var i = 0; i < SunBlessingOrbAnchors.Length; i++)
-            {
-                var anchor = SunBlessingOrbAnchors[i];
-                var scale = SunBlessingOrbScales[i];
-                var orb = InstantiateNestedPrefab(orbsGoldPrefab, root.transform, $"Orb_{i:D2}");
-                orb.transform.localPosition = new Vector3(anchor.x, anchor.y, 0f);
-                orb.transform.localScale = Vector3.one * scale;
-                OffsetRendererOrders(orb, 15 + (i % 2));
-            }
+            OffsetRendererOrders(areaPulse, 11);
 
             SavePrefab(root, SunBlessingFieldPrefabPath);
         }
