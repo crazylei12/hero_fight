@@ -68,10 +68,30 @@ namespace Fight.Heroes
 
         public void Refresh(StatusEffectData data)
         {
+            var previousTickIntervalSeconds = TickIntervalSeconds;
+            var previousTimeUntilNextTickSeconds = TimeUntilNextTickSeconds;
             RemainingDurationSeconds = data.durationSeconds;
             Magnitude = data.magnitude;
             TickIntervalSeconds = Mathf.Max(0.1f, data.tickIntervalSeconds);
-            TimeUntilNextTickSeconds = TickIntervalSeconds;
+
+            if (!Definition.IsPeriodic)
+            {
+                TimeUntilNextTickSeconds = TickIntervalSeconds;
+                return;
+            }
+
+            if (previousTickIntervalSeconds <= Mathf.Epsilon)
+            {
+                TimeUntilNextTickSeconds = TickIntervalSeconds;
+                return;
+            }
+
+            var elapsedTickProgressSeconds = Mathf.Clamp(
+                previousTickIntervalSeconds - previousTimeUntilNextTickSeconds,
+                0f,
+                previousTickIntervalSeconds);
+            var normalizedProgress = elapsedTickProgressSeconds / previousTickIntervalSeconds;
+            TimeUntilNextTickSeconds = Mathf.Max(0.0001f, TickIntervalSeconds * (1f - Mathf.Clamp01(normalizedProgress)));
         }
 
         public float ConsumeMagnitude(float amount)

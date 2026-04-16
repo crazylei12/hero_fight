@@ -211,9 +211,20 @@ namespace Fight.Heroes
             }
         }
 
-        public static void ClearStatuses(RuntimeHero hero)
+        public static void ClearStatuses(RuntimeHero hero, Action<RuntimeStatusEffect> onRemovedStatus = null)
         {
-            hero?.MutableStatusEffects.Clear();
+            if (hero == null)
+            {
+                return;
+            }
+
+            var statuses = hero.MutableStatusEffects;
+            for (var i = statuses.Count - 1; i >= 0; i--)
+            {
+                var status = statuses[i];
+                onRemovedStatus?.Invoke(status);
+                statuses.RemoveAt(i);
+            }
         }
     }
 }

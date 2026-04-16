@@ -304,7 +304,7 @@ namespace Fight.Heroes
             HealingDone += Mathf.Max(0f, amount);
         }
 
-        public void MarkDead(float respawnDelaySeconds)
+        public void MarkDead(float respawnDelaySeconds, Action<RuntimeStatusEffect> onRemovedStatus = null)
         {
             IsDead = true;
             CurrentTarget = null;
@@ -314,7 +314,7 @@ namespace Fight.Heroes
             CombatEngagedSeconds = 0f;
             VisualHeightOffset = 0f;
             activeForcedMovement = null;
-            StatusEffectSystem.ClearStatuses(this);
+            StatusEffectSystem.ClearStatuses(this, onRemovedStatus);
             ClearThreatTracking();
         }
 
