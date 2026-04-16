@@ -163,6 +163,12 @@ namespace Fight.Heroes
                 return 0f;
             }
 
+            amount -= ConsumeShield(amount);
+            if (amount <= 0f)
+            {
+                return 0f;
+            }
+
             var previousHealth = CurrentHealth;
             CurrentHealth = Mathf.Max(0f, CurrentHealth - amount);
             return previousHealth - CurrentHealth;
@@ -359,6 +365,27 @@ namespace Fight.Heroes
         private float GetModifiedStat(float baseValue, StatusEffectType effectType)
         {
             return baseValue * GetMultiplier(effectType);
+        }
+
+        private float ConsumeShield(float damageAmount)
+        {
+            var remainingDamage = Mathf.Max(0f, damageAmount);
+            var absorbedDamage = 0f;
+
+            for (var i = 0; i < activeStatusEffects.Count && remainingDamage > 0f; i++)
+            {
+                var status = activeStatusEffects[i];
+                if (status.EffectType != StatusEffectType.Shield)
+                {
+                    continue;
+                }
+
+                var absorbed = status.ConsumeMagnitude(remainingDamage);
+                absorbedDamage += absorbed;
+                remainingDamage -= absorbed;
+            }
+
+            return absorbedDamage;
         }
 
         private bool HasStatusFlag(StatusBehaviorFlags flag)

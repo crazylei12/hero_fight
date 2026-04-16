@@ -18,9 +18,9 @@ namespace Fight.Battle
             };
         }
 
-        public static RuntimeHero SelectPreferredAllyTarget(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange)
+        public static RuntimeHero SelectPreferredAllyTarget(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange, bool allowHealthyFallback = false)
         {
-            return FindLowestHealthAlly(heroes, actor, maxRange);
+            return FindLowestHealthAlly(heroes, actor, maxRange, allowHealthyFallback);
         }
 
         public static float GetDesiredCombatRange(RuntimeHero actor)
@@ -102,14 +102,23 @@ namespace Fight.Battle
             return best;
         }
 
-        private static RuntimeHero FindLowestHealthAlly(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange)
+        private static RuntimeHero FindLowestHealthAlly(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange, bool allowHealthyFallback)
         {
-            RuntimeHero best = null;
-            var bestRatio = 1f;
+            RuntimeHero bestInjured = null;
+            var bestInjuredRatio = 1f;
+            RuntimeHero nearestHealthyAlly = null;
+            var nearestHealthyDistance = float.MaxValue;
+            RuntimeHero selfTarget = null;
+
             for (var i = 0; i < heroes.Count; i++)
             {
                 var candidate = heroes[i];
-                if (candidate.IsDead || candidate.Side != actor.Side || !candidate.CanBeDirectTargeted)
+                if (candidate.IsDead || candidate.Side != actor.Side)
+                {
+                    continue;
+                }
+
+                if (candidate != actor && !candidate.CanBeDirectTargeted)
                 {
                     continue;
                 }
@@ -121,16 +130,28 @@ namespace Fight.Battle
                 }
 
                 var ratio = candidate.MaxHealth > 0f ? candidate.CurrentHealth / candidate.MaxHealth : 1f;
-                if (ratio >= bestRatio)
+
+                if (candidate == actor)
+                {
+                    selfTarget = candidate;
+                }
+
+                if (ratio < bestInjuredRatio)
+                {
+                    bestInjuredRatio = ratio;
+                    bestInjured = candidate;
+                }
+
+                if (!allowHealthyFallback || candidate == actor || distance >= nearestHealthyDistance)
                 {
                     continue;
                 }
 
-                bestRatio = ratio;
-                best = candidate;
+                nearestHealthyDistance = distance;
+                nearestHealthyAlly = candidate;
             }
 
-            return best;
+            return bestInjured ?? (allowHealthyFallback ? nearestHealthyAlly ?? selfTarget : null);
         }
 
         private static RuntimeHero FindAssassinTarget(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange)

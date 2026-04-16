@@ -31,6 +31,8 @@ MonoBehaviour:
     rangeOverride: 5.2
     usesProjectile: 1
     projectileSpeed: 14
+    effectType: 1
+    targetType: 1
   activeSkill: {fileID: 11400000, guid: 5689b258967051b418e1abd08992e39b, type: 2}
   ultimateSkill: {fileID: 11400000, guid: 2e4635567638584459562248cd674a54, type: 2}
   aiTemplateId: support_default
@@ -46,4 +48,4 @@ MonoBehaviour:
     castVfxPrefab: {fileID: 0}
     hitVfxPrefab: {fileID: 0}
     castSfx: {fileID: 0}
-  debugNotes: Stage-01 demo hero for Support.
+  debugNotes: Stage-01 support healer with ally-targeted projectile basic attacks.

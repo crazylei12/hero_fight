@@ -20,6 +20,7 @@ namespace Fight.Data
         Invulnerable = 12,
         Untargetable = 13,
         DamageOverTime = 14,
+        Shield = 15,
     }
 
     [Flags]
@@ -83,6 +84,7 @@ namespace Fight.Data
         private static readonly StatusEffectDefinition Invulnerable = new StatusEffectDefinition(StatusEffectType.Invulnerable, StatusBehaviorFlags.PreventsDamage);
         private static readonly StatusEffectDefinition Untargetable = new StatusEffectDefinition(StatusEffectType.Untargetable, StatusBehaviorFlags.BlocksDirectTargeting);
         private static readonly StatusEffectDefinition DamageOverTime = new StatusEffectDefinition(StatusEffectType.DamageOverTime, StatusBehaviorFlags.Periodic);
+        private static readonly StatusEffectDefinition Shield = new StatusEffectDefinition(StatusEffectType.Shield, StatusBehaviorFlags.None);
 
         public static StatusEffectDefinition Get(StatusEffectType effectType)
         {
@@ -102,6 +104,7 @@ namespace Fight.Data
                 StatusEffectType.Invulnerable => Invulnerable,
                 StatusEffectType.Untargetable => Untargetable,
                 StatusEffectType.DamageOverTime => DamageOverTime,
+                StatusEffectType.Shield => Shield,
                 _ => None,
             };
         }

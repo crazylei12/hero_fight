@@ -8,5 +8,6 @@ namespace Fight.Data
         Buff = 3,
         Dash = 4,
         Stun = 5,
+        AreaHeal = 6,
     }
 }

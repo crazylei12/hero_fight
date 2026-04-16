@@ -103,7 +103,7 @@ namespace Fight.UI
                     break;
                 case SkillAreaPulseEvent areaPulse:
                     var center = areaPulse.Area != null ? areaPulse.Area.CurrentCenter : Vector3.zero;
-                    AddLog($"{FormatHeroLabel(areaPulse.Caster)}'s {areaPulse.Skill.displayName} pulse hit {areaPulse.AffectedTargetCount} target(s) at ({center.x:0.0}, {center.z:0.0}), area {areaPulse.Area?.AreaId ?? "unknown"}.");
+                    AddLog($"{FormatHeroLabel(areaPulse.Caster)}'s {areaPulse.Skill.displayName} pulse affected {areaPulse.AffectedTargetCount} target(s) at ({center.x:0.0}, {center.z:0.0}), area {areaPulse.Area?.AreaId ?? "unknown"}.");
                     break;
                 case DamageAppliedEvent damageApplied:
                     AddLog(FormatDamageLog(damageApplied));
@@ -166,7 +166,7 @@ namespace Fight.UI
         private string FormatHealLog(HealAppliedEvent healApplied)
         {
             var casterName = FormatHeroLabel(healApplied.Caster, "Unknown");
-            var skillName = healApplied.SourceSkill != null ? healApplied.SourceSkill.displayName : "Unknown Heal";
+            var skillName = healApplied.SourceSkill != null ? healApplied.SourceSkill.displayName : "Basic Attack";
             return $"{casterName} healed {FormatHeroLabel(healApplied.Target)} for {healApplied.HealAmount:0.0} via {skillName}, target HP {Mathf.Max(0f, healApplied.ResultingHealth):0.0}.";
         }
 

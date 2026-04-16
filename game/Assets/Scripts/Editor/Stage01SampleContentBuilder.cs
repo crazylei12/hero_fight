@@ -106,10 +106,11 @@ namespace Fight.Editor
                 "Sunpriest",
                 HeroClass.Support,
                 320f, 22f, 12f, 0.9f, 4.0f, 0.05f, 1.5f, 5.2f,
-                CreateSkill("skill_support_active_heal", "Radiant Heal", SkillSlotType.ActiveSkill, SkillType.SingleTargetHeal, SkillTargetType.LowestHealthAlly, 6f, 0f, 1.5f, 7f, 1, overwriteExistingContent),
-                ConfigureSupportUltimate(CreateBuffSkill("skill_support_ultimate_blessing", "Sun Blessing", SkillSlotType.Ultimate, SkillTargetType.LowestHealthAlly, 6f, 0f, 0f, 14f, StatusEffectType.AttackSpeedModifier, 4f, 0.35f, overwriteExistingContent), overwriteExistingContent),
+                CreateSupportActiveSkill(overwriteExistingContent),
+                ConfigureSupportUltimate(CreateSupportUltimateSkill(overwriteExistingContent), overwriteExistingContent),
                 overwriteExistingContent,
                 HeroTag.Ranged, HeroTag.Heal, HeroTag.Buff);
+            ConfigureSupportBasicAttack(support, overwriteExistingContent);
 
             var marksman = CreateHero(
                 "marksman_001_longshot",
@@ -238,6 +239,8 @@ namespace Fight.Editor
             hero.basicAttack.rangeOverride = attackRange;
             hero.basicAttack.usesProjectile = tags != null && System.Array.Exists(tags, tag => tag == HeroTag.Ranged);
             hero.basicAttack.projectileSpeed = hero.basicAttack.usesProjectile ? 14f : 0f;
+            hero.basicAttack.effectType = BasicAttackEffectType.Damage;
+            hero.basicAttack.targetType = BasicAttackTargetType.NearestEnemy;
 
             hero.activeSkill = activeSkill;
             hero.ultimateSkill = ultimateSkill;
@@ -329,7 +332,7 @@ namespace Fight.Editor
             skill.persistentAreaVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(MageActiveAreaVfxPrefabPath);
             skill.persistentAreaVfxScaleMultiplier = 1f;
             skill.skillAreaPresentationType = SkillAreaPresentationType.None;
-            AddPersistentAreaDamageEffect(skill, 1.2f, 2f, 0.4f, 1f, false);
+            AddPersistentAreaEffect(skill, PersistentAreaPulseEffectType.DirectDamage, PersistentAreaTargetType.Enemies, 1.2f, 2f, 0.4f, 1f, false);
             ResetUltimateDecision(skill);
             EditorUtility.SetDirty(skill);
             return skill;
@@ -374,6 +377,7 @@ namespace Fight.Editor
                     AddDamageEffect(skill, powerMultiplier);
                     break;
                 case SkillType.SingleTargetHeal:
+                case SkillType.AreaHeal:
                     AddHealEffect(skill, powerMultiplier);
                     break;
                 case SkillType.Dash:
@@ -425,8 +429,10 @@ namespace Fight.Editor
             return effect;
         }
 
-        private static SkillEffectData AddPersistentAreaDamageEffect(
+        private static SkillEffectData AddPersistentAreaEffect(
             SkillData skill,
+            PersistentAreaPulseEffectType pulseEffectType,
+            PersistentAreaTargetType targetType,
             float powerMultiplier,
             float radiusOverride,
             float durationSeconds,
@@ -435,15 +441,102 @@ namespace Fight.Editor
         {
             var effect = new SkillEffectData
             {
-                effectType = SkillEffectType.PersistentAreaDamage,
+                effectType = SkillEffectType.CreatePersistentArea,
                 powerMultiplier = powerMultiplier,
                 radiusOverride = radiusOverride,
                 durationSeconds = durationSeconds,
                 tickIntervalSeconds = tickIntervalSeconds,
                 followCaster = followCaster,
+                persistentAreaPulseEffectType = pulseEffectType,
+                persistentAreaTargetType = targetType,
             };
             skill.effects.Add(effect);
             return effect;
+        }
+
+        private static void ConfigureSupportBasicAttack(HeroDefinition hero, bool overwriteExistingContent)
+        {
+            if (!overwriteExistingContent || hero == null)
+            {
+                return;
+            }
+
+            hero.basicAttack.damageMultiplier = 1f;
+            hero.basicAttack.effectType = BasicAttackEffectType.Heal;
+            hero.basicAttack.targetType = BasicAttackTargetType.LowestHealthAlly;
+            hero.basicAttack.usesProjectile = true;
+            hero.basicAttack.projectileSpeed = 14f;
+            EditorUtility.SetDirty(hero);
+        }
+
+        private static SkillData CreateSupportActiveSkill(bool overwriteExistingContent)
+        {
+            var skill = CreateSkill(
+                "skill_support_active_heal",
+                "Radiant Heal",
+                SkillSlotType.ActiveSkill,
+                SkillType.SingleTargetHeal,
+                SkillTargetType.LowestHealthAlly,
+                6f,
+                0f,
+                1.35f,
+                7f,
+                1,
+                overwriteExistingContent);
+
+            if (!overwriteExistingContent)
+            {
+                return skill;
+            }
+
+            skill.effects.Clear();
+            AddHealEffect(skill, 1.35f);
+            var shieldEffect = AddApplyStatusEffectsEffect(skill);
+            shieldEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.Shield,
+                durationSeconds = 4f,
+                magnitude = 45f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateSupportUltimateSkill(bool overwriteExistingContent)
+        {
+            var skill = CreateSkill(
+                "skill_support_ultimate_blessing",
+                "Sun Blessing",
+                SkillSlotType.Ultimate,
+                SkillType.AreaHeal,
+                SkillTargetType.LowestHealthAlly,
+                6f,
+                5f,
+                0.65f,
+                14f,
+                2,
+                overwriteExistingContent);
+
+            if (!overwriteExistingContent)
+            {
+                return skill;
+            }
+
+            skill.effects.Clear();
+            skill.targetType = SkillTargetType.LowestHealthAlly;
+            skill.castRange = 6f;
+            skill.areaRadius = 5f;
+            skill.allowsSelfCast = false;
+            skill.persistentAreaVfxPrefab = null;
+            skill.persistentAreaVfxScaleMultiplier = 1f;
+            skill.persistentAreaVfxEulerAngles = Vector3.zero;
+            skill.skillAreaPresentationType = SkillAreaPresentationType.None;
+            AddPersistentAreaEffect(skill, PersistentAreaPulseEffectType.DirectHeal, PersistentAreaTargetType.Allies, 0.65f, skill.areaRadius, 5f, 1f, false);
+            ResetUltimateDecision(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
         }
 
         private static void ResetUltimateDecision(SkillData skill)
@@ -526,7 +619,7 @@ namespace Fight.Editor
             skill.persistentAreaVfxEulerAngles = Vector3.zero;
             skill.skillAreaPresentationType = SkillAreaPresentationType.None;
             skill.effects.Clear();
-            AddPersistentAreaDamageEffect(skill, 0.55f, skill.areaRadius, 5f, 1f, false);
+            AddPersistentAreaEffect(skill, PersistentAreaPulseEffectType.DirectDamage, PersistentAreaTargetType.Enemies, 0.55f, skill.areaRadius, 5f, 1f, false);
 
             skill.ultimateDecision.targetingType = UltimateTargetingType.Self;
             skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;
@@ -593,11 +686,11 @@ namespace Fight.Editor
             skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.AllyLowHealthInRange;
             skill.ultimateDecision.primaryCondition.searchRadius = Mathf.Max(skill.castRange, 5f);
             skill.ultimateDecision.primaryCondition.requiredUnitCount = 1;
-            skill.ultimateDecision.primaryCondition.healthPercentThreshold = 0.4f;
+            skill.ultimateDecision.primaryCondition.healthPercentThreshold = 0.55f;
             skill.ultimateDecision.secondaryCondition.conditionType = UltimateConditionType.AllyCountInRange;
-            skill.ultimateDecision.secondaryCondition.searchRadius = Mathf.Max(skill.castRange, 5f);
+            skill.ultimateDecision.secondaryCondition.searchRadius = Mathf.Max(skill.areaRadius, 5f);
             skill.ultimateDecision.secondaryCondition.requiredUnitCount = 2;
-            ApplyHealthFallback(skill, 30f, 0.55f, 45f, 0.75f);
+            ApplyHealthFallback(skill, 30f, 0.7f, 45f, 0.85f);
             EditorUtility.SetDirty(skill);
             return skill;
         }

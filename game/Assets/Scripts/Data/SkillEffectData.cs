@@ -4,6 +4,20 @@ using UnityEngine;
 
 namespace Fight.Data
 {
+    public enum PersistentAreaPulseEffectType
+    {
+        None = 0,
+        DirectDamage = 1,
+        DirectHeal = 2,
+    }
+
+    public enum PersistentAreaTargetType
+    {
+        Enemies = 0,
+        Allies = 1,
+        Both = 2,
+    }
+
     [Serializable]
     public class SkillEffectData
     {
@@ -13,6 +27,8 @@ namespace Fight.Data
         [Min(0f)] public float durationSeconds = 0f;
         [Min(0.1f)] public float tickIntervalSeconds = 1f;
         public bool followCaster;
+        public PersistentAreaPulseEffectType persistentAreaPulseEffectType = PersistentAreaPulseEffectType.DirectDamage;
+        public PersistentAreaTargetType persistentAreaTargetType = PersistentAreaTargetType.Enemies;
         public List<StatusEffectData> statusEffects = new List<StatusEffectData>();
     }
 }

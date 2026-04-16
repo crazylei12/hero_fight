@@ -1,4 +1,5 @@
 using Fight.Heroes;
+using Fight.Data;
 using UnityEngine;
 
 namespace Fight.Battle
@@ -11,14 +12,16 @@ namespace Fight.Battle
             RuntimeHero target,
             Vector3 startPosition,
             float speed,
-            float damageAmount)
+            float impactAmount,
+            BasicAttackEffectType effectType)
         {
             ProjectileId = projectileId;
             Attacker = attacker;
             Target = target;
             CurrentPosition = startPosition;
             Speed = Mathf.Max(0.01f, speed);
-            DamageAmount = Mathf.Max(0f, damageAmount);
+            ImpactAmount = Mathf.Max(0f, impactAmount);
+            EffectType = effectType;
         }
 
         public string ProjectileId { get; }
@@ -31,6 +34,8 @@ namespace Fight.Battle
 
         public float Speed { get; }
 
-        public float DamageAmount { get; }
+        public float ImpactAmount { get; }
+
+        public BasicAttackEffectType EffectType { get; }
     }
 }
