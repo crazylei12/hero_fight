@@ -8,6 +8,7 @@ namespace Fight.Data
     {
         public StatusEffectType effectType = StatusEffectType.None;
         [Min(0f)] public float durationSeconds = 1f;
+        // Stat modifiers use decimal percentage deltas: +20% = 0.2, +200% = 2.0. Shield keeps raw value semantics.
         public float magnitude = 0f;
         [Min(0.1f)] public float tickIntervalSeconds = 1f;
         [Min(1)] public int maxStacks = 1;

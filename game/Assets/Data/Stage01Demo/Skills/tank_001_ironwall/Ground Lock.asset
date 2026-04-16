@@ -32,7 +32,7 @@ MonoBehaviour:
     statusEffects:
     - effectType: 3
       durationSeconds: 8
-      magnitude: 40
+      magnitude: 2
       maxStacks: 1
       refreshDurationOnReapply: 1
   allowsSelfCast: 1
