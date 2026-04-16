@@ -35,6 +35,7 @@ namespace Fight.Editor
         private const float HealImpactLoopScale = 0.22f;
         private const float HealImpactLoopDurationSeconds = 0.6f;
         private const float HealImpactLoopSimulationSpeed = 1.2f;
+        private static readonly Quaternion HealImpactAdaptedRotation = Quaternion.Euler(90f, 0f, 0f);
 
         private static bool autoBuildScheduled;
 
@@ -206,6 +207,7 @@ namespace Fight.Editor
             var healLoop = InstantiateNestedPrefab(regenerationHealthLoopPrefab, root.transform, "HealLoop");
             healLoop.transform.localScale = Vector3.one * HealImpactLoopScale;
             healLoop.transform.localPosition = Vector3.zero;
+            healLoop.transform.localRotation = HealImpactAdaptedRotation;
             TuneHealImpactLoop(healLoop);
             OffsetRendererOrders(healLoop, 10);
 
