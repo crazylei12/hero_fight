@@ -20,6 +20,8 @@ namespace Fight.Battle
             {
                 TickHero(context, context.Heroes[i], deltaTime, battleManager);
             }
+
+            BattleSkillSystem.TickDelayedSkillEffects(context, deltaTime, battleManager);
         }
 
         private static void TickSkillAreas(BattleContext context, float deltaTime, BattleManager battleManager)

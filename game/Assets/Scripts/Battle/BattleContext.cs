@@ -1,9 +1,92 @@
 using System.Collections.Generic;
 using Fight.Data;
 using Fight.Heroes;
+using UnityEngine;
 
 namespace Fight.Battle
 {
+    public readonly struct SkillEffectResolutionState
+    {
+        public SkillEffectResolutionState(Vector3 dashStartPosition, Vector3 dashDestination, float dashDurationSeconds, bool hasDashPath)
+        {
+            DashStartPosition = dashStartPosition;
+            DashDestination = dashDestination;
+            DashDurationSeconds = Mathf.Max(0f, dashDurationSeconds);
+            HasDashPath = hasDashPath;
+        }
+
+        public Vector3 DashStartPosition { get; }
+
+        public Vector3 DashDestination { get; }
+
+        public float DashDurationSeconds { get; }
+
+        public bool HasDashPath { get; }
+    }
+
+    public sealed class RuntimeDelayedSkillEffect
+    {
+        private readonly List<RuntimeHero> affectedTargets = new List<RuntimeHero>();
+        private bool skipFirstTick = true;
+
+        public RuntimeDelayedSkillEffect(
+            RuntimeHero caster,
+            SkillData skill,
+            RuntimeHero primaryTarget,
+            IReadOnlyList<RuntimeHero> initialAffectedTargets,
+            SkillEffectData effect,
+            SkillEffectResolutionState resolutionState,
+            float delaySeconds)
+        {
+            Caster = caster;
+            Skill = skill;
+            PrimaryTarget = primaryTarget;
+            Effect = effect;
+            ResolutionState = resolutionState;
+            RemainingDelaySeconds = Mathf.Max(0f, delaySeconds);
+            if (initialAffectedTargets == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < initialAffectedTargets.Count; i++)
+            {
+                var target = initialAffectedTargets[i];
+                if (target != null)
+                {
+                    affectedTargets.Add(target);
+                }
+            }
+        }
+
+        public RuntimeHero Caster { get; }
+
+        public SkillData Skill { get; }
+
+        public RuntimeHero PrimaryTarget { get; }
+
+        public SkillEffectData Effect { get; }
+
+        public SkillEffectResolutionState ResolutionState { get; }
+
+        public IReadOnlyList<RuntimeHero> AffectedTargets => affectedTargets;
+
+        public float RemainingDelaySeconds { get; private set; }
+
+        public bool IsReady => !skipFirstTick && RemainingDelaySeconds <= 0f;
+
+        public void Tick(float deltaTime)
+        {
+            if (skipFirstTick)
+            {
+                skipFirstTick = false;
+                return;
+            }
+
+            RemainingDelaySeconds = Mathf.Max(0f, RemainingDelaySeconds - Mathf.Max(0f, deltaTime));
+        }
+    }
+
     public class BattleContext
     {
         public BattleContext(BattleInputConfig input, BattleClock clock, BattleScoreSystem scoreSystem, BattleRandomService randomService, BattleEventBus eventBus, List<RuntimeHero> heroes)
@@ -16,6 +99,7 @@ namespace Fight.Battle
             Heroes = heroes;
             Projectiles = new List<RuntimeBasicAttackProjectile>();
             SkillAreas = new List<RuntimeSkillArea>();
+            DelayedSkillEffects = new List<RuntimeDelayedSkillEffect>();
         }
 
         public BattleInputConfig Input { get; }
@@ -33,5 +117,7 @@ namespace Fight.Battle
         public List<RuntimeBasicAttackProjectile> Projectiles { get; }
 
         public List<RuntimeSkillArea> SkillAreas { get; }
+
+        public List<RuntimeDelayedSkillEffect> DelayedSkillEffects { get; }
     }
 }

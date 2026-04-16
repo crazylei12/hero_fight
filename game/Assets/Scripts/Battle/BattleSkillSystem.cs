@@ -16,22 +16,6 @@ namespace Fight.Battle
         private const float UltimateFirstFallbackBonus = 0.2f;
         private const float UltimateSecondFallbackBonus = 0.5f;
 
-        private readonly struct SkillEffectResolutionState
-        {
-            public SkillEffectResolutionState(Vector3 dashStartPosition, Vector3 dashDestination, bool hasDashPath)
-            {
-                DashStartPosition = dashStartPosition;
-                DashDestination = dashDestination;
-                HasDashPath = hasDashPath;
-            }
-
-            public Vector3 DashStartPosition { get; }
-
-            public Vector3 DashDestination { get; }
-
-            public bool HasDashPath { get; }
-        }
-
         public static bool TryCastSkill(BattleContext context, RuntimeHero caster, BattleManager battleManager)
         {
             if (context == null || caster == null || battleManager == null || caster.IsDead)
@@ -770,6 +754,33 @@ namespace Fight.Battle
                 battleManager);
         }
 
+        public static void TickDelayedSkillEffects(BattleContext context, float deltaTime, BattleManager battleManager)
+        {
+            if (context?.DelayedSkillEffects == null || battleManager == null)
+            {
+                return;
+            }
+
+            for (var i = context.DelayedSkillEffects.Count - 1; i >= 0; i--)
+            {
+                var delayedEffect = context.DelayedSkillEffects[i];
+                if (delayedEffect == null)
+                {
+                    context.DelayedSkillEffects.RemoveAt(i);
+                    continue;
+                }
+
+                delayedEffect.Tick(deltaTime);
+                if (!delayedEffect.IsReady)
+                {
+                    continue;
+                }
+
+                context.DelayedSkillEffects.RemoveAt(i);
+                ResolveDelayedSkillEffect(context, delayedEffect, battleManager);
+            }
+        }
+
         private static void BeginSkillCast(BattleContext context, RuntimeHero caster, SkillData skill, RuntimeHero primaryTarget, List<RuntimeHero> affectedTargets, BattleManager battleManager)
         {
             if (context == null || caster == null || skill == null || battleManager == null)
@@ -858,7 +869,6 @@ namespace Fight.Battle
 
             var resolutionState = CreateSkillEffectResolutionState(skill, caster, primaryTarget);
             var uniqueTargetIds = new HashSet<string>();
-            var uniqueNonCasterTargetIds = new HashSet<string>();
 
             for (var i = 0; i < skill.effects.Count; i++)
             {
@@ -872,16 +882,7 @@ namespace Fight.Battle
                     }
 
                     uniqueTargetIds.Add(target.RuntimeId);
-                    if (target != caster)
-                    {
-                        uniqueNonCasterTargetIds.Add(target.RuntimeId);
-                    }
                 }
-            }
-
-            if (uniqueNonCasterTargetIds.Count > 0)
-            {
-                return uniqueNonCasterTargetIds.Count;
             }
 
             return uniqueTargetIds.Count > 0
@@ -892,19 +893,21 @@ namespace Fight.Battle
         private static SkillEffectResolutionState CreateSkillEffectResolutionState(SkillData skill, RuntimeHero caster, RuntimeHero primaryTarget)
         {
             var dashStartPosition = caster != null ? caster.CurrentPosition : Vector3.zero;
-            if (caster == null || primaryTarget == null || !SkillUsesDashReposition(skill))
+            if (caster == null || primaryTarget == null || !TryGetDashRepositionEffect(skill, out var dashEffect))
             {
-                return new SkillEffectResolutionState(dashStartPosition, dashStartPosition, false);
+                return new SkillEffectResolutionState(dashStartPosition, dashStartPosition, 0f, false);
             }
 
             return new SkillEffectResolutionState(
                 dashStartPosition,
                 GetDashDestination(dashStartPosition, primaryTarget.CurrentPosition),
+                dashEffect.durationSeconds,
                 true);
         }
 
-        private static bool SkillUsesDashReposition(SkillData skill)
+        private static bool TryGetDashRepositionEffect(SkillData skill, out SkillEffectData dashEffect)
         {
+            dashEffect = null;
             if (skill?.effects == null)
             {
                 return false;
@@ -914,6 +917,7 @@ namespace Fight.Battle
             {
                 if (skill.effects[i] != null && skill.effects[i].effectType == SkillEffectType.RepositionNearPrimaryTarget)
                 {
+                    dashEffect = skill.effects[i];
                     return true;
                 }
             }
@@ -963,6 +967,25 @@ namespace Fight.Battle
             SkillEffectResolutionState resolutionState,
             BattleManager battleManager)
         {
+            if (ShouldDelaySkillEffect(effect, resolutionState))
+            {
+                ScheduleDelayedSkillEffect(context, caster, skill, primaryTarget, affectedTargets, effect, resolutionState);
+                return;
+            }
+
+            ExecuteSkillEffectNow(context, caster, skill, primaryTarget, affectedTargets, effect, resolutionState, battleManager);
+        }
+
+        private static void ExecuteSkillEffectNow(
+            BattleContext context,
+            RuntimeHero caster,
+            SkillData skill,
+            RuntimeHero primaryTarget,
+            List<RuntimeHero> affectedTargets,
+            SkillEffectData effect,
+            SkillEffectResolutionState resolutionState,
+            BattleManager battleManager)
+        {
             var effectTargets = ResolveEffectTargets(context, caster, skill, primaryTarget, affectedTargets, effect, resolutionState);
             switch (effect.effectType)
             {
@@ -988,6 +1011,61 @@ namespace Fight.Battle
                     CreatePersistentSkillArea(context, caster, skill, effect, primaryTarget);
                     break;
             }
+        }
+
+        private static bool ShouldDelaySkillEffect(SkillEffectData effect, SkillEffectResolutionState resolutionState)
+        {
+            return effect != null
+                && effect.targetMode == SkillEffectTargetMode.DashPathEnemies
+                && resolutionState.HasDashPath
+                && resolutionState.DashDurationSeconds > Mathf.Epsilon;
+        }
+
+        private static void ScheduleDelayedSkillEffect(
+            BattleContext context,
+            RuntimeHero caster,
+            SkillData skill,
+            RuntimeHero primaryTarget,
+            List<RuntimeHero> affectedTargets,
+            SkillEffectData effect,
+            SkillEffectResolutionState resolutionState)
+        {
+            if (context?.DelayedSkillEffects == null || effect == null)
+            {
+                return;
+            }
+
+            context.DelayedSkillEffects.Add(new RuntimeDelayedSkillEffect(
+                caster,
+                skill,
+                primaryTarget,
+                affectedTargets,
+                effect,
+                resolutionState,
+                resolutionState.DashDurationSeconds));
+        }
+
+        private static void ResolveDelayedSkillEffect(BattleContext context, RuntimeDelayedSkillEffect delayedEffect, BattleManager battleManager)
+        {
+            if (context == null
+                || delayedEffect?.Caster == null
+                || delayedEffect.Caster.IsDead
+                || delayedEffect.Skill == null
+                || delayedEffect.Effect == null
+                || battleManager == null)
+            {
+                return;
+            }
+
+            ExecuteSkillEffectNow(
+                context,
+                delayedEffect.Caster,
+                delayedEffect.Skill,
+                delayedEffect.PrimaryTarget,
+                CopyAliveTargets(delayedEffect.AffectedTargets),
+                delayedEffect.Effect,
+                delayedEffect.ResolutionState,
+                battleManager);
         }
 
         public static void ResolveSkillAreaPulse(BattleContext context, RuntimeSkillArea area, BattleManager battleManager)
