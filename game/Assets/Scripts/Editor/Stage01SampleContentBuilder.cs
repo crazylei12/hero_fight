@@ -96,7 +96,7 @@ namespace Fight.Editor
                 HeroTag.Melee, HeroTag.Dive, HeroTag.Burst);
 
             var tankActive = CreateStunSkill("skill_tank_active_shieldbash", "Shield Bash", SkillSlotType.ActiveSkill, 1.8f, 0f, 0.8f, 8f, 1f, overwriteExistingContent);
-            var tankUltimateSkill = CreateBuffSkill("skill_tank_ultimate_ironoath", "Iron Oath", SkillSlotType.Ultimate, SkillTargetType.AllAllies, 6f, 6f, 1f, 0f, StatusEffectType.DefenseModifier, 8f, 40f, overwriteExistingContent, out var tankUltimateExisted);
+            var tankUltimateSkill = CreateBuffSkill("skill_tank_ultimate_ironoath", "Iron Oath", SkillSlotType.Ultimate, SkillTargetType.AllAllies, 6f, 6f, 1f, 0f, StatusEffectType.DefenseModifier, 8f, 2f, overwriteExistingContent, out var tankUltimateExisted);
 
             var tank = CreateHero(
                 "tank_001_ironwall",
@@ -810,7 +810,7 @@ namespace Fight.Editor
             {
                 effectType = StatusEffectType.DefenseModifier,
                 durationSeconds = 8f,
-                magnitude = 40f,
+                magnitude = 2f,
                 maxStacks = 1,
                 refreshDurationOnReapply = true,
             });
