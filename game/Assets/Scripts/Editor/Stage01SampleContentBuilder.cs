@@ -35,7 +35,6 @@ namespace Fight.Editor
         private const string MageActiveAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FireMageEmberBurst.prefab";
         private const string MageUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FireMageMeteorField.prefab";
         private const string SunpriestProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/SunpriestBasicAttackProjectile.prefab";
-        private const string SunpriestHealImpactPrefabPath = "Assets/Prefabs/VFX/Shared/SunpriestHealImpact.prefab";
         private const string SunpriestUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/SunpriestSunBlessingField.prefab";
 
         [MenuItem(OpenMainMenuMenuPath)]
@@ -341,9 +340,7 @@ namespace Fight.Editor
             };
             hero.visualConfig.projectileAlignToMovement = heroId == "mage_001_firemage" || heroId == "support_001_sunpriest";
             hero.visualConfig.projectileEulerAngles = Vector3.zero;
-            hero.visualConfig.hitVfxPrefab = heroId == "support_001_sunpriest"
-                ? AssetDatabase.LoadAssetAtPath<GameObject>(SunpriestHealImpactPrefabPath)
-                : null;
+            hero.visualConfig.hitVfxPrefab = null;
             EditorUtility.SetDirty(hero);
             return hero;
         }

@@ -432,9 +432,9 @@
 
 补充说明：
 
-- `hitVfxPrefab` 当前可作为“默认目标命中特效 / 治疗命中特效”的通用资源入口
-- `BattleView` 在收到 `HealAppliedEvent` 时，会优先尝试播放施法者 `HeroVisualConfig.hitVfxPrefab`
-- 这条路径适合后续治疗英雄复用“身上闪一下”的通用治疗表现，不要求每个英雄都补专用 controller
+- `hitVfxPrefab` 当前更适合作为“默认目标命中特效”这类按英雄表现配置的资源入口
+- `BattleView` 在收到 `HealAppliedEvent` 时，当前优先尝试播放共享资源路径 `Assets/Resources/Stage01Demo/VFX/Shared/HealReceivedImpact.prefab`
+- 这条路径用于后续所有“英雄受到治疗”时统一复用同一套身上闪效，不要求每个治疗英雄都单独配置自己的受治疗特效
 
 ## 护盾与治疗表现的当前规则
 
@@ -451,7 +451,7 @@
 对后续 AI 的要求：
 
 - 如果只是普通护盾，不要默认再做一个角色环绕 loop 特效
-- 如果后续英雄也要复用治疗身上特效，优先继续走 `HeroVisualConfig.hitVfxPrefab` + 项目内 shared prefab 的路径
+- 如果后续英雄也要复用治疗身上特效，优先继续走“共享 runtime prefab + `HealAppliedEvent` 统一触发”的路径
 - 如果某个护盾确实需要额外辨识度，再在“盾量条”之上补少量附加表现，而不是拿附着特效替代盾量读数
 
 ## 单位附着状态特效的当前规则
@@ -635,7 +635,8 @@
   - 大招仍是持续范围治疗
 - 表现层
   - 普攻飞行物使用项目专用 prefab：`Assets/Prefabs/VFX/Projectiles/SunpriestBasicAttackProjectile.prefab`
-  - 受治疗身上闪效使用项目专用 shared prefab：`Assets/Prefabs/VFX/Shared/SunpriestHealImpact.prefab`
+  - 受治疗身上闪效的工程源 prefab 当前仍整理在：`Assets/Prefabs/VFX/Shared/SunpriestHealImpact.prefab`
+  - 运行时统一复用的受治疗闪效当前由：`Assets/Resources/Stage01Demo/VFX/Shared/HealReceivedImpact.prefab` 提供
   - 护盾不默认做角色附着 loop，而是通过 `BattleView` 的血条右侧盾量段表现
   - 大招范围治疗使用项目专用 prefab：`Assets/Prefabs/VFX/Skills/SunpriestSunBlessingField.prefab`
 
