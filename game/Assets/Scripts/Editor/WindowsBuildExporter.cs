@@ -8,11 +8,9 @@ namespace Fight.Editor
 {
     public static class WindowsBuildExporter
     {
-        private const string MenuPath = "Fight/Build/Export Windows Player";
         private const string BuildRoot = "Builds/Windows";
         private const string ExecutableName = "FightStage01.exe";
 
-        [MenuItem(MenuPath)]
         public static void ExportWindowsPlayer()
         {
             var projectRoot = Directory.GetParent(Application.dataPath)?.FullName ?? Application.dataPath;
