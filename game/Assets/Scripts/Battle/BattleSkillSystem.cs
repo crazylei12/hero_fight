@@ -319,6 +319,7 @@ namespace Fight.Battle
         {
             var targetAllies = skill.targetType == SkillTargetType.LowestHealthAlly
                 || skill.skillType == SkillType.SingleTargetHeal
+                || skill.skillType == SkillType.AreaHeal
                 || skill.skillType == SkillType.Buff;
             if (targetAllies)
             {
@@ -335,7 +336,7 @@ namespace Fight.Battle
                 return affectedTargets.Count >= Mathf.Max(2, skill.minTargetsToCast);
             }
 
-            if (skill.skillType == SkillType.SingleTargetHeal || skill.skillType == SkillType.Buff)
+            if (skill.skillType == SkillType.SingleTargetHeal || skill.skillType == SkillType.AreaHeal || skill.skillType == SkillType.Buff)
             {
                 return affectedTargets.Count > 0;
             }
@@ -715,6 +716,7 @@ namespace Fight.Battle
                     ApplyDamageToTargets(context, caster, skill, CreateLegacyDamageEffect(skill), affectedTargets, battleManager);
                     break;
                 case SkillType.SingleTargetHeal:
+                case SkillType.AreaHeal:
                     ApplyHealToTargets(context, caster, skill, CreateLegacyHealEffect(skill), affectedTargets);
                     break;
                 case SkillType.Buff:
@@ -749,7 +751,7 @@ namespace Fight.Battle
                         RepositionForDash(caster, primaryTarget);
                     }
                     break;
-                case SkillEffectType.PersistentAreaDamage:
+                case SkillEffectType.CreatePersistentArea:
                     CreatePersistentSkillArea(context, caster, skill, effect, primaryTarget);
                     break;
             }
@@ -764,7 +766,24 @@ namespace Fight.Battle
 
             var targets = CollectAreaTargets(context, area.Caster, area.CurrentCenter, area.Skill, area.Effect);
             context.EventBus.Publish(new SkillAreaPulseEvent(area.Caster, area.Skill, area, targets.Count));
-            ApplyDamageToTargets(context, area.Caster, area.Skill, area.Effect, targets, battleManager, DamageSourceKind.SkillAreaPulse);
+            switch (area.Effect.persistentAreaPulseEffectType)
+            {
+                case PersistentAreaPulseEffectType.DirectHeal:
+                    ApplyHealToTargets(context, area.Caster, area.Skill, area.Effect, targets);
+                    if (HasStatusPayload(area.Effect))
+                    {
+                        ApplyStatusEffectsToTargets(context, area.Caster, area.Skill, area.Effect, targets);
+                    }
+
+                    break;
+                case PersistentAreaPulseEffectType.None:
+                    ApplyStatusEffectsToTargets(context, area.Caster, area.Skill, area.Effect, targets);
+                    break;
+                case PersistentAreaPulseEffectType.DirectDamage:
+                default:
+                    ApplyDamageToTargets(context, area.Caster, area.Skill, area.Effect, targets, battleManager, DamageSourceKind.SkillAreaPulse);
+                    break;
+            }
         }
 
         private static void ApplyHealToTargets(BattleContext context, RuntimeHero caster, SkillData skill, SkillEffectData effect, List<RuntimeHero> targets)
@@ -833,7 +852,12 @@ namespace Fight.Battle
             for (var i = 0; i < context.Heroes.Count; i++)
             {
                 var candidate = context.Heroes[i];
-                if (candidate.IsDead || candidate.Side == caster.Side)
+                if (candidate.IsDead)
+                {
+                    continue;
+                }
+
+                if (!IsValidPersistentAreaTarget(caster, candidate, effect))
                 {
                     continue;
                 }
@@ -904,6 +928,26 @@ namespace Fight.Battle
             }
 
             return skill != null ? skill.areaRadius : 0f;
+        }
+
+        private static bool HasStatusPayload(SkillEffectData effect)
+        {
+            return effect?.statusEffects != null && effect.statusEffects.Count > 0;
+        }
+
+        private static bool IsValidPersistentAreaTarget(RuntimeHero caster, RuntimeHero candidate, SkillEffectData effect)
+        {
+            if (caster == null || candidate == null || effect == null)
+            {
+                return false;
+            }
+
+            return effect.persistentAreaTargetType switch
+            {
+                PersistentAreaTargetType.Allies => candidate.Side == caster.Side,
+                PersistentAreaTargetType.Both => true,
+                _ => candidate.Side != caster.Side,
+            };
         }
 
         private static SkillEffectData CreateLegacyDamageEffect(SkillData skill)

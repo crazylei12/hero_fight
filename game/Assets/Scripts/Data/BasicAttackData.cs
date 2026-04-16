@@ -3,6 +3,18 @@ using UnityEngine;
 
 namespace Fight.Data
 {
+    public enum BasicAttackEffectType
+    {
+        Damage = 0,
+        Heal = 1,
+    }
+
+    public enum BasicAttackTargetType
+    {
+        NearestEnemy = 0,
+        LowestHealthAlly = 1,
+    }
+
     [Serializable]
     public class BasicAttackData
     {
@@ -12,5 +24,7 @@ namespace Fight.Data
         [Min(0f)] public float rangeOverride = 0f;
         public bool usesProjectile;
         [Min(0f)] public float projectileSpeed = 0f;
+        public BasicAttackEffectType effectType = BasicAttackEffectType.Damage;
+        public BasicAttackTargetType targetType = BasicAttackTargetType.NearestEnemy;
     }
 }

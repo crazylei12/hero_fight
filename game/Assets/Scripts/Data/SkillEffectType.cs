@@ -6,6 +6,6 @@ namespace Fight.Data
         DirectHeal = 1,
         ApplyStatusEffects = 2,
         RepositionNearPrimaryTarget = 3,
-        PersistentAreaDamage = 4,
+        CreatePersistentArea = 4,
     }
 }

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_support_active_heal
   displayName: Radiant Heal
-  description: 'Stage-01 demo skill: Radiant Heal'
+  description: 'Stage-01 demo skill: single-target heal plus shield.'
   slotType: 0
   skillType: 2
   targetType: 4
@@ -24,12 +24,25 @@ MonoBehaviour:
   minTargetsToCast: 1
   effects:
   - effectType: 1
-    powerMultiplier: 1.5
+    powerMultiplier: 1.35
     radiusOverride: 0
     durationSeconds: 0
     tickIntervalSeconds: 1
     followCaster: 0
     statusEffects: []
+  - effectType: 2
+    powerMultiplier: 0
+    radiusOverride: 0
+    durationSeconds: 0
+    tickIntervalSeconds: 1
+    followCaster: 0
+    statusEffects:
+    - effectType: 15
+      durationSeconds: 4
+      magnitude: 45
+      tickIntervalSeconds: 1
+      maxStacks: 1
+      refreshDurationOnReapply: 1
   allowsSelfCast: 0
   persistentAreaVfxPrefab: {fileID: 0}
   persistentAreaVfxScaleMultiplier: 1

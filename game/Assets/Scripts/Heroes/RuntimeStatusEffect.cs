@@ -27,7 +27,7 @@ namespace Fight.Heroes
 
         public float RemainingDurationSeconds { get; private set; }
 
-        public float Magnitude { get; }
+        public float Magnitude { get; private set; }
 
         public float TickIntervalSeconds { get; private set; }
 
@@ -68,8 +68,27 @@ namespace Fight.Heroes
         public void Refresh(StatusEffectData data)
         {
             RemainingDurationSeconds = data.durationSeconds;
+            Magnitude = data.magnitude;
             TickIntervalSeconds = Mathf.Max(0.1f, data.tickIntervalSeconds);
             TimeUntilNextTickSeconds = 0f;
+        }
+
+        public float ConsumeMagnitude(float amount)
+        {
+            if (amount <= 0f || Magnitude <= 0f)
+            {
+                return 0f;
+            }
+
+            var consumed = Mathf.Min(Magnitude, amount);
+            Magnitude -= consumed;
+            if (Magnitude <= 0f)
+            {
+                Magnitude = 0f;
+                RemainingDurationSeconds = 0f;
+            }
+
+            return consumed;
         }
 
         public bool IsExpired => RemainingDurationSeconds <= 0f;

@@ -95,16 +95,56 @@ namespace Fight.Battle
 
         private static RuntimeHero SelectTargetIfNeeded(BattleContext context, RuntimeHero hero)
         {
-            if (hero.CurrentTarget != null && !hero.CurrentTarget.IsDead && hero.CurrentTarget.CanBeDirectTargeted)
+            if (!RequiresBasicAttackRetarget(hero) && IsCurrentTargetValid(hero, hero.CurrentTarget))
             {
                 return hero.CurrentTarget;
             }
 
-            var nearestEnemy = BattleAiDirector.SelectPreferredEnemyTarget(context.Heroes, hero, 999f);
+            var nextTarget = SelectPreferredBasicAttackTarget(context, hero);
+            if (nextTarget != hero.CurrentTarget)
+            {
+                hero.SetTarget(nextTarget);
+                context.EventBus.Publish(new TargetChangedEvent(hero, nextTarget));
+            }
+            else
+            {
+                hero.SetTarget(nextTarget);
+            }
 
-            hero.SetTarget(nearestEnemy);
-            context.EventBus.Publish(new TargetChangedEvent(hero, nearestEnemy));
-            return nearestEnemy;
+            return nextTarget;
+        }
+
+        private static RuntimeHero SelectPreferredBasicAttackTarget(BattleContext context, RuntimeHero hero)
+        {
+            if (context == null || hero?.Definition == null)
+            {
+                return null;
+            }
+
+            return hero.Definition.basicAttack.targetType switch
+            {
+                BasicAttackTargetType.LowestHealthAlly => BattleAiDirector.SelectPreferredAllyTarget(context.Heroes, hero, 999f, allowHealthyFallback: true),
+                _ => BattleAiDirector.SelectPreferredEnemyTarget(context.Heroes, hero, 999f),
+            };
+        }
+
+        private static bool RequiresBasicAttackRetarget(RuntimeHero hero)
+        {
+            return hero?.Definition?.basicAttack.targetType == BasicAttackTargetType.LowestHealthAlly;
+        }
+
+        private static bool IsCurrentTargetValid(RuntimeHero hero, RuntimeHero target)
+        {
+            if (hero?.Definition == null || target == null || target.IsDead)
+            {
+                return false;
+            }
+
+            return hero.Definition.basicAttack.targetType switch
+            {
+                BasicAttackTargetType.LowestHealthAlly => target.Side == hero.Side && (target == hero || target.CanBeDirectTargeted),
+                _ => target.Side != hero.Side && target.CanBeDirectTargeted,
+            };
         }
 
         private static void MoveTowardTarget(RuntimeHero hero, RuntimeHero target, float deltaTime)

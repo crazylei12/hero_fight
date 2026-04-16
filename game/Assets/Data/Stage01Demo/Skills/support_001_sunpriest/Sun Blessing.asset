@@ -14,27 +14,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_support_ultimate_blessing
   displayName: Sun Blessing
-  description: 'Stage-01 demo skill: Sun Blessing'
+  description: 'Stage-01 demo skill: persistent allied healing field.'
   slotType: 1
-  skillType: 3
+  skillType: 6
   targetType: 4
   castRange: 6
-  areaRadius: 0
+  areaRadius: 5
   cooldownSeconds: 14
-  minTargetsToCast: 1
+  minTargetsToCast: 2
   effects:
-  - effectType: 2
-    powerMultiplier: 1
-    radiusOverride: 0
-    durationSeconds: 0
+  - effectType: 4
+    powerMultiplier: 0.65
+    radiusOverride: 5
+    durationSeconds: 5
     tickIntervalSeconds: 1
     followCaster: 0
-    statusEffects:
-    - effectType: 4
-      durationSeconds: 4
-      magnitude: 0.35
-      maxStacks: 1
-      refreshDurationOnReapply: 1
+    persistentAreaPulseEffectType: 2
+    persistentAreaTargetType: 1
+    statusEffects: []
   allowsSelfCast: 0
   persistentAreaVfxPrefab: {fileID: 0}
   persistentAreaVfxScaleMultiplier: 1
@@ -44,15 +41,15 @@ MonoBehaviour:
     targetingType: 3
     primaryCondition:
       conditionType: 4
-      searchRadius: 6
+      searchRadius: 5
       requiredUnitCount: 1
-      healthPercentThreshold: 0.4
+      healthPercentThreshold: 0.55
       durationSeconds: 0
       highValueTargetType: 0
       requireTargetInCastRange: 1
     secondaryCondition:
       conditionType: 2
-      searchRadius: 6
+      searchRadius: 5
       requiredUnitCount: 2
       healthPercentThreshold: 1
       durationSeconds: 0
@@ -62,8 +59,8 @@ MonoBehaviour:
       fallbackType: 1
       triggerAfterSeconds: 30
       overrideRequiredUnitCount: 0
-      overrideHealthPercentThreshold: 0.55
+      overrideHealthPercentThreshold: 0.7
       secondaryTriggerAfterSeconds: 45
       secondaryOverrideRequiredUnitCount: 0
-      secondaryOverrideHealthPercentThreshold: 0.75
+      secondaryOverrideHealthPercentThreshold: 0.85
     combineMode: 1

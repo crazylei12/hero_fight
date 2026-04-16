@@ -19,7 +19,7 @@ namespace Fight.Battle
             for (var i = context.Projectiles.Count - 1; i >= 0; i--)
             {
                 var projectile = context.Projectiles[i];
-                if (projectile.Target == null || projectile.Target.IsDead || !projectile.Target.CanBeDirectTargeted)
+                if (!IsValidTarget(projectile.Attacker, projectile.Target))
                 {
                     context.Projectiles.RemoveAt(i);
                     continue;
@@ -33,7 +33,7 @@ namespace Fight.Battle
                 if (distanceToTarget <= ProjectileHitDistance || step >= distanceToTarget)
                 {
                     projectile.CurrentPosition = targetPosition;
-                    ResolveHit(context, projectile.Attacker, projectile.Target, projectile.DamageAmount, battleManager);
+                    ResolveHit(context, projectile.Attacker, projectile.Target, projectile.ImpactAmount, projectile.EffectType, battleManager);
                     context.Projectiles.RemoveAt(i);
                     continue;
                 }
@@ -49,7 +49,7 @@ namespace Fight.Battle
                 return;
             }
 
-            if (!target.CanBeDirectTargeted)
+            if (!IsValidTarget(attacker, target))
             {
                 return;
             }
@@ -57,24 +57,28 @@ namespace Fight.Battle
             attacker.StartAttackCooldown();
             context.EventBus.Publish(new AttackPerformedEvent(attacker, target));
 
-            var damage = DamageResolver.ResolveDamage(
-                attacker.AttackPower,
-                attacker.CriticalChance,
-                attacker.CriticalDamageMultiplier,
-                target.Defense,
-                context.RandomService,
-                attacker.Definition.basicAttack.damageMultiplier);
+            var basicAttack = attacker.Definition.basicAttack;
+            var effectType = basicAttack.effectType;
+            var impactAmount = effectType == BasicAttackEffectType.Heal
+                ? HealResolver.ResolveHealAmount(attacker, basicAttack.damageMultiplier)
+                : DamageResolver.ResolveDamage(
+                    attacker.AttackPower,
+                    attacker.CriticalChance,
+                    attacker.CriticalDamageMultiplier,
+                    target.Defense,
+                    context.RandomService,
+                    basicAttack.damageMultiplier);
 
-            if (attacker.Definition.basicAttack.usesProjectile)
+            if (basicAttack.usesProjectile)
             {
-                LaunchProjectile(context, attacker, target, damage);
+                LaunchProjectile(context, attacker, target, impactAmount, effectType);
                 return;
             }
 
-            ResolveHit(context, attacker, target, damage, battleManager);
+            ResolveHit(context, attacker, target, impactAmount, effectType, battleManager);
         }
 
-        private static void LaunchProjectile(BattleContext context, RuntimeHero attacker, RuntimeHero target, float damage)
+        private static void LaunchProjectile(BattleContext context, RuntimeHero attacker, RuntimeHero target, float impactAmount, BasicAttackEffectType effectType)
         {
             var projectileId = $"basic_attack_{projectileSequence++}";
             var projectile = new RuntimeBasicAttackProjectile(
@@ -83,20 +87,34 @@ namespace Fight.Battle
                 target,
                 attacker.CurrentPosition,
                 attacker.Definition.basicAttack.projectileSpeed,
-                damage);
+                impactAmount,
+                effectType);
 
             context.Projectiles.Add(projectile);
             context.EventBus.Publish(new BasicAttackProjectileLaunchedEvent(projectile));
         }
 
-        private static void ResolveHit(BattleContext context, RuntimeHero attacker, RuntimeHero target, float damage, BattleManager battleManager)
+        private static void ResolveHit(BattleContext context, RuntimeHero attacker, RuntimeHero target, float impactAmount, BasicAttackEffectType effectType, BattleManager battleManager)
         {
-            if (target == null || target.IsDead || !target.CanBeDirectTargeted)
+            if (!IsValidTarget(attacker, target))
             {
                 return;
             }
 
-            var actualDamage = target.ApplyDamage(damage);
+            if (effectType == BasicAttackEffectType.Heal)
+            {
+                var actualHeal = target.ApplyHealing(impactAmount);
+                if (actualHeal <= 0f)
+                {
+                    return;
+                }
+
+                attacker?.RecordHealing(actualHeal);
+                context.EventBus.Publish(new HealAppliedEvent(attacker, target, actualHeal, null, target.CurrentHealth));
+                return;
+            }
+
+            var actualDamage = target.ApplyDamage(impactAmount);
             if (actualDamage <= 0f)
             {
                 return;
@@ -122,6 +140,20 @@ namespace Fight.Battle
                     battleManager.RegisterKill(attacker.Side);
                 }
             }
+        }
+
+        private static bool IsValidTarget(RuntimeHero attacker, RuntimeHero target)
+        {
+            if (attacker?.Definition == null || target == null || target.IsDead)
+            {
+                return false;
+            }
+
+            return attacker.Definition.basicAttack.targetType switch
+            {
+                BasicAttackTargetType.LowestHealthAlly => target.Side == attacker.Side && (target == attacker || target.CanBeDirectTargeted),
+                _ => target.Side != attacker.Side && target.CanBeDirectTargeted,
+            };
         }
     }
 }
