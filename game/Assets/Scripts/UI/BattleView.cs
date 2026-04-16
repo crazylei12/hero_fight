@@ -22,8 +22,11 @@ namespace Fight.UI
         private const float HealthBarWidth = 0.9f;
         private const float HealthBarBackgroundHeight = 0.11f;
         private const float HealthBarFillHeight = 0.07f;
+        private const float ShieldBarGap = 0.04f;
         private const float ArenaBackgroundHeight = Stage01ArenaSpec.HeightWorldUnits;
         private const float MinAirborneEffectHeight = 0.12f;
+        private const float DefaultTransientVfxLifetime = 1f;
+        private const int HealEventVfxSortOrderOffset = 190;
         private static readonly Dictionary<StatusEffectType, StatusEffectVfxConfig> StatusEffectVfxConfigs = new Dictionary<StatusEffectType, StatusEffectVfxConfig>
         {
             { StatusEffectType.Stun, new StatusEffectVfxConfig(StunStatusLoopVfxResourcesPath, new Vector3(0f, 1.1f, 0f), Vector3.one * 0.85f, Vector3.zero, 180) },
@@ -37,6 +40,7 @@ namespace Fight.UI
         [SerializeField] private Color prefabHitFlashColor = new Color(1f, 0.2f, 0.2f, 1f);
         [SerializeField] private float prefabHitFlashDuration = 0.16f;
         [SerializeField] private float prefabHitFlashStrength = 0.82f;
+        [SerializeField] private Color shieldBarColor = new Color(1f, 0.9f, 0.42f, 0.98f);
         [SerializeField] private Color projectileTint = new Color(1f, 0.91f, 0.47f);
         [SerializeField] private Color skillAreaTint = new Color(0.98f, 0.42f, 0.24f, 0.22f);
         [SerializeField] private float skillAreaPulseStrength = 0.12f;
@@ -94,6 +98,7 @@ namespace Fight.UI
             public Transform StatusEffectRoot;
             public SpriteRenderer HealthBack;
             public SpriteRenderer HealthFill;
+            public SpriteRenderer ShieldFill;
             public SpriteRenderer UltimateIcon;
             public HeroEditor4DBattleAnimationDriver AnimationDriver;
             public Vector3 ShadowBaseScale = Vector3.one;
@@ -122,6 +127,7 @@ namespace Fight.UI
             public GameObject EffectInstance;
             public SortingGroup EffectSortingGroup;
             public Animator[] EffectAnimators;
+            public ParticleSystem[] EffectParticleSystems;
             public Renderer[] EffectRenderers;
             public Vector3 BaseEffectScale = Vector3.one;
             public SkillAreaPresentationController CustomController;
@@ -275,6 +281,14 @@ namespace Fight.UI
                 UpdateHealthFill(view.HealthFill, ratio, healthColor);
             }
 
+            if (view.ShieldFill != null)
+            {
+                var shieldRatio = hero.MaxHealth > 0f
+                    ? Mathf.Clamp01(StatusEffectSystem.GetTotalShield(hero) / hero.MaxHealth)
+                    : 0f;
+                UpdateShieldFill(view.ShieldFill, shieldRatio, shieldBarColor);
+            }
+
             if (view.UltimateIcon != null)
             {
                 var ultimateColor = hero.HasCastUltimate
@@ -361,7 +375,9 @@ namespace Fight.UI
             view.HealthBack = MakeSprite("HealthBack", view.FootUiRoot, squareSprite, new Color(0.08f, 0.1f, 0.12f, 0.92f), 300, Vector3.zero, new Vector3(HealthBarWidth, HealthBarBackgroundHeight, 1f));
             view.HealthFill = MakeSprite("HealthFill", view.FootUiRoot, squareSprite, Color.green, 301, Vector3.zero, new Vector3(HealthBarWidth, HealthBarFillHeight, 1f));
             UpdateHealthFill(view.HealthFill, 1f, Color.green);
-            view.UltimateIcon = MakeSprite("UltimateIcon", view.FootUiRoot, squareSprite, new Color(1f, 0.9f, 0.36f, 0.98f), 302, new Vector3(-0.58f, 0f, 0f), new Vector3(0.16f, 0.16f, 1f));
+            view.ShieldFill = MakeSprite("ShieldFill", view.FootUiRoot, squareSprite, shieldBarColor, 302, Vector3.zero, new Vector3(0f, HealthBarFillHeight, 1f));
+            UpdateShieldFill(view.ShieldFill, 0f, shieldBarColor);
+            view.UltimateIcon = MakeSprite("UltimateIcon", view.FootUiRoot, squareSprite, new Color(1f, 0.9f, 0.36f, 0.98f), 303, new Vector3(-0.58f, 0f, 0f), new Vector3(0.16f, 0.16f, 1f));
             view.UltimateIcon.transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
             return view;
         }
@@ -379,6 +395,21 @@ namespace Fight.UI
             healthFill.transform.localPosition = new Vector3((currentWidth - HealthBarWidth) * 0.5f, 0f, 0f);
             healthFill.color = color;
             healthFill.enabled = clampedRatio > 0f;
+        }
+
+        private static void UpdateShieldFill(SpriteRenderer shieldFill, float ratio, Color color)
+        {
+            if (shieldFill == null)
+            {
+                return;
+            }
+
+            var clampedRatio = Mathf.Clamp01(ratio);
+            var currentWidth = HealthBarWidth * clampedRatio;
+            shieldFill.transform.localScale = new Vector3(currentWidth, HealthBarFillHeight, 1f);
+            shieldFill.transform.localPosition = new Vector3((HealthBarWidth * 0.5f) + ShieldBarGap + (currentWidth * 0.5f), 0f, 0f);
+            shieldFill.color = color;
+            shieldFill.enabled = clampedRatio > 0f;
         }
 
         private void UpdateDeathVisibility(RuntimeHero hero, HeroViewState view)
@@ -1365,6 +1396,13 @@ namespace Fight.UI
                 RestartStatusEffectView(statusEffectView);
             }
 
+            if (battleEvent is HealAppliedEvent healAppliedEvent
+                && healAppliedEvent.Target != null
+                && healAppliedEvent.HealAmount > 0f)
+            {
+                PlayHealImpactVfx(healAppliedEvent);
+            }
+
             foreach (var driver in heroAnimationDrivers.Values)
             {
                 if (driver != null)
@@ -1415,6 +1453,103 @@ namespace Fight.UI
             }
         }
 
+        private void PlayHealImpactVfx(HealAppliedEvent healAppliedEvent)
+        {
+            if (healAppliedEvent?.Caster?.Definition?.visualConfig?.hitVfxPrefab == null
+                || !heroViews.TryGetValue(healAppliedEvent.Target.RuntimeId, out var targetView))
+            {
+                return;
+            }
+
+            SpawnTransientHeroVfx(targetView, healAppliedEvent.Caster.Definition.visualConfig.hitVfxPrefab, Vector3.zero, HealEventVfxSortOrderOffset);
+        }
+
+        private void SpawnTransientHeroVfx(HeroViewState heroView, GameObject prefab, Vector3 localOffset, int sortingOrderOffset)
+        {
+            if (heroView?.Root == null || prefab == null)
+            {
+                return;
+            }
+
+            var parent = heroView.StatusEffectRoot != null ? heroView.StatusEffectRoot : heroView.VisualRoot;
+            if (parent == null)
+            {
+                return;
+            }
+
+            var instance = Instantiate(prefab, parent);
+            instance.name = $"{prefab.name}_Transient";
+            instance.transform.localPosition += localOffset;
+            RemovePrefabPhysics(instance);
+
+            var sortingGroup = instance.GetComponent<SortingGroup>();
+            if (sortingGroup == null)
+            {
+                sortingGroup = instance.AddComponent<SortingGroup>();
+            }
+
+            sortingGroup.sortingOrder = (heroView.SortingGroup != null ? heroView.SortingGroup.sortingOrder : HeroSortBase) + sortingOrderOffset;
+            Destroy(instance, GetTransientVfxLifetime(instance));
+        }
+
+        private static float GetTransientVfxLifetime(GameObject instance)
+        {
+            if (instance == null)
+            {
+                return DefaultTransientVfxLifetime;
+            }
+
+            var lifetime = DefaultTransientVfxLifetime;
+            var particleSystems = instance.GetComponentsInChildren<ParticleSystem>(true);
+            for (var i = 0; i < particleSystems.Length; i++)
+            {
+                var particleSystem = particleSystems[i];
+                if (particleSystem == null)
+                {
+                    continue;
+                }
+
+                var main = particleSystem.main;
+                lifetime = Mathf.Max(lifetime, main.duration + GetParticleCurveMax(main.startLifetime));
+            }
+
+            var animators = instance.GetComponentsInChildren<Animator>(true);
+            for (var i = 0; i < animators.Length; i++)
+            {
+                var animator = animators[i];
+                var controller = animator != null ? animator.runtimeAnimatorController : null;
+                if (controller == null)
+                {
+                    continue;
+                }
+
+                var clips = controller.animationClips;
+                for (var clipIndex = 0; clipIndex < clips.Length; clipIndex++)
+                {
+                    if (clips[clipIndex] != null)
+                    {
+                        lifetime = Mathf.Max(lifetime, clips[clipIndex].length);
+                    }
+                }
+            }
+
+            return Mathf.Clamp(lifetime + 0.08f, 0.15f, 4f);
+        }
+
+        private static float GetParticleCurveMax(ParticleSystem.MinMaxCurve curve)
+        {
+            return curve.mode switch
+            {
+                ParticleSystemCurveMode.Constant => curve.constant,
+                ParticleSystemCurveMode.TwoConstants => Mathf.Max(curve.constantMin, curve.constantMax),
+                ParticleSystemCurveMode.Curve => curve.curve != null && curve.curve.length > 0 ? curve.curve.keys[curve.curve.length - 1].value : 0f,
+                ParticleSystemCurveMode.TwoCurves => Mathf.Max(
+                    curve.curveMin != null && curve.curveMin.length > 0 ? curve.curveMin.keys[curve.curveMin.length - 1].value : 0f,
+                    curve.curveMax != null && curve.curveMax.length > 0 ? curve.curveMax.keys[curve.curveMax.length - 1].value : 0f),
+                _ => 0f,
+            };
+        }
+
         private void CreateSkillAreaEffect(RuntimeSkillArea area, SkillAreaViewState viewState)
         {
             if (!HasSkillAreaEffectPrefab(area) || viewState == null)
@@ -1440,6 +1575,7 @@ namespace Fight.UI
             }
 
             viewState.EffectAnimators = instance.GetComponentsInChildren<Animator>(true);
+            viewState.EffectParticleSystems = instance.GetComponentsInChildren<ParticleSystem>(true);
             viewState.EffectRenderers = instance.GetComponentsInChildren<Renderer>(true);
             viewState.BaseEffectScale = instance.transform.localScale;
             RestartSkillAreaEffect(viewState);
@@ -1497,25 +1633,39 @@ namespace Fight.UI
             if (viewState?.CustomController != null)
             {
                 viewState.CustomController.RestartPulse();
-                return;
             }
 
-            if (viewState?.EffectAnimators == null)
+            if (viewState?.EffectAnimators != null)
+            {
+                for (var i = 0; i < viewState.EffectAnimators.Length; i++)
+                {
+                    var animator = viewState.EffectAnimators[i];
+                    if (animator == null)
+                    {
+                        continue;
+                    }
+
+                    animator.Rebind();
+                    animator.Update(0f);
+                    animator.Play(0, 0, 0f);
+                }
+            }
+
+            if (viewState?.EffectParticleSystems == null)
             {
                 return;
             }
 
-            for (var i = 0; i < viewState.EffectAnimators.Length; i++)
+            for (var i = 0; i < viewState.EffectParticleSystems.Length; i++)
             {
-                var animator = viewState.EffectAnimators[i];
-                if (animator == null)
+                var particleSystem = viewState.EffectParticleSystems[i];
+                if (particleSystem == null)
                 {
                     continue;
                 }
 
-                animator.Rebind();
-                animator.Update(0f);
-                animator.Play(0, 0, 0f);
+                particleSystem.Clear(true);
+                particleSystem.Play(true);
             }
         }
 

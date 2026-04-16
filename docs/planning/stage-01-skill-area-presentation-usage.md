@@ -415,6 +415,7 @@
 - `projectilePrefab`
 - `projectileAlignToMovement`
 - `projectileEulerAngles`
+- `hitVfxPrefab`
 - 后续若需要扩展，可继续通过 hero visual config 增加表现资源入口
 
 `RuntimeBasicAttackProjectile` 当前真正驱动飞行物逻辑的核心参数包括：
@@ -428,6 +429,30 @@
 - 普攻的命中时间、速度、目标追踪仍由战斗逻辑决定
 - 表现层不能自行改伤害、改命中时机、改飞行速度
 - 对顶视角战斗，优先让 prefab 或薄驱动去适配逻辑轨迹，而不是反过来让特效决定轨迹
+
+补充说明：
+
+- `hitVfxPrefab` 当前可作为“默认目标命中特效 / 治疗命中特效”的通用资源入口
+- `BattleView` 在收到 `HealAppliedEvent` 时，会优先尝试播放施法者 `HeroVisualConfig.hitVfxPrefab`
+- 这条路径适合后续治疗英雄复用“身上闪一下”的通用治疗表现，不要求每个英雄都补专用 controller
+
+## 护盾与治疗表现的当前规则
+
+当前第一阶段把“护盾”和“受治疗反馈”区分为两类不同表现：
+
+- `护盾`
+  - 默认优先做成 HUD/脚下 UI 可读信息，而不是角色身上的长期环绕特效
+  - 当前规则是：血条右侧额外增加一段盾量条，长度按当前盾量相对最大生命值换算
+  - 盾量来源仍完全由 `StatusEffectType.Shield` 的运行时剩余值决定
+- `治疗`
+  - 默认优先做成角色身上的短时 one-shot 特效
+  - 表现层只在收到 `HealAppliedEvent` 时播放，不反向决定治疗是否生效、治疗数值或治疗时机
+
+对后续 AI 的要求：
+
+- 如果只是普通护盾，不要默认再做一个角色环绕 loop 特效
+- 如果后续英雄也要复用治疗身上特效，优先继续走 `HeroVisualConfig.hitVfxPrefab` + 项目内 shared prefab 的路径
+- 如果某个护盾确实需要额外辨识度，再在“盾量条”之上补少量附加表现，而不是拿附着特效替代盾量读数
 
 ## 单位附着状态特效的当前规则
 
@@ -596,9 +621,23 @@
   - 命中判定、目标追踪、速度仍由 `BattleBasicAttackSystem` 驱动
   - 当前 projectile speed 为 `14`
 - 表现层
-  - 当前直接使用项目专用 prefab：`Assets/Prefabs/VFX/Projectiles/FireMageBasicAttackProjectile.prefab`
-  - 程序侧只保留通用的移动同步、排序和按方向旋转
-  - 资源包里的 missile、spark、fire trail prefab 只作为该 prefab 的素材来源
+- 当前直接使用项目专用 prefab：`Assets/Prefabs/VFX/Projectiles/FireMageBasicAttackProjectile.prefab`
+- 程序侧只保留通用的移动同步、排序和按方向旋转
+- 资源包里的 missile、spark、fire trail prefab 只作为该 prefab 的素材来源
+
+## 当前圣职者治疗表现的理解方式
+
+当前 `Sunpriest` 应按以下方式理解：
+
+- 逻辑层
+  - 普攻仍是治疗型普通攻击投射物
+  - 小技能仍是单体治疗 + 护盾
+  - 大招仍是持续范围治疗
+- 表现层
+  - 普攻飞行物使用项目专用 prefab：`Assets/Prefabs/VFX/Projectiles/SunpriestBasicAttackProjectile.prefab`
+  - 受治疗身上闪效使用项目专用 shared prefab：`Assets/Prefabs/VFX/Shared/SunpriestHealImpact.prefab`
+  - 护盾不默认做角色附着 loop，而是通过 `BattleView` 的血条右侧盾量段表现
+  - 大招范围治疗使用项目专用 prefab：`Assets/Prefabs/VFX/Skills/SunpriestSunBlessingField.prefab`
 
 ## 常见问题定位顺序
 
