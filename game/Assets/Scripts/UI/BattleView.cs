@@ -22,6 +22,7 @@ namespace Fight.UI
         private const float HealthBarBackgroundHeight = 0.11f;
         private const float HealthBarFillHeight = 0.07f;
         private const float ArenaBackgroundHeight = Stage01ArenaSpec.HeightWorldUnits;
+        private const float MinAirborneEffectHeight = 0.12f;
         [SerializeField] private float heroMarkerScale = 1f;
         [SerializeField] private float prefabVisualScale = 0.9f;
         [SerializeField] private Vector3 footUiOffset = new Vector3(0f, -0.36f, 0f);
@@ -36,6 +37,18 @@ namespace Fight.UI
         [SerializeField] private float skillAreaPulseStrength = 0.12f;
         [SerializeField] private float skillAreaPulseWindowSeconds = 0.28f;
         [SerializeField] private float skillAreaExpiryFadeSeconds = 0.3f;
+        [SerializeField] private float airborneUiFollowFactor = 0.35f;
+        [SerializeField] private float shadowAirborneScaleMultiplier = 0.68f;
+        [SerializeField] private float shadowAirborneAlphaMultiplier = 0.52f;
+        [SerializeField] private float launchPulseDuration = 0.18f;
+        [SerializeField] private float landingPulseDuration = 0.22f;
+        [SerializeField] private float directionalTrailFadeOutSeconds = 0.16f;
+        [SerializeField] private float directionalTrailMinDistance = 0.15f;
+        [SerializeField] private float directionalTrailMaxLength = 0.92f;
+        [SerializeField] private Color airborneGroundRingColor = new Color(1f, 0.87f, 0.56f, 0.22f);
+        [SerializeField] private Color launchPulseColor = new Color(1f, 0.95f, 0.8f, 0.72f);
+        [SerializeField] private Color landingPulseColor = new Color(1f, 0.68f, 0.34f, 0.78f);
+        [SerializeField] private Color directionalTrailColor = new Color(1f, 0.94f, 0.78f, 0.5f);
         [SerializeField] private bool autoCreateArena = true;
         [SerializeField] private string arenaBackgroundResourcesPath = "Battle/jjc_background";
         [SerializeField] private string arenaBackgroundProjectRelativePath = "Assets/Resources/Battle/jjc_background.png";
@@ -69,11 +82,27 @@ namespace Fight.UI
             public SpriteRenderer Halo;
             public SpriteRenderer Body;
             public SpriteRenderer Accent;
+            public SpriteRenderer AirborneRing;
+            public SpriteRenderer ImpactPulse;
+            public SpriteRenderer DirectionalTrail;
             public Transform FootUiRoot;
             public SpriteRenderer HealthBack;
             public SpriteRenderer HealthFill;
             public SpriteRenderer UltimateIcon;
             public HeroEditor4DBattleAnimationDriver AnimationDriver;
+            public Vector3 ShadowBaseScale = Vector3.one;
+            public Color ShadowBaseColor = Color.white;
+            public Vector3 AirborneRingBaseScale = Vector3.one;
+            public Vector3 ImpactPulseBaseScale = Vector3.one;
+            public float LastVisualHeight;
+            public float LastForcedMovementPeakHeight;
+            public float LastForcedMovementHorizontalDistance;
+            public Vector2 LastForcedMovementDirection;
+            public float DirectionalTrailUntilSeconds = -1f;
+            public float ImpactPulseStartedAtSeconds = -1f;
+            public float ImpactPulseDurationSeconds;
+            public Color ImpactPulseBaseColor = Color.white;
+            public bool WasAirborne;
             public bool LastDeadState;
             public float DeathStartedAtSeconds = -1f;
             public float HitFlashUntilSeconds = -1f;
@@ -151,7 +180,7 @@ namespace Fight.UI
             view.VisualRoot.localPosition = airborneOffset;
             if (view.FootUiRoot != null)
             {
-                view.FootUiRoot.localPosition = footUiOffset + airborneOffset;
+                view.FootUiRoot.localPosition = footUiOffset + (airborneOffset * airborneUiFollowFactor);
             }
             UpdateDeathVisibility(hero, view);
             view.VisualRoot.localScale = Vector3.one * (hero.IsDead ? 0.82f : 1f);
@@ -196,6 +225,7 @@ namespace Fight.UI
                 view.UltimateIcon.color = ultimateColor;
             }
 
+            UpdateForcedMovementPresentation(hero, view);
             UpdatePrefabHitFlash(hero, view);
 
             if (view.AnimationDriver != null)
@@ -212,8 +242,15 @@ namespace Fight.UI
             view.SortingGroup = view.Root.AddComponent<SortingGroup>();
             view.Shadow = MakeSprite("Shadow", view.Root.transform, circleSprite, new Color(0f, 0f, 0f, 0.24f), -10, new Vector3(0f, -0.22f, 0f), new Vector3(0.92f, 0.36f, 1f) * heroMarkerScale);
             view.Halo = MakeSprite("Halo", view.Root.transform, circleSprite, Team(hero.Side), -9, new Vector3(0f, -0.08f, 0f), new Vector3(1.08f, 0.56f, 1f) * heroMarkerScale);
+            view.ShadowBaseScale = view.Shadow.transform.localScale;
+            view.ShadowBaseColor = view.Shadow.color;
+            view.AirborneRing = MakeSprite("AirborneRing", view.Root.transform, circleSprite, new Color(1f, 1f, 1f, 0f), -8, new Vector3(0f, -0.18f, 0f), new Vector3(1.18f, 0.58f, 1f) * heroMarkerScale);
+            view.AirborneRingBaseScale = view.AirborneRing.transform.localScale;
+            view.ImpactPulse = MakeSprite("ImpactPulse", view.Root.transform, circleSprite, new Color(1f, 1f, 1f, 0f), -7, new Vector3(0f, -0.18f, 0f), new Vector3(0.72f, 0.34f, 1f) * heroMarkerScale);
+            view.ImpactPulseBaseScale = view.ImpactPulse.transform.localScale;
             view.VisualRoot = new GameObject("Visual").transform;
             view.VisualRoot.SetParent(view.Root.transform, false);
+            view.DirectionalTrail = MakeSprite("DirectionalTrail", view.VisualRoot, squareSprite, new Color(1f, 1f, 1f, 0f), 19, new Vector3(0f, -0.06f, 0f), new Vector3(0.18f, 0.18f, 1f));
 
             if (hero.Definition.visualConfig.battlePrefab != null)
             {
@@ -358,6 +395,203 @@ namespace Fight.UI
                 flashedColor.a = baseColor.a;
                 spriteRenderer.color = flashedColor;
             }
+        }
+
+        private void UpdateForcedMovementPresentation(RuntimeHero hero, HeroViewState view)
+        {
+            if (hero == null || view == null)
+            {
+                return;
+            }
+
+            if (hero.IsDead)
+            {
+                ResetForcedMovementPresentation(view);
+                return;
+            }
+
+            var currentHeight = Mathf.Max(0f, hero.VisualHeightOffset);
+            var peakHeight = Mathf.Max(view.LastForcedMovementPeakHeight, currentHeight, MinAirborneEffectHeight);
+            var airborneRatio = currentHeight > 0f
+                ? Mathf.Clamp01(currentHeight / peakHeight)
+                : 0f;
+            var isAirborne = currentHeight > MinAirborneEffectHeight;
+
+            if (isAirborne)
+            {
+                view.WasAirborne = true;
+            }
+            else if (view.WasAirborne && view.LastVisualHeight > MinAirborneEffectHeight)
+            {
+                view.WasAirborne = false;
+                StartImpactPulse(view, landingPulseColor, landingPulseDuration);
+                view.LastForcedMovementPeakHeight = 0f;
+            }
+
+            UpdateShadowForForcedMovement(view, airborneRatio);
+            UpdateAirborneRing(view, airborneRatio);
+            UpdateDirectionalTrail(view);
+            UpdateImpactPulse(view);
+            view.LastVisualHeight = currentHeight;
+        }
+
+        private void ResetForcedMovementPresentation(HeroViewState view)
+        {
+            if (view == null)
+            {
+                return;
+            }
+
+            view.WasAirborne = false;
+            view.LastVisualHeight = 0f;
+            view.LastForcedMovementPeakHeight = 0f;
+            view.LastForcedMovementHorizontalDistance = 0f;
+            view.LastForcedMovementDirection = Vector2.zero;
+            view.DirectionalTrailUntilSeconds = -1f;
+            view.ImpactPulseStartedAtSeconds = -1f;
+
+            if (view.Shadow != null)
+            {
+                view.Shadow.transform.localScale = view.ShadowBaseScale;
+            }
+
+            if (view.AirborneRing != null)
+            {
+                var ringColor = view.AirborneRing.color;
+                ringColor.a = 0f;
+                view.AirborneRing.color = ringColor;
+            }
+
+            if (view.DirectionalTrail != null)
+            {
+                var trailColor = view.DirectionalTrail.color;
+                trailColor.a = 0f;
+                view.DirectionalTrail.color = trailColor;
+            }
+
+            if (view.ImpactPulse != null)
+            {
+                var pulseColor = view.ImpactPulse.color;
+                pulseColor.a = 0f;
+                view.ImpactPulse.color = pulseColor;
+            }
+        }
+
+        private void UpdateShadowForForcedMovement(HeroViewState view, float airborneRatio)
+        {
+            if (view?.Shadow == null)
+            {
+                return;
+            }
+
+            var shadowScaleMultiplier = Mathf.Lerp(1f, shadowAirborneScaleMultiplier, airborneRatio);
+            view.Shadow.transform.localScale = new Vector3(
+                view.ShadowBaseScale.x * shadowScaleMultiplier,
+                view.ShadowBaseScale.y * shadowScaleMultiplier,
+                view.ShadowBaseScale.z);
+
+            var shadowColor = view.Shadow.color;
+            var alphaMultiplier = Mathf.Lerp(1f, shadowAirborneAlphaMultiplier, airborneRatio);
+            shadowColor.a *= alphaMultiplier;
+            view.Shadow.color = shadowColor;
+        }
+
+        private void UpdateAirborneRing(HeroViewState view, float airborneRatio)
+        {
+            if (view?.AirborneRing == null)
+            {
+                return;
+            }
+
+            var ringColor = airborneGroundRingColor;
+            ringColor.a *= Mathf.SmoothStep(0f, 1f, airborneRatio);
+            view.AirborneRing.color = ringColor;
+            var scaleMultiplier = Mathf.Lerp(0.9f, 1.18f, airborneRatio);
+            view.AirborneRing.transform.localScale = new Vector3(
+                view.AirborneRingBaseScale.x * scaleMultiplier,
+                view.AirborneRingBaseScale.y * scaleMultiplier,
+                view.AirborneRingBaseScale.z);
+        }
+
+        private void UpdateDirectionalTrail(HeroViewState view)
+        {
+            if (view?.DirectionalTrail == null)
+            {
+                return;
+            }
+
+            var elapsedTimeSeconds = GetElapsedTimeSeconds();
+            var remainingSeconds = Mathf.Max(0f, view.DirectionalTrailUntilSeconds - elapsedTimeSeconds);
+            var horizontalIntensity = directionalTrailMinDistance > Mathf.Epsilon
+                ? Mathf.Clamp01(view.LastForcedMovementHorizontalDistance / directionalTrailMinDistance)
+                : 0f;
+            var fade = directionalTrailFadeOutSeconds > Mathf.Epsilon
+                ? Mathf.Clamp01(remainingSeconds / directionalTrailFadeOutSeconds)
+                : 0f;
+
+            if (fade <= 0f || horizontalIntensity <= 0f || view.LastForcedMovementDirection.sqrMagnitude <= Mathf.Epsilon)
+            {
+                var hiddenColor = view.DirectionalTrail.color;
+                hiddenColor.a = 0f;
+                view.DirectionalTrail.color = hiddenColor;
+                return;
+            }
+
+            var trailLength = Mathf.Lerp(0.3f, directionalTrailMaxLength, horizontalIntensity);
+            var trailWidth = Mathf.Lerp(0.14f, 0.24f, horizontalIntensity);
+            var direction = view.LastForcedMovementDirection.normalized;
+            var angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+
+            view.DirectionalTrail.transform.localRotation = Quaternion.Euler(0f, 0f, angle - 90f);
+            view.DirectionalTrail.transform.localPosition = new Vector3(-direction.x * trailLength * 0.18f, (-direction.y * trailLength * 0.18f) - 0.06f, 0f);
+            view.DirectionalTrail.transform.localScale = new Vector3(trailWidth, trailLength, 1f);
+
+            var trailColor = directionalTrailColor;
+            trailColor.a *= fade * horizontalIntensity;
+            view.DirectionalTrail.color = trailColor;
+        }
+
+        private void UpdateImpactPulse(HeroViewState view)
+        {
+            if (view?.ImpactPulse == null)
+            {
+                return;
+            }
+
+            var elapsedTimeSeconds = GetElapsedTimeSeconds();
+            var ageSeconds = elapsedTimeSeconds - view.ImpactPulseStartedAtSeconds;
+            if (view.ImpactPulseStartedAtSeconds < 0f || ageSeconds < 0f || ageSeconds > view.ImpactPulseDurationSeconds)
+            {
+                var hiddenColor = view.ImpactPulse.color;
+                hiddenColor.a = 0f;
+                view.ImpactPulse.color = hiddenColor;
+                return;
+            }
+
+            var progress = view.ImpactPulseDurationSeconds > Mathf.Epsilon
+                ? Mathf.Clamp01(ageSeconds / view.ImpactPulseDurationSeconds)
+                : 1f;
+            var scaleMultiplier = Mathf.Lerp(0.8f, 1.6f, progress);
+            view.ImpactPulse.transform.localScale = new Vector3(
+                view.ImpactPulseBaseScale.x * scaleMultiplier,
+                view.ImpactPulseBaseScale.y * scaleMultiplier,
+                view.ImpactPulseBaseScale.z);
+
+            var pulseColor = view.ImpactPulseBaseColor;
+            pulseColor.a *= 1f - progress;
+            view.ImpactPulse.color = pulseColor;
+        }
+
+        private void StartImpactPulse(HeroViewState view, Color color, float durationSeconds)
+        {
+            if (view == null)
+            {
+                return;
+            }
+
+            view.ImpactPulseStartedAtSeconds = GetElapsedTimeSeconds();
+            view.ImpactPulseDurationSeconds = Mathf.Max(0.01f, durationSeconds);
+            view.ImpactPulseBaseColor = color;
         }
 
         private bool ShouldHideCorpse(HeroViewState view)
@@ -919,6 +1153,38 @@ namespace Fight.UI
                 && heroViews.TryGetValue(damageAppliedEvent.Target.RuntimeId, out var heroView))
             {
                 heroView.HitFlashUntilSeconds = GetElapsedTimeSeconds() + Mathf.Max(0.01f, prefabHitFlashDuration);
+            }
+
+            if (battleEvent is ForcedMovementAppliedEvent forcedMovementAppliedEvent
+                && forcedMovementAppliedEvent.Target != null
+                && heroViews.TryGetValue(forcedMovementAppliedEvent.Target.RuntimeId, out var displacedHeroView))
+            {
+                RegisterForcedMovementPresentation(displacedHeroView, forcedMovementAppliedEvent);
+            }
+        }
+
+        private void RegisterForcedMovementPresentation(HeroViewState view, ForcedMovementAppliedEvent forcedMovementAppliedEvent)
+        {
+            if (view == null || forcedMovementAppliedEvent == null)
+            {
+                return;
+            }
+
+            var horizontalOffset = forcedMovementAppliedEvent.Destination - forcedMovementAppliedEvent.StartPosition;
+            horizontalOffset.y = 0f;
+            var mappedDirection = Map(horizontalOffset);
+            var direction2D = new Vector2(mappedDirection.x, mappedDirection.y);
+            view.LastForcedMovementDirection = direction2D.sqrMagnitude > Mathf.Epsilon
+                ? direction2D.normalized
+                : Vector2.zero;
+            view.LastForcedMovementHorizontalDistance = horizontalOffset.magnitude;
+            view.LastForcedMovementPeakHeight = Mathf.Max(view.LastForcedMovementPeakHeight, forcedMovementAppliedEvent.PeakHeight);
+            view.DirectionalTrailUntilSeconds = GetElapsedTimeSeconds()
+                + Mathf.Max(directionalTrailFadeOutSeconds, forcedMovementAppliedEvent.DurationSeconds + directionalTrailFadeOutSeconds);
+
+            if (forcedMovementAppliedEvent.PeakHeight > MinAirborneEffectHeight || view.LastForcedMovementHorizontalDistance > directionalTrailMinDistance)
+            {
+                StartImpactPulse(view, launchPulseColor, launchPulseDuration);
             }
         }
 
