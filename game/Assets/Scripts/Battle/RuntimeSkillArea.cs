@@ -7,6 +7,7 @@ namespace Fight.Battle
     public class RuntimeSkillArea
     {
         private static int nextAreaId;
+        private int pendingPulseCount;
 
         public RuntimeSkillArea(RuntimeHero caster, SkillData skill, SkillEffectData effect, Vector3 initialCenter)
         {
@@ -17,7 +18,7 @@ namespace Fight.Battle
             TotalDurationSeconds = Mathf.Max(0f, effect != null ? effect.durationSeconds : 0f);
             RemainingDurationSeconds = TotalDurationSeconds;
             TickIntervalSeconds = Mathf.Max(0.1f, effect != null ? effect.tickIntervalSeconds : 1f);
-            TimeUntilNextTickSeconds = 0f;
+            TimeUntilNextTickSeconds = TickIntervalSeconds;
             AreaId = $"skill_area_{nextAreaId++:D4}";
         }
 
@@ -67,29 +68,40 @@ namespace Fight.Battle
             }
         }
 
-        public bool Tick(float deltaTime)
+        public void Tick(float deltaTime)
         {
             if (IsExpired)
             {
-                return false;
+                return;
             }
 
+            var elapsedTime = Mathf.Min(deltaTime, RemainingDurationSeconds);
             RemainingDurationSeconds = Mathf.Max(0f, RemainingDurationSeconds - deltaTime);
 
             if (Effect != null && Effect.followCaster && (Caster == null || Caster.IsDead))
             {
                 RemainingDurationSeconds = 0f;
-                return false;
+                return;
             }
 
-            TimeUntilNextTickSeconds -= deltaTime;
-            if (TimeUntilNextTickSeconds > 0f)
+            if (elapsedTime <= 0f)
             {
-                return false;
+                return;
             }
 
-            TimeUntilNextTickSeconds = TickIntervalSeconds;
-            return true;
+            TimeUntilNextTickSeconds -= elapsedTime;
+            while (TimeUntilNextTickSeconds <= 0f && TickIntervalSeconds > 0f)
+            {
+                pendingPulseCount++;
+                TimeUntilNextTickSeconds += TickIntervalSeconds;
+            }
+        }
+
+        public int ConsumePendingPulseCount()
+        {
+            var result = pendingPulseCount;
+            pendingPulseCount = 0;
+            return result;
         }
     }
 }

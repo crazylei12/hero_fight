@@ -55,11 +55,16 @@ namespace Fight.Battle
                 return;
             }
 
+            var basicAttack = attacker.Definition.basicAttack;
+            var effectType = basicAttack.effectType;
+            if (!CanApplyEffectToTarget(target, effectType))
+            {
+                return;
+            }
+
             attacker.StartAttackCooldown();
             context.EventBus.Publish(new AttackPerformedEvent(attacker, target));
 
-            var basicAttack = attacker.Definition.basicAttack;
-            var effectType = basicAttack.effectType;
             var impactAmount = effectType == BasicAttackEffectType.Heal
                 ? HealResolver.ResolveHealAmount(attacker, basicAttack.damageMultiplier)
                 : DamageResolver.ResolveDamage(
@@ -97,7 +102,7 @@ namespace Fight.Battle
 
         private static void ResolveHit(BattleContext context, RuntimeHero attacker, RuntimeHero target, float impactAmount, BasicAttackEffectType effectType, BattleManager battleManager)
         {
-            if (!IsValidTarget(attacker, target))
+            if (!IsValidTarget(attacker, target) || !CanApplyEffectToTarget(target, effectType))
             {
                 return;
             }
@@ -115,7 +120,9 @@ namespace Fight.Battle
                 return;
             }
 
-            var actualDamage = target.ApplyDamage(impactAmount);
+            var actualDamage = target.ApplyDamage(
+                impactAmount,
+                status => PublishStatusRemovedEvent(context, target, status));
             if (actualDamage <= 0f)
             {
                 return;
@@ -143,6 +150,17 @@ namespace Fight.Battle
             }
         }
 
+        private static bool CanApplyEffectToTarget(RuntimeHero target, BasicAttackEffectType effectType)
+        {
+            if (target == null)
+            {
+                return false;
+            }
+
+            return effectType != BasicAttackEffectType.Heal
+                || target.CurrentHealth < target.MaxHealth - Mathf.Epsilon;
+        }
+
         private static bool IsValidTarget(RuntimeHero attacker, RuntimeHero target)
         {
             if (attacker?.Definition == null || target == null || target.IsDead)
@@ -152,9 +170,19 @@ namespace Fight.Battle
 
             return attacker.Definition.basicAttack.targetType switch
             {
-                BasicAttackTargetType.LowestHealthAlly => target.Side == attacker.Side && (target == attacker || target.CanBeDirectTargeted),
+                BasicAttackTargetType.LowestHealthAlly => target.Side == attacker.Side && target.CanBeDirectTargeted,
                 _ => target.Side != attacker.Side && target.CanBeDirectTargeted,
             };
+        }
+
+        private static void PublishStatusRemovedEvent(BattleContext context, RuntimeHero target, RuntimeStatusEffect status)
+        {
+            if (context?.EventBus == null || target == null || status == null)
+            {
+                return;
+            }
+
+            context.EventBus.Publish(new StatusRemovedEvent(status.Source, target, status.EffectType, status.SourceSkill));
         }
     }
 }

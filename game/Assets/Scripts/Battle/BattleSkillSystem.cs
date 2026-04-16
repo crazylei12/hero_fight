@@ -307,7 +307,12 @@ namespace Fight.Battle
                 return false;
             }
 
-            if (primaryTarget == caster || skill == null || skill.targetType == SkillTargetType.Self || skill.targetType == SkillTargetType.DensestEnemyArea)
+            if (skill == null)
+            {
+                return false;
+            }
+
+            if (skill.targetType == SkillTargetType.Self)
             {
                 return true;
             }
@@ -890,7 +895,9 @@ namespace Fight.Battle
                     target.Defense,
                     context.RandomService,
                     effect.powerMultiplier);
-                var actualDamage = target.ApplyDamage(damage);
+                var actualDamage = target.ApplyDamage(
+                    damage,
+                    status => PublishStatusRemovedEvent(context, target, status));
                 if (actualDamage <= 0f)
                 {
                     ApplyStatuses(context, caster, skill, effect, target);
@@ -950,6 +957,16 @@ namespace Fight.Battle
             };
         }
 
+        private static void PublishStatusRemovedEvent(BattleContext context, RuntimeHero target, RuntimeStatusEffect status)
+        {
+            if (context?.EventBus == null || target == null || status == null)
+            {
+                return;
+            }
+
+            context.EventBus.Publish(new StatusRemovedEvent(status.Source, target, status.EffectType, status.SourceSkill));
+        }
+
         private static SkillEffectData CreateLegacyDamageEffect(SkillData skill)
         {
             return new SkillEffectData
@@ -995,7 +1012,7 @@ namespace Fight.Battle
                     continue;
                 }
 
-                if (candidate != caster && !candidate.CanBeDirectTargeted)
+                if (!candidate.CanBeDirectTargeted)
                 {
                     continue;
                 }

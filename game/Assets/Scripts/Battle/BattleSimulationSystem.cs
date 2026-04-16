@@ -33,8 +33,10 @@ namespace Fight.Battle
                     continue;
                 }
 
-                var shouldPulse = area.Tick(deltaTime);
-                if (shouldPulse)
+                area.Tick(deltaTime);
+
+                var pendingPulseCount = area.ConsumePendingPulseCount();
+                for (var pulseIndex = 0; pulseIndex < pendingPulseCount; pulseIndex++)
                 {
                     BattleSkillSystem.ResolveSkillAreaPulse(context, area, battleManager);
                 }
@@ -51,7 +53,7 @@ namespace Fight.Battle
             hero.Tick(
                 deltaTime,
                 status => ResolvePeriodicStatusTick(context, hero, status, battleManager),
-                status => context.EventBus.Publish(new StatusRemovedEvent(status.Source, hero, status.EffectType, status.SourceSkill)));
+                status => PublishStatusRemovedEvent(context, hero, status));
 
             if (hero.IsDead)
             {
@@ -86,6 +88,11 @@ namespace Fight.Battle
             }
 
             if (!hero.CanAttack || hero.AttackCooldownRemainingSeconds > 0f)
+            {
+                return;
+            }
+
+            if (!ShouldPerformBasicAttack(hero, currentTarget))
             {
                 return;
             }
@@ -133,6 +140,21 @@ namespace Fight.Battle
             return hero?.Definition?.basicAttack.targetType == BasicAttackTargetType.LowestHealthAlly;
         }
 
+        private static bool ShouldPerformBasicAttack(RuntimeHero hero, RuntimeHero target)
+        {
+            if (hero?.Definition?.basicAttack == null || target == null)
+            {
+                return false;
+            }
+
+            if (hero.Definition.basicAttack.effectType != BasicAttackEffectType.Heal)
+            {
+                return true;
+            }
+
+            return target.CurrentHealth < target.MaxHealth - Mathf.Epsilon;
+        }
+
         private static bool IsCurrentTargetValid(RuntimeHero hero, RuntimeHero target)
         {
             if (hero?.Definition == null || target == null || target.IsDead)
@@ -142,7 +164,7 @@ namespace Fight.Battle
 
             return hero.Definition.basicAttack.targetType switch
             {
-                BasicAttackTargetType.LowestHealthAlly => target.Side == hero.Side && (target == hero || target.CanBeDirectTargeted),
+                BasicAttackTargetType.LowestHealthAlly => target.Side == hero.Side && target.CanBeDirectTargeted,
                 _ => target.Side != hero.Side && target.CanBeDirectTargeted,
             };
         }
@@ -203,7 +225,9 @@ namespace Fight.Battle
 
         private static void ResolveDamageOverTime(BattleContext context, RuntimeHero target, RuntimeStatusEffect status, BattleManager battleManager)
         {
-            var actualDamage = target.ApplyDamage(status.Magnitude);
+            var actualDamage = target.ApplyDamage(
+                status.Magnitude,
+                expiredStatus => PublishStatusRemovedEvent(context, target, expiredStatus));
             if (actualDamage <= 0f)
             {
                 return;
@@ -229,6 +253,16 @@ namespace Fight.Battle
                     battleManager.RegisterKill(status.Source.Side);
                 }
             }
+        }
+
+        private static void PublishStatusRemovedEvent(BattleContext context, RuntimeHero target, RuntimeStatusEffect status)
+        {
+            if (context?.EventBus == null || target == null || status == null)
+            {
+                return;
+            }
+
+            context.EventBus.Publish(new StatusRemovedEvent(status.Source, target, status.EffectType, status.SourceSkill));
         }
     }
 }

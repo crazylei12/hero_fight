@@ -14,7 +14,7 @@ namespace Fight.Heroes
             RemainingDurationSeconds = data.durationSeconds;
             Magnitude = data.magnitude;
             TickIntervalSeconds = Mathf.Max(0.1f, data.tickIntervalSeconds);
-            TimeUntilNextTickSeconds = 0f;
+            TimeUntilNextTickSeconds = TickIntervalSeconds;
             MaxStacks = data.maxStacks;
             RefreshDurationOnReapply = data.refreshDurationOnReapply;
             Source = source;
@@ -43,14 +43,15 @@ namespace Fight.Heroes
 
         public void Tick(float deltaTime)
         {
+            var elapsedTime = Mathf.Min(deltaTime, RemainingDurationSeconds);
             RemainingDurationSeconds = Mathf.Max(0f, RemainingDurationSeconds - deltaTime);
 
-            if (!Definition.IsPeriodic)
+            if (!Definition.IsPeriodic || elapsedTime <= 0f)
             {
                 return;
             }
 
-            TimeUntilNextTickSeconds -= deltaTime;
+            TimeUntilNextTickSeconds -= elapsedTime;
             while (TimeUntilNextTickSeconds <= 0f && TickIntervalSeconds > 0f)
             {
                 pendingTickCount++;
@@ -70,7 +71,7 @@ namespace Fight.Heroes
             RemainingDurationSeconds = data.durationSeconds;
             Magnitude = data.magnitude;
             TickIntervalSeconds = Mathf.Max(0.1f, data.tickIntervalSeconds);
-            TimeUntilNextTickSeconds = 0f;
+            TimeUntilNextTickSeconds = TickIntervalSeconds;
         }
 
         public float ConsumeMagnitude(float amount)

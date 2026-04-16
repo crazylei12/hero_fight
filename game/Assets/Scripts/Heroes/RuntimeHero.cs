@@ -156,7 +156,7 @@ namespace Fight.Heroes
             activeStatusEffects.Clear();
         }
 
-        public float ApplyDamage(float amount)
+        public float ApplyDamage(float amount, Action<RuntimeStatusEffect> onExpiredStatus = null)
         {
             if (amount <= 0f || IsDead || !CanReceiveDamage)
             {
@@ -164,6 +164,7 @@ namespace Fight.Heroes
             }
 
             amount -= ConsumeShield(amount);
+            RemoveExpiredStatuses(onExpiredStatus);
             if (amount <= 0f)
             {
                 return 0f;
@@ -187,9 +188,15 @@ namespace Fight.Heroes
             ActiveSkillCooldownRemainingSeconds = Mathf.Max(0f, ActiveSkillCooldownRemainingSeconds - deltaTime);
             UltimateCooldownRemainingSeconds = Mathf.Max(0f, UltimateCooldownRemainingSeconds - deltaTime);
 
-            for (var i = activeStatusEffects.Count - 1; i >= 0; i--)
+            var statusSnapshot = activeStatusEffects.ToArray();
+            for (var i = statusSnapshot.Length - 1; i >= 0; i--)
             {
-                var status = activeStatusEffects[i];
+                var status = statusSnapshot[i];
+                if (status == null || !activeStatusEffects.Contains(status))
+                {
+                    continue;
+                }
+
                 status.Tick(deltaTime);
 
                 var pendingTickCount = status.ConsumePendingTickCount();
@@ -210,7 +217,7 @@ namespace Fight.Heroes
                 if (status.IsExpired)
                 {
                     onExpiredStatus?.Invoke(status);
-                    activeStatusEffects.RemoveAt(i);
+                    activeStatusEffects.Remove(status);
                 }
             }
 
@@ -386,6 +393,21 @@ namespace Fight.Heroes
             }
 
             return absorbedDamage;
+        }
+
+        private void RemoveExpiredStatuses(Action<RuntimeStatusEffect> onExpiredStatus)
+        {
+            for (var i = activeStatusEffects.Count - 1; i >= 0; i--)
+            {
+                var status = activeStatusEffects[i];
+                if (!status.IsExpired)
+                {
+                    continue;
+                }
+
+                onExpiredStatus?.Invoke(status);
+                activeStatusEffects.RemoveAt(i);
+            }
         }
 
         private bool HasStatusFlag(StatusBehaviorFlags flag)
