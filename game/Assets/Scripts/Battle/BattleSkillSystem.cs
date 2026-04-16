@@ -112,7 +112,7 @@ namespace Fight.Battle
                 return false;
             }
 
-            ExecuteSkill(context, caster, skill, primaryTarget, affectedTargets, battleManager);
+            BeginSkillCast(context, caster, skill, primaryTarget, affectedTargets, battleManager);
             return true;
         }
 
@@ -155,7 +155,7 @@ namespace Fight.Battle
                 return false;
             }
 
-            ExecuteSkill(context, caster, skill, primaryTarget, affectedTargets, battleManager);
+            BeginSkillCast(context, caster, skill, primaryTarget, affectedTargets, battleManager);
             return true;
         }
 
@@ -738,10 +738,39 @@ namespace Fight.Battle
             };
         }
 
-        private static void ExecuteSkill(BattleContext context, RuntimeHero caster, SkillData skill, RuntimeHero primaryTarget, List<RuntimeHero> affectedTargets, BattleManager battleManager)
+        public static void ResolvePendingSkillCast(BattleContext context, RuntimeHero caster, PendingCombatAction pendingAction, BattleManager battleManager)
         {
-            caster.StartSkillCooldown(skill.slotType, skill.cooldownSeconds);
+            if (context == null || caster == null || caster.IsDead || pendingAction == null || pendingAction.Skill == null || battleManager == null)
+            {
+                return;
+            }
+
+            ResolveSkillEffects(
+                context,
+                caster,
+                pendingAction.Skill,
+                pendingAction.PrimaryTarget,
+                CopyAliveTargets(pendingAction.AffectedTargets),
+                battleManager);
+        }
+
+        private static void BeginSkillCast(BattleContext context, RuntimeHero caster, SkillData skill, RuntimeHero primaryTarget, List<RuntimeHero> affectedTargets, BattleManager battleManager)
+        {
+            if (context == null || caster == null || skill == null || battleManager == null)
+            {
+                return;
+            }
+
+            caster.BeginSkillCast(skill, primaryTarget, affectedTargets, CombatActionTiming.DefaultWindupSeconds, CombatActionTiming.DefaultRecoverySeconds);
             context.EventBus.Publish(new SkillCastEvent(caster, skill, primaryTarget, affectedTargets.Count));
+        }
+
+        private static void ResolveSkillEffects(BattleContext context, RuntimeHero caster, SkillData skill, RuntimeHero primaryTarget, List<RuntimeHero> affectedTargets, BattleManager battleManager)
+        {
+            if (context == null || caster == null || caster.IsDead || skill == null || battleManager == null)
+            {
+                return;
+            }
 
             if (skill.effects != null && skill.effects.Count > 0)
             {
@@ -770,6 +799,28 @@ namespace Fight.Battle
                     ApplyStatusEffectsToTargets(context, caster, skill, CreateLegacyStatusEffect(skill), affectedTargets);
                     break;
             }
+        }
+
+        private static List<RuntimeHero> CopyAliveTargets(IReadOnlyList<RuntimeHero> targets)
+        {
+            var results = new List<RuntimeHero>();
+            if (targets == null)
+            {
+                return results;
+            }
+
+            for (var i = 0; i < targets.Count; i++)
+            {
+                var target = targets[i];
+                if (target == null || target.IsDead)
+                {
+                    continue;
+                }
+
+                results.Add(target);
+            }
+
+            return results;
         }
 
         private static void ExecuteSkillEffect(

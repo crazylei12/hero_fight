@@ -95,7 +95,7 @@ namespace Fight.UI
                     AddLog($"{FormatHeroLabel(projectileLaunched.Projectile.Attacker)} fired a projectile at {FormatHeroLabel(projectileLaunched.Projectile.Target)}.");
                     break;
                 case SkillCastEvent skillCast:
-                    AddLog($"{FormatHeroLabel(skillCast.Caster)} cast {skillCast.Skill.displayName} on {FormatHeroLabel(skillCast.PrimaryTarget, "area")} ({skillCast.AffectedTargetCount} target(s)).");
+                    AddLog($"{FormatHeroLabel(skillCast.Caster)} started casting {skillCast.Skill.displayName} on {FormatHeroLabel(skillCast.PrimaryTarget, "area")} ({skillCast.AffectedTargetCount} target(s)).");
                     break;
                 case SkillAreaCreatedEvent areaCreated:
                     var areaDuration = areaCreated.Area?.Effect != null ? areaCreated.Area.Effect.durationSeconds : 0f;

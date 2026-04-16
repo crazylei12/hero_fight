@@ -5,6 +5,47 @@ using UnityEngine;
 
 namespace Fight.Heroes
 {
+    public enum CombatActionType
+    {
+        BasicAttack = 0,
+        SkillCast = 1,
+    }
+
+    public sealed class PendingCombatAction
+    {
+        public PendingCombatAction(RuntimeHero target)
+        {
+            ActionType = CombatActionType.BasicAttack;
+            Target = target;
+            AffectedTargets = Array.Empty<RuntimeHero>();
+        }
+
+        public PendingCombatAction(SkillData skill, RuntimeHero primaryTarget, IReadOnlyList<RuntimeHero> affectedTargets)
+        {
+            ActionType = CombatActionType.SkillCast;
+            Skill = skill;
+            PrimaryTarget = primaryTarget;
+            if (affectedTargets != null)
+            {
+                AffectedTargets = new List<RuntimeHero>(affectedTargets);
+            }
+            else
+            {
+                AffectedTargets = Array.Empty<RuntimeHero>();
+            }
+        }
+
+        public CombatActionType ActionType { get; }
+
+        public RuntimeHero Target { get; }
+
+        public SkillData Skill { get; }
+
+        public RuntimeHero PrimaryTarget { get; }
+
+        public IReadOnlyList<RuntimeHero> AffectedTargets { get; }
+    }
+
     public class RuntimeHero
     {
         public RuntimeHero(HeroDefinition definition, TeamSide side, Vector3 spawnPosition, int slotIndex)
@@ -59,11 +100,13 @@ namespace Fight.Heroes
 
         public bool IsUnderForcedMovement => activeForcedMovement != null;
 
-        public bool CanMove => !StatusEffectSystem.HasBehaviorFlag(this, StatusBehaviorFlags.BlocksMovement) && !IsUnderForcedMovement;
+        public bool IsActionLocked => actionLockRemainingSeconds > 0f;
 
-        public bool CanAttack => !StatusEffectSystem.HasBehaviorFlag(this, StatusBehaviorFlags.BlocksBasicAttacks) && !IsUnderForcedMovement;
+        public bool CanMove => !IsActionLocked && !StatusEffectSystem.HasBehaviorFlag(this, StatusBehaviorFlags.BlocksMovement) && !IsUnderForcedMovement;
 
-        public bool CanCastSkills => !StatusEffectSystem.HasBehaviorFlag(this, StatusBehaviorFlags.BlocksSkillCasts) && !IsUnderForcedMovement;
+        public bool CanAttack => !IsActionLocked && !StatusEffectSystem.HasBehaviorFlag(this, StatusBehaviorFlags.BlocksBasicAttacks) && !IsUnderForcedMovement;
+
+        public bool CanCastSkills => !IsActionLocked && !StatusEffectSystem.HasBehaviorFlag(this, StatusBehaviorFlags.BlocksSkillCasts) && !IsUnderForcedMovement;
 
         public bool CanBeDirectTargeted => !StatusEffectSystem.HasBehaviorFlag(this, StatusBehaviorFlags.BlocksDirectTargeting);
 
@@ -150,6 +193,9 @@ namespace Fight.Heroes
 
         private readonly List<RuntimeStatusEffect> activeStatusEffects = new List<RuntimeStatusEffect>();
         private RuntimeForcedMovement activeForcedMovement;
+        private PendingCombatAction pendingCombatAction;
+        private float pendingActionTriggerRemainingSeconds;
+        private float actionLockRemainingSeconds;
 
         public void ResetToSpawn()
         {
@@ -158,6 +204,7 @@ namespace Fight.Heroes
             CurrentHealth = MaxHealth;
             RespawnRemainingSeconds = 0f;
             AttackCooldownRemainingSeconds = 0f;
+            ClearCombatActionState();
             CurrentTarget = null;
             IsDead = false;
             CombatEngagedSeconds = 0f;
@@ -198,6 +245,8 @@ namespace Fight.Heroes
 
             AttackCooldownRemainingSeconds = Mathf.Max(0f, AttackCooldownRemainingSeconds - deltaTime);
             ActiveSkillCooldownRemainingSeconds = Mathf.Max(0f, ActiveSkillCooldownRemainingSeconds - deltaTime);
+            pendingActionTriggerRemainingSeconds = Mathf.Max(0f, pendingActionTriggerRemainingSeconds - deltaTime);
+            actionLockRemainingSeconds = Mathf.Max(0f, actionLockRemainingSeconds - deltaTime);
             TickForcedMovement(deltaTime);
             StatusEffectSystem.Tick(this, deltaTime, onPeriodicStatusTick, onExpiredStatus);
 
@@ -289,6 +338,42 @@ namespace Fight.Heroes
             AttackCooldownRemainingSeconds = AttackInterval;
         }
 
+        public void BeginBasicAttack(RuntimeHero target, float windupSeconds, float recoverySeconds)
+        {
+            if (Definition?.basicAttack == null || target == null || IsDead)
+            {
+                return;
+            }
+
+            StartAttackCooldown();
+            StartCombatAction(new PendingCombatAction(target), windupSeconds, recoverySeconds);
+        }
+
+        public void BeginSkillCast(SkillData skill, RuntimeHero primaryTarget, IReadOnlyList<RuntimeHero> affectedTargets, float windupSeconds, float recoverySeconds)
+        {
+            if (skill == null || IsDead)
+            {
+                return;
+            }
+
+            StartSkillCooldown(skill.slotType, skill.cooldownSeconds);
+            StartCombatAction(new PendingCombatAction(skill, primaryTarget, affectedTargets), windupSeconds, recoverySeconds);
+        }
+
+        public bool TryConsumeReadyCombatAction(out PendingCombatAction action)
+        {
+            if (pendingCombatAction == null || pendingActionTriggerRemainingSeconds > 0f)
+            {
+                action = null;
+                return false;
+            }
+
+            action = pendingCombatAction;
+            pendingCombatAction = null;
+            pendingActionTriggerRemainingSeconds = 0f;
+            return true;
+        }
+
         public void MarkKill()
         {
             Kills++;
@@ -312,6 +397,7 @@ namespace Fight.Heroes
             CurrentHealth = 0f;
             Deaths++;
             CombatEngagedSeconds = 0f;
+            ClearCombatActionState();
             VisualHeightOffset = 0f;
             activeForcedMovement = null;
             StatusEffectSystem.ClearStatuses(this, onRemovedStatus);
@@ -383,6 +469,20 @@ namespace Fight.Heroes
             LastThreatSource = null;
             LastThreatTimeSeconds = -1f;
             ActiveRetreatThreatSource = null;
+        }
+
+        private void ClearCombatActionState()
+        {
+            pendingCombatAction = null;
+            pendingActionTriggerRemainingSeconds = 0f;
+            actionLockRemainingSeconds = 0f;
+        }
+
+        private void StartCombatAction(PendingCombatAction action, float windupSeconds, float recoverySeconds)
+        {
+            pendingCombatAction = action;
+            pendingActionTriggerRemainingSeconds = Mathf.Max(0f, windupSeconds);
+            actionLockRemainingSeconds = pendingActionTriggerRemainingSeconds + Mathf.Max(0f, recoverySeconds);
         }
 
         private void TickForcedMovement(float deltaTime)
