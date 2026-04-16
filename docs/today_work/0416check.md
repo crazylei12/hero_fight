@@ -652,3 +652,241 @@
 - **最可能有风险的点是：`Stage01SampleContentBuilder` 对 `KnockUp` 的首次创建路径没有补完整，导致新建样例技能时存在“空技能”风险。**
 - **从当前代码看，我没有发现这轮击飞实现与正式文档存在明显正面冲突。**
 - **如果要继续扩“带方向击飞”，下一步最小增量应该继续落在 `SkillEffectData.ForcedMovementDirectionMode` 与 `BattleSkillSystem.GetForcedMovementDirection(...)` 这一层，而不是把方向语义重新塞回 `KnockUp` 状态本体。**
+
+## 补充检查：骑士英雄落地
+
+对应交接说明：
+
+- `docs/today_work/0416.md`
+- 其中“补充交接：骑士英雄落地”一节
+
+本次额外核对的主要文件：
+
+- `docs/heroes/tank/ironwall.md`
+- `game/Assets/Scripts/Data/SkillTargetType.cs`
+- `game/Assets/Scripts/Battle/BattleSkillSystem.cs`
+- `game/Assets/Scripts/Heroes/RuntimeHero.cs`
+- `game/Assets/Scripts/Editor/Stage01SampleContentBuilder.cs`
+- `game/Assets/Data/Stage01Demo/Heroes/tank_001_ironwall/Ironwall.asset`
+- `game/Assets/Data/Stage01Demo/Skills/tank_001_ironwall/Shield Bash.asset`
+- `game/Assets/Data/Stage01Demo/Skills/tank_001_ironwall/Ground Lock.asset`
+
+### 一句话结论
+
+- **这轮骑士改动的主语义已经基本落对：`Shield Bash` 已切到单体伤害 + 眩晕，`Iron Oath` 已切到全体友军防御 Buff，主动大招“一局一次”也已经在运行时、生成器和样例资产里统一收口。**
+- **但我看到了 1 个明确高风险问题：样例内容生成器现在并不能真正稳定复用旧的 `Ground Lock.asset` 路径，这和交接文档里“有意保留旧路径”的说法不一致。**
+- **另外还有 1 个前向语义风险：`AllAllies / AllEnemies` 机制已经通用了，但对未来“全体直接技能 + 不可选中”的边界还没有完全收口。**
+
+## 对“全体友军 / 全体敌军是否真的成为通用机制”的检查结论
+
+结论：
+
+- **这条成立。**
+
+已确认做对的部分：
+
+- `SkillTargetType` 已新增：
+  - `AllEnemies`
+  - `AllAllies`
+- `BattleSkillSystem.SelectPrimaryTarget(...)` 已补这两个目标类型入口
+- `BattleSkillSystem.CollectTargets(...)` 已为全体目标单独走：
+  - `IsGlobalTeamTargeting(...)`
+  - `MatchesGlobalTeamTarget(...)`
+- `BattleSkillSystem.IsPrimaryTargetStillValid(...)`
+  - 对 `AllAllies / AllEnemies` 已有单独分支
+- 当前实现没有看到“只给骑士写死”的单英雄特判
+
+这说明：
+
+- 这轮不是只为 `Iron Oath` 糊一个专用分支
+- 结构上已经允许后续别的英雄复用“全体友军 / 全体敌军”目标类型
+
+## 对“骑士小技能是否符合文档”的检查结论
+
+结论：
+
+- **这条成立。**
+
+已确认做对的部分：
+
+- `Shield Bash.asset` 当前已经是：
+  - `skillType: Stun`
+  - `targetType: NearestEnemy`
+  - `castRange: 1.8`
+  - `cooldownSeconds: 8`
+- 技能效果当前是：
+  - `DirectDamage`
+  - `powerMultiplier = 0.8`
+  - `ApplyStatusEffects`
+  - `StatusEffectType.Stun`
+  - `durationSeconds = 1`
+- 当前资产里已经不再包含：
+  - `ApplyForcedMovement`
+  - `KnockUp`
+  - 范围击飞旧配置
+
+这说明：
+
+- 当前小技能已经从旧的击飞样例正确切回“单点打断型眩晕”
+- 当前 YAML 与 `docs/heroes/tank/ironwall.md` 是一致的
+
+## 对“骑士大招是否符合文档”的检查结论
+
+结论：
+
+- **这条成立。**
+
+已确认做对的部分：
+
+- 当前大招资产内部已经是：
+  - `m_Name: Iron Oath`
+  - `skillId: skill_tank_ultimate_ironoath`
+  - `displayName: Iron Oath`
+- `targetType` 当前是：
+  - `AllAllies`
+- `skillType` 当前是：
+  - `Buff`
+- 状态效果当前是：
+  - `StatusEffectType.DefenseModifier`
+  - `magnitude = 40`
+  - `durationSeconds = 8`
+- 当前没有再残留：
+  - 范围击飞
+  - `KnockUp`
+  - 强制位移
+  - 护盾 / 无敌 / 治疗
+
+这说明：
+
+- 当前 `Iron Oath` 已经不是旧版 `Ground Lock` 的范围控制大招
+- 它现在的运行时语义和英雄文档已经对齐到“全队防御 Buff”
+
+## 对“主动释放型大招是否已经统一为一局一次”的检查结论
+
+结论：
+
+- **这条成立。**
+
+已确认做对的部分：
+
+- `RuntimeHero.CanUseUltimate()` 当前只看：
+  - `Definition.ultimateSkill != null`
+  - `!HasCastUltimate`
+  - `CanCastSkills`
+- `RuntimeHero.StartSkillCooldown(...)` 对大招分支会直接：
+  - `HasCastUltimate = true`
+- 当前没有再看到“大招冷却结束后可再次释放”的旧判断残留
+- `Stage01SampleContentBuilder.CreateSkill(...)` 当前会把：
+  - `slotType == Ultimate`
+  - 统一生成 `cooldownSeconds = 0`
+- 当前各样例主动大招资产也都已经是：
+  - `cooldownSeconds: 0`
+
+这说明：
+
+- 现在需要看的确实已经不是“骑士大招 CD 是否合理”
+- 而是“主动大招是否一局一次”，而这一点当前已经收住
+
+## 对“骑士大招释放判断是否收口到最新要求”的检查结论
+
+结论：
+
+- **这条成立。**
+
+已确认做对的部分：
+
+- `ConfigureTankUltimate(...)` 当前把大招决策写成：
+  - `targetingType = EnemyDensestPosition`
+  - `primaryCondition = AllyCountInRange`
+  - `searchRadius = 6`
+  - `requiredUnitCount = 3`
+- fallback 当前是：
+  - `triggerAfterSeconds = 45`
+  - `overrideRequiredUnitCount = 2`
+- 没有再残留：
+  - 血量阈值判断
+  - 额外的 secondary health 条件
+
+这说明：
+
+- 当前决策逻辑已经按交接要求简化成“以敌方密集点为锚，统计附近友军数量”
+- `45 秒后 3 人降到 2 人` 这条 fallback 也已经实际接上
+
+## 对“敌方锚点 + 全队 Buff”的组合是否自洽的检查结论
+
+结论：
+
+- **这条成立，而且是这轮最值得保留的结构点。**
+
+已确认做对的部分：
+
+- 决策阶段用 `EnemyDensestPosition` 只负责找判断锚点
+- `CountUnitsInRange(...)` 的中心点取的是该锚点位置
+- 执行阶段 `CollectTargets(...)` 一旦进入 `AllAllies` 分支，就会直接收集全部存活友军
+- 当前没有看到“只给锚点附近友军上 Buff”的混写问题
+
+这说明：
+
+- 当前大招不是“范围 Buff 伪装成全队 Buff”
+- 这套“决策锚点”和“实际施加目标”分离的写法是正确的，也值得保留
+
+## 当前最值得优先指出的 2 个点
+
+### 1. `Stage01SampleContentBuilder` 现在并不能真正稳定保留旧的 `Ground Lock.asset` 路径
+
+结论：
+
+- **这是这轮骑士实现里最明确、最值得优先修的问题。**
+
+原因：
+
+- `Stage01SampleContentBuilder.GetSkillAssetPath(...)` 现在仍按：
+  - `displayName`
+  计算技能资产路径
+- 对骑士大招来说，这意味着生成器会去找：
+  - `Iron Oath.asset`
+- 但当前仓库里真实存在、并仍被英雄资产引用的文件是：
+  - `Ground Lock.asset`
+- 所以一旦重新生成 demo content：
+  - 非覆盖模式下会额外新建一份 `Iron Oath.asset` 孤儿资产
+  - 覆盖模式下还可能把 `Ironwall.asset` 的引用改切到新路径
+
+影响：
+
+- 这和 `0416.md` 里“有意保留旧路径”的说法不一致
+- 也会让后续工具链、人工排查和资产追踪变得混乱
+
+判断：
+
+- **这不是数值或平衡问题，而是明确的资产路径与生成器契约问题，优先级高于继续调技能参数。**
+
+### 2. `AllAllies / AllEnemies` 对未来“不可选中 + 全体直接技能”的边界还没有完全收口
+
+结论：
+
+- **这更像前向语义风险，不是当前骑士已经触发的 bug。**
+
+原因：
+
+- 当前 `CollectTargets(...)` 对 `AllAllies / AllEnemies` 会直接收集全队存活单位
+- `IsPrimaryTargetStillValid(...)` 对这两类目标也直接放行
+- 这让 `Iron Oath` 现在能正确给全体友军上 Buff
+- 但如果以后有“全体敌军直接技能”出现：
+  - 它可能不会复检 `CanBeDirectTargeted`
+  - 从而和“不可选中应阻断直接目标技能”的正式文档边界产生冲突
+
+影响：
+
+- 当前骑士大招是安全的，因为它本来就是全队 Buff
+- 但这套通用目标机制如果继续扩到别的英雄，后面还需要补一层“全体技能是否属于直接目标语义”的收口
+
+判断：
+
+- **当前实现已经够用，但还不能说这套全体目标语义在所有未来技能上都彻底收稳。**
+
+## 这轮关于骑士实现的最终结论
+
+- **最值得保留的点是：`AllAllies / AllEnemies` 已经不是骑士特例，骑士大招的“敌方密集点作判断锚点 + 实际给全体友军上 Buff”这套结构也是自洽的。**
+- **最值得优先修的点是：`Stage01SampleContentBuilder` 和旧的 `Ground Lock.asset` 路径现在并不真正兼容，重新生成内容时存在新建重复资产或改写引用的风险。**
+- **从当前最终仓库状态看，骑士技能参数、运行时语义和“一局一次大招”规则本身都已经与正式文档基本对齐。**
+- **如果下一步只做一个最小增量，优先应该落在样例内容生成器的技能资产路径兼容逻辑，而不是先继续调骑士参数或再扩新的骑士特例。**
