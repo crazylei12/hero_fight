@@ -61,9 +61,9 @@ namespace Fight.Heroes
 
         public bool CanMove => !HasStatusFlag(StatusBehaviorFlags.BlocksMovement) && !IsUnderForcedMovement;
 
-        public bool CanAttack => !HasStatusFlag(StatusBehaviorFlags.BlocksBasicAttacks);
+        public bool CanAttack => !HasStatusFlag(StatusBehaviorFlags.BlocksBasicAttacks) && !IsUnderForcedMovement;
 
-        public bool CanCastSkills => !HasStatusFlag(StatusBehaviorFlags.BlocksSkillCasts);
+        public bool CanCastSkills => !HasStatusFlag(StatusBehaviorFlags.BlocksSkillCasts) && !IsUnderForcedMovement;
 
         public bool CanBeDirectTargeted => !HasStatusFlag(StatusBehaviorFlags.BlocksDirectTargeting);
 
