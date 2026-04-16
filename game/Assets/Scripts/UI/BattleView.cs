@@ -23,7 +23,6 @@ namespace Fight.UI
         private const float HealthBarWidth = 0.9f;
         private const float HealthBarBackgroundHeight = 0.11f;
         private const float HealthBarFillHeight = 0.07f;
-        private const float ShieldBarGap = 0.04f;
         private const float ArenaBackgroundHeight = Stage01ArenaSpec.HeightWorldUnits;
         private const float MinAirborneEffectHeight = 0.12f;
         private const float DefaultTransientVfxLifetime = 1f;
@@ -285,21 +284,24 @@ namespace Fight.UI
                 view.Shadow.color = shadow;
             }
 
+            var healthRatio = hero.MaxHealth > 0f
+                ? Mathf.Clamp01(hero.CurrentHealth / hero.MaxHealth)
+                : 0f;
+
             if (view.HealthFill != null)
             {
-                var ratio = hero.MaxHealth > 0f ? Mathf.Clamp01(hero.CurrentHealth / hero.MaxHealth) : 0f;
                 var healthColor = hero.Side == TeamSide.Blue
                     ? new Color(0.44f, 0.86f, 0.34f)
                     : new Color(0.92f, 0.29f, 0.24f);
-                UpdateHealthFill(view.HealthFill, ratio, healthColor);
+                UpdateHealthFill(view.HealthFill, healthRatio, healthColor);
             }
 
             if (view.ShieldFill != null)
             {
                 var shieldRatio = hero.MaxHealth > 0f
-                    ? Mathf.Clamp01(StatusEffectSystem.GetTotalShield(hero) / hero.MaxHealth)
+                    ? Mathf.Max(0f, StatusEffectSystem.GetTotalShield(hero) / hero.MaxHealth)
                     : 0f;
-                UpdateShieldFill(view.ShieldFill, shieldRatio, shieldBarColor);
+                UpdateShieldFill(view.ShieldFill, healthRatio, shieldRatio, shieldBarColor);
             }
 
             if (view.UltimateIcon != null)
@@ -390,7 +392,7 @@ namespace Fight.UI
             view.HealthFill = MakeSprite("HealthFill", view.FootUiRoot, squareSprite, Color.green, 301, Vector3.zero, new Vector3(HealthBarWidth, HealthBarFillHeight, 1f));
             UpdateHealthFill(view.HealthFill, 1f, Color.green);
             view.ShieldFill = MakeSprite("ShieldFill", view.FootUiRoot, squareSprite, shieldBarColor, 302, Vector3.zero, new Vector3(0f, HealthBarFillHeight, 1f));
-            UpdateShieldFill(view.ShieldFill, 0f, shieldBarColor);
+            UpdateShieldFill(view.ShieldFill, 1f, 0f, shieldBarColor);
             view.UltimateIcon = MakeSprite("UltimateIcon", view.FootUiRoot, squareSprite, new Color(1f, 0.9f, 0.36f, 0.98f), 303, new Vector3(-0.58f, 0f, 0f), new Vector3(0.16f, 0.16f, 1f));
             view.UltimateIcon.transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
             return view;
@@ -411,19 +413,21 @@ namespace Fight.UI
             healthFill.enabled = clampedRatio > 0f;
         }
 
-        private static void UpdateShieldFill(SpriteRenderer shieldFill, float ratio, Color color)
+        private static void UpdateShieldFill(SpriteRenderer shieldFill, float healthRatio, float shieldRatio, Color color)
         {
             if (shieldFill == null)
             {
                 return;
             }
 
-            var clampedRatio = Mathf.Clamp01(ratio);
-            var currentWidth = HealthBarWidth * clampedRatio;
+            var clampedHealthRatio = Mathf.Clamp01(healthRatio);
+            var normalizedShieldRatio = Mathf.Max(0f, shieldRatio);
+            var currentWidth = HealthBarWidth * normalizedShieldRatio;
+            var healthRightEdge = (-HealthBarWidth * 0.5f) + (HealthBarWidth * clampedHealthRatio);
             shieldFill.transform.localScale = new Vector3(currentWidth, HealthBarFillHeight, 1f);
-            shieldFill.transform.localPosition = new Vector3((HealthBarWidth * 0.5f) + ShieldBarGap + (currentWidth * 0.5f), 0f, 0f);
+            shieldFill.transform.localPosition = new Vector3(healthRightEdge + (currentWidth * 0.5f), 0f, 0f);
             shieldFill.color = color;
-            shieldFill.enabled = clampedRatio > 0f;
+            shieldFill.enabled = currentWidth > 0f;
         }
 
         private void UpdateDeathVisibility(RuntimeHero hero, HeroViewState view)
