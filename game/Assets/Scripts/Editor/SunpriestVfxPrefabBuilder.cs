@@ -16,7 +16,6 @@ namespace Fight.Editor
         private const string SharedVfxResourcesFolder = "Assets/Resources/Stage01Demo/VFX/Shared";
         private const string BuilderScriptAssetPath = "Assets/Scripts/Editor/SunpriestVfxPrefabBuilder.cs";
         private const string SoftCircleSpritePath = GeneratedArtFolder + "/vfx_soft_circle.png";
-        private const string HealPlusSpritePath = GeneratedArtFolder + "/vfx_heal_plus.png";
 
         private const string ProjectilePrefabPath = ProjectilePrefabsFolder + "/SunpriestBasicAttackProjectile.prefab";
         private const string HealImpactPrefabPath = SharedPrefabsFolder + "/SunpriestHealImpact.prefab";
@@ -27,14 +26,15 @@ namespace Fight.Editor
         private const string SunBlessingSkillAssetPath = "Assets/Data/Stage01Demo/Skills/support_001_sunpriest/Sun Blessing.asset";
 
         private const string LightProjectileSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Range_attack/Projectiles_light.prefab";
-        private const string FlashCircleSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Burst/Flash_circle.prefab";
-        private const string RegenerationHealthSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Regeneration/Regeneration_health.prefab";
         private const string RegenerationHealthLoopSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Regeneration/Regeneration_health_loop.prefab";
         private const string RegenerationHealthAreaSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Regeneration/Regeneration_health_area.prefab";
         private const string RegenerationHealthAreaLoopSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Regeneration/Regeneration_health_area_loop.prefab";
         private const string OrbsGoldSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Orbs/Orbs_gold.prefab";
         private const string LightMissileSourcePrefabPath = "Assets/Super Pixel Projectiles Pack 3/Prefabs/pj3_magic_missile_small_yellow.prefab";
         private const string LightSparkSourcePrefabPath = "Assets/Super Pixel Projectiles Pack 3/Prefabs/pj3_light_spark_small_yellow.prefab";
+        private const float HealImpactLoopScale = 0.22f;
+        private const float HealImpactLoopDurationSeconds = 0.6f;
+        private const float HealImpactLoopSimulationSpeed = 1.2f;
 
         private static bool autoBuildScheduled;
 
@@ -66,9 +66,8 @@ namespace Fight.Editor
             EnsureFolder(SharedVfxResourcesFolder);
 
             var softCircleSprite = EnsureSoftCircleSprite();
-            var healPlusSprite = EnsureHealPlusSprite();
             BuildProjectilePrefab(softCircleSprite);
-            BuildHealImpactPrefabs(softCircleSprite, healPlusSprite);
+            BuildHealImpactPrefabs();
             BuildSunBlessingFieldPrefab(softCircleSprite);
             SyncStage01DemoAssets();
             AssetDatabase.SaveAssets();
@@ -110,7 +109,7 @@ namespace Fight.Editor
                 return true;
             }
 
-            return GetLatestTimestampUtc(BuilderScriptAssetPath, SoftCircleSpritePath, HealPlusSpritePath)
+            return GetLatestTimestampUtc(BuilderScriptAssetPath, SoftCircleSpritePath)
                 > GetLatestTimestampUtc(ProjectilePrefabPath, HealImpactPrefabPath, HealImpactResourcesPrefabPath, SunBlessingFieldPrefabPath);
         }
 
@@ -191,92 +190,50 @@ namespace Fight.Editor
             SavePrefab(root, ProjectilePrefabPath);
         }
 
-        private static void BuildHealImpactPrefabs(Sprite softCircleSprite, Sprite healPlusSprite)
+        private static void BuildHealImpactPrefabs()
         {
-            SavePrefab(CreateHealImpactRoot(softCircleSprite, healPlusSprite), HealImpactPrefabPath);
-            SavePrefab(CreateHealImpactRoot(softCircleSprite, healPlusSprite), HealImpactResourcesPrefabPath);
+            SavePrefab(CreateHealImpactRoot(), HealImpactPrefabPath);
+            SavePrefab(CreateHealImpactRoot(), HealImpactResourcesPrefabPath);
         }
 
-        private static GameObject CreateHealImpactRoot(Sprite softCircleSprite, Sprite healPlusSprite)
+        private static GameObject CreateHealImpactRoot()
         {
-            var flashCirclePrefab = LoadRequiredAsset<GameObject>(FlashCircleSourcePrefabPath);
-            var regenerationHealthPrefab = LoadRequiredAsset<GameObject>(RegenerationHealthSourcePrefabPath);
             var regenerationHealthLoopPrefab = LoadRequiredAsset<GameObject>(RegenerationHealthLoopSourcePrefabPath);
 
             var root = new GameObject("HealReceivedImpact");
             root.AddComponent<SortingGroup>();
 
-            CreateSprite(
-                root.transform,
-                "HealRing",
-                softCircleSprite,
-                new Color(0.38f, 0.98f, 0.48f, 0.17f),
-                2,
-                Vector3.zero,
-                new Vector3(1.06f, 1.06f, 1f));
-            CreateSprite(
-                root.transform,
-                "HealCore",
-                softCircleSprite,
-                new Color(0.84f, 1f, 0.86f, 0.1f),
-                3,
-                Vector3.zero,
-                new Vector3(0.22f, 0.22f, 1f));
-            CreateSprite(
-                root.transform,
-                "HealMist",
-                softCircleSprite,
-                new Color(0.62f, 1f, 0.68f, 0.13f),
-                4,
-                new Vector3(0f, 0.01f, 0f),
-                new Vector3(0.76f, 0.76f, 1f));
-
-            var flashCircle = InstantiateNestedPrefab(flashCirclePrefab, root.transform, "FlashCircle");
-            flashCircle.transform.localScale = Vector3.one * 0.18f;
-            flashCircle.transform.localPosition = Vector3.zero;
-            OffsetRendererOrders(flashCircle, 8);
-
-            var healPulseLeft = InstantiateNestedPrefab(regenerationHealthPrefab, root.transform, "HealPulseLeft");
-            healPulseLeft.transform.localScale = Vector3.one * 0.125f;
-            healPulseLeft.transform.localPosition = new Vector3(-0.36f, 0f, 0f);
-            OffsetRendererOrders(healPulseLeft, 10);
-
-            var healPulseRight = InstantiateNestedPrefab(regenerationHealthPrefab, root.transform, "HealPulseRight");
-            healPulseRight.transform.localScale = Vector3.one * 0.125f;
-            healPulseRight.transform.localPosition = new Vector3(0.36f, 0f, 0f);
-            OffsetRendererOrders(healPulseRight, 10);
-
-            var healLoopLeft = InstantiateNestedPrefab(regenerationHealthLoopPrefab, root.transform, "HealLoopLeft");
-            healLoopLeft.transform.localScale = Vector3.one * 0.11f;
-            healLoopLeft.transform.localPosition = new Vector3(-0.32f, 0f, 0f);
-            OffsetRendererOrders(healLoopLeft, 12);
-
-            var healLoopRight = InstantiateNestedPrefab(regenerationHealthLoopPrefab, root.transform, "HealLoopRight");
-            healLoopRight.transform.localScale = Vector3.one * 0.11f;
-            healLoopRight.transform.localPosition = new Vector3(0.32f, 0f, 0f);
-            OffsetRendererOrders(healLoopRight, 12);
-
-            var plusLeft = CreateSprite(
-                root.transform,
-                "HealPlusLeft",
-                healPlusSprite,
-                new Color(0.78f, 1f, 0.78f, 0.86f),
-                15,
-                new Vector3(-0.42f, 0.02f, 0f),
-                new Vector3(0.12f, 0.12f, 1f));
-            plusLeft.transform.localRotation = Quaternion.Euler(0f, 0f, 8f);
-
-            var plusRight = CreateSprite(
-                root.transform,
-                "HealPlusRight",
-                healPlusSprite,
-                new Color(0.7f, 1f, 0.72f, 0.78f),
-                15,
-                new Vector3(0.42f, -0.01f, 0f),
-                new Vector3(0.12f, 0.12f, 1f));
-            plusRight.transform.localRotation = Quaternion.Euler(0f, 0f, -12f);
+            var healLoop = InstantiateNestedPrefab(regenerationHealthLoopPrefab, root.transform, "HealLoop");
+            healLoop.transform.localScale = Vector3.one * HealImpactLoopScale;
+            healLoop.transform.localPosition = Vector3.zero;
+            TuneHealImpactLoop(healLoop);
+            OffsetRendererOrders(healLoop, 10);
 
             return root;
+        }
+
+        private static void TuneHealImpactLoop(GameObject healLoop)
+        {
+            if (healLoop == null)
+            {
+                return;
+            }
+
+            var particleSystems = healLoop.GetComponentsInChildren<ParticleSystem>(true);
+            for (var i = 0; i < particleSystems.Length; i++)
+            {
+                var particleSystem = particleSystems[i];
+                if (particleSystem == null)
+                {
+                    continue;
+                }
+
+                var main = particleSystem.main;
+                main.loop = false;
+                main.prewarm = false;
+                main.duration = Mathf.Min(main.duration, HealImpactLoopDurationSeconds);
+                main.simulationSpeed = Mathf.Max(main.simulationSpeed, HealImpactLoopSimulationSpeed);
+            }
         }
 
         private static void BuildSunBlessingFieldPrefab(Sprite softCircleSprite)
@@ -366,30 +323,6 @@ namespace Fight.Editor
             return LoadRequiredAsset<Sprite>(SoftCircleSpritePath);
         }
 
-        private static Sprite EnsureHealPlusSprite()
-        {
-            if (!File.Exists(GetAbsoluteProjectPath(HealPlusSpritePath)))
-            {
-                var texture = BuildHealPlusTexture(128);
-                File.WriteAllBytes(GetAbsoluteProjectPath(HealPlusSpritePath), texture.EncodeToPNG());
-                Object.DestroyImmediate(texture);
-                AssetDatabase.ImportAsset(HealPlusSpritePath, ImportAssetOptions.ForceSynchronousImport);
-
-                if (AssetImporter.GetAtPath(HealPlusSpritePath) is TextureImporter importer)
-                {
-                    importer.textureType = TextureImporterType.Sprite;
-                    importer.spriteImportMode = SpriteImportMode.Single;
-                    importer.alphaIsTransparency = true;
-                    importer.mipmapEnabled = false;
-                    importer.wrapMode = TextureWrapMode.Clamp;
-                    importer.filterMode = FilterMode.Bilinear;
-                    importer.SaveAndReimport();
-                }
-            }
-
-            return LoadRequiredAsset<Sprite>(HealPlusSpritePath);
-        }
-
         private static Texture2D BuildSoftCircleTexture(int size)
         {
             var texture = new Texture2D(size, size, TextureFormat.RGBA32, false)
@@ -411,36 +344,6 @@ namespace Fight.Editor
                     var alpha = distance <= radius
                         ? 1f - Mathf.Clamp01((distance - (radius * 0.62f)) / Mathf.Max(1f, radius * 0.38f))
                         : 0f;
-                    pixels[(y * size) + x] = new Color(1f, 1f, 1f, alpha);
-                }
-            }
-
-            texture.SetPixels(pixels);
-            texture.Apply();
-            return texture;
-        }
-
-        private static Texture2D BuildHealPlusTexture(int size)
-        {
-            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false)
-            {
-                filterMode = FilterMode.Bilinear,
-                wrapMode = TextureWrapMode.Clamp,
-            };
-
-            var pixels = new Color[size * size];
-            var center = (size - 1) * 0.5f;
-            var armHalfThickness = size * 0.12f;
-            var armHalfLength = size * 0.34f;
-            for (var y = 0; y < size; y++)
-            {
-                for (var x = 0; x < size; x++)
-                {
-                    var dx = Mathf.Abs(x - center);
-                    var dy = Mathf.Abs(y - center);
-                    var insideVertical = dx <= armHalfThickness && dy <= armHalfLength;
-                    var insideHorizontal = dy <= armHalfThickness && dx <= armHalfLength;
-                    var alpha = insideVertical || insideHorizontal ? 1f : 0f;
                     pixels[(y * size) + x] = new Color(1f, 1f, 1f, alpha);
                 }
             }
