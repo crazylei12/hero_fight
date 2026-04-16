@@ -1,5 +1,5 @@
-using System.Collections.Generic;
 using System;
+using System.Collections.Generic;
 using Fight.Data;
 using UnityEngine;
 
@@ -51,25 +51,25 @@ namespace Fight.Heroes
 
         public IReadOnlyList<RuntimeStatusEffect> ActiveStatusEffects => activeStatusEffects;
 
+        internal List<RuntimeStatusEffect> MutableStatusEffects => activeStatusEffects;
+
         public float VisualHeightOffset { get; private set; }
 
-        public bool HasHardControl => HasStatusFlag(StatusBehaviorFlags.BlocksMovement)
-            || HasStatusFlag(StatusBehaviorFlags.BlocksBasicAttacks)
-            || HasStatusFlag(StatusBehaviorFlags.BlocksSkillCasts);
+        public bool HasHardControl => StatusEffectSystem.HasHardControl(this);
 
         public bool IsUnderForcedMovement => activeForcedMovement != null;
 
-        public bool CanMove => !HasStatusFlag(StatusBehaviorFlags.BlocksMovement) && !IsUnderForcedMovement;
+        public bool CanMove => !StatusEffectSystem.HasBehaviorFlag(this, StatusBehaviorFlags.BlocksMovement) && !IsUnderForcedMovement;
 
-        public bool CanAttack => !HasStatusFlag(StatusBehaviorFlags.BlocksBasicAttacks) && !IsUnderForcedMovement;
+        public bool CanAttack => !StatusEffectSystem.HasBehaviorFlag(this, StatusBehaviorFlags.BlocksBasicAttacks) && !IsUnderForcedMovement;
 
-        public bool CanCastSkills => !HasStatusFlag(StatusBehaviorFlags.BlocksSkillCasts) && !IsUnderForcedMovement;
+        public bool CanCastSkills => !StatusEffectSystem.HasBehaviorFlag(this, StatusBehaviorFlags.BlocksSkillCasts) && !IsUnderForcedMovement;
 
-        public bool CanBeDirectTargeted => !HasStatusFlag(StatusBehaviorFlags.BlocksDirectTargeting);
+        public bool CanBeDirectTargeted => !StatusEffectSystem.HasBehaviorFlag(this, StatusBehaviorFlags.BlocksDirectTargeting);
 
-        public bool CanReceiveDamage => !HasStatusFlag(StatusBehaviorFlags.PreventsDamage);
+        public bool CanReceiveDamage => !StatusEffectSystem.HasBehaviorFlag(this, StatusBehaviorFlags.PreventsDamage);
 
-        public float MaxHealth => Definition != null ? GetModifiedStat(Definition.baseStats.maxHealth, StatusEffectType.MaxHealthModifier) : 0f;
+        public float MaxHealth => Definition != null ? StatusEffectSystem.GetModifiedStat(this, Definition.baseStats.maxHealth, StatusEffectType.MaxHealthModifier) : 0f;
 
         public float AttackRange
         {
@@ -83,15 +83,15 @@ namespace Fight.Heroes
                 var baseRange = Definition.basicAttack.rangeOverride > 0f
                     ? Definition.basicAttack.rangeOverride
                     : Definition.baseStats.attackRange;
-                return GetModifiedStat(baseRange, StatusEffectType.AttackRangeModifier);
+                return StatusEffectSystem.GetModifiedStat(this, baseRange, StatusEffectType.AttackRangeModifier);
             }
         }
 
-        public float MoveSpeed => Definition != null ? GetModifiedStat(Definition.baseStats.moveSpeed, StatusEffectType.MoveSpeedModifier) : 0f;
+        public float MoveSpeed => Definition != null ? StatusEffectSystem.GetModifiedStat(this, Definition.baseStats.moveSpeed, StatusEffectType.MoveSpeedModifier) : 0f;
 
-        public float AttackPower => Definition != null ? GetModifiedStat(Definition.baseStats.attackPower, StatusEffectType.AttackPowerModifier) : 0f;
+        public float AttackPower => Definition != null ? StatusEffectSystem.GetModifiedStat(this, Definition.baseStats.attackPower, StatusEffectType.AttackPowerModifier) : 0f;
 
-        public float Defense => Definition != null ? GetModifiedStat(Definition.baseStats.defense, StatusEffectType.DefenseModifier) : 0f;
+        public float Defense => Definition != null ? StatusEffectSystem.GetModifiedStat(this, Definition.baseStats.defense, StatusEffectType.DefenseModifier) : 0f;
 
         public float CriticalChance
         {
@@ -102,7 +102,7 @@ namespace Fight.Heroes
                     return 0f;
                 }
 
-                return Mathf.Clamp01(GetModifiedStat(Definition.baseStats.criticalChance, StatusEffectType.CriticalChanceModifier));
+                return Mathf.Clamp01(StatusEffectSystem.GetModifiedStat(this, Definition.baseStats.criticalChance, StatusEffectType.CriticalChanceModifier));
             }
         }
 
@@ -115,7 +115,7 @@ namespace Fight.Heroes
                     return 1f;
                 }
 
-                return Mathf.Max(1f, GetModifiedStat(Definition.baseStats.criticalDamageMultiplier, StatusEffectType.CriticalDamageModifier));
+                return Mathf.Max(1f, StatusEffectSystem.GetModifiedStat(this, Definition.baseStats.criticalDamageMultiplier, StatusEffectType.CriticalDamageModifier));
             }
         }
 
@@ -128,7 +128,7 @@ namespace Fight.Heroes
                     return 1f;
                 }
 
-                var speedMultiplier = GetMultiplier(StatusEffectType.AttackSpeedModifier);
+                var speedMultiplier = StatusEffectSystem.GetMultiplier(this, StatusEffectType.AttackSpeedModifier);
                 var baseAttackSpeed = Mathf.Max(0.01f, Definition.baseStats.attackSpeed);
                 return 1f / (baseAttackSpeed * speedMultiplier);
             }
@@ -153,6 +153,7 @@ namespace Fight.Heroes
 
         public void ResetToSpawn()
         {
+            StatusEffectSystem.ClearStatuses(this);
             CurrentPosition = SpawnPosition;
             CurrentHealth = MaxHealth;
             RespawnRemainingSeconds = 0f;
@@ -164,7 +165,6 @@ namespace Fight.Heroes
             HasInitializedUltimateDecisionSchedule = false;
             VisualHeightOffset = 0f;
             activeForcedMovement = null;
-            activeStatusEffects.Clear();
             ClearThreatTracking();
         }
 
@@ -175,8 +175,8 @@ namespace Fight.Heroes
                 return 0f;
             }
 
-            amount -= ConsumeShield(amount);
-            RemoveExpiredStatuses(onExpiredStatus);
+            amount -= StatusEffectSystem.ConsumeShield(this, amount);
+            StatusEffectSystem.RemoveExpiredStatuses(this, onExpiredStatus);
             if (amount <= 0f)
             {
                 return 0f;
@@ -199,39 +199,7 @@ namespace Fight.Heroes
             AttackCooldownRemainingSeconds = Mathf.Max(0f, AttackCooldownRemainingSeconds - deltaTime);
             ActiveSkillCooldownRemainingSeconds = Mathf.Max(0f, ActiveSkillCooldownRemainingSeconds - deltaTime);
             TickForcedMovement(deltaTime);
-
-            var statusSnapshot = activeStatusEffects.ToArray();
-            for (var i = statusSnapshot.Length - 1; i >= 0; i--)
-            {
-                var status = statusSnapshot[i];
-                if (status == null || !activeStatusEffects.Contains(status))
-                {
-                    continue;
-                }
-
-                status.Tick(deltaTime);
-
-                var pendingTickCount = status.ConsumePendingTickCount();
-                for (var tickIndex = 0; tickIndex < pendingTickCount; tickIndex++)
-                {
-                    onPeriodicStatusTick?.Invoke(status);
-                    if (IsDead)
-                    {
-                        break;
-                    }
-                }
-
-                if (IsDead)
-                {
-                    break;
-                }
-
-                if (status.IsExpired)
-                {
-                    onExpiredStatus?.Invoke(status);
-                    activeStatusEffects.Remove(status);
-                }
-            }
+            StatusEffectSystem.Tick(this, deltaTime, onPeriodicStatusTick, onExpiredStatus);
 
             if (CurrentTarget != null && !CurrentTarget.IsDead)
             {
@@ -346,7 +314,7 @@ namespace Fight.Heroes
             CombatEngagedSeconds = 0f;
             VisualHeightOffset = 0f;
             activeForcedMovement = null;
-            activeStatusEffects.Clear();
+            StatusEffectSystem.ClearStatuses(this);
             ClearThreatTracking();
         }
 
@@ -369,51 +337,12 @@ namespace Fight.Heroes
 
         public bool HasStatus(StatusEffectType effectType)
         {
-            for (var i = 0; i < activeStatusEffects.Count; i++)
-            {
-                if (activeStatusEffects[i].EffectType == effectType)
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return StatusEffectSystem.HasStatus(this, effectType);
         }
 
         public bool ApplyStatusEffect(StatusEffectData data, RuntimeHero source = null, SkillData sourceSkill = null)
         {
-            if (data == null || data.effectType == StatusEffectType.None)
-            {
-                return false;
-            }
-
-            var sameTypeCount = 0;
-            RuntimeStatusEffect refreshTarget = null;
-
-            for (var i = 0; i < activeStatusEffects.Count; i++)
-            {
-                if (activeStatusEffects[i].EffectType != data.effectType)
-                {
-                    continue;
-                }
-
-                sameTypeCount++;
-                refreshTarget ??= activeStatusEffects[i];
-            }
-
-            if (sameTypeCount >= Mathf.Max(1, data.maxStacks))
-            {
-                if (data.refreshDurationOnReapply && refreshTarget != null)
-                {
-                    refreshTarget.Refresh(data);
-                    return true;
-                }
-
-                return false;
-            }
-
-            activeStatusEffects.Add(new RuntimeStatusEffect(data, source, sourceSkill));
-            return true;
+            return StatusEffectSystem.TryApplyStatus(this, data, source, sourceSkill);
         }
 
         public bool CanUseActiveSkill()
@@ -449,32 +378,6 @@ namespace Fight.Heroes
             HasInitializedUltimateDecisionSchedule = true;
         }
 
-        private float GetModifiedStat(float baseValue, StatusEffectType effectType)
-        {
-            return baseValue * GetMultiplier(effectType);
-        }
-
-        private float ConsumeShield(float damageAmount)
-        {
-            var remainingDamage = Mathf.Max(0f, damageAmount);
-            var absorbedDamage = 0f;
-
-            for (var i = 0; i < activeStatusEffects.Count && remainingDamage > 0f; i++)
-            {
-                var status = activeStatusEffects[i];
-                if (status.EffectType != StatusEffectType.Shield)
-                {
-                    continue;
-                }
-
-                var absorbed = status.ConsumeMagnitude(remainingDamage);
-                absorbedDamage += absorbed;
-                remainingDamage -= absorbed;
-            }
-
-            return absorbedDamage;
-        }
-
         private void ClearThreatTracking()
         {
             LastThreatSource = null;
@@ -502,50 +405,6 @@ namespace Fight.Heroes
 
             VisualHeightOffset = 0f;
             activeForcedMovement = null;
-        }
-
-        private void RemoveExpiredStatuses(Action<RuntimeStatusEffect> onExpiredStatus)
-        {
-            for (var i = activeStatusEffects.Count - 1; i >= 0; i--)
-            {
-                var status = activeStatusEffects[i];
-                if (!status.IsExpired)
-                {
-                    continue;
-                }
-
-                onExpiredStatus?.Invoke(status);
-                activeStatusEffects.RemoveAt(i);
-            }
-        }
-
-        private bool HasStatusFlag(StatusBehaviorFlags flag)
-        {
-            for (var i = 0; i < activeStatusEffects.Count; i++)
-            {
-                if ((activeStatusEffects[i].Definition.BehaviorFlags & flag) != 0)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private float GetMultiplier(StatusEffectType effectType)
-        {
-            var multiplier = 1f;
-            for (var i = 0; i < activeStatusEffects.Count; i++)
-            {
-                if (activeStatusEffects[i].EffectType != effectType)
-                {
-                    continue;
-                }
-
-                multiplier += activeStatusEffects[i].Magnitude;
-            }
-
-            return Mathf.Max(0.1f, multiplier);
         }
     }
 }
