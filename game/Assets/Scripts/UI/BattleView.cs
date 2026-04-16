@@ -27,6 +27,7 @@ namespace Fight.UI
         private const float MinAirborneEffectHeight = 0.12f;
         private const float DefaultTransientVfxLifetime = 1f;
         private const int HealEventVfxSortOrderOffset = 190;
+        private const string HealImpactTransientKey = "heal_received";
         private static readonly Dictionary<StatusEffectType, StatusEffectVfxConfig> StatusEffectVfxConfigs = new Dictionary<StatusEffectType, StatusEffectVfxConfig>
         {
             { StatusEffectType.Stun, new StatusEffectVfxConfig(StunStatusLoopVfxResourcesPath, new Vector3(0f, 1.1f, 0f), Vector3.one * 0.85f, Vector3.zero, 180) },
@@ -162,6 +163,7 @@ namespace Fight.UI
             public SortingGroup SortingGroup;
             public Renderer[] Renderers;
             public ParticleSystem[] ParticleSystems;
+            public string UniqueKey;
             public int SortingOrderOffset;
             public float ExpiresAtSeconds;
         }
@@ -1494,7 +1496,7 @@ namespace Fight.UI
                 }
             }
 
-            SpawnTransientHeroVfx(targetView, healImpactPrefab, Vector3.zero, HealEventVfxSortOrderOffset);
+            SpawnTransientHeroVfx(targetView, healImpactPrefab, Vector3.zero, HealEventVfxSortOrderOffset, HealImpactTransientKey);
         }
 
         private static GameObject GetSharedHealImpactPrefab()
@@ -1507,7 +1509,7 @@ namespace Fight.UI
             return sharedHealImpactPrefab;
         }
 
-        private void SpawnTransientHeroVfx(HeroViewState heroView, GameObject prefab, Vector3 localOffset, int sortingOrderOffset)
+        private void SpawnTransientHeroVfx(HeroViewState heroView, GameObject prefab, Vector3 localOffset, int sortingOrderOffset, string uniqueKey = null)
         {
             if (heroView?.Root == null || prefab == null)
             {
@@ -1519,6 +1521,8 @@ namespace Fight.UI
             {
                 return;
             }
+
+            RemoveTransientVfxWithKey(heroView, uniqueKey);
 
             var instance = Instantiate(prefab, parent);
             instance.name = $"{prefab.name}_Transient";
@@ -1533,12 +1537,33 @@ namespace Fight.UI
                 SortingGroup = sortingGroup,
                 Renderers = instance.GetComponentsInChildren<Renderer>(true),
                 ParticleSystems = instance.GetComponentsInChildren<ParticleSystem>(true),
+                UniqueKey = uniqueKey,
                 SortingOrderOffset = sortingOrderOffset,
                 ExpiresAtSeconds = GetElapsedTimeSeconds() + GetTransientVfxLifetime(instance),
             };
 
             heroView.TransientVfx.Add(transientState);
             ApplyTransientVfxState(transientState, heroView.SortingGroup != null ? heroView.SortingGroup.sortingOrder : HeroSortBase);
+        }
+
+        private static void RemoveTransientVfxWithKey(HeroViewState heroView, string uniqueKey)
+        {
+            if (heroView?.TransientVfx == null || string.IsNullOrWhiteSpace(uniqueKey))
+            {
+                return;
+            }
+
+            for (var i = heroView.TransientVfx.Count - 1; i >= 0; i--)
+            {
+                var transient = heroView.TransientVfx[i];
+                if (transient == null || !string.Equals(transient.UniqueKey, uniqueKey, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                DestroyTransientVfx(transient);
+                heroView.TransientVfx.RemoveAt(i);
+            }
         }
 
         private void SyncTransientVfx(RuntimeHero hero, HeroViewState heroView, int heroSortingOrder)
