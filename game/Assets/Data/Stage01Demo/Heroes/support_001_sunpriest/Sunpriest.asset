@@ -40,8 +40,8 @@ MonoBehaviour:
   specialLogicNotes: 
   visualConfig:
     portrait: {fileID: 0}
-    battlePrefab: {fileID: 0}
-    animatorController: {fileID: 0}
+    battlePrefab: {fileID: 33178510622993888, guid: 2d8afc1ad51aba04fae4b3303a3a7588, type: 3}
+    animatorController: {fileID: 9100000, guid: c0fbc9a82051e94429aa17cc4b2f48e5, type: 2}
     projectilePrefab: {fileID: 0}
     projectileAlignToMovement: 0
     projectileEulerAngles: {x: 0, y: 0, z: 0}

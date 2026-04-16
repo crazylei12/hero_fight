@@ -26,6 +26,7 @@ namespace Fight.Editor
         private const string MainMenuScenePath = ScenesFolder + "/MainMenu.unity";
         private const string ResultScenePath = ScenesFolder + "/Result.unity";
         private const string DefaultBattleInputAssetPath = ResourcesDemoFolder + "/Stage01DemoBattleInput.asset";
+        private const string SupportPrefabPath = "Assets/Prefabs/Heroes/support_001_sunpriest/shengzhizhe.prefab";
         private const string WarriorPrefabPath = "Assets/Prefabs/Heroes/warrior_001_bladeguard/zhanshi01.prefab";
         private const string MagePrefabPath = "Assets/HeroEditor4D/heroes/FIREMAGE.prefab";
         private const string TankPrefabPath = "Assets/Prefabs/Heroes/tank_001_ironwall/tank01.prefab";
@@ -342,6 +343,7 @@ namespace Fight.Editor
         {
             var prefabPath = heroClass switch
             {
+                HeroClass.Support => SupportPrefabPath,
                 HeroClass.Warrior => WarriorPrefabPath,
                 HeroClass.Mage => MagePrefabPath,
                 HeroClass.Tank => TankPrefabPath,
