@@ -32,7 +32,9 @@ namespace Fight.Editor
         private const string OrbsGoldSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Orbs/Orbs_gold.prefab";
         private const string LightMissileSourcePrefabPath = "Assets/Super Pixel Projectiles Pack 3/Prefabs/pj3_magic_missile_small_yellow.prefab";
         private const string LightSparkSourcePrefabPath = "Assets/Super Pixel Projectiles Pack 3/Prefabs/pj3_light_spark_small_yellow.prefab";
-        private const float HealImpactLoopScale = 0.22f;
+        private const string HealImpactSourceChildName = "plus";
+        private static readonly Vector3 HealImpactLocalOffset = new Vector3(-0.36f, 0.04f, 0f);
+        private const float HealImpactLoopScale = 0.18f;
         private const float HealImpactLoopDurationSeconds = 0.6f;
         private const float HealImpactLoopSimulationSpeed = 1.2f;
         private static readonly Quaternion HealImpactAdaptedRotation = Quaternion.Euler(90f, 0f, 0f);
@@ -206,8 +208,9 @@ namespace Fight.Editor
 
             var healLoop = InstantiateNestedPrefab(regenerationHealthLoopPrefab, root.transform, "HealLoop");
             healLoop.transform.localScale = Vector3.one * HealImpactLoopScale;
-            healLoop.transform.localPosition = Vector3.zero;
+            healLoop.transform.localPosition = HealImpactLocalOffset;
             healLoop.transform.localRotation = HealImpactAdaptedRotation;
+            KeepOnlyDirectChild(healLoop.transform, HealImpactSourceChildName);
             TuneHealImpactLoop(healLoop);
             OffsetRendererOrders(healLoop, 10);
 
@@ -235,6 +238,29 @@ namespace Fight.Editor
                 main.prewarm = false;
                 main.duration = Mathf.Min(main.duration, HealImpactLoopDurationSeconds);
                 main.simulationSpeed = Mathf.Max(main.simulationSpeed, HealImpactLoopSimulationSpeed);
+            }
+        }
+
+        private static void KeepOnlyDirectChild(Transform parent, string childName)
+        {
+            if (parent == null)
+            {
+                return;
+            }
+
+            for (var i = parent.childCount - 1; i >= 0; i--)
+            {
+                var child = parent.GetChild(i);
+                if (child != null && child.name == childName)
+                {
+                    child.name = "HealSpark";
+                    continue;
+                }
+
+                if (child != null)
+                {
+                    Object.DestroyImmediate(child.gameObject);
+                }
             }
         }
 
