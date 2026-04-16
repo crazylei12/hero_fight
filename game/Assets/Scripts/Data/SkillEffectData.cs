@@ -24,10 +24,21 @@ namespace Fight.Data
         TowardSource = 1,
     }
 
+    public enum SkillEffectTargetMode
+    {
+        SkillTargets = 0,
+        Caster = 1,
+        PrimaryTarget = 2,
+        EnemiesInRadiusAroundCaster = 3,
+        AlliesInRadiusAroundCaster = 4,
+        DashPathEnemies = 5,
+    }
+
     [Serializable]
     public class SkillEffectData
     {
         public SkillEffectType effectType = SkillEffectType.DirectDamage;
+        public SkillEffectTargetMode targetMode = SkillEffectTargetMode.SkillTargets;
         [Min(0f)] public float powerMultiplier = 1f;
         [Min(0f)] public float radiusOverride = 0f;
         [Min(0f)] public float durationSeconds = 0f;
