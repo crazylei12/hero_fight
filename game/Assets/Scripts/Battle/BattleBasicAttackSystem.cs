@@ -43,7 +43,7 @@ namespace Fight.Battle
             }
         }
 
-        public static void PerformAttack(BattleContext context, RuntimeHero attacker, RuntimeHero target, BattleManager battleManager)
+        public static void BeginAttack(BattleContext context, RuntimeHero attacker, RuntimeHero target, BattleManager battleManager)
         {
             if (context == null || attacker == null || target == null || battleManager == null)
             {
@@ -62,8 +62,28 @@ namespace Fight.Battle
                 return;
             }
 
-            attacker.StartAttackCooldown();
+            attacker.BeginBasicAttack(target, CombatActionTiming.DefaultWindupSeconds, CombatActionTiming.DefaultRecoverySeconds);
             context.EventBus.Publish(new AttackPerformedEvent(attacker, target));
+        }
+
+        public static void ResolvePendingAttack(BattleContext context, RuntimeHero attacker, RuntimeHero target, BattleManager battleManager)
+        {
+            if (context == null || attacker == null || attacker.IsDead || target == null || battleManager == null)
+            {
+                return;
+            }
+
+            if (!IsValidTarget(attacker, target))
+            {
+                return;
+            }
+
+            var basicAttack = attacker.Definition.basicAttack;
+            var effectType = basicAttack.effectType;
+            if (!CanApplyEffectToTarget(target, effectType))
+            {
+                return;
+            }
 
             var impactAmount = effectType == BasicAttackEffectType.Heal
                 ? HealResolver.ResolveHealAmount(attacker, basicAttack.damageMultiplier)

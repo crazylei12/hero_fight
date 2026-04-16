@@ -66,7 +66,13 @@ namespace Fight.Battle
                 return;
             }
 
-            if (hero.IsUnderForcedMovement)
+            if (hero.TryConsumeReadyCombatAction(out var pendingAction))
+            {
+                ResolvePendingCombatAction(context, hero, pendingAction, battleManager);
+                return;
+            }
+
+            if (hero.IsUnderForcedMovement || hero.IsActionLocked)
             {
                 return;
             }
@@ -108,7 +114,25 @@ namespace Fight.Battle
                 return;
             }
 
-            BattleBasicAttackSystem.PerformAttack(context, hero, currentTarget, battleManager);
+            BattleBasicAttackSystem.BeginAttack(context, hero, currentTarget, battleManager);
+        }
+
+        private static void ResolvePendingCombatAction(BattleContext context, RuntimeHero hero, PendingCombatAction pendingAction, BattleManager battleManager)
+        {
+            if (context == null || hero == null || pendingAction == null || battleManager == null)
+            {
+                return;
+            }
+
+            switch (pendingAction.ActionType)
+            {
+                case CombatActionType.BasicAttack:
+                    BattleBasicAttackSystem.ResolvePendingAttack(context, hero, pendingAction.Target, battleManager);
+                    break;
+                case CombatActionType.SkillCast:
+                    BattleSkillSystem.ResolvePendingSkillCast(context, hero, pendingAction, battleManager);
+                    break;
+            }
         }
 
         private static bool TryRetreatFromRecentThreat(BattleContext context, RuntimeHero hero, RuntimeHero currentTarget, float deltaTime)
