@@ -58,7 +58,6 @@ namespace Fight.Editor
             0.072f,
         };
 
-        [MenuItem("Fight/Stage 01/Build FireMage VFX Prefabs")]
         public static void BuildFireMageVfxPrefabs()
         {
             EnsureFolder(GeneratedArtFolder);

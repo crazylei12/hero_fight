@@ -12,7 +12,6 @@ namespace Fight.Editor
     public static class Stage01SampleContentBuilder
     {
         private const string GenerateMenuPath = "Fight/Stage 01/Generate Demo Content";
-        private const string RegenerateMenuPath = "Fight/Stage 01/Regenerate Demo Content (Overwrite Existing Tuning)";
         private const string OpenBattleMenuPath = "Fight/Dev/Open Battle Scene";
         private const string DemoRoot = "Assets/Data/Stage01Demo";
         private const string SkillsRootFolder = DemoRoot + "/Skills";
@@ -36,12 +35,6 @@ namespace Fight.Editor
         public static void GenerateDemoContent()
         {
             GenerateDemoContentInternal(overwriteExistingContent: false);
-        }
-
-        [MenuItem(RegenerateMenuPath)]
-        public static void RegenerateDemoContent()
-        {
-            GenerateDemoContentInternal(overwriteExistingContent: true);
         }
 
         [MenuItem(OpenBattleMenuPath)]
