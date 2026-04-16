@@ -156,11 +156,6 @@ namespace Fight.Battle
 
         private static RuntimeHero SelectTargetIfNeeded(BattleContext context, RuntimeHero hero)
         {
-            if (!RequiresBasicAttackRetarget(hero) && IsCurrentTargetValid(hero, hero.CurrentTarget))
-            {
-                return hero.CurrentTarget;
-            }
-
             var nextTarget = SelectPreferredBasicAttackTarget(context, hero);
             if (nextTarget != hero.CurrentTarget)
             {
@@ -185,13 +180,8 @@ namespace Fight.Battle
             return hero.Definition.basicAttack.targetType switch
             {
                 BasicAttackTargetType.LowestHealthAlly => BattleAiDirector.SelectPreferredAllyTarget(context.Heroes, hero, 999f, allowHealthyFallback: true),
-                _ => BattleAiDirector.SelectPreferredEnemyTarget(context.Heroes, hero, 999f),
+                _ => BattleAiDirector.SelectNearestEnemyTarget(context.Heroes, hero, 999f),
             };
-        }
-
-        private static bool RequiresBasicAttackRetarget(RuntimeHero hero)
-        {
-            return hero?.Definition?.basicAttack.targetType == BasicAttackTargetType.LowestHealthAlly;
         }
 
         private static bool ShouldPerformBasicAttack(RuntimeHero hero, RuntimeHero target)
@@ -207,20 +197,6 @@ namespace Fight.Battle
             }
 
             return target.CurrentHealth < target.MaxHealth - Mathf.Epsilon;
-        }
-
-        private static bool IsCurrentTargetValid(RuntimeHero hero, RuntimeHero target)
-        {
-            if (hero?.Definition == null || target == null || target.IsDead)
-            {
-                return false;
-            }
-
-            return hero.Definition.basicAttack.targetType switch
-            {
-                BasicAttackTargetType.LowestHealthAlly => target.Side == hero.Side && target.CanBeDirectTargeted,
-                _ => target.Side != hero.Side && target.CanBeDirectTargeted,
-            };
         }
 
         private static void MoveTowardTarget(RuntimeHero hero, RuntimeHero target, float deltaTime)
