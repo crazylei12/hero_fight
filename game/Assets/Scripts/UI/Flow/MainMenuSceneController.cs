@@ -36,7 +36,7 @@ namespace Fight.UI.Flow
 
             if (!GameFlowState.HasBattleTemplate)
             {
-                GUI.Label(new Rect(panel.x + 48f, panel.y + 188f, panel.width - 96f, 80f), "没有找到默认示例战斗配置。请先在 Unity 菜单里执行 Fight/Stage 01/Generate Demo Content。", bodyStyle);
+                GUI.Label(new Rect(panel.x + 48f, panel.y + 188f, panel.width - 96f, 80f), "没有找到默认示例战斗配置。请先在 Unity 菜单里执行 Fight/Play/Open Main Menu 或 Fight/Dev/Open Battle Scene。", bodyStyle);
                 DrawQuitButton(panel);
                 return;
             }

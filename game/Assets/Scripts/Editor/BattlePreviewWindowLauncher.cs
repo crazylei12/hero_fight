@@ -6,11 +6,9 @@ namespace Fight.Editor
 {
     public static class BattlePreviewWindowLauncher
     {
-        private const string MenuPath = "Fight/Dev/Open Floating Battle Preview";
         private static readonly Vector2 DefaultWindowSize = new Vector2(1600f, 900f);
         private static readonly Vector2 MinimumWindowSize = new Vector2(960f, 540f);
 
-        [MenuItem(MenuPath)]
         public static void OpenFloatingBattlePreview()
         {
             var gameViewType = Type.GetType("UnityEditor.GameView,UnityEditor");

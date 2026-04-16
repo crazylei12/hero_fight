@@ -11,7 +11,7 @@ namespace Fight.Editor
 {
     public static class Stage01SampleContentBuilder
     {
-        private const string GenerateMenuPath = "Fight/Stage 01/Generate Demo Content";
+        private const string OpenMainMenuMenuPath = "Fight/Play/Open Main Menu";
         private const string OpenBattleMenuPath = "Fight/Dev/Open Battle Scene";
         private const string DemoRoot = "Assets/Data/Stage01Demo";
         private const string SkillsRootFolder = DemoRoot + "/Skills";
@@ -25,27 +25,30 @@ namespace Fight.Editor
         private const string HeroSelectScenePath = ScenesFolder + "/HeroSelect.unity";
         private const string MainMenuScenePath = ScenesFolder + "/MainMenu.unity";
         private const string ResultScenePath = ScenesFolder + "/Result.unity";
+        private const string DefaultBattleInputAssetPath = ResourcesDemoFolder + "/Stage01DemoBattleInput.asset";
         private const string MagePrefabPath = "Assets/HeroEditor4D/heroes/FIREMAGE.prefab";
         private const string HeroEditorControllerPath = "Assets/HeroEditor4D/Common/Animation/Controller.controller";
         private const string FireMageProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/FireMageBasicAttackProjectile.prefab";
         private const string MageActiveAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FireMageEmberBurst.prefab";
         private const string MageUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FireMageMeteorField.prefab";
 
-        [MenuItem(GenerateMenuPath)]
-        public static void GenerateDemoContent()
+        [MenuItem(OpenMainMenuMenuPath)]
+        public static void OpenMainMenuScene()
         {
-            GenerateDemoContentInternal(overwriteExistingContent: false);
+            EnsureDemoContent();
+            EditorSceneManager.OpenScene(MainMenuScenePath, OpenSceneMode.Single);
         }
 
         [MenuItem(OpenBattleMenuPath)]
         public static void OpenBattleScene()
         {
-            if (!File.Exists(BattleScenePath))
-            {
-                GenerateDemoContent();
-            }
-
+            EnsureDemoContent();
             EditorSceneManager.OpenScene(BattleScenePath, OpenSceneMode.Single);
+        }
+
+        public static void GenerateDemoContent()
+        {
+            GenerateDemoContentInternal(overwriteExistingContent: false);
         }
 
         private static void GenerateDemoContentInternal(bool overwriteExistingContent)
@@ -166,8 +169,8 @@ namespace Fight.Editor
             if (!Application.isBatchMode)
             {
                 var message = overwriteExistingContent
-                    ? "Demo content regenerated and existing tuning was overwritten.\nOpen Assets/Scenes/MainMenu.unity for the formal game flow, or Assets/Scenes/BattleBasicAttackOnly.unity for development-only combat validation."
-                    : "Demo content ensured without overwriting existing tuning.\nOpen Assets/Scenes/MainMenu.unity for the formal flow, or use Fight/Dev/Open Battle Scene for direct battle scene access.";
+                    ? "Demo content regenerated and existing tuning was overwritten.\nUse Fight/Play/Open Main Menu for the formal flow, or Fight/Dev/Open Battle Scene for direct battle scene access."
+                    : "Demo content ensured without overwriting existing tuning.\nUse Fight/Play/Open Main Menu for the formal flow, or Fight/Dev/Open Battle Scene for direct battle scene access.";
                 EditorUtility.DisplayDialog("Stage 01", message, "OK");
             }
         }
@@ -183,6 +186,28 @@ namespace Fight.Editor
         {
             GenerateDemoContentForBuild();
             EditorApplication.Exit(0);
+        }
+
+        private static void EnsureDemoContent()
+        {
+            var hasMainMenuScene = AssetDatabase.LoadAssetAtPath<SceneAsset>(MainMenuScenePath) != null;
+            var hasHeroSelectScene = AssetDatabase.LoadAssetAtPath<SceneAsset>(HeroSelectScenePath) != null;
+            var hasBattleScene = AssetDatabase.LoadAssetAtPath<SceneAsset>(BattleScenePath) != null;
+            var hasResultScene = AssetDatabase.LoadAssetAtPath<SceneAsset>(ResultScenePath) != null;
+            var hasBasicAttackOnlyScene = AssetDatabase.LoadAssetAtPath<SceneAsset>(BasicAttackOnlyBattleScenePath) != null;
+            var hasDefaultBattleInput = AssetDatabase.LoadAssetAtPath<BattleInputConfig>(DefaultBattleInputAssetPath) != null;
+
+            if (hasMainMenuScene &&
+                hasHeroSelectScene &&
+                hasBattleScene &&
+                hasResultScene &&
+                hasBasicAttackOnlyScene &&
+                hasDefaultBattleInput)
+            {
+                return;
+            }
+
+            GenerateDemoContent();
         }
 
         private static void EnsureFolders()
