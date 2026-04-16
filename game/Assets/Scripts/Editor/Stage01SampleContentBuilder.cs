@@ -26,7 +26,9 @@ namespace Fight.Editor
         private const string MainMenuScenePath = ScenesFolder + "/MainMenu.unity";
         private const string ResultScenePath = ScenesFolder + "/Result.unity";
         private const string DefaultBattleInputAssetPath = ResourcesDemoFolder + "/Stage01DemoBattleInput.asset";
+        private const string WarriorPrefabPath = "Assets/Prefabs/Heroes/warrior_001_bladeguard/zhanshi01.prefab";
         private const string MagePrefabPath = "Assets/HeroEditor4D/heroes/FIREMAGE.prefab";
+        private const string TankPrefabPath = "Assets/Prefabs/Heroes/tank_001_ironwall/tank01.prefab";
         private const string HeroEditorControllerPath = "Assets/HeroEditor4D/Common/Animation/Controller.controller";
         private const string FireMageProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/FireMageBasicAttackProjectile.prefab";
         private const string MageActiveAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FireMageEmberBurst.prefab";
@@ -322,10 +324,9 @@ namespace Fight.Editor
             hero.usesSpecialLogic = false;
             hero.specialLogicNotes = string.Empty;
             hero.debugNotes = $"Stage-01 demo hero for {heroClass}.";
-            hero.visualConfig.battlePrefab = heroClass == HeroClass.Mage
-                ? AssetDatabase.LoadAssetAtPath<GameObject>(MagePrefabPath)
-                : null;
-            hero.visualConfig.animatorController = heroClass == HeroClass.Mage
+            var battlePrefab = LoadBattlePrefab(heroClass);
+            hero.visualConfig.battlePrefab = battlePrefab;
+            hero.visualConfig.animatorController = battlePrefab != null
                 ? AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(HeroEditorControllerPath)
                 : null;
             hero.visualConfig.projectilePrefab = heroId == "mage_001_firemage"
@@ -335,6 +336,21 @@ namespace Fight.Editor
             hero.visualConfig.projectileEulerAngles = Vector3.zero;
             EditorUtility.SetDirty(hero);
             return hero;
+        }
+
+        private static GameObject LoadBattlePrefab(HeroClass heroClass)
+        {
+            var prefabPath = heroClass switch
+            {
+                HeroClass.Warrior => WarriorPrefabPath,
+                HeroClass.Mage => MagePrefabPath,
+                HeroClass.Tank => TankPrefabPath,
+                _ => null,
+            };
+
+            return string.IsNullOrWhiteSpace(prefabPath)
+                ? null
+                : AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
         }
 
         private static SkillData CreateSkill(
