@@ -118,7 +118,7 @@ namespace Fight.Battle
                     continue;
                 }
 
-                if (candidate != actor && !candidate.CanBeDirectTargeted)
+                if (!candidate.CanBeDirectTargeted)
                 {
                     continue;
                 }
