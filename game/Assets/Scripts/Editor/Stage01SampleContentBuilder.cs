@@ -60,7 +60,7 @@ namespace Fight.Editor
             EnsureFolders();
 
             var warriorActive = CreateSkill("skill_warrior_active_cleave", "Cleave", SkillSlotType.ActiveSkill, SkillType.AreaDamage, SkillTargetType.NearestEnemy, 2f, 2f, 1.3f, 7f, 1, overwriteExistingContent);
-            var warriorUltimateSkill = CreateSkill("skill_warrior_ultimate_ironcrash", "Iron Crash", SkillSlotType.Ultimate, SkillType.AreaDamage, SkillTargetType.DensestEnemyArea, 2.4f, 3f, 2f, 15f, 2, overwriteExistingContent, out var warriorUltimateExisted);
+            var warriorUltimateSkill = CreateSkill("skill_warrior_ultimate_ironcrash", "Iron Crash", SkillSlotType.Ultimate, SkillType.AreaDamage, SkillTargetType.DensestEnemyArea, 2.4f, 3f, 2f, 0f, 2, overwriteExistingContent, out var warriorUltimateExisted);
 
             var warrior = CreateHero(
                 "warrior_001_bladeguard",
@@ -72,7 +72,7 @@ namespace Fight.Editor
                 overwriteExistingContent,
                 HeroTag.Melee, HeroTag.SustainedDamage, HeroTag.Control);
 
-            var mageUltimateSkill = CreateSkill("skill_mage_ultimate_meteor", "Meteor Fall", SkillSlotType.Ultimate, SkillType.AreaDamage, SkillTargetType.Self, 0f, 6f, 0.55f, 16f, 3, overwriteExistingContent, out var mageUltimateExisted);
+            var mageUltimateSkill = CreateSkill("skill_mage_ultimate_meteor", "Meteor Fall", SkillSlotType.Ultimate, SkillType.AreaDamage, SkillTargetType.Self, 0f, 6f, 0.55f, 0f, 3, overwriteExistingContent, out var mageUltimateExisted);
 
             var mage = CreateHero(
                 "mage_001_firemage",
@@ -87,7 +87,7 @@ namespace Fight.Editor
             CreateArchivedMageFireboltSkill(overwriteExistingContent);
 
             var assassinActive = CreateSkill("skill_assassin_active_dash", "Shadow Dash", SkillSlotType.ActiveSkill, SkillType.Dash, SkillTargetType.LowestHealthEnemy, 5.5f, 0f, 1.4f, 8f, 1, overwriteExistingContent);
-            var assassinUltimateSkill = CreateSkill("skill_assassin_ultimate_execution", "Execution Mark", SkillSlotType.Ultimate, SkillType.SingleTargetDamage, SkillTargetType.LowestHealthEnemy, 5.5f, 0f, 2.8f, 14f, 1, overwriteExistingContent, out var assassinUltimateExisted);
+            var assassinUltimateSkill = CreateSkill("skill_assassin_ultimate_execution", "Execution Mark", SkillSlotType.Ultimate, SkillType.SingleTargetDamage, SkillTargetType.LowestHealthEnemy, 5.5f, 0f, 2.8f, 0f, 1, overwriteExistingContent, out var assassinUltimateExisted);
 
             var assassin = CreateHero(
                 "assassin_001_shadowstep",
@@ -100,7 +100,7 @@ namespace Fight.Editor
                 HeroTag.Melee, HeroTag.Dive, HeroTag.Burst);
 
             var tankActive = CreateStunSkill("skill_tank_active_shieldbash", "Shield Bash", SkillSlotType.ActiveSkill, 1.8f, 0f, 0.8f, 8f, 1f, overwriteExistingContent);
-            var tankUltimateSkill = CreateBuffSkill("skill_tank_ultimate_ironoath", "Iron Oath", SkillSlotType.Ultimate, SkillTargetType.AllAllies, 6f, 6f, 1f, 16f, StatusEffectType.DefenseModifier, 8f, 40f, overwriteExistingContent, out var tankUltimateExisted);
+            var tankUltimateSkill = CreateBuffSkill("skill_tank_ultimate_ironoath", "Iron Oath", SkillSlotType.Ultimate, SkillTargetType.AllAllies, 6f, 6f, 1f, 0f, StatusEffectType.DefenseModifier, 8f, 40f, overwriteExistingContent, out var tankUltimateExisted);
 
             var tank = CreateHero(
                 "tank_001_ironwall",
@@ -128,7 +128,7 @@ namespace Fight.Editor
             ConfigureSupportBasicAttack(support, overwriteExistingContent, supportHeroExisted);
 
             var marksmanActive = CreateSkill("skill_marksman_active_focusshot", "Focus Shot", SkillSlotType.ActiveSkill, SkillType.SingleTargetDamage, SkillTargetType.NearestEnemy, 7.5f, 0f, 1.6f, 6f, 1, overwriteExistingContent);
-            var marksmanUltimateSkill = CreateSkill("skill_marksman_ultimate_arrowrain", "Arrow Rain", SkillSlotType.Ultimate, SkillType.AreaDamage, SkillTargetType.DensestEnemyArea, 8f, 3f, 2.1f, 15f, 3, overwriteExistingContent, out var marksmanUltimateExisted);
+            var marksmanUltimateSkill = CreateSkill("skill_marksman_ultimate_arrowrain", "Arrow Rain", SkillSlotType.Ultimate, SkillType.AreaDamage, SkillTargetType.DensestEnemyArea, 8f, 3f, 2.1f, 0f, 3, overwriteExistingContent, out var marksmanUltimateExisted);
 
             var marksman = CreateHero(
                 "marksman_001_longshot",
@@ -377,7 +377,7 @@ namespace Fight.Editor
             skill.targetType = targetType;
             skill.castRange = castRange;
             skill.areaRadius = areaRadius;
-            skill.cooldownSeconds = cooldownSeconds;
+            skill.cooldownSeconds = slotType == SkillSlotType.Ultimate ? 0f : cooldownSeconds;
             skill.minTargetsToCast = minTargetsToCast;
             skill.effects.Clear();
             skill.allowsSelfCast = targetType == SkillTargetType.Self || targetType == SkillTargetType.AllAllies;
@@ -627,7 +627,7 @@ namespace Fight.Editor
                 6f,
                 5f,
                 0.65f,
-                14f,
+                0f,
                 2,
                 overwriteExistingContent,
                 out existedBefore);
