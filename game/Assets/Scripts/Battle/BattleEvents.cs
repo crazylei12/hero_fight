@@ -253,6 +253,41 @@ namespace Fight.Battle
         public SkillData SourceSkill { get; }
     }
 
+    public sealed class ForcedMovementAppliedEvent : IBattleEvent
+    {
+        public ForcedMovementAppliedEvent(
+            RuntimeHero source,
+            RuntimeHero target,
+            Vector3 startPosition,
+            Vector3 destination,
+            float durationSeconds,
+            float peakHeight,
+            SkillData sourceSkill = null)
+        {
+            Source = source;
+            Target = target;
+            StartPosition = startPosition;
+            Destination = destination;
+            DurationSeconds = durationSeconds;
+            PeakHeight = peakHeight;
+            SourceSkill = sourceSkill;
+        }
+
+        public RuntimeHero Source { get; }
+
+        public RuntimeHero Target { get; }
+
+        public Vector3 StartPosition { get; }
+
+        public Vector3 Destination { get; }
+
+        public float DurationSeconds { get; }
+
+        public float PeakHeight { get; }
+
+        public SkillData SourceSkill { get; }
+    }
+
     public sealed class UnitDiedEvent : IBattleEvent
     {
         public UnitDiedEvent(RuntimeHero victim, RuntimeHero killer)

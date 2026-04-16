@@ -117,6 +117,9 @@ namespace Fight.UI
                 case StatusRemovedEvent statusRemoved:
                     AddLog(FormatStatusRemovedLog(statusRemoved));
                     break;
+                case ForcedMovementAppliedEvent forcedMovementApplied:
+                    AddLog(FormatForcedMovementLog(forcedMovementApplied));
+                    break;
                 case UnitDiedEvent died:
                     AddLog($"{FormatHeroLabel(died.Victim)} was killed by {FormatHeroLabel(died.Killer)}.");
                     break;
@@ -182,6 +185,13 @@ namespace Fight.UI
             var sourceName = FormatHeroLabel(statusRemoved.Source, "Unknown");
             var skillName = statusRemoved.SourceSkill != null ? statusRemoved.SourceSkill.displayName : "Unknown Effect";
             return $"{statusRemoved.EffectType} on {FormatHeroLabel(statusRemoved.Target)} expired from {sourceName} via {skillName}.";
+        }
+
+        private string FormatForcedMovementLog(ForcedMovementAppliedEvent forcedMovementApplied)
+        {
+            var sourceName = FormatHeroLabel(forcedMovementApplied.Source, "Unknown");
+            var skillName = forcedMovementApplied.SourceSkill != null ? forcedMovementApplied.SourceSkill.displayName : "Unknown Effect";
+            return $"{sourceName} displaced {FormatHeroLabel(forcedMovementApplied.Target)} via {skillName} from ({forcedMovementApplied.StartPosition.x:0.0}, {forcedMovementApplied.StartPosition.z:0.0}) to ({forcedMovementApplied.Destination.x:0.0}, {forcedMovementApplied.Destination.z:0.0}), duration {forcedMovementApplied.DurationSeconds:0.00}s, peak height {forcedMovementApplied.PeakHeight:0.##}.";
         }
 
         private static string FormatHeroLabel(RuntimeHero hero, string fallback = "none")

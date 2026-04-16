@@ -141,6 +141,12 @@ namespace Fight.UI
             var pos = Map(hero.CurrentPosition);
             view.Root.transform.position = pos;
             view.SortingGroup.sortingOrder = Sort(pos.y, 0);
+            var airborneOffset = new Vector3(0f, hero.VisualHeightOffset, 0f);
+            view.VisualRoot.localPosition = airborneOffset;
+            if (view.FootUiRoot != null)
+            {
+                view.FootUiRoot.localPosition = footUiOffset + airborneOffset;
+            }
             UpdateDeathVisibility(hero, view);
             view.VisualRoot.localScale = Vector3.one * (hero.IsDead ? 0.82f : 1f);
 

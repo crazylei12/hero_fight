@@ -51,11 +51,15 @@ namespace Fight.Heroes
 
         public IReadOnlyList<RuntimeStatusEffect> ActiveStatusEffects => activeStatusEffects;
 
+        public float VisualHeightOffset { get; private set; }
+
         public bool HasHardControl => HasStatusFlag(StatusBehaviorFlags.BlocksMovement)
             || HasStatusFlag(StatusBehaviorFlags.BlocksBasicAttacks)
             || HasStatusFlag(StatusBehaviorFlags.BlocksSkillCasts);
 
-        public bool CanMove => !HasStatusFlag(StatusBehaviorFlags.BlocksMovement);
+        public bool IsUnderForcedMovement => activeForcedMovement != null;
+
+        public bool CanMove => !HasStatusFlag(StatusBehaviorFlags.BlocksMovement) && !IsUnderForcedMovement;
 
         public bool CanAttack => !HasStatusFlag(StatusBehaviorFlags.BlocksBasicAttacks);
 
@@ -147,6 +151,7 @@ namespace Fight.Heroes
         public RuntimeHero ActiveRetreatThreatSource { get; private set; }
 
         private readonly List<RuntimeStatusEffect> activeStatusEffects = new List<RuntimeStatusEffect>();
+        private RuntimeForcedMovement activeForcedMovement;
 
         public void ResetToSpawn()
         {
@@ -159,6 +164,8 @@ namespace Fight.Heroes
             CombatEngagedSeconds = 0f;
             NextUltimateDecisionCheckTimeSeconds = 0f;
             HasInitializedUltimateDecisionSchedule = false;
+            VisualHeightOffset = 0f;
+            activeForcedMovement = null;
             activeStatusEffects.Clear();
             ClearThreatTracking();
         }
@@ -194,6 +201,7 @@ namespace Fight.Heroes
             AttackCooldownRemainingSeconds = Mathf.Max(0f, AttackCooldownRemainingSeconds - deltaTime);
             ActiveSkillCooldownRemainingSeconds = Mathf.Max(0f, ActiveSkillCooldownRemainingSeconds - deltaTime);
             UltimateCooldownRemainingSeconds = Mathf.Max(0f, UltimateCooldownRemainingSeconds - deltaTime);
+            TickForcedMovement(deltaTime);
 
             var statusSnapshot = activeStatusEffects.ToArray();
             for (var i = statusSnapshot.Length - 1; i >= 0; i--)
@@ -238,6 +246,22 @@ namespace Fight.Heroes
             }
 
             CurrentHealth = Mathf.Min(CurrentHealth, MaxHealth);
+        }
+
+        public void StartForcedMovement(Vector3 destination, float durationSeconds, float peakHeight)
+        {
+            destination = Stage01ArenaSpec.ClampPosition(destination);
+            destination = new Vector3(destination.x, 0f, destination.z);
+
+            if (durationSeconds <= Mathf.Epsilon)
+            {
+                CurrentPosition = destination;
+                VisualHeightOffset = 0f;
+                activeForcedMovement = null;
+                return;
+            }
+
+            activeForcedMovement = new RuntimeForcedMovement(CurrentPosition, destination, durationSeconds, peakHeight);
         }
 
         public void SetTarget(RuntimeHero target)
@@ -323,6 +347,8 @@ namespace Fight.Heroes
             CurrentHealth = 0f;
             Deaths++;
             CombatEngagedSeconds = 0f;
+            VisualHeightOffset = 0f;
+            activeForcedMovement = null;
             activeStatusEffects.Clear();
             ClearThreatTracking();
         }
@@ -458,6 +484,28 @@ namespace Fight.Heroes
             LastThreatSource = null;
             LastThreatTimeSeconds = -1f;
             ActiveRetreatThreatSource = null;
+        }
+
+        private void TickForcedMovement(float deltaTime)
+        {
+            if (activeForcedMovement == null)
+            {
+                VisualHeightOffset = 0f;
+                return;
+            }
+
+            activeForcedMovement.Tick(deltaTime);
+            CurrentPosition = Stage01ArenaSpec.ClampPosition(activeForcedMovement.CurrentGroundPosition);
+            CurrentPosition = new Vector3(CurrentPosition.x, 0f, CurrentPosition.z);
+            VisualHeightOffset = activeForcedMovement.CurrentHeightOffset;
+
+            if (!activeForcedMovement.IsComplete)
+            {
+                return;
+            }
+
+            VisualHeightOffset = 0f;
+            activeForcedMovement = null;
         }
 
         private void RemoveExpiredStatuses(Action<RuntimeStatusEffect> onExpiredStatus)

@@ -66,6 +66,11 @@ namespace Fight.Battle
                 return;
             }
 
+            if (hero.IsUnderForcedMovement)
+            {
+                return;
+            }
+
             if (context.Input.enableSkills && hero.CanCastSkills && BattleSkillSystem.TryCastSkill(context, hero, battleManager))
             {
                 return;
