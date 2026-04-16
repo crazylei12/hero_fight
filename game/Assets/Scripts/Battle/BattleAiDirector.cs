@@ -11,6 +11,8 @@ namespace Fight.Battle
         private const float ThreatRetreatTriggerRangeBuffer = 0.4f;
         private const float ThreatRetreatReleaseRangeBuffer = 0.2f;
         private const float ThreatRetreatMinimumAttackCooldownSeconds = 0.15f;
+        private const float RangedThreatUnsafeDistanceFactor = 0.45f;
+        private const float RangedThreatUnsafeDistanceMinimum = 1.75f;
 
         public static RuntimeHero SelectPreferredEnemyTarget(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange)
         {
@@ -71,6 +73,11 @@ namespace Fight.Battle
 
             var desiredRange = GetDesiredCombatRange(actor);
             var threatDistance = Vector3.Distance(actor.CurrentPosition, threat.CurrentPosition);
+            if (!IsThreatEligibleForRetreat(actor, threat, threatDistance, desiredRange))
+            {
+                return false;
+            }
+
             var triggerDistance = Mathf.Max(0.75f, desiredRange - ThreatRetreatTriggerRangeBuffer);
             var releaseDistance = desiredRange + ThreatRetreatReleaseRangeBuffer;
             return actor.IsRetreatingFromThreat(threat)
@@ -92,6 +99,24 @@ namespace Fight.Battle
             }
 
             return actor.Side == TeamSide.Blue ? Vector3.left : Vector3.right;
+        }
+
+        private static bool IsThreatEligibleForRetreat(RuntimeHero actor, RuntimeHero threat, float threatDistance, float desiredRange)
+        {
+            if (actor?.Definition?.basicAttack == null || threat?.Definition?.basicAttack == null)
+            {
+                return false;
+            }
+
+            if (!threat.Definition.basicAttack.usesProjectile)
+            {
+                return true;
+            }
+
+            var unsafeDistance = Mathf.Max(
+                RangedThreatUnsafeDistanceMinimum,
+                desiredRange * RangedThreatUnsafeDistanceFactor);
+            return threatDistance < unsafeDistance;
         }
 
         private static RuntimeHero FindNearestEnemy(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange)

@@ -280,7 +280,6 @@ namespace Fight.Battle
             }
 
             status.Source?.RecordDamage(actualDamage);
-            RecordIncomingThreat(context, target, status.Source);
             context.EventBus.Publish(new DamageAppliedEvent(
                 status.Source,
                 target,
