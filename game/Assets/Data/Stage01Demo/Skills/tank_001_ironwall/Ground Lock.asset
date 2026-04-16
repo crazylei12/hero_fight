@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: Ground Lock
   description: 'Stage-01 demo skill: Ground Lock'
   slotType: 1
-  skillType: 5
+  skillType: 7
   targetType: 3
   castRange: 2.2
   areaRadius: 2.8
@@ -30,6 +30,17 @@ MonoBehaviour:
     tickIntervalSeconds: 1
     followCaster: 0
     statusEffects: []
+  - effectType: 5
+    powerMultiplier: 1
+    radiusOverride: 0
+    durationSeconds: 0
+    tickIntervalSeconds: 1
+    followCaster: 0
+    forcedMovementDirection: 0
+    forcedMovementDistance: 0.4
+    forcedMovementDurationSeconds: 0.24
+    forcedMovementPeakHeight: 0.72
+    statusEffects: []
   - effectType: 2
     powerMultiplier: 1
     radiusOverride: 0
@@ -37,8 +48,8 @@ MonoBehaviour:
     tickIntervalSeconds: 1
     followCaster: 0
     statusEffects:
-    - effectType: 1
-      durationSeconds: 2
+    - effectType: 11
+      durationSeconds: 1.4
       magnitude: 1
       maxStacks: 1
       refreshDurationOnReapply: 1
