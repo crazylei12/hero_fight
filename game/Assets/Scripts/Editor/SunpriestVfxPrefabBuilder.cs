@@ -283,6 +283,7 @@ namespace Fight.Editor
         {
             var regenerationAreaLoopPrefab = LoadRequiredAsset<GameObject>(RegenerationHealthAreaLoopSourcePrefabPath);
             var regenerationAreaPrefab = LoadRequiredAsset<GameObject>(RegenerationHealthAreaSourcePrefabPath);
+            var adaptedAreaRotation = Quaternion.Euler(90f, 0f, 0f);
 
             var root = new GameObject("SunpriestSunBlessingField");
             root.AddComponent<SortingGroup>();
@@ -323,16 +324,19 @@ namespace Fight.Editor
             var sanctuaryLoop = InstantiateNestedPrefab(regenerationAreaLoopPrefab, root.transform, "SanctuaryLoop");
             sanctuaryLoop.transform.localScale = Vector3.one * 0.128f;
             sanctuaryLoop.transform.localPosition = Vector3.zero;
+            sanctuaryLoop.transform.localRotation = adaptedAreaRotation;
             OffsetRendererOrders(sanctuaryLoop, 8);
 
             var sanctuaryLoopInner = InstantiateNestedPrefab(regenerationAreaLoopPrefab, root.transform, "SanctuaryLoopInner");
             sanctuaryLoopInner.transform.localScale = Vector3.one * 0.092f;
             sanctuaryLoopInner.transform.localPosition = Vector3.zero;
+            sanctuaryLoopInner.transform.localRotation = adaptedAreaRotation;
             OffsetRendererOrders(sanctuaryLoopInner, 10);
 
             var areaPulse = InstantiateNestedPrefab(regenerationAreaPrefab, root.transform, "AreaPulse");
             areaPulse.transform.localScale = Vector3.one * 0.074f;
             areaPulse.transform.localPosition = Vector3.zero;
+            areaPulse.transform.localRotation = adaptedAreaRotation;
             OffsetRendererOrders(areaPulse, 11);
 
             SavePrefab(root, SunBlessingFieldPrefabPath);
