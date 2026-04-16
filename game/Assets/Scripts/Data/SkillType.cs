@@ -9,5 +9,6 @@ namespace Fight.Data
         Dash = 4,
         Stun = 5,
         AreaHeal = 6,
+        KnockUp = 7,
     }
 }

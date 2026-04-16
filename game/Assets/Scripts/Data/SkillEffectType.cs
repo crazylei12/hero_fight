@@ -7,5 +7,6 @@ namespace Fight.Data
         ApplyStatusEffects = 2,
         RepositionNearPrimaryTarget = 3,
         CreatePersistentArea = 4,
+        ApplyForcedMovement = 5,
     }
 }

@@ -336,7 +336,7 @@ namespace Fight.Battle
 
         private static bool HasHighValueOpportunity(SkillData skill, List<RuntimeHero> affectedTargets)
         {
-            if (skill.skillType == SkillType.AreaDamage || skill.skillType == SkillType.Stun)
+            if (skill.skillType == SkillType.AreaDamage || skill.skillType == SkillType.Stun || skill.skillType == SkillType.KnockUp)
             {
                 return affectedTargets.Count >= Mathf.Max(2, skill.minTargetsToCast);
             }
@@ -718,6 +718,7 @@ namespace Fight.Battle
                 case SkillType.AreaDamage:
                 case SkillType.Dash:
                 case SkillType.Stun:
+                case SkillType.KnockUp:
                     ApplyDamageToTargets(context, caster, skill, CreateLegacyDamageEffect(skill), affectedTargets, battleManager);
                     break;
                 case SkillType.SingleTargetHeal:
@@ -749,6 +750,9 @@ namespace Fight.Battle
                     break;
                 case SkillEffectType.ApplyStatusEffects:
                     ApplyStatusEffectsToTargets(context, caster, skill, effect, affectedTargets);
+                    break;
+                case SkillEffectType.ApplyForcedMovement:
+                    ApplyForcedMovementToTargets(context, caster, skill, effect, affectedTargets);
                     break;
                 case SkillEffectType.RepositionNearPrimaryTarget:
                     if (primaryTarget != null)
@@ -813,6 +817,43 @@ namespace Fight.Battle
             for (var i = 0; i < targets.Count; i++)
             {
                 ApplyStatuses(context, caster, sourceSkill, effect, targets[i]);
+            }
+        }
+
+        private static void ApplyForcedMovementToTargets(BattleContext context, RuntimeHero caster, SkillData sourceSkill, SkillEffectData effect, List<RuntimeHero> targets)
+        {
+            if (effect == null)
+            {
+                return;
+            }
+
+            var distance = Mathf.Max(0f, effect.forcedMovementDistance);
+            var durationSeconds = Mathf.Max(0f, effect.forcedMovementDurationSeconds);
+            var peakHeight = Mathf.Max(0f, effect.forcedMovementPeakHeight);
+            if (distance <= Mathf.Epsilon && durationSeconds <= Mathf.Epsilon)
+            {
+                return;
+            }
+
+            for (var i = 0; i < targets.Count; i++)
+            {
+                var target = targets[i];
+                if (target == null || target.IsDead)
+                {
+                    continue;
+                }
+
+                var startPosition = target.CurrentPosition;
+                var destination = GetForcedMovementDestination(caster, target, effect, distance);
+                target.StartForcedMovement(destination, durationSeconds, peakHeight);
+                context.EventBus.Publish(new ForcedMovementAppliedEvent(
+                    caster,
+                    target,
+                    startPosition,
+                    destination,
+                    durationSeconds,
+                    peakHeight,
+                    sourceSkill));
             }
         }
 
@@ -1113,6 +1154,38 @@ namespace Fight.Battle
             }
 
             caster.CurrentPosition = Stage01ArenaSpec.ClampPosition(target.CurrentPosition - offset.normalized * 0.8f);
+        }
+
+        private static Vector3 GetForcedMovementDestination(RuntimeHero caster, RuntimeHero target, SkillEffectData effect, float distance)
+        {
+            var direction = GetForcedMovementDirection(
+                caster,
+                target,
+                effect != null ? effect.forcedMovementDirection : ForcedMovementDirectionMode.AwayFromSource);
+            var destination = target.CurrentPosition + direction * distance;
+            destination.y = 0f;
+            return Stage01ArenaSpec.ClampPosition(destination);
+        }
+
+        private static Vector3 GetForcedMovementDirection(RuntimeHero caster, RuntimeHero target, ForcedMovementDirectionMode directionMode)
+        {
+            if (target == null)
+            {
+                return Vector3.zero;
+            }
+
+            var sourcePosition = caster != null ? caster.CurrentPosition : target.CurrentPosition;
+            var offset = directionMode == ForcedMovementDirectionMode.TowardSource
+                ? sourcePosition - target.CurrentPosition
+                : target.CurrentPosition - sourcePosition;
+            offset.y = 0f;
+
+            if (offset.sqrMagnitude > Mathf.Epsilon)
+            {
+                return offset.normalized;
+            }
+
+            return target.Side == TeamSide.Blue ? Vector3.left : Vector3.right;
         }
     }
 }

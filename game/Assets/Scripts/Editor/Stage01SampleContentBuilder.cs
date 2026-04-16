@@ -96,8 +96,8 @@ namespace Fight.Editor
                 "Ironwall",
                 HeroClass.Tank,
                 560f, 28f, 40f, 0.9f, 3.6f, 0.05f, 1.5f, 1.8f,
-                CreateStunSkill("skill_tank_active_shieldbash", "Shield Bash", SkillSlotType.ActiveSkill, 1.8f, 1.2f, 1.0f, 8f, 1.2f, overwriteExistingContent),
-                ConfigureTankUltimate(CreateStunSkill("skill_tank_ultimate_groundlock", "Ground Lock", SkillSlotType.Ultimate, 2.2f, 2.8f, 1.6f, 16f, 2f, overwriteExistingContent), overwriteExistingContent),
+                CreateKnockUpSkill("skill_tank_active_shieldbash", "Shield Bash", SkillSlotType.ActiveSkill, 1.8f, 1.2f, 1.0f, 8f, 0.9f, 1.1f, 0.2f, 0.45f, overwriteExistingContent),
+                ConfigureTankUltimate(CreateKnockUpSkill("skill_tank_ultimate_groundlock", "Ground Lock", SkillSlotType.Ultimate, 2.2f, 2.8f, 1.6f, 16f, 1.4f, 0.4f, 0.24f, 0.72f, overwriteExistingContent), overwriteExistingContent),
                 overwriteExistingContent,
                 HeroTag.Melee, HeroTag.Control, HeroTag.Buff);
 
@@ -414,6 +414,25 @@ namespace Fight.Editor
             var effect = new SkillEffectData
             {
                 effectType = SkillEffectType.ApplyStatusEffects,
+            };
+            skill.effects.Add(effect);
+            return effect;
+        }
+
+        private static SkillEffectData AddForcedMovementEffect(
+            SkillData skill,
+            float distance,
+            float durationSeconds,
+            float peakHeight,
+            ForcedMovementDirectionMode directionMode = ForcedMovementDirectionMode.AwayFromSource)
+        {
+            var effect = new SkillEffectData
+            {
+                effectType = SkillEffectType.ApplyForcedMovement,
+                forcedMovementDirection = directionMode,
+                forcedMovementDistance = distance,
+                forcedMovementDurationSeconds = durationSeconds,
+                forcedMovementPeakHeight = peakHeight,
             };
             skill.effects.Add(effect);
             return effect;
@@ -753,6 +772,42 @@ namespace Fight.Editor
             {
                 effectType = StatusEffectType.Stun,
                 durationSeconds = stunDuration,
+                magnitude = 1f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateKnockUpSkill(
+            string skillId,
+            string displayName,
+            SkillSlotType slotType,
+            float castRange,
+            float areaRadius,
+            float powerMultiplier,
+            float cooldownSeconds,
+            float knockUpDuration,
+            float forcedMovementDistance,
+            float forcedMovementDurationSeconds,
+            float forcedMovementPeakHeight,
+            bool overwriteExistingContent)
+        {
+            var skill = CreateSkill(skillId, displayName, slotType, SkillType.KnockUp, areaRadius > 0f ? SkillTargetType.DensestEnemyArea : SkillTargetType.NearestEnemy, castRange, areaRadius, powerMultiplier, cooldownSeconds, areaRadius > 0f ? 2 : 1, overwriteExistingContent);
+            if (!overwriteExistingContent)
+            {
+                return skill;
+            }
+
+            skill.effects.Clear();
+            AddDamageEffect(skill, powerMultiplier);
+            AddForcedMovementEffect(skill, forcedMovementDistance, forcedMovementDurationSeconds, forcedMovementPeakHeight);
+            var statusEffect = AddApplyStatusEffectsEffect(skill);
+            statusEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.KnockUp,
+                durationSeconds = knockUpDuration,
                 magnitude = 1f,
                 maxStacks = 1,
                 refreshDurationOnReapply = true,
