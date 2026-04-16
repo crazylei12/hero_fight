@@ -183,7 +183,9 @@ namespace Fight.Battle
         private static RuntimeHero FindLowestHealthAlly(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange, bool allowHealthyFallback)
         {
             RuntimeHero bestInjured = null;
-            var bestInjuredRatio = 1f;
+            var lowestInjuredHealth = float.MaxValue;
+            var lowestInjuredRatio = float.MaxValue;
+            var bestInjuredDistance = float.MaxValue;
             RuntimeHero nearestHealthyAlly = null;
             var nearestHealthyDistance = float.MaxValue;
             RuntimeHero selfTarget = null;
@@ -208,15 +210,18 @@ namespace Fight.Battle
                 }
 
                 var ratio = candidate.MaxHealth > 0f ? candidate.CurrentHealth / candidate.MaxHealth : 1f;
+                var isInjured = ratio < 1f - Mathf.Epsilon;
 
                 if (candidate == actor)
                 {
                     selfTarget = candidate;
                 }
 
-                if (ratio < bestInjuredRatio)
+                if (isInjured && IsBetterInjuredAllyCandidate(candidate.CurrentHealth, ratio, distance, lowestInjuredHealth, lowestInjuredRatio, bestInjuredDistance))
                 {
-                    bestInjuredRatio = ratio;
+                    lowestInjuredHealth = candidate.CurrentHealth;
+                    lowestInjuredRatio = ratio;
+                    bestInjuredDistance = distance;
                     bestInjured = candidate;
                 }
 
@@ -230,6 +235,37 @@ namespace Fight.Battle
             }
 
             return bestInjured ?? (allowHealthyFallback ? nearestHealthyAlly ?? selfTarget : null);
+        }
+
+        private static bool IsBetterInjuredAllyCandidate(
+            float currentHealth,
+            float healthRatio,
+            float distance,
+            float bestCurrentHealth,
+            float bestHealthRatio,
+            float bestDistance)
+        {
+            if (currentHealth < bestCurrentHealth - Mathf.Epsilon)
+            {
+                return true;
+            }
+
+            if (Mathf.Abs(currentHealth - bestCurrentHealth) > Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            if (healthRatio < bestHealthRatio - Mathf.Epsilon)
+            {
+                return true;
+            }
+
+            if (Mathf.Abs(healthRatio - bestHealthRatio) > Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            return distance < bestDistance;
         }
 
         private static RuntimeHero FindAssassinTarget(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange)
