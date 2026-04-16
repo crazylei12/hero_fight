@@ -890,3 +890,229 @@
 - **最值得优先修的点是：`Stage01SampleContentBuilder` 和旧的 `Ground Lock.asset` 路径现在并不真正兼容，重新生成内容时存在新建重复资产或改写引用的风险。**
 - **从当前最终仓库状态看，骑士技能参数、运行时语义和“一局一次大招”规则本身都已经与正式文档基本对齐。**
 - **如果下一步只做一个最小增量，优先应该落在样例内容生成器的技能资产路径兼容逻辑，而不是先继续调骑士参数或再扩新的骑士特例。**
+
+## 补充检查：状态模块收口
+
+对应交接说明：
+
+- `docs/today_work/0416.md`
+- 其中“补充交接：状态模块收口”一节
+
+本次额外核对的主要文件：
+
+- `game/Assets/Scripts/Heroes/StatusEffectSystem.cs`
+- `game/Assets/Scripts/Heroes/RuntimeHero.cs`
+- `game/Assets/Scripts/Heroes/RuntimeStatusEffect.cs`
+- `game/Assets/Scripts/Battle/BattleSimulationSystem.cs`
+- `game/Assets/Scripts/Battle/BattleSkillSystem.cs`
+- `game/Assets/Scripts/Battle/BattleBasicAttackSystem.cs`
+- `docs/planning/stage-01-status-effect-decisions.md`
+
+### 一句话结论
+
+- **这轮重构不是假收口：`RuntimeHero` 的状态查询、状态应用、状态 tick、护盾吸收与过期清理，当前确实已经主要走 `StatusEffectSystem` 统一入口。**
+- **但这次收口还没有把所有状态语义彻底收干净，我看到了 3 个值得直接记下的问题：周期状态重施加会重置 tick 进度、死亡清状态不会逐个发移除事件、以及目标已被打到 0 血时仍可能先发“状态已施加”事件。**
+- **因此当前更准确的判断是：结构已经比重构前清楚很多，但状态事件流和 DOT / HOT 的细粒度语义还没有完全收稳。**
+
+## 对“这次收口是否真的减少了职责发散”的检查结论
+
+结论：
+
+- **这条成立。**
+
+已确认做对的部分：
+
+- `RuntimeHero` 当前的以下入口都已改成委托给 `StatusEffectSystem`：
+  - `HasHardControl`
+  - `HasStatus(...)`
+  - `ApplyStatusEffect(...)`
+  - 属性修正读取
+  - 行为门禁查询
+  - 状态 tick
+  - 护盾吸收
+  - 过期状态移除
+- `StatusEffectSystem` 当前集中承接了：
+  - `HasBehaviorFlag(...)`
+  - `GetMultiplier(...)`
+  - `TryApplyStatus(...)`
+  - `Tick(...)`
+  - `ConsumeShield(...)`
+  - `RemoveExpiredStatuses(...)`
+  - `ClearStatuses(...)`
+- 当前没有再看到旧版那种“`RuntimeHero` 和新系统同时各留一套同名状态私有逻辑”的双轨并存
+
+这说明：
+
+- 这轮重构确实把最容易继续发散的状态职责先收进了一个明确模块
+- `RuntimeHero` 现在更接近“运行时容器 + 对外状态接口”而不是继续堆细节实现
+
+## 对“当前模块边界是否合理”的检查结论
+
+结论：
+
+- **大体合理，但还不是最终收口形态。**
+
+已确认做对的部分：
+
+- `StatusEffectType / StatusEffectData`
+  继续只负责静态类型与配置数据
+- `RuntimeStatusEffect`
+  继续只代表单个运行时状态实例
+- `StatusEffectSystem`
+  开始承担统一运行时入口
+- `RuntimeHero`
+  继续保留状态列表本身和运行时宿主职责
+
+当前仍保留的边界现状：
+
+- 周期状态的实际效果结算仍主要在：
+  - `BattleSimulationSystem.ResolvePeriodicStatusTick(...)`
+- 状态添加/移除事件发布仍主要在：
+  - `BattleSkillSystem`
+  - `BattleSimulationSystem`
+  - `BattleBasicAttackSystem`
+
+这说明：
+
+- 当前分层已经比之前清楚
+- 但 `StatusEffectSystem` 还没有发展成“状态系统唯一事实层 + 唯一事件出口”的最终形态
+
+## 对“`RuntimeHero` 和 `StatusEffectSystem` 的耦合方式是否可接受”的检查结论
+
+结论：
+
+- **当前可接受，但属于偏务实型收口，不算特别优雅。**
+
+原因：
+
+- `RuntimeHero` 通过：
+  - `internal MutableStatusEffects`
+  暴露可写状态列表给 `StatusEffectSystem`
+- 从封装角度看，这确实带来了一层显式耦合
+- 但从当前阶段目标看，它换来了：
+  - 不重写整套状态实例生命周期
+  - 不额外引入新的容器类
+  - 低风险把逻辑先集中到一个入口
+
+判断：
+
+- **这更像“第一阶段能接受的工程性折中”，不是当前最优先要否掉的问题。**
+- **真正更值得优先修的，仍然是状态语义和事件流的一致性。**
+
+## 当前最值得优先指出的 3 个点
+
+### 1. 周期状态重施加会重置 tick 进度，可能吞掉一跳
+
+结论：
+
+- **这是当前最明确的运行时语义问题之一。**
+
+原因：
+
+- `StatusEffectSystem.TryApplyStatus(...)` 在重复施加、且达到 `maxStacks` 时，会调用：
+  - `RuntimeStatusEffect.Refresh(...)`
+- `RuntimeStatusEffect.Refresh(...)` 当前除了刷新持续时间和数值外，还会把：
+  - `TimeUntilNextTickSeconds`
+  直接重置成完整 `TickIntervalSeconds`
+
+影响：
+
+- 如果某个 DOT / HOT 本来再过很短时间就该跳一次
+- 在重施加后，这一跳可能被整体延后
+- 从效果上看，会发生“只刷新持续时间”的同时，顺手把 tick 进度也重置了
+
+判断：
+
+- **这和状态文档里“重施加主要刷新持续时间”的语义不完全一致。**
+- **它不会让系统彻底坏掉，但会悄悄改变 DOT / HOT 的强度与节奏。**
+
+### 2. 死亡时清空状态不会逐个发布 `StatusRemovedEvent`
+
+结论：
+
+- **这是当前最值得优先修的事件流问题。**
+
+原因：
+
+- `RuntimeHero.MarkDead(...)` 当前直接调用：
+  - `StatusEffectSystem.ClearStatuses(this)`
+- 而 `ClearStatuses(...)` 当前只是直接清空状态列表
+- 没有像 `RemoveExpiredStatuses(...)` 或 `StatusEffectSystem.Tick(...)` 那样逐个触发过期回调
+
+影响：
+
+- 单位死亡瞬间身上的：
+  - `Shield`
+  - `Invulnerable`
+  - `Untargetable`
+  - `Stun`
+  - `DOT / HOT`
+  等状态会被静默移除
+- `BattleDebugHud` 和其他事件订阅者看不到这些状态的结束事件
+- 对状态生命周期排查会产生断口
+
+判断：
+
+- **这比 static 设计或列表暴露方式更值得优先修。**
+- **因为它直接影响所有状态结束事件的一致性。**
+
+### 3. 目标已被打到 0 血时，仍可能先发“状态已施加”事件，再立刻死亡清空
+
+结论：
+
+- **这是当前日志与状态语义不够干净的问题。**
+
+原因：
+
+- `BattleSkillSystem.ApplyDamageToTargets(...)` 当前顺序是：
+  - 先伤害结算
+  - 再 `ApplyStatuses(...)`
+  - 最后若生命值已到 0 再 `MarkDead(...)`
+- DOT 击杀路径在 `BattleSimulationSystem.ResolveDamageOverTime(...)` 也有类似模式
+
+影响：
+
+- 会出现：
+  - `StatusAppliedEvent` 已经发出
+  - 但目标随后立刻死亡
+  - 状态又被死亡清理静默移除
+- 从日志看，就会像“状态成功上到了一个马上死掉且没有移除事件的单位”上
+
+判断：
+
+- **这更像调试完整性问题，而不是大范围逻辑错误。**
+- **但它和上一条叠加后，会让状态日志明显变脏。**
+
+## 对“这轮是否无意改变了现有状态语义”的检查结论
+
+结论：
+
+- **大部分状态的主语义没有被明显改坏，但周期状态重施加的细节确实发生了可见变化。**
+
+已确认未明显变坏的部分：
+
+- `Stun / KnockUp`
+  仍继续通过统一行为门禁阻断移动、普攻和施法
+- `Invulnerable`
+  仍主要通过 `CanReceiveDamage` / `PreventsDamage` 进入统一受伤入口
+- `Untargetable`
+  仍主要通过 `CanBeDirectTargeted` 影响索敌与直接目标合法性
+- `Shield`
+  仍继续在统一受伤入口里先吸收伤害
+
+当前发生细节变化的部分：
+
+- `DOT / HOT`
+  在“重施加 + 刷新持续时间”时，现在会一并重置 tick 计时
+
+这说明：
+
+- 这轮确实主要是结构整理
+- 但不是 100% 纯搬运；周期状态的节奏细节已经受到了影响
+
+## 这轮关于状态模块收口的最终结论
+
+- **最值得保留的点是：`StatusEffectSystem` 现在已经成为真实的统一运行时入口，`RuntimeHero` 也开始回到“运行时宿主”而不是“状态规则堆放处”的位置。**
+- **最值得优先修的点是：死亡清状态不发逐个 `StatusRemovedEvent`，这个问题会直接破坏状态生命周期日志的一致性。**
+- **第二优先级的问题是：周期状态重施加会重置 tick 进度，导致 DOT / HOT 的实际节奏和“只刷新持续时间”的预期不完全一致。**
+- **如果下一步只做一个最小增量，我会优先收口状态移除事件流，而不是先去动 `StatusEffectSystem` 的 static 形态。**
