@@ -18,45 +18,11 @@ namespace Fight.Editor
         private const string MissileSourcePrefabPath = "Assets/Super Pixel Projectiles Pack 3/Prefabs/pj3_magic_missile_small_orange.prefab";
         private const string SparkSourcePrefabPath = "Assets/Super Pixel Projectiles Pack 3/Prefabs/pj3_light_spark_small_orange.prefab";
         private const string FireTrailSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Fire/Fire_trail.prefab";
-        private const string FireMediumSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Fire/Fire_medium.prefab";
         private const string FireSmallSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Fire/Fire_small.prefab";
         private const string FireBurstSmallSourcePrefabPath = "Assets/Super Pixel Effects Pack 2/Prefabs/fx2_fire_burst_small_orange.prefab";
         private const string FireBurstLargeSourcePrefabPath = "Assets/Super Pixel Effects Pack 2/Prefabs/fx2_fire_burst_large_orange.prefab";
         private const string ExplosionSmallSourcePrefabPath = "Assets/Super Pixel Effects Pack 2/Prefabs/fx2_explosion_small_orange.prefab";
-
-        private static readonly Vector2[] MeteorAnchors =
-        {
-            new Vector2(0f, 0f),
-            new Vector2(-0.26f, 0.18f),
-            new Vector2(0.28f, 0.18f),
-            new Vector2(-0.18f, -0.2f),
-            new Vector2(0.2f, -0.22f),
-            new Vector2(-0.5f, 0.02f),
-            new Vector2(0.5f, 0.02f),
-            new Vector2(-0.42f, 0.3f),
-            new Vector2(0.42f, 0.3f),
-            new Vector2(-0.36f, -0.32f),
-            new Vector2(0.36f, -0.32f),
-            new Vector2(0f, 0.38f),
-            new Vector2(0f, -0.4f),
-        };
-
-        private static readonly float[] MeteorScales =
-        {
-            0.11f,
-            0.092f,
-            0.096f,
-            0.088f,
-            0.09f,
-            0.084f,
-            0.084f,
-            0.08f,
-            0.082f,
-            0.078f,
-            0.08f,
-            0.074f,
-            0.072f,
-        };
+        private const string TopDownRocketCircleRedSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Top_down_attack/top_down_rocket_circle_red.prefab";
 
         public static void BuildFireMageVfxPrefabs()
         {
@@ -125,26 +91,25 @@ namespace Fight.Editor
 
         private static void BuildMeteorFieldPrefab(Sprite softCircleSprite)
         {
-            var fireMediumPrefab = LoadRequiredAsset<GameObject>(FireMediumSourcePrefabPath);
+            var topDownRocketCircleRedPrefab = LoadRequiredAsset<GameObject>(TopDownRocketCircleRedSourcePrefabPath);
             var fireSmallPrefab = LoadRequiredAsset<GameObject>(FireSmallSourcePrefabPath);
-            var fireTrailPrefab = LoadRequiredAsset<GameObject>(FireTrailSourcePrefabPath);
 
             var root = new GameObject("FireMageMeteorField");
             root.AddComponent<SortingGroup>();
 
             CreateSprite(
                 root.transform,
-                "OuterRing",
+                "OuterWarning",
                 softCircleSprite,
-                new Color(1f, 0.34f, 0.08f, 0.18f),
+                new Color(1f, 0.32f, 0.08f, 0.12f),
                 0,
                 Vector3.zero,
-                new Vector3(1f, 1f, 1f));
+                new Vector3(1.02f, 1.02f, 1f));
             CreateSprite(
                 root.transform,
-                "InnerGlow",
+                "WarningEdge",
                 softCircleSprite,
-                new Color(1f, 0.5f, 0.12f, 0.22f),
+                new Color(1f, 0.54f, 0.16f, 0.18f),
                 1,
                 Vector3.zero,
                 new Vector3(0.84f, 0.84f, 1f));
@@ -152,33 +117,29 @@ namespace Fight.Editor
                 root.transform,
                 "ScorchCore",
                 softCircleSprite,
-                new Color(0.92f, 0.22f, 0.06f, 0.16f),
+                new Color(0.76f, 0.12f, 0.04f, 0.16f),
                 2,
                 Vector3.zero,
-                new Vector3(0.58f, 0.58f, 1f));
+                new Vector3(0.62f, 0.62f, 1f));
             CreateSprite(
                 root.transform,
-                "PulseWarmth",
+                "MeteorCore",
                 softCircleSprite,
-                new Color(1f, 0.72f, 0.22f, 0.1f),
+                new Color(1f, 0.78f, 0.24f, 0.08f),
                 3,
                 Vector3.zero,
-                new Vector3(0.7f, 0.7f, 1f));
+                new Vector3(0.34f, 0.34f, 1f));
 
-            for (var i = 0; i < MeteorAnchors.Length; i++)
-            {
-                var sourcePrefab = i < 7 ? fireMediumPrefab : fireSmallPrefab;
-                var cluster = InstantiateNestedPrefab(sourcePrefab, root.transform, $"FireCluster_{i:D2}");
-                cluster.transform.localPosition = new Vector3(MeteorAnchors[i].x, MeteorAnchors[i].y, 0f);
-                cluster.transform.localScale = Vector3.one * MeteorScales[i];
-                cluster.transform.localRotation = Quaternion.Euler(0f, 0f, (i % 2 == 0 ? -1f : 1f) * (6f + (i * 3f)));
-                OffsetRendererOrders(cluster, 10 + (i % 3));
-            }
+            var meteorPulse = InstantiateNestedPrefab(topDownRocketCircleRedPrefab, root.transform, "MeteorPulse");
+            meteorPulse.transform.localScale = Vector3.one * 0.108f;
+            meteorPulse.transform.localPosition = Vector3.zero;
+            RemoveDirectChild(meteorPulse.transform, "shot_controller");
+            OffsetRendererOrders(meteorPulse, 8);
 
-            CreateWisp(root.transform, fireTrailPrefab, "WispNorth", new Vector3(0f, 0.3f, 0f), 0.055f, 14, 0f);
-            CreateWisp(root.transform, fireTrailPrefab, "WispSouth", new Vector3(0f, -0.28f, 0f), 0.05f, 14, 180f);
-            CreateWisp(root.transform, fireTrailPrefab, "WispWest", new Vector3(-0.34f, 0.02f, 0f), 0.05f, 13, 90f);
-            CreateWisp(root.transform, fireTrailPrefab, "WispEast", new Vector3(0.34f, 0.02f, 0f), 0.05f, 13, -90f);
+            CreateMeteorEmber(root.transform, fireSmallPrefab, "CoreEmber", Vector3.zero, 0.082f, 13, 0f);
+            CreateMeteorEmber(root.transform, fireSmallPrefab, "NorthWestEmber", new Vector3(-0.2f, 0.14f, 0f), 0.058f, 12, 28f);
+            CreateMeteorEmber(root.transform, fireSmallPrefab, "NorthEastEmber", new Vector3(0.2f, 0.14f, 0f), 0.058f, 12, -28f);
+            CreateMeteorEmber(root.transform, fireSmallPrefab, "SouthEmber", new Vector3(0f, -0.22f, 0f), 0.056f, 12, 180f);
 
             SavePrefab(root, MeteorFieldPrefabPath);
         }
@@ -247,13 +208,13 @@ namespace Fight.Editor
             SavePrefab(root, EmberBurstPrefabPath);
         }
 
-        private static void CreateWisp(Transform parent, GameObject sourcePrefab, string name, Vector3 localPosition, float scale, int orderOffset, float localRotationZ)
+        private static void CreateMeteorEmber(Transform parent, GameObject sourcePrefab, string name, Vector3 localPosition, float scale, int orderOffset, float localRotationZ)
         {
-            var wisp = InstantiateNestedPrefab(sourcePrefab, parent, name);
-            wisp.transform.localPosition = localPosition;
-            wisp.transform.localScale = Vector3.one * scale;
-            wisp.transform.localRotation = Quaternion.Euler(0f, 0f, localRotationZ);
-            OffsetRendererOrders(wisp, orderOffset);
+            var ember = InstantiateNestedPrefab(sourcePrefab, parent, name);
+            ember.transform.localPosition = localPosition;
+            ember.transform.localScale = Vector3.one * scale;
+            ember.transform.localRotation = Quaternion.Euler(0f, 0f, localRotationZ);
+            OffsetRendererOrders(ember, orderOffset);
         }
 
         private static void CreateBurstShard(Transform parent, GameObject sourcePrefab, string name, Vector3 localPosition, float scale, int orderOffset, float localRotationZ)
@@ -331,6 +292,23 @@ namespace Fight.Editor
             instance.name = name;
             instance.transform.SetParent(parent, false);
             return instance;
+        }
+
+        private static void RemoveDirectChild(Transform parent, string childName)
+        {
+            if (parent == null || string.IsNullOrWhiteSpace(childName))
+            {
+                return;
+            }
+
+            for (var i = parent.childCount - 1; i >= 0; i--)
+            {
+                var child = parent.GetChild(i);
+                if (child != null && child.name == childName)
+                {
+                    Object.DestroyImmediate(child.gameObject);
+                }
+            }
         }
 
         private static void OffsetRendererOrders(GameObject root, int baseOrder)
