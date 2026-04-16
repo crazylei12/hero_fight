@@ -140,7 +140,9 @@ namespace Fight.Battle
 
             if (target.IsDead || target.CurrentHealth <= 0f)
             {
-                target.MarkDead(context.Input.respawnDelaySeconds);
+                target.MarkDead(
+                    context.Input.respawnDelaySeconds,
+                    status => PublishStatusRemovedEvent(context, target, status));
                 attacker?.MarkKill();
                 context.EventBus.Publish(new UnitDiedEvent(target, attacker));
 

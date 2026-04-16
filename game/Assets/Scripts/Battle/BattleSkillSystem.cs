@@ -996,14 +996,15 @@ namespace Fight.Battle
                     skill,
                     target.CurrentHealth));
 
-                ApplyStatuses(context, caster, skill, effect, target);
-
                 if (!target.IsDead && target.CurrentHealth > 0f)
                 {
+                    ApplyStatuses(context, caster, skill, effect, target);
                     continue;
                 }
 
-                target.MarkDead(context.Input.respawnDelaySeconds);
+                target.MarkDead(
+                    context.Input.respawnDelaySeconds,
+                    status => PublishStatusRemovedEvent(context, target, status));
                 caster.MarkKill();
                 context.EventBus.Publish(new UnitDiedEvent(target, caster));
                 battleManager.RegisterKill(caster.Side);
