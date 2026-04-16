@@ -28,6 +28,9 @@ namespace Fight.UI
         [SerializeField] private Color blueColor = new Color(0.19f, 0.58f, 0.95f);
         [SerializeField] private Color redColor = new Color(0.9f, 0.33f, 0.29f);
         [SerializeField] private Color deadColor = new Color(0.45f, 0.45f, 0.48f);
+        [SerializeField] private Color prefabHitFlashColor = new Color(1f, 0.2f, 0.2f, 1f);
+        [SerializeField] private float prefabHitFlashDuration = 0.16f;
+        [SerializeField] private float prefabHitFlashStrength = 0.82f;
         [SerializeField] private Color projectileTint = new Color(1f, 0.91f, 0.47f);
         [SerializeField] private Color skillAreaTint = new Color(0.98f, 0.42f, 0.24f, 0.22f);
         [SerializeField] private float skillAreaPulseStrength = 0.12f;
@@ -60,6 +63,8 @@ namespace Fight.UI
             public SortingGroup SortingGroup;
             public Transform VisualRoot;
             public Renderer[] VisualRenderers;
+            public SpriteRenderer[] VisualSpriteRenderers;
+            public Color[] VisualSpriteBaseColors;
             public SpriteRenderer Shadow;
             public SpriteRenderer Halo;
             public SpriteRenderer Body;
@@ -71,6 +76,7 @@ namespace Fight.UI
             public HeroEditor4DBattleAnimationDriver AnimationDriver;
             public bool LastDeadState;
             public float DeathStartedAtSeconds = -1f;
+            public float HitFlashUntilSeconds = -1f;
         }
 
         private sealed class SkillAreaViewState
@@ -190,6 +196,8 @@ namespace Fight.UI
                 view.UltimateIcon.color = ultimateColor;
             }
 
+            UpdatePrefabHitFlash(hero, view);
+
             if (view.AnimationDriver != null)
             {
                 view.AnimationDriver.Sync(hero);
@@ -226,6 +234,18 @@ namespace Fight.UI
                 else
                 {
                     Destroy(driver);
+                }
+
+                view.VisualSpriteRenderers = view.VisualRoot.GetComponentsInChildren<SpriteRenderer>(true);
+                if (view.VisualSpriteRenderers != null && view.VisualSpriteRenderers.Length > 0)
+                {
+                    view.VisualSpriteBaseColors = new Color[view.VisualSpriteRenderers.Length];
+                    for (var i = 0; i < view.VisualSpriteRenderers.Length; i++)
+                    {
+                        view.VisualSpriteBaseColors[i] = view.VisualSpriteRenderers[i] != null
+                            ? view.VisualSpriteRenderers[i].color
+                            : Color.white;
+                    }
                 }
             }
             else
@@ -291,6 +311,52 @@ namespace Fight.UI
             if (view.FootUiRoot != null)
             {
                 view.FootUiRoot.gameObject.SetActive(!hideCorpse);
+            }
+        }
+
+        private void UpdatePrefabHitFlash(RuntimeHero hero, HeroViewState view)
+        {
+            if (hero == null
+                || view == null
+                || view.VisualSpriteRenderers == null
+                || view.VisualSpriteBaseColors == null
+                || view.VisualSpriteRenderers.Length != view.VisualSpriteBaseColors.Length)
+            {
+                return;
+            }
+
+            var intensity = 0f;
+            if (!hero.IsDead && view.HitFlashUntilSeconds > 0f)
+            {
+                var remaining = view.HitFlashUntilSeconds - GetElapsedTimeSeconds();
+                if (remaining > 0f)
+                {
+                    intensity = Mathf.Clamp01(remaining / Mathf.Max(0.01f, prefabHitFlashDuration)) * prefabHitFlashStrength;
+                }
+                else
+                {
+                    view.HitFlashUntilSeconds = -1f;
+                }
+            }
+
+            for (var i = 0; i < view.VisualSpriteRenderers.Length; i++)
+            {
+                var spriteRenderer = view.VisualSpriteRenderers[i];
+                if (spriteRenderer == null)
+                {
+                    continue;
+                }
+
+                var baseColor = view.VisualSpriteBaseColors[i];
+                if (intensity <= 0f)
+                {
+                    spriteRenderer.color = baseColor;
+                    continue;
+                }
+
+                var flashedColor = Color.Lerp(baseColor, prefabHitFlashColor, intensity);
+                flashedColor.a = baseColor.a;
+                spriteRenderer.color = flashedColor;
             }
         }
 
@@ -845,6 +911,15 @@ namespace Fight.UI
                     driver.OnBattleEvent(battleEvent);
                 }
             }
+
+            if (battleEvent is DamageAppliedEvent damageAppliedEvent
+                && damageAppliedEvent.Target != null
+                && damageAppliedEvent.DamageAmount > 0f
+                && damageAppliedEvent.Target.CurrentHealth > 0f
+                && heroViews.TryGetValue(damageAppliedEvent.Target.RuntimeId, out var heroView))
+            {
+                heroView.HitFlashUntilSeconds = GetElapsedTimeSeconds() + Mathf.Max(0.01f, prefabHitFlashDuration);
+            }
         }
 
         private void CreateSkillAreaEffect(RuntimeSkillArea area, SkillAreaViewState viewState)
@@ -1055,6 +1130,13 @@ namespace Fight.UI
                     renderers[i].sortingOrder = sortingOrder;
                 }
             }
+        }
+
+        private float GetElapsedTimeSeconds()
+        {
+            return battleManager != null && battleManager.Context != null && battleManager.Context.Clock != null
+                ? battleManager.Context.Clock.ElapsedTimeSeconds
+                : Time.time;
         }
     }
 }
