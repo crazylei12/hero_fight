@@ -16,6 +16,22 @@ namespace Fight.Battle
         private const float UltimateFirstFallbackBonus = 0.2f;
         private const float UltimateSecondFallbackBonus = 0.5f;
 
+        private readonly struct SkillEffectResolutionState
+        {
+            public SkillEffectResolutionState(Vector3 dashStartPosition, Vector3 dashDestination, bool hasDashPath)
+            {
+                DashStartPosition = dashStartPosition;
+                DashDestination = dashDestination;
+                HasDashPath = hasDashPath;
+            }
+
+            public Vector3 DashStartPosition { get; }
+
+            public Vector3 DashDestination { get; }
+
+            public bool HasDashPath { get; }
+        }
+
         public static bool TryCastSkill(BattleContext context, RuntimeHero caster, BattleManager battleManager)
         {
             if (context == null || caster == null || battleManager == null || caster.IsDead)
@@ -1277,7 +1293,9 @@ namespace Fight.Battle
         private static RuntimeHero FindLowestHealth(IReadOnlyList<RuntimeHero> heroes, RuntimeHero caster, SkillData skill, bool includeAllies, float maxRange)
         {
             RuntimeHero best = null;
+            var lowestCurrentHealth = float.MaxValue;
             var lowestRatio = float.MaxValue;
+            var nearestDistance = float.MaxValue;
             for (var i = 0; i < heroes.Count; i++)
             {
                 var candidate = heroes[i];
@@ -1308,6 +1326,20 @@ namespace Fight.Battle
                 }
 
                 var ratio = candidate.MaxHealth > 0f ? candidate.CurrentHealth / candidate.MaxHealth : 1f;
+                if (includeAllies)
+                {
+                    if (!IsBetterLowestAllyCandidate(candidate.CurrentHealth, ratio, distance, lowestCurrentHealth, lowestRatio, nearestDistance))
+                    {
+                        continue;
+                    }
+
+                    lowestCurrentHealth = candidate.CurrentHealth;
+                    lowestRatio = ratio;
+                    nearestDistance = distance;
+                    best = candidate;
+                    continue;
+                }
+
                 if (ratio >= lowestRatio)
                 {
                     continue;
@@ -1318,6 +1350,37 @@ namespace Fight.Battle
             }
 
             return best;
+        }
+
+        private static bool IsBetterLowestAllyCandidate(
+            float currentHealth,
+            float healthRatio,
+            float distance,
+            float bestCurrentHealth,
+            float bestHealthRatio,
+            float bestDistance)
+        {
+            if (currentHealth < bestCurrentHealth - Mathf.Epsilon)
+            {
+                return true;
+            }
+
+            if (Mathf.Abs(currentHealth - bestCurrentHealth) > Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            if (healthRatio < bestHealthRatio - Mathf.Epsilon)
+            {
+                return true;
+            }
+
+            if (Mathf.Abs(healthRatio - bestHealthRatio) > Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            return distance < bestDistance;
         }
 
         private static RuntimeHero FindDensestEnemyAnchor(IReadOnlyList<RuntimeHero> heroes, RuntimeHero caster, float maxRange, float radius)
