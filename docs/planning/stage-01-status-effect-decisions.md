@@ -150,10 +150,20 @@
 - `game/Assets/Scripts/Data/StatusEffectType.cs`
 - `game/Assets/Scripts/Data/StatusEffectData.cs`
 - `game/Assets/Scripts/Heroes/RuntimeStatusEffect.cs`
+- `game/Assets/Scripts/Heroes/StatusEffectSystem.cs`
 - `game/Assets/Scripts/Heroes/RuntimeHero.cs`
 - `game/Assets/Scripts/Battle/BattleEvents.cs`
 
 建议按“最小增量改造”推进，而不是整套推翻重写。
+
+当前实现里，`StatusEffectSystem.cs` 已开始承担统一的运行时状态入口，主要负责：
+- 状态应用与重施加
+- 行为门禁查询
+- 属性修正查询
+- 周期状态 tick 推进
+- 护盾吸收与过期状态清理
+
+这一步的目标是先把最容易继续发散的状态职责收口，避免后续把状态判定继续散写回 `RuntimeHero`、`BattleSimulationSystem` 和技能执行流程里。
 
 ### 第一步：补齐正式状态类型
 
