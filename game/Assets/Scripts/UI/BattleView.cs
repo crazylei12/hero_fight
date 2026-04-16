@@ -18,6 +18,7 @@ namespace Fight.UI
         private const int SkillAreaEffectSortOrder = 340;
         private const string ArenaRootName = "BattleArena2D";
         private const string StunStatusLoopVfxResourcesPath = "Stage01Demo/VFX/Statuses/StunStatusLoop";
+        private const string HealReceivedImpactVfxResourcesPath = "Stage01Demo/VFX/Shared/HealReceivedImpact";
         private const float CorpseVisibleSeconds = 1f;
         private const float HealthBarWidth = 0.9f;
         private const float HealthBarBackgroundHeight = 0.11f;
@@ -76,6 +77,7 @@ namespace Fight.UI
         private static Sprite circleSprite;
         private static Sprite customArenaBackgroundSprite;
         private static string customArenaBackgroundSourcePath;
+        private static GameObject sharedHealImpactPrefab;
 
         protected BattleManager BattleManager => battleManager;
 
@@ -1467,7 +1469,7 @@ namespace Fight.UI
 
         private void PlayHealImpactVfx(HealAppliedEvent healAppliedEvent)
         {
-            if (healAppliedEvent?.Caster?.Definition?.visualConfig?.hitVfxPrefab == null
+            if (healAppliedEvent?.Target == null
                 || !heroViews.TryGetValue(healAppliedEvent.Target.RuntimeId, out var targetView))
             {
                 return;
@@ -1478,7 +1480,27 @@ namespace Fight.UI
                 return;
             }
 
-            SpawnTransientHeroVfx(targetView, healAppliedEvent.Caster.Definition.visualConfig.hitVfxPrefab, Vector3.zero, HealEventVfxSortOrderOffset);
+            var healImpactPrefab = GetSharedHealImpactPrefab();
+            if (healImpactPrefab == null)
+            {
+                healImpactPrefab = healAppliedEvent.Caster?.Definition?.visualConfig?.hitVfxPrefab;
+                if (healImpactPrefab == null)
+                {
+                    return;
+                }
+            }
+
+            SpawnTransientHeroVfx(targetView, healImpactPrefab, Vector3.zero, HealEventVfxSortOrderOffset);
+        }
+
+        private static GameObject GetSharedHealImpactPrefab()
+        {
+            if (sharedHealImpactPrefab == null)
+            {
+                sharedHealImpactPrefab = Resources.Load<GameObject>(HealReceivedImpactVfxResourcesPath);
+            }
+
+            return sharedHealImpactPrefab;
         }
 
         private void SpawnTransientHeroVfx(HeroViewState heroView, GameObject prefab, Vector3 localOffset, int sortingOrderOffset)

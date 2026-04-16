@@ -375,7 +375,7 @@ GameObject:
   - component: {fileID: 790164888002592326}
   - component: {fileID: 7667033913595403423}
   m_Layer: 0
-  m_Name: SunpriestHealImpact
+  m_Name: HealReceivedImpact
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
