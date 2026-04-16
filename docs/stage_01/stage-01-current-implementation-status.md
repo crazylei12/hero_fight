@@ -280,7 +280,7 @@
 ### 示例英雄资产
 
 当前已生成示例英雄：
-- `Bladeguard`
+- `Skybreaker`
 - `火焰法师（FIREMAGE）`
 - `Shadowstep`
 - `Ironwall`

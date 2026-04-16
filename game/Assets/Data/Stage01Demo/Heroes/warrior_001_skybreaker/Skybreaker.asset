@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 65b49e23d4a4cda45a9a11e1d7bacd97, type: 3}
-  m_Name: Bladeguard
+  m_Name: Skybreaker
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
-  heroId: warrior_001_bladeguard
-  displayName: Bladeguard
+  heroId: warrior_001_skybreaker
+  displayName: Skybreaker
   heroClass: 0
-  tags: 000000000300000006000000
+  tags: 000000000500000006000000
   baseStats:
     maxHealth: 420
     attackPower: 38
@@ -46,4 +46,4 @@ MonoBehaviour:
     castVfxPrefab: {fileID: 0}
     hitVfxPrefab: {fileID: 0}
     castSfx: {fileID: 0}
-  debugNotes: Stage-01 demo hero for Warrior.
+  debugNotes: Stage-01 demo hero for Warrior. Uses Breaker Rush and Skyquake.

@@ -778,7 +778,11 @@ namespace Fight.Battle
             }
 
             caster.BeginSkillCast(skill, primaryTarget, affectedTargets, CombatActionTiming.DefaultWindupSeconds, CombatActionTiming.DefaultRecoverySeconds);
-            context.EventBus.Publish(new SkillCastEvent(caster, skill, primaryTarget, affectedTargets.Count));
+            context.EventBus.Publish(new SkillCastEvent(
+                caster,
+                skill,
+                primaryTarget,
+                GetSkillCastAffectedTargetCount(context, caster, skill, primaryTarget, affectedTargets)));
         }
 
         private static void ResolveSkillEffects(BattleContext context, RuntimeHero caster, SkillData skill, RuntimeHero primaryTarget, List<RuntimeHero> affectedTargets, BattleManager battleManager)
@@ -790,9 +794,10 @@ namespace Fight.Battle
 
             if (skill.effects != null && skill.effects.Count > 0)
             {
+                var resolutionState = CreateSkillEffectResolutionState(skill, caster, primaryTarget);
                 for (var i = 0; i < skill.effects.Count; i++)
                 {
-                    ExecuteSkillEffect(context, caster, skill, primaryTarget, affectedTargets, skill.effects[i], battleManager);
+                    ExecuteSkillEffect(context, caster, skill, primaryTarget, affectedTargets, skill.effects[i], resolutionState, battleManager);
                 }
 
                 return;
@@ -839,6 +844,115 @@ namespace Fight.Battle
             return results;
         }
 
+        private static int GetSkillCastAffectedTargetCount(
+            BattleContext context,
+            RuntimeHero caster,
+            SkillData skill,
+            RuntimeHero primaryTarget,
+            List<RuntimeHero> affectedTargets)
+        {
+            if (context == null || caster == null || skill == null || skill.effects == null || skill.effects.Count <= 0)
+            {
+                return affectedTargets != null ? affectedTargets.Count : 0;
+            }
+
+            var resolutionState = CreateSkillEffectResolutionState(skill, caster, primaryTarget);
+            var uniqueTargetIds = new HashSet<string>();
+            var uniqueNonCasterTargetIds = new HashSet<string>();
+
+            for (var i = 0; i < skill.effects.Count; i++)
+            {
+                var effectTargets = ResolveEffectTargets(context, caster, skill, primaryTarget, affectedTargets, skill.effects[i], resolutionState);
+                for (var j = 0; j < effectTargets.Count; j++)
+                {
+                    var target = effectTargets[j];
+                    if (target == null)
+                    {
+                        continue;
+                    }
+
+                    uniqueTargetIds.Add(target.RuntimeId);
+                    if (target != caster)
+                    {
+                        uniqueNonCasterTargetIds.Add(target.RuntimeId);
+                    }
+                }
+            }
+
+            if (uniqueNonCasterTargetIds.Count > 0)
+            {
+                return uniqueNonCasterTargetIds.Count;
+            }
+
+            return uniqueTargetIds.Count > 0
+                ? uniqueTargetIds.Count
+                : (affectedTargets != null ? affectedTargets.Count : 0);
+        }
+
+        private static SkillEffectResolutionState CreateSkillEffectResolutionState(SkillData skill, RuntimeHero caster, RuntimeHero primaryTarget)
+        {
+            var dashStartPosition = caster != null ? caster.CurrentPosition : Vector3.zero;
+            if (caster == null || primaryTarget == null || !SkillUsesDashReposition(skill))
+            {
+                return new SkillEffectResolutionState(dashStartPosition, dashStartPosition, false);
+            }
+
+            return new SkillEffectResolutionState(
+                dashStartPosition,
+                GetDashDestination(dashStartPosition, primaryTarget.CurrentPosition),
+                true);
+        }
+
+        private static bool SkillUsesDashReposition(SkillData skill)
+        {
+            if (skill?.effects == null)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < skill.effects.Count; i++)
+            {
+                if (skill.effects[i] != null && skill.effects[i].effectType == SkillEffectType.RepositionNearPrimaryTarget)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static List<RuntimeHero> ResolveEffectTargets(
+            BattleContext context,
+            RuntimeHero caster,
+            SkillData skill,
+            RuntimeHero primaryTarget,
+            List<RuntimeHero> affectedTargets,
+            SkillEffectData effect,
+            SkillEffectResolutionState resolutionState)
+        {
+            if (effect == null)
+            {
+                return new List<RuntimeHero>();
+            }
+
+            switch (effect.targetMode)
+            {
+                case SkillEffectTargetMode.Caster:
+                    return CollectCasterTarget(caster);
+                case SkillEffectTargetMode.PrimaryTarget:
+                    return CollectPrimaryEffectTarget(primaryTarget, caster);
+                case SkillEffectTargetMode.EnemiesInRadiusAroundCaster:
+                    return CollectUnitsInRadius(context, caster, caster.CurrentPosition, GetEffectRadius(skill, effect), includeAllies: false);
+                case SkillEffectTargetMode.AlliesInRadiusAroundCaster:
+                    return CollectUnitsInRadius(context, caster, caster.CurrentPosition, GetEffectRadius(skill, effect), includeAllies: true);
+                case SkillEffectTargetMode.DashPathEnemies:
+                    return CollectDashPathTargets(context, caster, skill, effect, resolutionState);
+                case SkillEffectTargetMode.SkillTargets:
+                default:
+                    return CopyAliveTargets(affectedTargets);
+            }
+        }
+
         private static void ExecuteSkillEffect(
             BattleContext context,
             RuntimeHero caster,
@@ -846,26 +960,28 @@ namespace Fight.Battle
             RuntimeHero primaryTarget,
             List<RuntimeHero> affectedTargets,
             SkillEffectData effect,
+            SkillEffectResolutionState resolutionState,
             BattleManager battleManager)
         {
+            var effectTargets = ResolveEffectTargets(context, caster, skill, primaryTarget, affectedTargets, effect, resolutionState);
             switch (effect.effectType)
             {
                 case SkillEffectType.DirectDamage:
-                    ApplyDamageToTargets(context, caster, skill, effect, affectedTargets, battleManager);
+                    ApplyDamageToTargets(context, caster, skill, effect, effectTargets, battleManager);
                     break;
                 case SkillEffectType.DirectHeal:
-                    ApplyHealToTargets(context, caster, skill, effect, affectedTargets);
+                    ApplyHealToTargets(context, caster, skill, effect, effectTargets);
                     break;
                 case SkillEffectType.ApplyStatusEffects:
-                    ApplyStatusEffectsToTargets(context, caster, skill, effect, affectedTargets);
+                    ApplyStatusEffectsToTargets(context, caster, skill, effect, effectTargets);
                     break;
                 case SkillEffectType.ApplyForcedMovement:
-                    ApplyForcedMovementToTargets(context, caster, skill, effect, affectedTargets);
+                    ApplyForcedMovementToTargets(context, caster, skill, effect, effectTargets);
                     break;
                 case SkillEffectType.RepositionNearPrimaryTarget:
                     if (primaryTarget != null)
                     {
-                        RepositionForDash(caster, primaryTarget);
+                        ApplyDashReposition(context, caster, primaryTarget, skill, effect, resolutionState);
                     }
                     break;
                 case SkillEffectType.CreatePersistentArea:
@@ -1086,6 +1202,109 @@ namespace Fight.Battle
             }
 
             return skill != null ? skill.areaRadius : 0f;
+        }
+
+        private static List<RuntimeHero> CollectCasterTarget(RuntimeHero caster)
+        {
+            var results = new List<RuntimeHero>();
+            if (caster != null && !caster.IsDead)
+            {
+                results.Add(caster);
+            }
+
+            return results;
+        }
+
+        private static List<RuntimeHero> CollectPrimaryEffectTarget(RuntimeHero primaryTarget, RuntimeHero caster)
+        {
+            var results = new List<RuntimeHero>();
+            if (primaryTarget == null || primaryTarget.IsDead)
+            {
+                return results;
+            }
+
+            if (primaryTarget != caster && !primaryTarget.CanBeDirectTargeted)
+            {
+                return results;
+            }
+
+            results.Add(primaryTarget);
+            return results;
+        }
+
+        private static List<RuntimeHero> CollectUnitsInRadius(
+            BattleContext context,
+            RuntimeHero caster,
+            Vector3 center,
+            float radius,
+            bool includeAllies)
+        {
+            var results = new List<RuntimeHero>();
+            if (context == null || caster == null)
+            {
+                return results;
+            }
+
+            var effectiveRadius = Mathf.Max(0f, radius);
+            for (var i = 0; i < context.Heroes.Count; i++)
+            {
+                var candidate = context.Heroes[i];
+                if (candidate == null || candidate.IsDead)
+                {
+                    continue;
+                }
+
+                var isAlly = candidate.Side == caster.Side;
+                if (includeAllies != isAlly)
+                {
+                    continue;
+                }
+
+                if (candidate != caster && !candidate.CanBeDirectTargeted)
+                {
+                    continue;
+                }
+
+                if (Vector3.Distance(candidate.CurrentPosition, center) <= effectiveRadius)
+                {
+                    results.Add(candidate);
+                }
+            }
+
+            return results;
+        }
+
+        private static List<RuntimeHero> CollectDashPathTargets(
+            BattleContext context,
+            RuntimeHero caster,
+            SkillData skill,
+            SkillEffectData effect,
+            SkillEffectResolutionState resolutionState)
+        {
+            var results = new List<RuntimeHero>();
+            if (context == null || caster == null || !resolutionState.HasDashPath)
+            {
+                return results;
+            }
+
+            var effectiveRadius = Mathf.Max(0.1f, GetEffectRadius(skill, effect));
+            var start = resolutionState.DashStartPosition;
+            var end = resolutionState.DashDestination;
+            for (var i = 0; i < context.Heroes.Count; i++)
+            {
+                var candidate = context.Heroes[i];
+                if (candidate == null || candidate.IsDead || candidate.Side == caster.Side || !candidate.CanBeDirectTargeted)
+                {
+                    continue;
+                }
+
+                if (GetDistanceToSegment(candidate.CurrentPosition, start, end) <= effectiveRadius)
+                {
+                    results.Add(candidate);
+                }
+            }
+
+            return results;
         }
 
         private static bool HasStatusPayload(SkillEffectData effect)
@@ -1430,15 +1649,53 @@ namespace Fight.Battle
             return best ?? BattleAiDirector.SelectPreferredEnemyTarget(heroes, caster, maxRange);
         }
 
-        private static void RepositionForDash(RuntimeHero caster, RuntimeHero target)
+        private static void ApplyDashReposition(
+            BattleContext context,
+            RuntimeHero caster,
+            RuntimeHero target,
+            SkillData sourceSkill,
+            SkillEffectData effect,
+            SkillEffectResolutionState resolutionState)
         {
-            var offset = target.CurrentPosition - caster.CurrentPosition;
-            if (offset.sqrMagnitude <= Mathf.Epsilon)
+            if (caster == null || target == null)
             {
                 return;
             }
 
-            caster.CurrentPosition = Stage01ArenaSpec.ClampPosition(target.CurrentPosition - offset.normalized * 0.8f);
+            var startPosition = caster.CurrentPosition;
+            var destination = resolutionState.HasDashPath
+                ? resolutionState.DashDestination
+                : GetDashDestination(startPosition, target.CurrentPosition);
+            var durationSeconds = effect != null ? Mathf.Max(0f, effect.durationSeconds) : 0f;
+            var peakHeight = effect != null ? Mathf.Max(0f, effect.forcedMovementPeakHeight) : 0f;
+            if (durationSeconds <= Mathf.Epsilon && peakHeight <= Mathf.Epsilon)
+            {
+                caster.CurrentPosition = destination;
+                return;
+            }
+
+            caster.StartForcedMovement(destination, durationSeconds, peakHeight);
+            context.EventBus.Publish(new ForcedMovementAppliedEvent(
+                caster,
+                caster,
+                startPosition,
+                destination,
+                durationSeconds,
+                peakHeight,
+                sourceSkill));
+        }
+
+        private static Vector3 GetDashDestination(Vector3 casterPosition, Vector3 targetPosition)
+        {
+            var offset = targetPosition - casterPosition;
+            if (offset.sqrMagnitude <= Mathf.Epsilon)
+            {
+                return Stage01ArenaSpec.ClampPosition(targetPosition);
+            }
+
+            var destination = targetPosition - offset.normalized * 0.8f;
+            destination.y = 0f;
+            return Stage01ArenaSpec.ClampPosition(destination);
         }
 
         private static Vector3 GetForcedMovementDestination(RuntimeHero caster, RuntimeHero target, SkillEffectData effect, float distance)
@@ -1471,6 +1728,20 @@ namespace Fight.Battle
             }
 
             return target.Side == TeamSide.Blue ? Vector3.left : Vector3.right;
+        }
+
+        private static float GetDistanceToSegment(Vector3 point, Vector3 segmentStart, Vector3 segmentEnd)
+        {
+            var segment = segmentEnd - segmentStart;
+            var segmentLengthSquared = segment.sqrMagnitude;
+            if (segmentLengthSquared <= Mathf.Epsilon)
+            {
+                return Vector3.Distance(point, segmentStart);
+            }
+
+            var projectedDistance = Mathf.Clamp01(Vector3.Dot(point - segmentStart, segment) / segmentLengthSquared);
+            var projection = segmentStart + segment * projectedDistance;
+            return Vector3.Distance(point, projection);
         }
     }
 }

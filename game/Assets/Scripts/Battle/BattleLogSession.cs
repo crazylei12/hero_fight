@@ -163,8 +163,8 @@ namespace Fight.Battle
 
         private void AppendBlueWarriorSpotlight(StringBuilder builder)
         {
-            builder.AppendLine("Blue Warrior Spotlight (Martial Artist Slot)");
-            builder.AppendLine("Alias note: this section tracks the blue-side warrior hero even if the runtime asset name differs from planning docs.");
+            builder.AppendLine("Blue Warrior Spotlight (Skybreaker Slot)");
+            builder.AppendLine("Alias note: this section tracks the blue-side warrior slot, expected to be Skybreaker in the stage-01 roster.");
 
             if (string.IsNullOrWhiteSpace(trackedBlueWarriorHeroId))
             {
@@ -256,8 +256,7 @@ namespace Fight.Battle
                 return false;
             }
 
-            return string.Equals(hero.heroId, "warrior_001_bladeguard", System.StringComparison.OrdinalIgnoreCase)
-                || string.Equals(hero.heroId, "warrior_001_skybreaker", System.StringComparison.OrdinalIgnoreCase);
+            return string.Equals(hero.heroId, "warrior_001_skybreaker", System.StringComparison.OrdinalIgnoreCase);
         }
 
         private void TryAddBlueWarriorSkillCast(SkillCastEvent skillCast)

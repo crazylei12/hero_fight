@@ -27,13 +27,16 @@ namespace Fight.Editor
         private const string ResultScenePath = ScenesFolder + "/Result.unity";
         private const string DefaultBattleInputAssetPath = ResourcesDemoFolder + "/Stage01DemoBattleInput.asset";
         private const string SupportPrefabPath = "Assets/Prefabs/Heroes/support_001_sunpriest/Sunpriest.prefab";
-        private const string WarriorPrefabPath = "Assets/Prefabs/Heroes/warrior_001_bladeguard/Bladeguard.prefab";
+        private const string WarriorPrefabPath = "Assets/Prefabs/Heroes/warrior_001_skybreaker/Skybreaker.prefab";
         private const string MagePrefabPath = "Assets/HeroEditor4D/heroes/FIREMAGE.prefab";
         private const string TankPrefabPath = "Assets/Prefabs/Heroes/tank_001_ironwall/Ironwall.prefab";
         private const string HeroEditorControllerPath = "Assets/HeroEditor4D/Common/Animation/Controller.controller";
         private const string FireMageProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/FireMageBasicAttackProjectile.prefab";
         private const string MageActiveAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FireMageEmberBurst.prefab";
         private const string MageUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FireMageMeteorField.prefab";
+        private const string SunpriestProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/SunpriestBasicAttackProjectile.prefab";
+        private const string SunpriestHealImpactPrefabPath = "Assets/Prefabs/VFX/Shared/SunpriestHealImpact.prefab";
+        private const string SunpriestUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/SunpriestSunBlessingField.prefab";
 
         [MenuItem(OpenMainMenuMenuPath)]
         public static void OpenMainMenuScene()
@@ -58,18 +61,18 @@ namespace Fight.Editor
         {
             EnsureFolders();
 
-            var warriorActive = CreateSkill("skill_warrior_active_cleave", "Cleave", SkillSlotType.ActiveSkill, SkillType.AreaDamage, SkillTargetType.NearestEnemy, 2f, 2f, 1.3f, 7f, 1, overwriteExistingContent);
-            var warriorUltimateSkill = CreateSkill("skill_warrior_ultimate_ironcrash", "Iron Crash", SkillSlotType.Ultimate, SkillType.AreaDamage, SkillTargetType.DensestEnemyArea, 2.4f, 3f, 2f, 0f, 2, overwriteExistingContent, out var warriorUltimateExisted);
+            var warriorActive = CreateSkybreakerActiveSkill(overwriteExistingContent);
+            var warriorUltimateSkill = CreateSkybreakerUltimateSkill(overwriteExistingContent, out var warriorUltimateExisted);
 
             var warrior = CreateHero(
-                "warrior_001_bladeguard",
-                "Bladeguard",
+                "warrior_001_skybreaker",
+                "Skybreaker",
                 HeroClass.Warrior,
                 420f, 38f, 24f, 1.1f, 4.2f, 0.15f, 1.6f, 1.7f,
                 warriorActive,
-                ConfigureWarriorUltimate(warriorUltimateSkill, overwriteExistingContent, warriorUltimateExisted),
+                ConfigureSkybreakerUltimate(warriorUltimateSkill, overwriteExistingContent, warriorUltimateExisted),
                 overwriteExistingContent,
-                HeroTag.Melee, HeroTag.SustainedDamage, HeroTag.Control);
+                HeroTag.Melee, HeroTag.Dive, HeroTag.Control);
 
             var mageUltimateSkill = CreateSkill("skill_mage_ultimate_meteor", "Meteor Fall", SkillSlotType.Ultimate, SkillType.AreaDamage, SkillTargetType.Self, 0f, 6f, 0.55f, 0f, 3, overwriteExistingContent, out var mageUltimateExisted);
 
@@ -330,11 +333,17 @@ namespace Fight.Editor
             hero.visualConfig.animatorController = battlePrefab != null
                 ? AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(HeroEditorControllerPath)
                 : null;
-            hero.visualConfig.projectilePrefab = heroId == "mage_001_firemage"
-                ? AssetDatabase.LoadAssetAtPath<GameObject>(FireMageProjectilePrefabPath)
-                : null;
-            hero.visualConfig.projectileAlignToMovement = heroId == "mage_001_firemage";
+            hero.visualConfig.projectilePrefab = heroId switch
+            {
+                "mage_001_firemage" => AssetDatabase.LoadAssetAtPath<GameObject>(FireMageProjectilePrefabPath),
+                "support_001_sunpriest" => AssetDatabase.LoadAssetAtPath<GameObject>(SunpriestProjectilePrefabPath),
+                _ => null,
+            };
+            hero.visualConfig.projectileAlignToMovement = heroId == "mage_001_firemage" || heroId == "support_001_sunpriest";
             hero.visualConfig.projectileEulerAngles = Vector3.zero;
+            hero.visualConfig.hitVfxPrefab = heroId == "support_001_sunpriest"
+                ? AssetDatabase.LoadAssetAtPath<GameObject>(SunpriestHealImpactPrefabPath)
+                : null;
             EditorUtility.SetDirty(hero);
             return hero;
         }
@@ -491,6 +500,119 @@ namespace Fight.Editor
             return skill;
         }
 
+        private static SkillData CreateSkybreakerActiveSkill(bool overwriteExistingContent)
+        {
+            var skill = CreateSkill(
+                "skill_warrior_active_breakerrush",
+                "Breaker Rush",
+                SkillSlotType.ActiveSkill,
+                SkillType.Dash,
+                SkillTargetType.NearestEnemy,
+                3f,
+                0f,
+                0f,
+                8f,
+                1,
+                overwriteExistingContent,
+                out var existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.effects.Clear();
+            skill.targetType = SkillTargetType.NearestEnemy;
+            skill.castRange = 3f;
+            skill.areaRadius = 0f;
+            skill.cooldownSeconds = 8f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+
+            var shieldEffect = AddApplyStatusEffectsEffect(skill);
+            shieldEffect.targetMode = SkillEffectTargetMode.Caster;
+            shieldEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.Shield,
+                durationSeconds = 4f,
+                magnitude = 60f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
+            AddRepositionEffect(skill, 0.25f);
+
+            var knockUpMovementEffect = AddForcedMovementEffect(skill, 0f, 1f, 1.8f);
+            knockUpMovementEffect.targetMode = SkillEffectTargetMode.DashPathEnemies;
+            knockUpMovementEffect.radiusOverride = 0.8f;
+
+            var knockUpStatusEffect = AddApplyStatusEffectsEffect(skill);
+            knockUpStatusEffect.targetMode = SkillEffectTargetMode.DashPathEnemies;
+            knockUpStatusEffect.radiusOverride = 0.8f;
+            knockUpStatusEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.KnockUp,
+                durationSeconds = 1f,
+                magnitude = 1f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateSkybreakerUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
+        {
+            var skill = CreateSkill(
+                "skill_warrior_ultimate_skyquake",
+                "Skyquake",
+                SkillSlotType.Ultimate,
+                SkillType.KnockUp,
+                SkillTargetType.Self,
+                0f,
+                5f,
+                1.8f,
+                0f,
+                1,
+                overwriteExistingContent,
+                out existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.effects.Clear();
+            skill.targetType = SkillTargetType.Self;
+            skill.castRange = 0f;
+            skill.areaRadius = 5f;
+            skill.allowsSelfCast = true;
+
+            var damageEffect = AddDamageEffect(skill, 1.8f);
+            damageEffect.targetMode = SkillEffectTargetMode.EnemiesInRadiusAroundCaster;
+            damageEffect.radiusOverride = skill.areaRadius;
+
+            var knockUpMovementEffect = AddForcedMovementEffect(skill, 0f, 1f, 1.8f);
+            knockUpMovementEffect.targetMode = SkillEffectTargetMode.EnemiesInRadiusAroundCaster;
+            knockUpMovementEffect.radiusOverride = skill.areaRadius;
+
+            var knockUpStatusEffect = AddApplyStatusEffectsEffect(skill);
+            knockUpStatusEffect.targetMode = SkillEffectTargetMode.EnemiesInRadiusAroundCaster;
+            knockUpStatusEffect.radiusOverride = skill.areaRadius;
+            knockUpStatusEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.KnockUp,
+                durationSeconds = 1f,
+                magnitude = 1f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
         private static void AddDefaultEffectsForSkill(SkillData skill, float powerMultiplier)
         {
             switch (skill.skillType)
@@ -561,11 +683,16 @@ namespace Fight.Editor
             return effect;
         }
 
-        private static SkillEffectData AddRepositionEffect(SkillData skill)
+        private static SkillEffectData AddRepositionEffect(
+            SkillData skill,
+            float durationSeconds = 0f,
+            float peakHeight = 0f)
         {
             var effect = new SkillEffectData
             {
                 effectType = SkillEffectType.RepositionNearPrimaryTarget,
+                durationSeconds = durationSeconds,
+                forcedMovementPeakHeight = peakHeight,
             };
             skill.effects.Add(effect);
             return effect;
@@ -678,7 +805,7 @@ namespace Fight.Editor
             skill.castRange = 6f;
             skill.areaRadius = 5f;
             skill.allowsSelfCast = false;
-            skill.persistentAreaVfxPrefab = null;
+            skill.persistentAreaVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(SunpriestUltimateAreaVfxPrefabPath);
             skill.persistentAreaVfxScaleMultiplier = 1f;
             skill.persistentAreaVfxEulerAngles = Vector3.zero;
             skill.skillAreaPresentationType = SkillAreaPresentationType.None;
@@ -741,18 +868,18 @@ namespace Fight.Editor
             return !overwriteExistingContent && existedBefore;
         }
 
-        private static SkillData ConfigureWarriorUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
+        private static SkillData ConfigureSkybreakerUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
         {
             if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
             {
                 return skill;
             }
 
-            skill.ultimateDecision.targetingType = UltimateTargetingType.EnemyDensestPosition;
+            skill.ultimateDecision.targetingType = UltimateTargetingType.Self;
             skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;
-            skill.ultimateDecision.primaryCondition.searchRadius = skill.areaRadius;
-            skill.ultimateDecision.primaryCondition.requiredUnitCount = 2;
-            ApplyCountFallback(skill, 30f, 1, 45f, 1);
+            skill.ultimateDecision.primaryCondition.searchRadius = 5f;
+            skill.ultimateDecision.primaryCondition.requiredUnitCount = 3;
+            ApplyCountFallback(skill, 35f, 2, 50f, 1);
             EditorUtility.SetDirty(skill);
             return skill;
         }
@@ -1170,7 +1297,7 @@ namespace Fight.Editor
             switch (heroClassKey)
             {
                 case "warrior":
-                    return "bladeguard";
+                    return "skybreaker";
                 case "mage":
                     return "firemage";
                 case "assassin":
