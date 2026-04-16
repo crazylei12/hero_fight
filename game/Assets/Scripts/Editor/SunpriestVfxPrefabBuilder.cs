@@ -232,51 +232,91 @@ namespace Fight.Editor
                 root.transform,
                 "HealRing",
                 softCircleSprite,
-                new Color(0.38f, 0.98f, 0.48f, 0.24f),
+                new Color(0.38f, 0.98f, 0.48f, 0.17f),
                 2,
-                new Vector3(0f, 0.04f, 0f),
-                new Vector3(0.62f, 0.62f, 1f));
+                Vector3.zero,
+                new Vector3(1.06f, 1.06f, 1f));
             CreateSprite(
                 root.transform,
                 "HealCore",
                 softCircleSprite,
-                new Color(0.84f, 1f, 0.86f, 0.3f),
+                new Color(0.84f, 1f, 0.86f, 0.1f),
                 3,
-                new Vector3(0f, 0.06f, 0f),
-                new Vector3(0.34f, 0.34f, 1f));
+                Vector3.zero,
+                new Vector3(0.22f, 0.22f, 1f));
             CreateSprite(
                 root.transform,
                 "HealMist",
                 softCircleSprite,
-                new Color(0.62f, 1f, 0.68f, 0.2f),
+                new Color(0.62f, 1f, 0.68f, 0.13f),
                 4,
-                new Vector3(0f, 0.11f, 0f),
-                new Vector3(0.46f, 0.46f, 1f));
+                new Vector3(0f, 0.01f, 0f),
+                new Vector3(0.76f, 0.76f, 1f));
 
             var flashCircle = InstantiateNestedPrefab(flashCirclePrefab, root.transform, "FlashCircle");
-            flashCircle.transform.localScale = Vector3.one * 0.16f;
-            flashCircle.transform.localPosition = new Vector3(0f, 0.05f, 0f);
+            flashCircle.transform.localScale = Vector3.one * 0.18f;
+            flashCircle.transform.localPosition = Vector3.zero;
             OffsetRendererOrders(flashCircle, 8);
 
             var healPulse = InstantiateNestedPrefab(regenerationHealthPrefab, root.transform, "HealPulse");
-            healPulse.transform.localScale = Vector3.one * 0.18f;
-            healPulse.transform.localPosition = new Vector3(0f, 0.04f, 0f);
+            healPulse.transform.localScale = Vector3.one * 0.13f;
+            healPulse.transform.localPosition = new Vector3(0f, 0.34f, 0f);
             OffsetRendererOrders(healPulse, 10);
 
-            var healLoop = InstantiateNestedPrefab(regenerationHealthLoopPrefab, root.transform, "HealLoop");
-            healLoop.transform.localScale = Vector3.one * 0.16f;
-            healLoop.transform.localPosition = new Vector3(0f, 0.11f, 0f);
-            OffsetRendererOrders(healLoop, 12);
+            var healPulseBottom = InstantiateNestedPrefab(regenerationHealthPrefab, root.transform, "HealPulseBottom");
+            healPulseBottom.transform.localScale = Vector3.one * 0.13f;
+            healPulseBottom.transform.localPosition = new Vector3(0f, -0.34f, 0f);
+            OffsetRendererOrders(healPulseBottom, 10);
 
-            var centerPlus = CreateSprite(
+            var healPulseLeft = InstantiateNestedPrefab(regenerationHealthPrefab, root.transform, "HealPulseLeft");
+            healPulseLeft.transform.localScale = Vector3.one * 0.125f;
+            healPulseLeft.transform.localPosition = new Vector3(-0.36f, 0f, 0f);
+            OffsetRendererOrders(healPulseLeft, 10);
+
+            var healPulseRight = InstantiateNestedPrefab(regenerationHealthPrefab, root.transform, "HealPulseRight");
+            healPulseRight.transform.localScale = Vector3.one * 0.125f;
+            healPulseRight.transform.localPosition = new Vector3(0.36f, 0f, 0f);
+            OffsetRendererOrders(healPulseRight, 10);
+
+            var healLoopTop = InstantiateNestedPrefab(regenerationHealthLoopPrefab, root.transform, "HealLoopTop");
+            healLoopTop.transform.localScale = Vector3.one * 0.12f;
+            healLoopTop.transform.localPosition = new Vector3(0f, 0.3f, 0f);
+            OffsetRendererOrders(healLoopTop, 12);
+
+            var healLoopBottom = InstantiateNestedPrefab(regenerationHealthLoopPrefab, root.transform, "HealLoopBottom");
+            healLoopBottom.transform.localScale = Vector3.one * 0.12f;
+            healLoopBottom.transform.localPosition = new Vector3(0f, -0.3f, 0f);
+            OffsetRendererOrders(healLoopBottom, 12);
+
+            var healLoopLeft = InstantiateNestedPrefab(regenerationHealthLoopPrefab, root.transform, "HealLoopLeft");
+            healLoopLeft.transform.localScale = Vector3.one * 0.11f;
+            healLoopLeft.transform.localPosition = new Vector3(-0.32f, 0f, 0f);
+            OffsetRendererOrders(healLoopLeft, 12);
+
+            var healLoopRight = InstantiateNestedPrefab(regenerationHealthLoopPrefab, root.transform, "HealLoopRight");
+            healLoopRight.transform.localScale = Vector3.one * 0.11f;
+            healLoopRight.transform.localPosition = new Vector3(0.32f, 0f, 0f);
+            OffsetRendererOrders(healLoopRight, 12);
+
+            var plusTop = CreateSprite(
                 root.transform,
-                "HealPlusCenter",
+                "HealPlusTop",
                 healPlusSprite,
                 new Color(0.52f, 1f, 0.52f, 0.92f),
                 14,
-                new Vector3(0f, 0.12f, 0f),
-                new Vector3(0.18f, 0.18f, 1f));
-            centerPlus.transform.localRotation = Quaternion.Euler(0f, 0f, -4f);
+                new Vector3(0f, 0.42f, 0f),
+                new Vector3(0.13f, 0.13f, 1f));
+            plusTop.transform.localRotation = Quaternion.Euler(0f, 0f, -4f);
+
+            var plusBottom = CreateSprite(
+                root.transform,
+                "HealPlusBottom",
+                healPlusSprite,
+                new Color(0.74f, 1f, 0.74f, 0.86f),
+                15,
+                new Vector3(0f, -0.42f, 0f),
+                new Vector3(0.12f, 0.12f, 1f));
+            plusBottom.transform.localRotation = Quaternion.Euler(0f, 0f, 6f);
 
             var plusLeft = CreateSprite(
                 root.transform,
@@ -284,8 +324,8 @@ namespace Fight.Editor
                 healPlusSprite,
                 new Color(0.78f, 1f, 0.78f, 0.86f),
                 15,
-                new Vector3(-0.16f, 0.2f, 0f),
-                new Vector3(0.11f, 0.11f, 1f));
+                new Vector3(-0.42f, 0.02f, 0f),
+                new Vector3(0.12f, 0.12f, 1f));
             plusLeft.transform.localRotation = Quaternion.Euler(0f, 0f, 8f);
 
             var plusRight = CreateSprite(
@@ -294,8 +334,8 @@ namespace Fight.Editor
                 healPlusSprite,
                 new Color(0.7f, 1f, 0.72f, 0.78f),
                 15,
-                new Vector3(0.17f, 0.04f, 0f),
-                new Vector3(0.1f, 0.1f, 1f));
+                new Vector3(0.42f, -0.01f, 0f),
+                new Vector3(0.12f, 0.12f, 1f));
             plusRight.transform.localRotation = Quaternion.Euler(0f, 0f, -12f);
 
             SavePrefab(root, HealImpactPrefabPath);
