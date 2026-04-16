@@ -123,7 +123,7 @@ GameObject:
   - component: {fileID: 5745647229985801219}
   - component: {fileID: 5394312001522867859}
   m_Layer: 0
-  m_Name: shengzhizhe
+  m_Name: Sunpriest
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
