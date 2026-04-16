@@ -84,12 +84,6 @@ namespace Fight.Editor
             EditorApplication.delayCall += TryAutoBuildIfNeeded;
         }
 
-        [MenuItem("Fight/Stage 01/Build Sunpriest VFX Prefabs")]
-        public static void BuildSunpriestVfxPrefabsMenu()
-        {
-            BuildSunpriestVfxPrefabs();
-        }
-
         public static void BuildSunpriestVfxPrefabsBatch()
         {
             BuildSunpriestVfxPrefabs();
@@ -276,16 +270,6 @@ namespace Fight.Editor
             flashCircle.transform.localPosition = Vector3.zero;
             OffsetRendererOrders(flashCircle, 8);
 
-            var healPulse = InstantiateNestedPrefab(regenerationHealthPrefab, root.transform, "HealPulse");
-            healPulse.transform.localScale = Vector3.one * 0.13f;
-            healPulse.transform.localPosition = new Vector3(0f, 0.34f, 0f);
-            OffsetRendererOrders(healPulse, 10);
-
-            var healPulseBottom = InstantiateNestedPrefab(regenerationHealthPrefab, root.transform, "HealPulseBottom");
-            healPulseBottom.transform.localScale = Vector3.one * 0.13f;
-            healPulseBottom.transform.localPosition = new Vector3(0f, -0.34f, 0f);
-            OffsetRendererOrders(healPulseBottom, 10);
-
             var healPulseLeft = InstantiateNestedPrefab(regenerationHealthPrefab, root.transform, "HealPulseLeft");
             healPulseLeft.transform.localScale = Vector3.one * 0.125f;
             healPulseLeft.transform.localPosition = new Vector3(-0.36f, 0f, 0f);
@@ -295,16 +279,6 @@ namespace Fight.Editor
             healPulseRight.transform.localScale = Vector3.one * 0.125f;
             healPulseRight.transform.localPosition = new Vector3(0.36f, 0f, 0f);
             OffsetRendererOrders(healPulseRight, 10);
-
-            var healLoopTop = InstantiateNestedPrefab(regenerationHealthLoopPrefab, root.transform, "HealLoopTop");
-            healLoopTop.transform.localScale = Vector3.one * 0.12f;
-            healLoopTop.transform.localPosition = new Vector3(0f, 0.3f, 0f);
-            OffsetRendererOrders(healLoopTop, 12);
-
-            var healLoopBottom = InstantiateNestedPrefab(regenerationHealthLoopPrefab, root.transform, "HealLoopBottom");
-            healLoopBottom.transform.localScale = Vector3.one * 0.12f;
-            healLoopBottom.transform.localPosition = new Vector3(0f, -0.3f, 0f);
-            OffsetRendererOrders(healLoopBottom, 12);
 
             var healLoopLeft = InstantiateNestedPrefab(regenerationHealthLoopPrefab, root.transform, "HealLoopLeft");
             healLoopLeft.transform.localScale = Vector3.one * 0.11f;
