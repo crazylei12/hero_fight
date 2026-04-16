@@ -7,6 +7,11 @@ namespace Fight.Battle
 {
     public static class BattleAiDirector
     {
+        private const float ThreatRetreatWindowSeconds = 0.75f;
+        private const float ThreatRetreatTriggerRangeBuffer = 0.4f;
+        private const float ThreatRetreatReleaseRangeBuffer = 0.2f;
+        private const float ThreatRetreatMinimumAttackCooldownSeconds = 0.15f;
+
         public static RuntimeHero SelectPreferredEnemyTarget(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange)
         {
             return actor.Definition.heroClass switch
@@ -44,6 +49,49 @@ namespace Fight.Battle
             }
 
             return actor.Side == TeamSide.Blue ? Vector3.right : Vector3.left;
+        }
+
+        public static bool ShouldRetreatFromRecentThreat(RuntimeHero actor, RuntimeHero combatTarget, float elapsedTimeSeconds, out RuntimeHero threat)
+        {
+            threat = null;
+            if (actor?.Definition?.basicAttack == null || combatTarget == null || combatTarget.IsDead)
+            {
+                return false;
+            }
+
+            if (!actor.Definition.basicAttack.usesProjectile || actor.AttackCooldownRemainingSeconds <= ThreatRetreatMinimumAttackCooldownSeconds)
+            {
+                return false;
+            }
+
+            if (!actor.TryGetRecentThreat(elapsedTimeSeconds, ThreatRetreatWindowSeconds, out threat))
+            {
+                return false;
+            }
+
+            var desiredRange = GetDesiredCombatRange(actor);
+            var threatDistance = Vector3.Distance(actor.CurrentPosition, threat.CurrentPosition);
+            var triggerDistance = Mathf.Max(0.75f, desiredRange - ThreatRetreatTriggerRangeBuffer);
+            var releaseDistance = desiredRange + ThreatRetreatReleaseRangeBuffer;
+            return actor.IsRetreatingFromThreat(threat)
+                ? threatDistance < releaseDistance
+                : threatDistance < triggerDistance;
+        }
+
+        public static Vector3 GetThreatRetreatDirection(RuntimeHero actor, RuntimeHero threat)
+        {
+            if (actor == null || threat == null)
+            {
+                return Vector3.zero;
+            }
+
+            var offset = actor.CurrentPosition - threat.CurrentPosition;
+            if (offset.sqrMagnitude > Mathf.Epsilon)
+            {
+                return offset.normalized;
+            }
+
+            return actor.Side == TeamSide.Blue ? Vector3.left : Vector3.right;
         }
 
         private static RuntimeHero FindNearestEnemy(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange)
