@@ -100,6 +100,21 @@ namespace Fight.UI
                 ResetAfterRevive();
             }
 
+            if (hero.IsUnderForcedMovement)
+            {
+                RestoreAnimatorSpeed();
+                isInMoveState = false;
+                if (!animationManager.IsAction)
+                {
+                    SetState(hero.CurrentTarget != null && !hero.CurrentTarget.IsDead
+                        ? CharacterState.Ready
+                        : CharacterState.Idle);
+                }
+
+                lastPosition = hero.CurrentPosition;
+                return;
+            }
+
             UpdateFacing();
 
             var movement = hero.CurrentPosition - lastPosition;
