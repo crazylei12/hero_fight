@@ -59,15 +59,20 @@ namespace Fight.Editor
         {
             EnsureFolders();
 
+            var warriorActive = CreateSkill("skill_warrior_active_cleave", "Cleave", SkillSlotType.ActiveSkill, SkillType.AreaDamage, SkillTargetType.NearestEnemy, 2f, 2f, 1.3f, 7f, 1, overwriteExistingContent);
+            var warriorUltimateSkill = CreateSkill("skill_warrior_ultimate_ironcrash", "Iron Crash", SkillSlotType.Ultimate, SkillType.AreaDamage, SkillTargetType.DensestEnemyArea, 2.4f, 3f, 2f, 15f, 2, overwriteExistingContent, out var warriorUltimateExisted);
+
             var warrior = CreateHero(
                 "warrior_001_bladeguard",
                 "Bladeguard",
                 HeroClass.Warrior,
                 420f, 38f, 24f, 1.1f, 4.2f, 0.15f, 1.6f, 1.7f,
-                CreateSkill("skill_warrior_active_cleave", "Cleave", SkillSlotType.ActiveSkill, SkillType.AreaDamage, SkillTargetType.NearestEnemy, 2f, 2f, 1.3f, 7f, 1, overwriteExistingContent),
-                ConfigureWarriorUltimate(CreateSkill("skill_warrior_ultimate_ironcrash", "Iron Crash", SkillSlotType.Ultimate, SkillType.AreaDamage, SkillTargetType.DensestEnemyArea, 2.4f, 3f, 2f, 15f, 2, overwriteExistingContent), overwriteExistingContent),
+                warriorActive,
+                ConfigureWarriorUltimate(warriorUltimateSkill, overwriteExistingContent, warriorUltimateExisted),
                 overwriteExistingContent,
                 HeroTag.Melee, HeroTag.SustainedDamage, HeroTag.Control);
+
+            var mageUltimateSkill = CreateSkill("skill_mage_ultimate_meteor", "Meteor Fall", SkillSlotType.Ultimate, SkillType.AreaDamage, SkillTargetType.Self, 0f, 6f, 0.55f, 16f, 3, overwriteExistingContent, out var mageUltimateExisted);
 
             var mage = CreateHero(
                 "mage_001_firemage",
@@ -75,50 +80,63 @@ namespace Fight.Editor
                 HeroClass.Mage,
                 300f, 48f, 10f, 0.8f, 3.8f, 0.08f, 1.5f, 5.8f,
                 CreateMageActiveBurstSkill(overwriteExistingContent),
-                ConfigureMageUltimate(CreateSkill("skill_mage_ultimate_meteor", "Meteor Fall", SkillSlotType.Ultimate, SkillType.AreaDamage, SkillTargetType.Self, 0f, 6f, 0.55f, 16f, 3, overwriteExistingContent), overwriteExistingContent),
+                ConfigureMageUltimate(mageUltimateSkill, overwriteExistingContent, mageUltimateExisted),
                 overwriteExistingContent,
                 HeroTag.Ranged, HeroTag.Burst, HeroTag.AreaDamage);
 
             CreateArchivedMageFireboltSkill(overwriteExistingContent);
+
+            var assassinActive = CreateSkill("skill_assassin_active_dash", "Shadow Dash", SkillSlotType.ActiveSkill, SkillType.Dash, SkillTargetType.LowestHealthEnemy, 5.5f, 0f, 1.4f, 8f, 1, overwriteExistingContent);
+            var assassinUltimateSkill = CreateSkill("skill_assassin_ultimate_execution", "Execution Mark", SkillSlotType.Ultimate, SkillType.SingleTargetDamage, SkillTargetType.LowestHealthEnemy, 5.5f, 0f, 2.8f, 14f, 1, overwriteExistingContent, out var assassinUltimateExisted);
 
             var assassin = CreateHero(
                 "assassin_001_shadowstep",
                 "Shadowstep",
                 HeroClass.Assassin,
                 290f, 52f, 8f, 1.2f, 5.4f, 0.2f, 1.8f, 1.3f,
-                CreateSkill("skill_assassin_active_dash", "Shadow Dash", SkillSlotType.ActiveSkill, SkillType.Dash, SkillTargetType.LowestHealthEnemy, 5.5f, 0f, 1.4f, 8f, 1, overwriteExistingContent),
-                ConfigureAssassinUltimate(CreateSkill("skill_assassin_ultimate_execution", "Execution Mark", SkillSlotType.Ultimate, SkillType.SingleTargetDamage, SkillTargetType.LowestHealthEnemy, 5.5f, 0f, 2.8f, 14f, 1, overwriteExistingContent), overwriteExistingContent),
+                assassinActive,
+                ConfigureAssassinUltimate(assassinUltimateSkill, overwriteExistingContent, assassinUltimateExisted),
                 overwriteExistingContent,
                 HeroTag.Melee, HeroTag.Dive, HeroTag.Burst);
+
+            var tankActive = CreateKnockUpSkill("skill_tank_active_shieldbash", "Shield Bash", SkillSlotType.ActiveSkill, 1.8f, 1.2f, 1.0f, 8f, 0.9f, 1.1f, 0.2f, 0.45f, overwriteExistingContent);
+            var tankUltimateSkill = CreateKnockUpSkill("skill_tank_ultimate_groundlock", "Ground Lock", SkillSlotType.Ultimate, 2.2f, 2.8f, 1.6f, 16f, 1.4f, 0.4f, 0.24f, 0.72f, overwriteExistingContent, out var tankUltimateExisted);
 
             var tank = CreateHero(
                 "tank_001_ironwall",
                 "Ironwall",
                 HeroClass.Tank,
                 560f, 28f, 40f, 0.9f, 3.6f, 0.05f, 1.5f, 1.8f,
-                CreateKnockUpSkill("skill_tank_active_shieldbash", "Shield Bash", SkillSlotType.ActiveSkill, 1.8f, 1.2f, 1.0f, 8f, 0.9f, 1.1f, 0.2f, 0.45f, overwriteExistingContent),
-                ConfigureTankUltimate(CreateKnockUpSkill("skill_tank_ultimate_groundlock", "Ground Lock", SkillSlotType.Ultimate, 2.2f, 2.8f, 1.6f, 16f, 1.4f, 0.4f, 0.24f, 0.72f, overwriteExistingContent), overwriteExistingContent),
+                tankActive,
+                ConfigureTankUltimate(tankUltimateSkill, overwriteExistingContent, tankUltimateExisted),
                 overwriteExistingContent,
                 HeroTag.Melee, HeroTag.Control, HeroTag.Buff);
+
+            var supportActive = CreateSupportActiveSkill(overwriteExistingContent);
+            var supportUltimateSkill = CreateSupportUltimateSkill(overwriteExistingContent, out var supportUltimateExisted);
 
             var support = CreateHero(
                 "support_001_sunpriest",
                 "Sunpriest",
                 HeroClass.Support,
                 320f, 22f, 12f, 0.9f, 4.0f, 0.05f, 1.5f, 5.2f,
-                CreateSupportActiveSkill(overwriteExistingContent),
-                ConfigureSupportUltimate(CreateSupportUltimateSkill(overwriteExistingContent), overwriteExistingContent),
+                supportActive,
+                ConfigureSupportUltimate(supportUltimateSkill, overwriteExistingContent, supportUltimateExisted),
                 overwriteExistingContent,
+                out var supportHeroExisted,
                 HeroTag.Ranged, HeroTag.Heal, HeroTag.Buff);
-            ConfigureSupportBasicAttack(support, overwriteExistingContent);
+            ConfigureSupportBasicAttack(support, overwriteExistingContent, supportHeroExisted);
+
+            var marksmanActive = CreateSkill("skill_marksman_active_focusshot", "Focus Shot", SkillSlotType.ActiveSkill, SkillType.SingleTargetDamage, SkillTargetType.NearestEnemy, 7.5f, 0f, 1.6f, 6f, 1, overwriteExistingContent);
+            var marksmanUltimateSkill = CreateSkill("skill_marksman_ultimate_arrowrain", "Arrow Rain", SkillSlotType.Ultimate, SkillType.AreaDamage, SkillTargetType.DensestEnemyArea, 8f, 3f, 2.1f, 15f, 3, overwriteExistingContent, out var marksmanUltimateExisted);
 
             var marksman = CreateHero(
                 "marksman_001_longshot",
                 "Longshot",
                 HeroClass.Marksman,
                 310f, 34f, 12f, 1.35f, 4.1f, 0.22f, 1.9f, 7.2f,
-                CreateSkill("skill_marksman_active_focusshot", "Focus Shot", SkillSlotType.ActiveSkill, SkillType.SingleTargetDamage, SkillTargetType.NearestEnemy, 7.5f, 0f, 1.6f, 6f, 1, overwriteExistingContent),
-                ConfigureMarksmanUltimate(CreateSkill("skill_marksman_ultimate_arrowrain", "Arrow Rain", SkillSlotType.Ultimate, SkillType.AreaDamage, SkillTargetType.DensestEnemyArea, 8f, 3f, 2.1f, 15f, 3, overwriteExistingContent), overwriteExistingContent),
+                marksmanActive,
+                ConfigureMarksmanUltimate(marksmanUltimateSkill, overwriteExistingContent, marksmanUltimateExisted),
                 overwriteExistingContent,
                 HeroTag.Ranged, HeroTag.SustainedDamage, HeroTag.AreaDamage);
 
@@ -213,8 +231,46 @@ namespace Fight.Editor
             bool overwriteExistingContent,
             params HeroTag[] tags)
         {
+            return CreateHero(
+                heroId,
+                displayName,
+                heroClass,
+                maxHealth,
+                attackPower,
+                defense,
+                attackSpeed,
+                moveSpeed,
+                critChance,
+                critDamageMultiplier,
+                attackRange,
+                activeSkill,
+                ultimateSkill,
+                overwriteExistingContent,
+                out _,
+                tags);
+        }
+
+        private static HeroDefinition CreateHero(
+            string heroId,
+            string displayName,
+            HeroClass heroClass,
+            float maxHealth,
+            float attackPower,
+            float defense,
+            float attackSpeed,
+            float moveSpeed,
+            float critChance,
+            float critDamageMultiplier,
+            float attackRange,
+            SkillData activeSkill,
+            SkillData ultimateSkill,
+            bool overwriteExistingContent,
+            out bool existedBefore,
+            params HeroTag[] tags)
+        {
             var assetPath = GetHeroAssetPath(heroId, displayName);
-            if (!overwriteExistingContent && TryLoadAsset(assetPath, out HeroDefinition existingHero))
+            existedBefore = TryLoadAsset(assetPath, out HeroDefinition existingHero);
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
             {
                 return existingHero;
             }
@@ -276,8 +332,38 @@ namespace Fight.Editor
             int minTargetsToCast,
             bool overwriteExistingContent)
         {
+            return CreateSkill(
+                skillId,
+                displayName,
+                slotType,
+                skillType,
+                targetType,
+                castRange,
+                areaRadius,
+                powerMultiplier,
+                cooldownSeconds,
+                minTargetsToCast,
+                overwriteExistingContent,
+                out _);
+        }
+
+        private static SkillData CreateSkill(
+            string skillId,
+            string displayName,
+            SkillSlotType slotType,
+            SkillType skillType,
+            SkillTargetType targetType,
+            float castRange,
+            float areaRadius,
+            float powerMultiplier,
+            float cooldownSeconds,
+            int minTargetsToCast,
+            bool overwriteExistingContent,
+            out bool existedBefore)
+        {
             var assetPath = GetSkillAssetPath(skillId, displayName);
-            if (!overwriteExistingContent && TryLoadAsset(assetPath, out SkillData existingSkill))
+            existedBefore = TryLoadAsset(assetPath, out SkillData existingSkill);
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
             {
                 return existingSkill;
             }
@@ -318,9 +404,10 @@ namespace Fight.Editor
                 1.2f,
                 6f,
                 1,
-                overwriteExistingContent);
+                overwriteExistingContent,
+                out var existedBefore);
 
-            if (!overwriteExistingContent)
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
             {
                 return skill;
             }
@@ -473,9 +560,9 @@ namespace Fight.Editor
             return effect;
         }
 
-        private static void ConfigureSupportBasicAttack(HeroDefinition hero, bool overwriteExistingContent)
+        private static void ConfigureSupportBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
         {
-            if (!overwriteExistingContent || hero == null)
+            if (hero == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
             {
                 return;
             }
@@ -501,9 +588,10 @@ namespace Fight.Editor
                 1.35f,
                 7f,
                 1,
-                overwriteExistingContent);
+                overwriteExistingContent,
+                out var existedBefore);
 
-            if (!overwriteExistingContent)
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
             {
                 return skill;
             }
@@ -525,6 +613,11 @@ namespace Fight.Editor
 
         private static SkillData CreateSupportUltimateSkill(bool overwriteExistingContent)
         {
+            return CreateSupportUltimateSkill(overwriteExistingContent, out _);
+        }
+
+        private static SkillData CreateSupportUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
+        {
             var skill = CreateSkill(
                 "skill_support_ultimate_blessing",
                 "Sun Blessing",
@@ -536,9 +629,10 @@ namespace Fight.Editor
                 0.65f,
                 14f,
                 2,
-                overwriteExistingContent);
+                overwriteExistingContent,
+                out existedBefore);
 
-            if (!overwriteExistingContent)
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
             {
                 return skill;
             }
@@ -606,9 +700,14 @@ namespace Fight.Editor
             condition.requireTargetInCastRange = true;
         }
 
-        private static SkillData ConfigureWarriorUltimate(SkillData skill, bool overwriteExistingContent)
+        private static bool ShouldPreserveExistingAsset(bool overwriteExistingContent, bool existedBefore)
         {
-            if (!overwriteExistingContent)
+            return !overwriteExistingContent && existedBefore;
+        }
+
+        private static SkillData ConfigureWarriorUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
             {
                 return skill;
             }
@@ -622,9 +721,9 @@ namespace Fight.Editor
             return skill;
         }
 
-        private static SkillData ConfigureMageUltimate(SkillData skill, bool overwriteExistingContent)
+        private static SkillData ConfigureMageUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
         {
-            if (!overwriteExistingContent)
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
             {
                 return skill;
             }
@@ -653,9 +752,9 @@ namespace Fight.Editor
             return skill;
         }
 
-        private static SkillData ConfigureAssassinUltimate(SkillData skill, bool overwriteExistingContent)
+        private static SkillData ConfigureAssassinUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
         {
-            if (!overwriteExistingContent)
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
             {
                 return skill;
             }
@@ -674,9 +773,9 @@ namespace Fight.Editor
             return skill;
         }
 
-        private static SkillData ConfigureTankUltimate(SkillData skill, bool overwriteExistingContent)
+        private static SkillData ConfigureTankUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
         {
-            if (!overwriteExistingContent)
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
             {
                 return skill;
             }
@@ -693,9 +792,9 @@ namespace Fight.Editor
             return skill;
         }
 
-        private static SkillData ConfigureSupportUltimate(SkillData skill, bool overwriteExistingContent)
+        private static SkillData ConfigureSupportUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
         {
-            if (!overwriteExistingContent)
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
             {
                 return skill;
             }
@@ -714,9 +813,9 @@ namespace Fight.Editor
             return skill;
         }
 
-        private static SkillData ConfigureMarksmanUltimate(SkillData skill, bool overwriteExistingContent)
+        private static SkillData ConfigureMarksmanUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
         {
-            if (!overwriteExistingContent)
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
             {
                 return skill;
             }
@@ -759,8 +858,8 @@ namespace Fight.Editor
             float stunDuration,
             bool overwriteExistingContent)
         {
-            var skill = CreateSkill(skillId, displayName, slotType, SkillType.Stun, areaRadius > 0f ? SkillTargetType.DensestEnemyArea : SkillTargetType.NearestEnemy, castRange, areaRadius, powerMultiplier, cooldownSeconds, areaRadius > 0f ? 2 : 1, overwriteExistingContent);
-            if (!overwriteExistingContent)
+            var skill = CreateSkill(skillId, displayName, slotType, SkillType.Stun, areaRadius > 0f ? SkillTargetType.DensestEnemyArea : SkillTargetType.NearestEnemy, castRange, areaRadius, powerMultiplier, cooldownSeconds, areaRadius > 0f ? 2 : 1, overwriteExistingContent, out var existedBefore);
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
             {
                 return skill;
             }
@@ -794,8 +893,39 @@ namespace Fight.Editor
             float forcedMovementPeakHeight,
             bool overwriteExistingContent)
         {
-            var skill = CreateSkill(skillId, displayName, slotType, SkillType.KnockUp, areaRadius > 0f ? SkillTargetType.DensestEnemyArea : SkillTargetType.NearestEnemy, castRange, areaRadius, powerMultiplier, cooldownSeconds, areaRadius > 0f ? 2 : 1, overwriteExistingContent);
-            if (!overwriteExistingContent)
+            return CreateKnockUpSkill(
+                skillId,
+                displayName,
+                slotType,
+                castRange,
+                areaRadius,
+                powerMultiplier,
+                cooldownSeconds,
+                knockUpDuration,
+                forcedMovementDistance,
+                forcedMovementDurationSeconds,
+                forcedMovementPeakHeight,
+                overwriteExistingContent,
+                out _);
+        }
+
+        private static SkillData CreateKnockUpSkill(
+            string skillId,
+            string displayName,
+            SkillSlotType slotType,
+            float castRange,
+            float areaRadius,
+            float powerMultiplier,
+            float cooldownSeconds,
+            float knockUpDuration,
+            float forcedMovementDistance,
+            float forcedMovementDurationSeconds,
+            float forcedMovementPeakHeight,
+            bool overwriteExistingContent,
+            out bool existedBefore)
+        {
+            var skill = CreateSkill(skillId, displayName, slotType, SkillType.KnockUp, areaRadius > 0f ? SkillTargetType.DensestEnemyArea : SkillTargetType.NearestEnemy, castRange, areaRadius, powerMultiplier, cooldownSeconds, areaRadius > 0f ? 2 : 1, overwriteExistingContent, out existedBefore);
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
             {
                 return skill;
             }
@@ -830,8 +960,8 @@ namespace Fight.Editor
             float magnitude,
             bool overwriteExistingContent)
         {
-            var skill = CreateSkill(skillId, displayName, slotType, SkillType.Buff, targetType, castRange, areaRadius, powerMultiplier, cooldownSeconds, 1, overwriteExistingContent);
-            if (!overwriteExistingContent)
+            var skill = CreateSkill(skillId, displayName, slotType, SkillType.Buff, targetType, castRange, areaRadius, powerMultiplier, cooldownSeconds, 1, overwriteExistingContent, out var existedBefore);
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
             {
                 return skill;
             }
