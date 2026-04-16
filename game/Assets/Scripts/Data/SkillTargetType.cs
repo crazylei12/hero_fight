@@ -8,5 +8,7 @@ namespace Fight.Data
         DensestEnemyArea = 3,
         LowestHealthAlly = 4,
         Self = 5,
+        AllEnemies = 6,
+        AllAllies = 7,
     }
 }
