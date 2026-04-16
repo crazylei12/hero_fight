@@ -25,6 +25,11 @@ namespace Fight.Battle
             };
         }
 
+        public static RuntimeHero SelectNearestEnemyTarget(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange)
+        {
+            return FindNearestEnemy(heroes, actor, maxRange);
+        }
+
         public static RuntimeHero SelectPreferredAllyTarget(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange, bool allowHealthyFallback = false)
         {
             return FindLowestHealthAlly(heroes, actor, maxRange, allowHealthyFallback);
