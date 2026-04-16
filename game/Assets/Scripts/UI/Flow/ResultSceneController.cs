@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Fight.Battle;
 using Fight.Data;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -17,6 +18,7 @@ namespace Fight.UI.Flow
         private GUIStyle bodyStyle;
         private GUIStyle rowStyle;
         private Vector2 statsScroll;
+        private string exportStatusMessage = "未导出战斗日志。";
 
         private void OnGUI()
         {
@@ -25,6 +27,7 @@ namespace Fight.UI.Flow
             var panel = new Rect((Screen.width - 860f) * 0.5f, 28f, 860f, Screen.height - 56f);
             GUI.Box(panel, string.Empty);
             GUI.Label(new Rect(panel.x, panel.y + 18f, panel.width, 44f), "Match Result", titleStyle);
+            DrawExportControls(panel);
 
             var result = GameFlowState.LastBattleResult;
             if (result == null)
@@ -37,9 +40,27 @@ namespace Fight.UI.Flow
             GUI.Label(new Rect(panel.x + 40f, panel.y + 78f, panel.width - 80f, 36f), $"Winner: {result.winner}", subtitleStyle);
             GUI.Label(new Rect(panel.x + 40f, panel.y + 114f, panel.width - 80f, 26f), $"Score  Blue {result.blueKills} - {result.redKills} Red", bodyStyle);
             GUI.Label(new Rect(panel.x + 40f, panel.y + 140f, panel.width - 80f, 26f), $"End Reason: {result.endReason}  |  Overtime: {(result.enteredOvertime ? "Yes" : "No")}  |  Time: {result.elapsedTimeSeconds:0.0}s", bodyStyle);
+            GUI.Label(new Rect(panel.x + 40f, panel.yMax - 104f, panel.width - 80f, 34f), exportStatusMessage, bodyStyle);
 
             DrawStatsTable(new Rect(panel.x + 32f, panel.y + 184f, panel.width - 64f, panel.height - 276f), result.heroStats);
             DrawBottomButtons(panel, hasReplay: true);
+        }
+
+        private void DrawExportControls(Rect panel)
+        {
+            var hasBattleLog = GameFlowState.HasBattleLogExportData;
+            var previousEnabled = GUI.enabled;
+            GUI.enabled = hasBattleLog;
+            if (GUI.Button(new Rect(panel.xMax - 214f, panel.y + 22f, 170f, 32f), "Export Battle Log"))
+            {
+                ExportBattleLog();
+            }
+
+            GUI.enabled = previousEnabled;
+            if (!hasBattleLog)
+            {
+                exportStatusMessage = "当前结果页没有可导出的战斗日志。";
+            }
         }
 
         private void DrawStatsTable(Rect rect, List<HeroBattleStatLine> heroStats)
@@ -89,6 +110,26 @@ namespace Fight.UI.Flow
             if (GUI.Button(new Rect(panel.x + 572f, panel.yMax - 62f, 170f, 36f), "Main Menu"))
             {
                 SceneManager.LoadScene(mainMenuSceneName);
+            }
+        }
+
+        private void ExportBattleLog()
+        {
+            if (!GameFlowState.HasBattleLogExportData)
+            {
+                exportStatusMessage = "当前结果页没有可导出的战斗日志。";
+                return;
+            }
+
+            if (BattleLogExportUtility.TryExport(GameFlowState.LastBattleLogExportText, GameFlowState.LastBattleLogSessionId, out var path, out var errorMessage))
+            {
+                exportStatusMessage = $"已导出到: {path}";
+                Debug.Log($"[BattleLog] Exported battle log to {path}");
+            }
+            else
+            {
+                exportStatusMessage = $"导出失败: {errorMessage}";
+                Debug.LogError($"[BattleLog] Failed to export battle log. {errorMessage}");
             }
         }
 

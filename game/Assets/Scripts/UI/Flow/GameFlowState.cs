@@ -14,6 +14,8 @@ namespace Fight.UI.Flow
         private static List<HeroDefinition> redSelection;
         private static BattleInputConfig pendingBattleInput;
         private static BattleInputConfig lastUsedBattleInput;
+        private static string lastBattleLogSessionId;
+        private static string lastBattleLogExportText;
 
         public static IReadOnlyList<HeroDefinition> HeroCatalog => heroCatalog ??= BuildHeroCatalog();
 
@@ -36,6 +38,12 @@ namespace Fight.UI.Flow
         }
 
         public static BattleResultData LastBattleResult { get; private set; }
+
+        public static string LastBattleLogSessionId => lastBattleLogSessionId;
+
+        public static string LastBattleLogExportText => lastBattleLogExportText;
+
+        public static bool HasBattleLogExportData => !string.IsNullOrWhiteSpace(lastBattleLogExportText);
 
         public static bool HasBattleTemplate => GetDefaultBattleTemplate() != null;
 
@@ -134,9 +142,17 @@ namespace Fight.UI.Flow
             LastBattleResult = result;
         }
 
+        public static void StoreBattleLogExport(string sessionId, string exportText)
+        {
+            lastBattleLogSessionId = sessionId;
+            lastBattleLogExportText = exportText;
+        }
+
         public static void ClearBattleResult()
         {
             LastBattleResult = null;
+            lastBattleLogSessionId = null;
+            lastBattleLogExportText = null;
         }
 
         private static BattleInputConfig GetDefaultBattleTemplate()

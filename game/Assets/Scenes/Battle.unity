@@ -152,6 +152,7 @@ MonoBehaviour:
   startBattleOnPlay: 1
   addBattleHud: 1
   addBattleView: 1
+  addBattleEventLogRecorder: 1
   fallbackResourcesPath: Stage01Demo/Stage01DemoBattleInput
   resultSceneName: Result
   resultSceneDelaySeconds: 1.35

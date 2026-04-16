@@ -13,6 +13,7 @@ namespace Fight.Battle
         [SerializeField] private bool startBattleOnPlay = true;
         [SerializeField] private bool addBattleHud = true;
         [SerializeField] private bool addBattleView = true;
+        [SerializeField] private bool addBattleEventLogRecorder = true;
         [SerializeField] private string fallbackResourcesPath = GameFlowState.DefaultInputResourcesPath;
         [SerializeField] private string resultSceneName = "Result";
         [SerializeField] private float resultSceneDelaySeconds = 1.35f;
@@ -37,6 +38,11 @@ namespace Fight.Battle
             if (addBattleView && GetComponent<BattleView>() == null)
             {
                 gameObject.AddComponent<BattleView>();
+            }
+
+            if (addBattleEventLogRecorder && GetComponent<BattleEventLogRecorder>() == null)
+            {
+                gameObject.AddComponent<BattleEventLogRecorder>();
             }
 
             var startupInput = GameFlowState.ConsumePendingBattleInput();
