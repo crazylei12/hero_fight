@@ -78,6 +78,29 @@ namespace Fight.Heroes
             return false;
         }
 
+        public static float GetActiveSkillCooldownCap(RuntimeHero hero)
+        {
+            if (hero == null)
+            {
+                return 0f;
+            }
+
+            var bestCap = 0f;
+            var statuses = hero.MutableStatusEffects;
+            for (var i = 0; i < statuses.Count; i++)
+            {
+                var cap = statuses[i].ActiveSkillCooldownCapSeconds;
+                if (cap <= 0f)
+                {
+                    continue;
+                }
+
+                bestCap = bestCap <= 0f ? cap : Mathf.Min(bestCap, cap);
+            }
+
+            return bestCap;
+        }
+
         public static float GetTotalShield(RuntimeHero hero)
         {
             if (hero == null)

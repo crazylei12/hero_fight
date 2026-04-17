@@ -113,8 +113,8 @@ namespace Fight.Editor
 
             CreateArchivedMageFireboltSkill(overwriteExistingContent);
 
-            var assassinActive = CreateSkill("skill_assassin_active_dash", "Shadow Dash", SkillSlotType.ActiveSkill, SkillType.Dash, SkillTargetType.LowestHealthEnemy, 5.5f, 0f, 1.4f, 8f, 1, overwriteExistingContent);
-            var assassinUltimateSkill = CreateSkill("skill_assassin_ultimate_execution", "Execution Mark", SkillSlotType.Ultimate, SkillType.SingleTargetDamage, SkillTargetType.LowestHealthEnemy, 5.5f, 0f, 2.8f, 0f, 1, overwriteExistingContent, out var assassinUltimateExisted);
+            var assassinActive = CreateShadowstepActiveSkill(overwriteExistingContent);
+            var assassinUltimateSkill = CreateShadowstepUltimateSkill(overwriteExistingContent, out var assassinUltimateExisted);
 
             var assassin = CreateHero(
                 "assassin_001_shadowstep",
@@ -122,7 +122,7 @@ namespace Fight.Editor
                 HeroClass.Assassin,
                 290f, 52f, 8f, 1.2f, 5.4f, 0.2f, 1.8f, 1.3f,
                 assassinActive,
-                ConfigureAssassinUltimate(assassinUltimateSkill, overwriteExistingContent, assassinUltimateExisted),
+                ConfigureShadowstepUltimate(assassinUltimateSkill, overwriteExistingContent, assassinUltimateExisted),
                 overwriteExistingContent,
                 HeroTag.Melee, HeroTag.Dive, HeroTag.Burst);
 
@@ -490,6 +490,42 @@ namespace Fight.Editor
             return skill;
         }
 
+        private static SkillData CreateShadowstepActiveSkill(bool overwriteExistingContent)
+        {
+            var skill = CreateSkill(
+                "skill_assassin_active_shadowblink",
+                "Shadow Blink",
+                SkillSlotType.ActiveSkill,
+                SkillType.Dash,
+                SkillTargetType.BackmostEnemy,
+                40f,
+                0f,
+                0f,
+                6f,
+                1,
+                overwriteExistingContent,
+                out var existedBefore);
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.skillType = SkillType.Dash;
+            skill.targetType = SkillTargetType.BackmostEnemy;
+            skill.castRange = 40f;
+            skill.areaRadius = 0f;
+            skill.cooldownSeconds = 6f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+            AddRepositionEffect(skill);
+            AddDamageEffect(skill, 1.25f);
+            skill.description = "Stage-01 demo skill: Shadow Blink";
+            ResetUltimateDecision(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
         private static SkillData CreateLongshotUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
         {
             var skill = CreateSkill(
@@ -513,6 +549,52 @@ namespace Fight.Editor
             skill.effects.Clear();
             AddDamageEffect(skill, 0f);
             skill.description = "Stage-01 demo skill: Rapid Barrage";
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateShadowstepUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
+        {
+            var skill = CreateSkill(
+                "skill_assassin_ultimate_smokeveil",
+                "Smoke Veil",
+                SkillSlotType.Ultimate,
+                SkillType.Buff,
+                SkillTargetType.BackmostEnemy,
+                40f,
+                0f,
+                0f,
+                0f,
+                1,
+                overwriteExistingContent,
+                out existedBefore);
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.skillType = SkillType.Buff;
+            skill.targetType = SkillTargetType.BackmostEnemy;
+            skill.castRange = 40f;
+            skill.areaRadius = 0f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+            var effect = AddApplyStatusEffectsEffect(skill);
+            effect.targetMode = SkillEffectTargetMode.Caster;
+            effect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.Untargetable,
+                durationSeconds = 6f,
+                magnitude = 0f,
+                activeSkillCooldownCapSeconds = 1f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
+            skill.description = "Stage-01 demo skill: Smoke Veil";
+            ResetActionSequence(skill);
+            ResetUltimateDecision(skill);
             EditorUtility.SetDirty(skill);
             return skill;
         }
@@ -1041,23 +1123,52 @@ namespace Fight.Editor
             return skill;
         }
 
-        private static SkillData ConfigureAssassinUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
+        private static SkillData ConfigureShadowstepUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
         {
             if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
             {
                 return skill;
             }
 
-            skill.ultimateDecision.targetingType = UltimateTargetingType.LowestHealthEnemyInRange;
-            skill.ultimateDecision.combineMode = UltimateConditionCombineMode.AllMustPass;
-            skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.EnemyLowHealthInRange;
-            skill.ultimateDecision.primaryCondition.searchRadius = Mathf.Max(skill.castRange, 4f);
+            skill.skillType = SkillType.Buff;
+            skill.targetType = SkillTargetType.BackmostEnemy;
+            skill.castRange = 40f;
+            skill.areaRadius = 0f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+            var effect = AddApplyStatusEffectsEffect(skill);
+            effect.targetMode = SkillEffectTargetMode.Caster;
+            effect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.Untargetable,
+                durationSeconds = 6f,
+                magnitude = 0f,
+                activeSkillCooldownCapSeconds = 1f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
+            ResetActionSequence(skill);
+            ResetUltimateDecision(skill);
+            skill.ultimateDecision.targetingType = UltimateTargetingType.UseSkillTargetType;
+            skill.ultimateDecision.combineMode = UltimateConditionCombineMode.AnyPass;
+            skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.SelfLowHealth;
+            skill.ultimateDecision.primaryCondition.searchRadius = 0f;
             skill.ultimateDecision.primaryCondition.requiredUnitCount = 1;
-            skill.ultimateDecision.primaryCondition.healthPercentThreshold = 0.35f;
-            skill.ultimateDecision.secondaryCondition.conditionType = UltimateConditionType.TargetIsHighValue;
-            skill.ultimateDecision.secondaryCondition.highValueTargetType = HighValueTargetType.Backline;
+            skill.ultimateDecision.primaryCondition.healthPercentThreshold = 0.6f;
+            skill.ultimateDecision.secondaryCondition.conditionType = UltimateConditionType.EnemyLowHealthInRange;
+            skill.ultimateDecision.secondaryCondition.searchRadius = 0.25f;
+            skill.ultimateDecision.secondaryCondition.requiredUnitCount = 1;
+            skill.ultimateDecision.secondaryCondition.healthPercentThreshold = 0.7f;
             skill.ultimateDecision.secondaryCondition.requireTargetInCastRange = true;
-            ApplyHealthFallback(skill, 30f, 0.5f, 45f, 0.7f);
+            skill.ultimateDecision.fallback.fallbackType = UltimateFallbackType.LowerPrimaryThreshold;
+            skill.ultimateDecision.fallback.triggerAfterSeconds = 35f;
+            skill.ultimateDecision.fallback.overrideRequiredUnitCount = 0;
+            skill.ultimateDecision.fallback.overrideHealthPercentThreshold = 1f;
+            skill.ultimateDecision.fallback.secondaryTriggerAfterSeconds = 0f;
+            skill.ultimateDecision.fallback.secondaryOverrideRequiredUnitCount = 0;
+            skill.ultimateDecision.fallback.secondaryOverrideHealthPercentThreshold = -1f;
             EditorUtility.SetDirty(skill);
             return skill;
         }
@@ -1430,6 +1541,8 @@ namespace Fight.Editor
         {
             return skillId switch
             {
+                "skill_assassin_active_shadowblink" => "Shadow Dash",
+                "skill_assassin_ultimate_smokeveil" => "Execution Mark",
                 "skill_tank_ultimate_ironoath" => "Ground Lock",
                 _ => null,
             };

@@ -30,6 +30,11 @@ namespace Fight.Battle
             return FindNearestEnemy(heroes, actor, maxRange);
         }
 
+        public static RuntimeHero SelectBackmostEnemyTarget(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange)
+        {
+            return FindBackmostEnemy(heroes, actor, maxRange);
+        }
+
         public static RuntimeHero SelectPreferredAllyTarget(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange, bool allowHealthyFallback = false)
         {
             return FindLowestHealthAlly(heroes, actor, maxRange, allowHealthyFallback);
@@ -270,8 +275,15 @@ namespace Fight.Battle
 
         private static RuntimeHero FindAssassinTarget(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange)
         {
+            return FindBackmostEnemy(heroes, actor, maxRange) ?? FindNearestEnemy(heroes, actor, maxRange);
+        }
+
+        private static RuntimeHero FindBackmostEnemy(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange)
+        {
             RuntimeHero best = null;
-            var bestScore = float.MinValue;
+            var lowestSpawnDistance = float.MaxValue;
+            var lowestHealthRatio = float.MaxValue;
+            var lowestCurrentHealth = float.MaxValue;
 
             for (var i = 0; i < heroes.Count; i++)
             {
@@ -281,25 +293,64 @@ namespace Fight.Battle
                     continue;
                 }
 
-                var distance = Vector3.Distance(actor.CurrentPosition, candidate.CurrentPosition);
-                if (distance > maxRange)
+                var distanceToActor = Vector3.Distance(actor.CurrentPosition, candidate.CurrentPosition);
+                if (distanceToActor > maxRange)
                 {
                     continue;
                 }
 
-                var ratio = candidate.MaxHealth > 0f ? candidate.CurrentHealth / candidate.MaxHealth : 1f;
-                var rearlineBonus = candidate.Definition.heroClass is HeroClass.Mage or HeroClass.Support or HeroClass.Marksman ? 0.5f : 0f;
-                var score = rearlineBonus + (1f - ratio) - (distance * 0.03f);
-                if (score <= bestScore)
+                var spawnDistance = Vector3.Distance(candidate.CurrentPosition, candidate.SpawnPosition);
+                var healthRatio = candidate.MaxHealth > 0f ? candidate.CurrentHealth / candidate.MaxHealth : 1f;
+                var currentHealth = candidate.CurrentHealth;
+                if (!IsBetterBackmostEnemyCandidate(
+                        spawnDistance,
+                        healthRatio,
+                        currentHealth,
+                        lowestSpawnDistance,
+                        lowestHealthRatio,
+                        lowestCurrentHealth))
                 {
                     continue;
                 }
 
-                bestScore = score;
+                lowestSpawnDistance = spawnDistance;
+                lowestHealthRatio = healthRatio;
+                lowestCurrentHealth = currentHealth;
                 best = candidate;
             }
 
-            return best ?? FindNearestEnemy(heroes, actor, maxRange);
+            return best;
+        }
+
+        private static bool IsBetterBackmostEnemyCandidate(
+            float spawnDistance,
+            float healthRatio,
+            float currentHealth,
+            float bestSpawnDistance,
+            float bestHealthRatio,
+            float bestCurrentHealth)
+        {
+            if (spawnDistance < bestSpawnDistance - Mathf.Epsilon)
+            {
+                return true;
+            }
+
+            if (Mathf.Abs(spawnDistance - bestSpawnDistance) > Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            if (healthRatio < bestHealthRatio - Mathf.Epsilon)
+            {
+                return true;
+            }
+
+            if (Mathf.Abs(healthRatio - bestHealthRatio) > Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            return currentHealth < bestCurrentHealth - Mathf.Epsilon;
         }
 
         private static RuntimeHero FindClusteredEnemy(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange)
