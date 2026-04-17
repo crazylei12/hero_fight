@@ -17,6 +17,7 @@ namespace Fight.Editor
             var outputDirectory = Path.Combine(projectRoot, BuildRoot);
             Directory.CreateDirectory(outputDirectory);
 
+            // Build-time demo content ensure must never overwrite tuned balance data.
             Stage01SampleContentBuilder.GenerateDemoContentForBuild();
 
             var enabledScenes = EditorBuildSettings.scenes

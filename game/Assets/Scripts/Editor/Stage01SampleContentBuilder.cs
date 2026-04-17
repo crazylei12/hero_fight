@@ -13,6 +13,7 @@ namespace Fight.Editor
     {
         private const string OpenMainMenuMenuPath = "Fight/Play/Open Main Menu";
         private const string OpenBattleMenuPath = "Fight/Dev/Open Battle Scene";
+        private const string OverwriteDemoContentMenuPath = "Fight/Dev/Regenerate Demo Content From Defaults (Overwrite Existing Tuning)";
         private const string DemoRoot = "Assets/Data/Stage01Demo";
         private const string SkillsRootFolder = DemoRoot + "/Skills";
         private const string HeroesRootFolder = DemoRoot + "/Heroes";
@@ -49,6 +50,31 @@ namespace Fight.Editor
         {
             EnsureDemoContent();
             EditorSceneManager.OpenScene(BattleScenePath, OpenSceneMode.Single);
+        }
+
+        [MenuItem(OverwriteDemoContentMenuPath)]
+        public static void RegenerateDemoContentFromDefaults()
+        {
+            if (!EditorUtility.DisplayDialog(
+                    "Overwrite Existing Tuning",
+                    "This action will overwrite existing hero and skill tuning back to the demo defaults. Continue?",
+                    "Overwrite",
+                    "Cancel"))
+            {
+                return;
+            }
+
+            GenerateDemoContentInternal(overwriteExistingContent: true);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            if (!Application.isBatchMode)
+            {
+                EditorUtility.DisplayDialog(
+                    "Stage 01",
+                    "Demo content regenerated from defaults and existing tuning was overwritten.",
+                    "OK");
+            }
         }
 
         public static void GenerateDemoContent()
@@ -182,7 +208,7 @@ namespace Fight.Editor
 
         public static void GenerateDemoContentForBuild()
         {
-            GenerateDemoContentInternal(overwriteExistingContent: true);
+            GenerateDemoContentInternal(overwriteExistingContent: false);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
         }
