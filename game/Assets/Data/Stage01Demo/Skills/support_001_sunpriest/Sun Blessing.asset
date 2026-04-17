@@ -19,14 +19,14 @@ MonoBehaviour:
   skillType: 6
   targetType: 4
   castRange: 6
-  areaRadius: 5
+  areaRadius: 6
   cooldownSeconds: 0
   minTargetsToCast: 2
   effects:
   - effectType: 4
     targetMode: 0
     powerMultiplier: 0.65
-    radiusOverride: 5
+    radiusOverride: 6
     durationSeconds: 5
     tickIntervalSeconds: 1
     followCaster: 0
@@ -38,6 +38,19 @@ MonoBehaviour:
     forcedMovementPeakHeight: 0
     statusEffects: []
   allowsSelfCast: 0
+  actionSequence:
+    enabled: 0
+    payloadType: 0
+    repeatMode: 0
+    repeatCount: 1
+    durationSeconds: 1
+    intervalSeconds: 0.25
+    windupSeconds: 0
+    recoverySeconds: 0
+    temporaryBasicAttackRangeOverride: 0
+    temporarySkillCastRangeOverride: 0
+    targetRefreshMode: 1
+    interruptFlags: 3
   persistentAreaVfxPrefab: {fileID: 5702795226921381977, guid: 9cd669134ce2ba243a4ebeb4e8647a3d, type: 3}
   persistentAreaVfxScaleMultiplier: 1
   persistentAreaVfxEulerAngles: {x: 0, y: 0, z: 0}

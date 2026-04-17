@@ -31,6 +31,8 @@ MonoBehaviour:
     rangeOverride: 5.8
     usesProjectile: 1
     projectileSpeed: 14
+    effectType: 0
+    targetType: 0
   activeSkill: {fileID: 11400000, guid: 9c31a80c4f67405a878ee99b68729d8f, type: 2}
   ultimateSkill: {fileID: 11400000, guid: b22abed7e9d2f694687a916551cd001a, type: 2}
   aiTemplateId: mage_default
