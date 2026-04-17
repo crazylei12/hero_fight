@@ -1558,15 +1558,35 @@ namespace Fight.UI
                     RegisterForcedMovementPresentation(displacedHeroView, forcedMovementAppliedEvent);
                 }
 
-                if (ShouldPlayBlinkFlash(forcedMovementAppliedEvent))
+                if (ShouldPlayBlinkPhaseVfx(forcedMovementAppliedEvent))
                 {
-                    PlayBlinkFlashVfx(forcedMovementAppliedEvent);
+                    PlayBlinkPhaseVfx(forcedMovementAppliedEvent);
                 }
 
                 if (ShouldPlayDashChargeVfx(forcedMovementAppliedEvent))
                 {
                     PlayDashChargeVfx(forcedMovementAppliedEvent);
                 }
+            }
+        }
+
+        private static void DisableSnapshotBehaviours(GameObject instance)
+        {
+            if (instance == null)
+            {
+                return;
+            }
+
+            var behaviours = instance.GetComponentsInChildren<Behaviour>(true);
+            for (var i = 0; i < behaviours.Length; i++)
+            {
+                var behaviour = behaviours[i];
+                if (behaviour is SortingGroup)
+                {
+                    continue;
+                }
+
+                behaviour.enabled = false;
             }
         }
 
@@ -1631,16 +1651,6 @@ namespace Fight.UI
             return sharedHealImpactPrefab;
         }
 
-        private static GameObject GetSharedBlinkFlashPrefab()
-        {
-            if (sharedBlinkFlashPrefab == null)
-            {
-                sharedBlinkFlashPrefab = Resources.Load<GameObject>(BlinkFlashVfxResourcesPath);
-            }
-
-            return sharedBlinkFlashPrefab;
-        }
-
         private static GameObject GetSharedDashChargePrefab()
         {
             if (sharedDashChargePrefab == null)
@@ -1651,7 +1661,7 @@ namespace Fight.UI
             return sharedDashChargePrefab;
         }
 
-        private static bool ShouldPlayBlinkFlash(ForcedMovementAppliedEvent forcedMovementAppliedEvent)
+        private static bool ShouldPlayBlinkPhaseVfx(ForcedMovementAppliedEvent forcedMovementAppliedEvent)
         {
             if (forcedMovementAppliedEvent?.SourceSkill == null
                 || forcedMovementAppliedEvent.Source == null
@@ -1691,22 +1701,27 @@ namespace Fight.UI
             return offset.sqrMagnitude >= DashChargeMinDistance * DashChargeMinDistance;
         }
 
-        private void PlayBlinkFlashVfx(ForcedMovementAppliedEvent forcedMovementAppliedEvent)
+        private void PlayBlinkPhaseVfx(ForcedMovementAppliedEvent forcedMovementAppliedEvent)
         {
-            var blinkFlashPrefab = GetSharedBlinkFlashPrefab();
-            if (blinkFlashPrefab == null)
+            if (forcedMovementAppliedEvent?.Target == null
+                || !heroViews.TryGetValue(forcedMovementAppliedEvent.Target.RuntimeId, out var heroView)
+                || heroView?.VisualRoot == null
+                || forcedMovementAppliedEvent.Target.IsDead
+                || ShouldHideCorpse(heroView))
             {
                 return;
             }
 
             var startPosition = Map(forcedMovementAppliedEvent.StartPosition);
             var destinationPosition = Map(forcedMovementAppliedEvent.Destination);
-            SpawnWorldTransientVfx(blinkFlashPrefab, startPosition, BlinkFlashSortOrderOffset);
+            SpawnBlinkGhostSnapshot(heroView, startPosition, "BlinkDepartGhost", blinkGhostStartAlpha);
 
             if ((destinationPosition - startPosition).sqrMagnitude > 0.0001f)
             {
-                SpawnWorldTransientVfx(blinkFlashPrefab, destinationPosition, BlinkFlashSortOrderOffset);
+                SpawnBlinkGhostSnapshot(heroView, destinationPosition, "BlinkArriveGhost", blinkGhostStartAlpha * 0.72f);
             }
+
+            heroView.BlinkRevealStartedAtSeconds = GetElapsedTimeSeconds();
         }
 
         private void PlayDashChargeVfx(ForcedMovementAppliedEvent forcedMovementAppliedEvent)
@@ -1751,20 +1766,32 @@ namespace Fight.UI
                 lifetimeSeconds);
         }
 
-        private void SpawnWorldTransientVfx(GameObject prefab, Vector3 worldPosition, int sortingOrderOffset)
+        private void SpawnBlinkGhostSnapshot(HeroViewState sourceView, Vector3 worldPosition, string ghostName, float startAlpha)
         {
-            if (prefab == null || transientWorldVfxRoot == null)
+            if (sourceView?.VisualRoot == null || transientWorldVfxRoot == null)
             {
                 return;
             }
 
-            var instance = Instantiate(prefab, transientWorldVfxRoot);
-            instance.name = $"{prefab.name}_WorldTransient";
-            instance.transform.position = worldPosition;
-            RemovePrefabPhysics(instance);
-            ConfigureTransientParticleSystems(instance);
+            var instance = Instantiate(sourceView.VisualRoot.gameObject, transientWorldVfxRoot, true);
+            instance.name = ghostName;
+            instance.transform.position += worldPosition - sourceView.Root.transform.position;
+            var statusVfxRoot = instance.transform.Find("StatusVfx");
+            if (statusVfxRoot != null)
+            {
+                Destroy(statusVfxRoot.gameObject);
+            }
 
-            var sortingOrder = Sort(worldPosition.y, sortingOrderOffset);
+            var directionalTrail = instance.transform.Find("DirectionalTrail");
+            if (directionalTrail != null)
+            {
+                Destroy(directionalTrail.gameObject);
+            }
+
+            DisableSnapshotBehaviours(instance);
+            RemovePrefabPhysics(instance);
+
+            var sortingOrder = Sort(worldPosition.y, 0);
             var sortingGroup = instance.GetComponent<SortingGroup>();
             if (sortingGroup != null)
             {
@@ -1775,7 +1802,29 @@ namespace Fight.UI
                 SetRendererSorting(instance.GetComponentsInChildren<Renderer>(true), sortingOrder);
             }
 
-            Destroy(instance, GetTransientVfxLifetime(instance));
+            var spriteRenderers = instance.GetComponentsInChildren<SpriteRenderer>(true);
+            if (spriteRenderers == null || spriteRenderers.Length == 0)
+            {
+                Destroy(instance);
+                return;
+            }
+
+            var ghostBaseColors = new Color[spriteRenderers.Length];
+            for (var i = 0; i < spriteRenderers.Length; i++)
+            {
+                var spriteRenderer = spriteRenderers[i];
+                if (spriteRenderer == null)
+                {
+                    continue;
+                }
+
+                var ghostColor = Color.Lerp(spriteRenderer.color, blinkGhostTintColor, blinkGhostTintStrength);
+                ghostColor.a = spriteRenderer.color.a * startAlpha;
+                spriteRenderer.color = ghostColor;
+                ghostBaseColors[i] = ghostColor;
+            }
+
+            StartCoroutine(FadeBlinkGhostSnapshot(instance.transform, instance, spriteRenderers, ghostBaseColors));
         }
 
         private void SpawnTransientHeroVfx(
@@ -1831,6 +1880,52 @@ namespace Fight.UI
 
             heroView.TransientVfx.Add(transientState);
             ApplyTransientVfxState(transientState, heroView.SortingGroup != null ? heroView.SortingGroup.sortingOrder : HeroSortBase);
+        }
+
+        private IEnumerator FadeBlinkGhostSnapshot(
+            Transform ghostTransform,
+            GameObject ghostRoot,
+            SpriteRenderer[] spriteRenderers,
+            Color[] ghostBaseColors)
+        {
+            if (ghostTransform == null || ghostRoot == null || spriteRenderers == null || ghostBaseColors == null)
+            {
+                yield break;
+            }
+
+            var initialScale = ghostTransform.localScale;
+            var endScale = initialScale * blinkGhostEndScale;
+            var elapsed = 0f;
+            var duration = Mathf.Max(0.05f, blinkGhostLifetimeSeconds);
+            while (elapsed < duration && ghostRoot != null)
+            {
+                elapsed += Time.deltaTime;
+                var progress = Mathf.Clamp01(elapsed / duration);
+                if (ghostTransform != null)
+                {
+                    ghostTransform.localScale = Vector3.Lerp(initialScale, endScale, progress);
+                }
+
+                for (var i = 0; i < spriteRenderers.Length; i++)
+                {
+                    var spriteRenderer = spriteRenderers[i];
+                    if (spriteRenderer == null)
+                    {
+                        continue;
+                    }
+
+                    var baseColor = i < ghostBaseColors.Length ? ghostBaseColors[i] : spriteRenderer.color;
+                    baseColor.a *= 1f - progress;
+                    spriteRenderer.color = baseColor;
+                }
+
+                yield return null;
+            }
+
+            if (ghostRoot != null)
+            {
+                Destroy(ghostRoot);
+            }
         }
 
         private static void RemoveTransientVfxWithKey(HeroViewState heroView, string uniqueKey)

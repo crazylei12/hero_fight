@@ -63,8 +63,6 @@
 
 - 编辑器菜单：`Fight -> Stage 01 -> Build FireMage VFX Prefabs`
 - batchmode 执行方法：`Fight.Editor.FireMageVfxPrefabBuilder.BuildFireMageVfxPrefabsBatch`
-- 编辑器菜单：`Fight -> Stage 01 -> Build Shared Blink VFX`
-- batchmode 执行方法：`Fight.Editor.SharedBlinkVfxPrefabBuilder.BuildSharedBlinkVfxBatch`
 - 编辑器菜单：`Fight -> Stage 01 -> Build Shared Dash Charge VFX`
 - batchmode 执行方法：`Fight.Editor.SharedDashChargeVfxPrefabBuilder.BuildSharedDashChargeVfxBatch`
 
@@ -73,7 +71,6 @@
 - 火法普攻投射物
 - 火法小技能 `Ember Burst`
 - 火法大招 `Meteor Fall`
-- 共享瞬移闪现 `BlinkFlash`
 - 共享冲锋拖尾 `DashChargeTrail`
 
 执行注意事项：
@@ -91,7 +88,6 @@
 - `game/Assets/Scripts/Battle/RuntimeBasicAttackProjectile.cs`
 - `game/Assets/Scripts/UI/BattleView.cs`
 - `game/Assets/Scripts/Editor/FireMageVfxPrefabBuilder.cs`
-- `game/Assets/Scripts/Editor/SharedBlinkVfxPrefabBuilder.cs`
 - `game/Assets/Scripts/Editor/SharedDashChargeVfxPrefabBuilder.cs`
 - `game/Assets/Scripts/UI/Presentation/Skills/SkillAreaPresentationController.cs`
 - `game/Assets/Scripts/UI/Presentation/Skills/FireSeaSkillAreaPresentationController.cs`
@@ -472,15 +468,16 @@
   - 来源技能是 `Dash`
   - 位移对象是施法者自己
   - 位移时长约等于 `0`
-- 表现层会在 `起点` 和 `终点` 各播放一次共享 one-shot prefab，不反向修改落点、时序或伤害
-- 项目工程源 prefab 当前整理在：`game/Assets/Prefabs/VFX/Shared/BlinkFlash.prefab`
-- 运行时统一加载路径当前为：`game/Assets/Resources/Stage01Demo/VFX/Shared/BlinkFlash.prefab`
+- 表现层会在 `起点` 生成一次角色残影快照并快速淡出
+- 英雄到达 `终点` 后，会先以短暂半透明状态出现，再恢复为正常实体
+- 到达点还会额外叠一层更轻的角色残影，帮助读出“先虚化、再显形”的节奏
+- 这条反馈当前优先复用 `BattleView` 中的共享角色快照逻辑，而不是额外依赖单独 prefab
 
 对后续 AI 的要求：
 
-- 以后再做“瞬移到目标身边”“短距离闪现”“零时长 re-position”这类技能时，优先复用这条共享 blink 路径
+- 以后再做“瞬移到目标身边”“短距离闪现”“零时长 re-position”这类技能时，优先复用这条共享角色残影 + 淡入逻辑
 - 有明显飞行时间或滑步过程的 dash，继续优先沿用统一 `ForcedMovement` 位移表现，不要强行套 blink prefab
-- 不要在单个英雄脚本里额外手写“旧位置播一次、新位置再播一次”的专用闪现逻辑
+- 不要在单个英雄脚本里额外手写“旧位置播一次、新位置再显形”的专用闪现逻辑
 
 ## 冲锋突进表现的当前规则
 
@@ -499,7 +496,7 @@
 对后续 AI 的要求：
 
 - 以后再做“短冲锋切入”“滑步贴脸”“带过程时间的 dash”时，优先复用这条共享 `DashChargeTrail` 路径
-- 如果是 `零时长` 的瞬移切位，继续走共享 `BlinkFlash`，不要两套效果混着播
+- 如果是 `零时长` 的瞬移切位，继续走共享角色残影 + 淡入逻辑，不要和冲锋拖尾混着播
 - 不要在单个英雄脚本里额外手写“冲锋时挂一个 trail”的专用表现逻辑
 
 ## 单位附着状态特效的当前规则
