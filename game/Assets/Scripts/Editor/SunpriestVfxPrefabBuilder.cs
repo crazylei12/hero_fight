@@ -157,37 +157,37 @@ namespace Fight.Editor
                 root.transform,
                 "OuterGlow",
                 softCircleSprite,
-                new Color(1f, 0.9f, 0.42f, 0.26f),
+                new Color(1f, 0.94f, 0.72f, 0.14f),
                 2,
                 Vector3.zero,
-                Vector3.one * 0.34f);
+                Vector3.one * 0.26f);
             CreateSprite(
                 root.transform,
                 "InnerGlow",
                 softCircleSprite,
-                new Color(1f, 0.98f, 0.84f, 0.7f),
+                new Color(1f, 0.99f, 0.9f, 0.44f),
                 4,
                 Vector3.zero,
-                Vector3.one * 0.2f);
+                Vector3.one * 0.15f);
 
             var trailOrb = InstantiateNestedPrefab(orbsGoldPrefab, root.transform, "TrailOrb");
-            trailOrb.transform.localPosition = new Vector3(-0.08f, 0f, 0f);
-            trailOrb.transform.localScale = Vector3.one * 0.07f;
+            trailOrb.transform.localPosition = new Vector3(-0.06f, 0f, 0f);
+            trailOrb.transform.localScale = Vector3.one * 0.05f;
             OffsetRendererOrders(trailOrb, 5);
 
             var lightSpark = InstantiateNestedPrefab(lightSparkPrefab, root.transform, "LightSpark");
-            lightSpark.transform.localPosition = new Vector3(-0.03f, 0f, 0f);
-            lightSpark.transform.localScale = Vector3.one * 0.24f;
+            lightSpark.transform.localPosition = new Vector3(-0.02f, 0f, 0f);
+            lightSpark.transform.localScale = Vector3.one * 0.16f;
             OffsetRendererOrders(lightSpark, 8);
 
             var projectile = InstantiateNestedPrefab(lightProjectilePrefab, root.transform, "LightTrail");
-            projectile.transform.localScale = Vector3.one * 0.16f;
-            projectile.transform.localPosition = new Vector3(-0.01f, 0f, 0f);
+            projectile.transform.localScale = Vector3.one * 0.11f;
+            projectile.transform.localPosition = new Vector3(-0.015f, 0f, 0f);
             OffsetRendererOrders(projectile, 11);
 
             var missile = InstantiateNestedPrefab(lightMissilePrefab, root.transform, "MissileCore");
-            missile.transform.localPosition = new Vector3(0.02f, 0f, 0f);
-            missile.transform.localScale = Vector3.one * 0.34f;
+            missile.transform.localPosition = new Vector3(0.015f, 0f, 0f);
+            missile.transform.localScale = Vector3.one * 0.22f;
             OffsetRendererOrders(missile, 15);
 
             SavePrefab(root, ProjectilePrefabPath);
