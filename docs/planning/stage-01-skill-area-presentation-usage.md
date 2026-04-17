@@ -473,10 +473,14 @@
   - 项目内运行时 prefab：`game/Assets/Resources/Stage01Demo/VFX/Statuses/StunStatusLoop.prefab`
   - 素材来源：`Assets/Lana Studio/Casual RPG VFX/Prefabs/States/Stun_loop.prefab`
   - 接入方式：`BattleView` 在英雄视图下创建并跟随该状态 VFX，状态结束后自动销毁
+- `击飞`
+  - 项目内运行时 prefab：`game/Assets/Resources/Stage01Demo/VFX/Statuses/KnockUpStatusBurst.prefab`
+  - 素材来源：`Assets/Lana Studio/Casual RPG VFX/Prefabs/Burst/Burst_rings.prefab`
+  - 接入方式：`BattleView` 通过统一状态 VFX 映射在击飞开始时创建 one-shot 爆圈，并随状态生命周期自动清理
 
 对后续 AI 的要求：
 
-- 后续再加 `KnockUp`、`Invulnerable`、`Untargetable` 等状态表现时，优先沿用同一条“统一状态 VFX 映射”路径
+- 后续再加 `Invulnerable`、`Untargetable` 等状态表现时，优先沿用同一条“统一状态 VFX 映射”路径
 - 如果某个状态要长期存在于项目里，先整理成项目内 prefab，再接运行时映射
 - 状态 VFX 只能表达“当前单位身上有什么状态”，不能反向决定状态持续时间、控制时长或行为门禁
 
