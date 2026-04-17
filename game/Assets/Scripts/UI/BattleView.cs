@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using Fight.Battle;
@@ -19,8 +20,8 @@ namespace Fight.UI
         private const string ArenaRootName = "BattleArena2D";
         private const string StunStatusLoopVfxResourcesPath = "Stage01Demo/VFX/Statuses/StunStatusLoop";
         private const string KnockUpStatusBurstVfxResourcesPath = "Stage01Demo/VFX/Statuses/KnockUpStatusBurst";
+        private const string KnockbackStatusLoopVfxResourcesPath = "Stage01Demo/VFX/Statuses/KnockbackStatusLoop";
         private const string HealReceivedImpactVfxResourcesPath = "Stage01Demo/VFX/Shared/HealReceivedImpact";
-        private const string BlinkFlashVfxResourcesPath = "Stage01Demo/VFX/Shared/BlinkFlash";
         private const string DashChargeTrailVfxResourcesPath = "Stage01Demo/VFX/Shared/DashChargeTrail";
         private const float CorpseVisibleSeconds = 1f;
         private const float HealthBarWidth = 0.9f;
@@ -35,7 +36,6 @@ namespace Fight.UI
         private const float DashChargeLifetimePaddingSeconds = 0.08f;
         private const float DashChargeMinLifetimeSeconds = 0.18f;
         private const int HealEventVfxSortOrderOffset = 190;
-        private const int BlinkFlashSortOrderOffset = -60;
         private const int DashChargeSortOrderOffset = -6;
         private const string HealImpactTransientKey = "heal_received";
         private const string DashChargeTransientKey = "dash_charge";
@@ -44,6 +44,13 @@ namespace Fight.UI
             { StatusEffectType.Stun, new StatusEffectVfxConfig(StunStatusLoopVfxResourcesPath, new Vector3(0f, 1.1f, 0f), Vector3.one * 0.85f, Vector3.zero, 180) },
             { StatusEffectType.KnockUp, new StatusEffectVfxConfig(KnockUpStatusBurstVfxResourcesPath, new Vector3(0f, 0.74f, 0f), Vector3.one * 0.9f, Vector3.zero, 165) },
         };
+        private static readonly StatusEffectVfxConfig KnockbackStatusVfxConfig = new StatusEffectVfxConfig(
+            KnockbackStatusLoopVfxResourcesPath,
+            new Vector3(0f, 0.72f, 0f),
+            Vector3.one * 0.92f,
+            Vector3.zero,
+            170,
+            alignToDirection: true);
         [SerializeField] private float heroMarkerScale = 1f;
         [SerializeField] private float prefabVisualScale = 0.9f;
         [SerializeField] private Vector3 footUiOffset = new Vector3(0f, -0.36f, 0f);
@@ -67,6 +74,16 @@ namespace Fight.UI
         [SerializeField] private float directionalTrailFadeOutSeconds = 0.16f;
         [SerializeField] private float directionalTrailMinDistance = 0.15f;
         [SerializeField] private float directionalTrailMaxLength = 0.92f;
+        [SerializeField] private float blinkGhostLifetimeSeconds = 0.18f;
+        [SerializeField] private float blinkRevealDurationSeconds = 0.14f;
+        [SerializeField] private float blinkRevealStartAlpha = 0.22f;
+        [SerializeField] private float blinkRevealStartScale = 0.96f;
+        [SerializeField] private float blinkGhostStartAlpha = 0.48f;
+        [SerializeField] private float blinkGhostEndScale = 1.05f;
+        [SerializeField] private float blinkGhostTintStrength = 0.62f;
+        [SerializeField] private Color blinkGhostTintColor = new Color(0.82f, 0.88f, 0.96f, 1f);
+        [SerializeField] private Color blinkRevealTintColor = new Color(0.86f, 0.9f, 0.96f, 1f);
+        [SerializeField] private float blinkRevealTintStrength = 0.5f;
         [SerializeField] private Color airborneGroundRingColor = new Color(1f, 0.87f, 0.56f, 0.22f);
         [SerializeField] private Color launchPulseColor = new Color(1f, 0.95f, 0.8f, 0.72f);
         [SerializeField] private Color landingPulseColor = new Color(1f, 0.68f, 0.34f, 0.78f);
@@ -92,7 +109,6 @@ namespace Fight.UI
         private static string customArenaBackgroundSourcePath;
         private static GameObject sharedHealImpactPrefab;
         private static GameObject sharedDashChargePrefab;
-        private static GameObject sharedBlinkFlashPrefab;
 
         protected BattleManager BattleManager => battleManager;
 
@@ -134,6 +150,8 @@ namespace Fight.UI
             public bool LastDeadState;
             public float DeathStartedAtSeconds = -1f;
             public float HitFlashUntilSeconds = -1f;
+            public float BlinkRevealStartedAtSeconds = -1f;
+            public StatusEffectViewState ForcedMovementStatusView;
             public readonly Dictionary<StatusEffectType, StatusEffectViewState> StatusEffectViews = new Dictionary<StatusEffectType, StatusEffectViewState>();
             public readonly List<TransientHeroVfxState> TransientVfx = new List<TransientHeroVfxState>();
         }
@@ -192,13 +210,15 @@ namespace Fight.UI
                 Vector3 localOffset,
                 Vector3 localScale,
                 Vector3 localEulerAngles,
-                int sortingOrderOffset)
+                int sortingOrderOffset,
+                bool alignToDirection = false)
             {
                 LoopPrefabResourcesPath = loopPrefabResourcesPath;
                 LocalOffset = localOffset;
                 LocalScale = localScale;
                 LocalEulerAngles = localEulerAngles;
                 SortingOrderOffset = sortingOrderOffset;
+                AlignToDirection = alignToDirection;
             }
 
             public string LoopPrefabResourcesPath { get; }
@@ -210,6 +230,8 @@ namespace Fight.UI
             public Vector3 LocalEulerAngles { get; }
 
             public int SortingOrderOffset { get; }
+
+            public bool AlignToDirection { get; }
 
             public GameObject LoadLoopPrefab()
             {
@@ -278,7 +300,11 @@ namespace Fight.UI
                 view.FootUiRoot.localPosition = footUiOffset + (airborneOffset * airborneUiFollowFactor);
             }
             UpdateDeathVisibility(hero, view);
-            view.VisualRoot.localScale = Vector3.one * (hero.IsDead ? 0.82f : 1f);
+            var blinkRevealProgress = GetBlinkRevealProgress(hero, view);
+            var blinkRevealScale = hero.IsDead
+                ? 1f
+                : Mathf.Lerp(blinkRevealStartScale, 1f, blinkRevealProgress);
+            view.VisualRoot.localScale = Vector3.one * ((hero.IsDead ? 0.82f : 1f) * blinkRevealScale);
 
             if (view.Body != null)
             {
@@ -290,7 +316,7 @@ namespace Fight.UI
                 var halo = Team(hero.Side);
                 halo.a = hero.IsDead
                     ? (ShouldHideCorpse(view) ? 0f : 0.18f)
-                    : 0.78f;
+                    : Mathf.Lerp(0.28f, 0.78f, blinkRevealProgress);
                 view.Halo.color = halo;
             }
 
@@ -299,7 +325,7 @@ namespace Fight.UI
                 var shadow = view.Shadow.color;
                 shadow.a = hero.IsDead
                     ? (ShouldHideCorpse(view) ? 0f : 0.12f)
-                    : 0.24f;
+                    : Mathf.Lerp(0.08f, 0.24f, blinkRevealProgress);
                 view.Shadow.color = shadow;
             }
 
@@ -333,6 +359,7 @@ namespace Fight.UI
 
             UpdateForcedMovementPresentation(hero, view);
             UpdatePrefabHitFlash(hero, view);
+            SyncForcedMovementStatusVfx(hero, view, heroSortingOrder);
             SyncStatusEffects(hero, view, heroSortingOrder);
             SyncTransientVfx(hero, view, heroSortingOrder);
 
@@ -383,17 +410,6 @@ namespace Fight.UI
                     Destroy(driver);
                 }
 
-                view.VisualSpriteRenderers = view.VisualRoot.GetComponentsInChildren<SpriteRenderer>(true);
-                if (view.VisualSpriteRenderers != null && view.VisualSpriteRenderers.Length > 0)
-                {
-                    view.VisualSpriteBaseColors = new Color[view.VisualSpriteRenderers.Length];
-                    for (var i = 0; i < view.VisualSpriteRenderers.Length; i++)
-                    {
-                        view.VisualSpriteBaseColors[i] = view.VisualSpriteRenderers[i] != null
-                            ? view.VisualSpriteRenderers[i].color
-                            : Color.white;
-                    }
-                }
             }
             else
             {
@@ -403,6 +419,17 @@ namespace Fight.UI
             }
 
             view.VisualRenderers = view.VisualRoot.GetComponentsInChildren<Renderer>(true);
+            view.VisualSpriteRenderers = view.VisualRoot.GetComponentsInChildren<SpriteRenderer>(true);
+            if (view.VisualSpriteRenderers != null && view.VisualSpriteRenderers.Length > 0)
+            {
+                view.VisualSpriteBaseColors = new Color[view.VisualSpriteRenderers.Length];
+                for (var i = 0; i < view.VisualSpriteRenderers.Length; i++)
+                {
+                    view.VisualSpriteBaseColors[i] = view.VisualSpriteRenderers[i] != null
+                        ? view.VisualSpriteRenderers[i].color
+                        : Color.white;
+                }
+            }
 
             view.FootUiRoot = new GameObject("FootUi").transform;
             view.FootUiRoot.SetParent(view.Root.transform, false);
@@ -505,6 +532,12 @@ namespace Fight.UI
                 }
             }
 
+            var blinkRevealProgress = GetBlinkRevealProgress(hero, view);
+            var blinkRevealBlend = hero.IsDead ? 0f : 1f - blinkRevealProgress;
+            var blinkRevealAlpha = hero.IsDead
+                ? 1f
+                : Mathf.Lerp(blinkRevealStartAlpha, 1f, blinkRevealProgress);
+
             for (var i = 0; i < view.VisualSpriteRenderers.Length; i++)
             {
                 var spriteRenderer = view.VisualSpriteRenderers[i];
@@ -514,16 +547,35 @@ namespace Fight.UI
                 }
 
                 var baseColor = view.VisualSpriteBaseColors[i];
+                var revealedColor = Color.Lerp(baseColor, blinkRevealTintColor, blinkRevealBlend * blinkRevealTintStrength);
+                revealedColor.a = baseColor.a * blinkRevealAlpha;
                 if (intensity <= 0f)
                 {
-                    spriteRenderer.color = baseColor;
+                    spriteRenderer.color = revealedColor;
                     continue;
                 }
 
-                var flashedColor = Color.Lerp(baseColor, prefabHitFlashColor, intensity);
-                flashedColor.a = baseColor.a;
+                var flashedColor = Color.Lerp(revealedColor, prefabHitFlashColor, intensity);
+                flashedColor.a = revealedColor.a;
                 spriteRenderer.color = flashedColor;
             }
+        }
+
+        private float GetBlinkRevealProgress(RuntimeHero hero, HeroViewState view)
+        {
+            if (hero == null || view == null || hero.IsDead || view.BlinkRevealStartedAtSeconds < 0f)
+            {
+                return 1f;
+            }
+
+            var elapsed = GetElapsedTimeSeconds() - view.BlinkRevealStartedAtSeconds;
+            if (elapsed >= blinkRevealDurationSeconds)
+            {
+                view.BlinkRevealStartedAtSeconds = -1f;
+                return 1f;
+            }
+
+            return Mathf.Clamp01(elapsed / Mathf.Max(0.01f, blinkRevealDurationSeconds));
         }
 
         private void UpdateForcedMovementPresentation(RuntimeHero hero, HeroViewState view)
@@ -797,7 +849,41 @@ namespace Fight.UI
             }
         }
 
+        private void SyncForcedMovementStatusVfx(RuntimeHero hero, HeroViewState view, int heroSortingOrder)
+        {
+            if (hero == null || view == null || view.StatusEffectRoot == null)
+            {
+                return;
+            }
+
+            var shouldDisplayKnockbackVfx = hero.IsUnderForcedMovement
+                && view.LastForcedMovementHorizontalDistance > directionalTrailMinDistance;
+
+            if (!shouldDisplayKnockbackVfx)
+            {
+                if (view.ForcedMovementStatusView != null)
+                {
+                    DestroyStatusEffectView(view.ForcedMovementStatusView);
+                    view.ForcedMovementStatusView = null;
+                }
+
+                return;
+            }
+
+            if (view.ForcedMovementStatusView == null)
+            {
+                view.ForcedMovementStatusView = CreateStatusEffectView("Knockback", view, KnockbackStatusVfxConfig);
+            }
+
+            ApplyStatusEffectView(view.ForcedMovementStatusView, KnockbackStatusVfxConfig, heroSortingOrder, view.LastForcedMovementDirection);
+        }
+
         private StatusEffectViewState CreateStatusEffectView(StatusEffectType effectType, HeroViewState view, StatusEffectVfxConfig config)
+        {
+            return CreateStatusEffectView(effectType.ToString(), view, config);
+        }
+
+        private StatusEffectViewState CreateStatusEffectView(string effectName, HeroViewState view, StatusEffectVfxConfig config)
         {
             if (view?.StatusEffectRoot == null || config == null)
             {
@@ -807,12 +893,12 @@ namespace Fight.UI
             var prefab = config.LoadLoopPrefab();
             if (prefab == null)
             {
-                Debug.LogWarning($"BattleView could not load status VFX prefab for {effectType} from Resources/{config.LoopPrefabResourcesPath}.");
+                Debug.LogWarning($"BattleView could not load status VFX prefab for {effectName} from Resources/{config.LoopPrefabResourcesPath}.");
                 return null;
             }
 
             var instance = Instantiate(prefab, view.StatusEffectRoot);
-            instance.name = $"{effectType}_StatusVfx";
+            instance.name = $"{effectName}_StatusVfx";
             RemovePrefabPhysics(instance);
 
             var state = new StatusEffectViewState
@@ -835,7 +921,7 @@ namespace Fight.UI
             return state;
         }
 
-        private void ApplyStatusEffectView(StatusEffectViewState viewState, StatusEffectVfxConfig config, int heroSortingOrder)
+        private void ApplyStatusEffectView(StatusEffectViewState viewState, StatusEffectVfxConfig config, int heroSortingOrder, Vector2 directionalHint = default)
         {
             if (viewState?.Root == null || config == null)
             {
@@ -844,7 +930,14 @@ namespace Fight.UI
 
             var statusTransform = viewState.Root.transform;
             statusTransform.localPosition = viewState.BaseLocalPosition + config.LocalOffset;
-            statusTransform.localRotation = Quaternion.Euler(config.LocalEulerAngles) * viewState.BaseLocalRotation;
+            var appliedRotation = Quaternion.Euler(config.LocalEulerAngles);
+            if (config.AlignToDirection && directionalHint.sqrMagnitude > Mathf.Epsilon)
+            {
+                var angle = Mathf.Atan2(directionalHint.y, directionalHint.x) * Mathf.Rad2Deg;
+                appliedRotation = Quaternion.Euler(0f, 0f, angle - 90f) * appliedRotation;
+            }
+
+            statusTransform.localRotation = appliedRotation * viewState.BaseLocalRotation;
             statusTransform.localScale = new Vector3(
                 viewState.BaseLocalScale.x * config.LocalScale.x,
                 viewState.BaseLocalScale.y * config.LocalScale.y,
