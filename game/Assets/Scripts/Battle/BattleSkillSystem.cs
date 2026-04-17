@@ -536,10 +536,10 @@ namespace Fight.Battle
                 return primaryPass;
             }
 
-            var secondaryFallback = SupportsFallbackThresholdOverride(decision.secondaryCondition)
-                ? decision.fallback
-                : null;
-            var secondaryPass = EvaluateUltimateCondition(context, caster, skill, primaryTarget, decision.secondaryCondition, secondaryFallback, affectedTargets);
+            // Stage-01 fallback thresholds are defined as "primary condition fallback".
+            // Secondary conditions stay stable so AnyPass/AllMustPass do not pick up hidden
+            // threshold changes when the primary condition relaxes later in the match.
+            var secondaryPass = EvaluateUltimateCondition(context, caster, skill, primaryTarget, decision.secondaryCondition, null, affectedTargets);
             return decision.combineMode switch
             {
                 UltimateConditionCombineMode.AllMustPass => primaryPass && secondaryPass,
@@ -585,20 +585,6 @@ namespace Fight.Battle
                 default:
                     return affectedTargets != null && affectedTargets.Count > 0;
             }
-        }
-
-        private static bool SupportsFallbackThresholdOverride(UltimateConditionData condition)
-        {
-            if (condition == null)
-            {
-                return false;
-            }
-
-            return condition.conditionType is UltimateConditionType.EnemyCountInRange
-                or UltimateConditionType.AllyCountInRange
-                or UltimateConditionType.EnemyLowHealthInRange
-                or UltimateConditionType.AllyLowHealthInRange
-                or UltimateConditionType.SelfLowHealth;
         }
 
         private static bool RollUltimateCastChance(BattleContext context, RuntimeHero caster, SkillData skill, RuntimeHero primaryTarget)
