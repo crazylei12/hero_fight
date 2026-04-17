@@ -61,7 +61,7 @@ namespace Fight.Editor
 
             EditorGUILayout.Space();
             EditorGUILayout.HelpBox(
-                "导出会生成 heroes/basic_attacks/skills/skill_effects/skill_status_effects 五张表和一份中文说明。导入支持追加新的 effectIndex/statusIndex，但删除表格行不会自动删除旧数据。",
+                "导出会生成 heroes/basic_attacks/skills/skill_effects/skill_status_effects 五张表和一份中文说明。effectIndex/statusIndex 只允许修改已有项，或在末尾连续追加 1 个；删除表格行不会自动删除旧数据。",
                 MessageType.None);
 
             using (new EditorGUILayout.HorizontalScope())
