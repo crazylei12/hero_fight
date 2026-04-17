@@ -193,6 +193,7 @@
 
 建议优先补充到 `StatusEffectData` 的字段：
 - `tickIntervalSeconds`
+- `activeSkillCooldownCapSeconds`
 - 如有需要，再补一个非常轻量的周期状态判断入口，避免把 tick 规则散写在多个模块里
 
 现有字段可以继续沿用：
@@ -205,6 +206,7 @@
 - `眩晕` / `击飞` 主要依赖持续时间
 - 属性变化主要依赖 `magnitude`
 - DOT / HOT 需要额外的 `tickIntervalSeconds`
+- `activeSkillCooldownCapSeconds` 是可选的运行时上限字段；当它大于 `0` 时，状态持续期间会把小技能剩余 CD 压到不高于该值，适用于忍者大招这类临时高频释放窗口
 
 ### 第三步：让运行时状态保存来源信息
 

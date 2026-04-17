@@ -10,34 +10,61 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bea5ec4d01f80a948a332187ac325d06, type: 3}
-  m_Name: Shadow Dash
+  m_Name: Shadow Blink
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
-  skillId: skill_assassin_active_dash
-  displayName: Shadow Dash
-  description: 'Stage-01 demo skill: Shadow Dash'
+  skillId: skill_assassin_active_shadowblink
+  displayName: Shadow Blink
+  description: 'Stage-01 demo skill: Shadow Blink'
   slotType: 0
   skillType: 4
-  targetType: 2
-  castRange: 5.5
+  targetType: 8
+  castRange: 40
   areaRadius: 0
-  cooldownSeconds: 8
+  cooldownSeconds: 6
   minTargetsToCast: 1
   effects:
   - effectType: 3
+    targetMode: 0
     powerMultiplier: 1
     radiusOverride: 0
     durationSeconds: 0
     tickIntervalSeconds: 1
     followCaster: 0
+    persistentAreaPulseEffectType: 0
+    persistentAreaTargetType: 0
+    forcedMovementDirection: 0
+    forcedMovementDistance: 0
+    forcedMovementDurationSeconds: 0
+    forcedMovementPeakHeight: 0
     statusEffects: []
   - effectType: 0
-    powerMultiplier: 1.4
+    targetMode: 0
+    powerMultiplier: 1.25
     radiusOverride: 0
     durationSeconds: 0
     tickIntervalSeconds: 1
     followCaster: 0
+    persistentAreaPulseEffectType: 0
+    persistentAreaTargetType: 0
+    forcedMovementDirection: 0
+    forcedMovementDistance: 0
+    forcedMovementDurationSeconds: 0
+    forcedMovementPeakHeight: 0
     statusEffects: []
   allowsSelfCast: 0
+  actionSequence:
+    enabled: 0
+    payloadType: 0
+    repeatMode: 0
+    repeatCount: 1
+    durationSeconds: 1
+    intervalSeconds: 0.25
+    windupSeconds: 0
+    recoverySeconds: 0
+    temporaryBasicAttackRangeOverride: 0
+    temporarySkillCastRangeOverride: 0
+    targetRefreshMode: 1
+    interruptFlags: 3
   persistentAreaVfxPrefab: {fileID: 0}
   persistentAreaVfxScaleMultiplier: 1
   persistentAreaVfxEulerAngles: {x: 0, y: 0, z: 0}

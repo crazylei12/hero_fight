@@ -10,5 +10,6 @@ namespace Fight.Data
         Self = 5,
         AllEnemies = 6,
         AllAllies = 7,
+        BackmostEnemy = 8,
     }
 }

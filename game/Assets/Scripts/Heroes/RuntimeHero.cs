@@ -283,6 +283,7 @@ namespace Fight.Heroes
             actionLockRemainingSeconds = Mathf.Max(0f, actionLockRemainingSeconds - deltaTime);
             TickForcedMovement(deltaTime);
             StatusEffectSystem.Tick(this, deltaTime, onPeriodicStatusTick, onExpiredStatus);
+            ClampActiveSkillCooldownToStatusCap();
             if (HasHardControl)
             {
                 ClearCombatActionState();
@@ -518,7 +519,13 @@ namespace Fight.Heroes
 
         public bool ApplyStatusEffect(StatusEffectData data, RuntimeHero source = null, SkillData sourceSkill = null)
         {
-            return StatusEffectSystem.TryApplyStatus(this, data, source, sourceSkill);
+            var applied = StatusEffectSystem.TryApplyStatus(this, data, source, sourceSkill);
+            if (applied)
+            {
+                ClampActiveSkillCooldownToStatusCap();
+            }
+
+            return applied;
         }
 
         public bool CanUseActiveSkill()
@@ -536,6 +543,7 @@ namespace Fight.Heroes
             if (slotType == SkillSlotType.ActiveSkill)
             {
                 ActiveSkillCooldownRemainingSeconds = cooldownSeconds;
+                ClampActiveSkillCooldownToStatusCap();
                 return;
             }
 
@@ -615,6 +623,17 @@ namespace Fight.Heroes
         private void RegisterForcedMovementInterrupt()
         {
             forcedMovementInterruptTicksRemaining = 2;
+        }
+
+        private void ClampActiveSkillCooldownToStatusCap()
+        {
+            var cooldownCap = StatusEffectSystem.GetActiveSkillCooldownCap(this);
+            if (cooldownCap <= 0f)
+            {
+                return;
+            }
+
+            ActiveSkillCooldownRemainingSeconds = Mathf.Min(ActiveSkillCooldownRemainingSeconds, cooldownCap);
         }
     }
 }
