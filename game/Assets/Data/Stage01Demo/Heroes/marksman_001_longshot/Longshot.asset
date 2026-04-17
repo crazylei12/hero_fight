@@ -15,22 +15,22 @@ MonoBehaviour:
   heroId: marksman_001_longshot
   displayName: Longshot
   heroClass: 5
-  tags: 010000000300000007000000
+  tags: 0100000003000000
   baseStats:
     maxHealth: 310
     attackPower: 34
     defense: 12
-    attackSpeed: 1.35
+    attackSpeed: 1.3513514
     moveSpeed: 4.1
     criticalChance: 0.22
     criticalDamageMultiplier: 1.9
-    attackRange: 7.2
+    attackRange: 6
   basicAttack:
     damageMultiplier: 1
-    attackInterval: 0.7407407
-    rangeOverride: 7.2
+    attackInterval: 0.74
+    rangeOverride: 6
     usesProjectile: 1
-    projectileSpeed: 14
+    projectileSpeed: 16
   activeSkill: {fileID: 11400000, guid: 440b9582223e6ae4588b77681abf091c, type: 2}
   ultimateSkill: {fileID: 11400000, guid: abc242b860bdb8f4f8872537594d63fd, type: 2}
   aiTemplateId: marksman_default
@@ -46,4 +46,4 @@ MonoBehaviour:
     castVfxPrefab: {fileID: 0}
     hitVfxPrefab: {fileID: 0}
     castSfx: {fileID: 0}
-  debugNotes: Stage-01 demo hero for Marksman.
+  debugNotes: Stage-01 demo hero for Marksman. Longshot replaces the placeholder Focus Shot / Arrow Rain kit.

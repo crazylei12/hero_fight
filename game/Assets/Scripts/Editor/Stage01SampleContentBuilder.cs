@@ -154,18 +154,20 @@ namespace Fight.Editor
                 HeroTag.Ranged, HeroTag.Heal, HeroTag.Buff);
             ConfigureSupportBasicAttack(support, overwriteExistingContent, supportHeroExisted);
 
-            var marksmanActive = CreateSkill("skill_marksman_active_focusshot", "Focus Shot", SkillSlotType.ActiveSkill, SkillType.SingleTargetDamage, SkillTargetType.NearestEnemy, 7.5f, 0f, 1.6f, 6f, 1, overwriteExistingContent);
-            var marksmanUltimateSkill = CreateSkill("skill_marksman_ultimate_arrowrain", "Arrow Rain", SkillSlotType.Ultimate, SkillType.AreaDamage, SkillTargetType.DensestEnemyArea, 8f, 3f, 2.1f, 0f, 3, overwriteExistingContent, out var marksmanUltimateExisted);
+            var marksmanActive = CreateLongshotActiveSkill(overwriteExistingContent);
+            var marksmanUltimateSkill = CreateLongshotUltimateSkill(overwriteExistingContent, out var marksmanUltimateExisted);
 
             var marksman = CreateHero(
                 "marksman_001_longshot",
                 "Longshot",
                 HeroClass.Marksman,
-                310f, 34f, 12f, 1.35f, 4.1f, 0.22f, 1.9f, 7.2f,
+                310f, 34f, 12f, 1f / 0.74f, 4.1f, 0.22f, 1.9f, 6f,
                 marksmanActive,
-                ConfigureMarksmanUltimate(marksmanUltimateSkill, overwriteExistingContent, marksmanUltimateExisted),
+                ConfigureLongshotUltimate(marksmanUltimateSkill, overwriteExistingContent, marksmanUltimateExisted),
                 overwriteExistingContent,
-                HeroTag.Ranged, HeroTag.SustainedDamage, HeroTag.AreaDamage);
+                out var marksmanHeroExisted,
+                HeroTag.Ranged, HeroTag.SustainedDamage);
+            ConfigureLongshotBasicAttack(marksman, overwriteExistingContent, marksmanHeroExisted);
 
             var battleInput = CreateBattleInput(
                 "Stage01DemoBattleInput",
@@ -449,12 +451,68 @@ namespace Fight.Editor
             skill.minTargetsToCast = minTargetsToCast;
             skill.effects.Clear();
             skill.allowsSelfCast = targetType == SkillTargetType.Self || targetType == SkillTargetType.AllAllies;
+            ResetActionSequence(skill);
             skill.persistentAreaVfxEulerAngles = Vector3.zero;
             skill.skillAreaPresentationType = SkillAreaPresentationType.None;
             ResetUltimateDecision(skill);
 
             AddDefaultEffectsForSkill(skill, powerMultiplier);
 
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateLongshotActiveSkill(bool overwriteExistingContent)
+        {
+            var skill = CreateSkill(
+                "skill_marksman_active_focusshot",
+                "Heavy Shot",
+                SkillSlotType.ActiveSkill,
+                SkillType.SingleTargetDamage,
+                SkillTargetType.NearestEnemy,
+                6f,
+                0f,
+                1.7f,
+                6f,
+                1,
+                overwriteExistingContent,
+                out var existedBefore);
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.effects.Clear();
+            AddDamageEffect(skill, 1.7f);
+            AddForcedMovementEffect(skill, 2.4f, 0.25f, 0f);
+            skill.description = "Stage-01 demo skill: Heavy Shot";
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateLongshotUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
+        {
+            var skill = CreateSkill(
+                "skill_marksman_ultimate_arrowrain",
+                "Rapid Barrage",
+                SkillSlotType.Ultimate,
+                SkillType.SingleTargetDamage,
+                SkillTargetType.LowestHealthEnemy,
+                40f,
+                0f,
+                0f,
+                0f,
+                1,
+                overwriteExistingContent,
+                out existedBefore);
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.effects.Clear();
+            AddDamageEffect(skill, 0f);
+            skill.description = "Stage-01 demo skill: Rapid Barrage";
             EditorUtility.SetDirty(skill);
             return skill;
         }
@@ -761,6 +819,24 @@ namespace Fight.Editor
             EditorUtility.SetDirty(hero);
         }
 
+        private static void ConfigureLongshotBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (hero == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return;
+            }
+
+            hero.basicAttack.damageMultiplier = 1f;
+            hero.basicAttack.attackInterval = 0.74f;
+            hero.basicAttack.rangeOverride = 6f;
+            hero.basicAttack.usesProjectile = true;
+            hero.basicAttack.projectileSpeed = 16f;
+            hero.basicAttack.effectType = BasicAttackEffectType.Damage;
+            hero.basicAttack.targetType = BasicAttackTargetType.NearestEnemy;
+            hero.debugNotes = "Stage-01 demo hero for Marksman. Longshot replaces the placeholder Focus Shot / Arrow Rain kit.";
+            EditorUtility.SetDirty(hero);
+        }
+
         private static SkillData CreateSupportActiveSkill(bool overwriteExistingContent)
         {
             var skill = CreateSkill(
@@ -873,6 +949,33 @@ namespace Fight.Editor
             skill.ultimateDecision.fallback.secondaryTriggerAfterSeconds = 0f;
             skill.ultimateDecision.fallback.secondaryOverrideRequiredUnitCount = 0;
             skill.ultimateDecision.fallback.secondaryOverrideHealthPercentThreshold = -1f;
+        }
+
+        private static void ResetActionSequence(SkillData skill)
+        {
+            if (skill == null)
+            {
+                return;
+            }
+
+            if (skill.actionSequence == null)
+            {
+                skill.actionSequence = new CombatActionSequenceData();
+            }
+
+            skill.actionSequence.enabled = false;
+            skill.actionSequence.payloadType = CombatActionSequencePayloadType.BasicAttack;
+            skill.actionSequence.repeatMode = CombatActionSequenceRepeatMode.FixedCount;
+            skill.actionSequence.repeatCount = 1;
+            skill.actionSequence.durationSeconds = 1f;
+            skill.actionSequence.intervalSeconds = 0.25f;
+            skill.actionSequence.windupSeconds = 0f;
+            skill.actionSequence.recoverySeconds = 0f;
+            skill.actionSequence.temporaryBasicAttackRangeOverride = 0f;
+            skill.actionSequence.temporarySkillCastRangeOverride = 0f;
+            skill.actionSequence.targetRefreshMode = CombatActionSequenceTargetRefreshMode.RefreshOnInvalid;
+            skill.actionSequence.interruptFlags =
+                CombatActionSequenceInterruptFlags.HardControl | CombatActionSequenceInterruptFlags.ForcedMovement;
         }
 
         private static void ResetUltimateCondition(UltimateConditionData condition)
@@ -1016,18 +1119,48 @@ namespace Fight.Editor
             return skill;
         }
 
-        private static SkillData ConfigureMarksmanUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
+        private static SkillData ConfigureLongshotUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
         {
             if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
             {
                 return skill;
             }
 
-            skill.ultimateDecision.targetingType = UltimateTargetingType.EnemyDensestPosition;
-            skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;
-            skill.ultimateDecision.primaryCondition.searchRadius = skill.areaRadius;
-            skill.ultimateDecision.primaryCondition.requiredUnitCount = 3;
-            ApplyCountFallback(skill, 30f, 2, 45f, 1);
+            skill.skillType = SkillType.SingleTargetDamage;
+            skill.targetType = SkillTargetType.LowestHealthEnemy;
+            skill.castRange = 40f;
+            skill.areaRadius = 0f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+
+            ResetActionSequence(skill);
+            skill.actionSequence.enabled = true;
+            skill.actionSequence.payloadType = CombatActionSequencePayloadType.BasicAttack;
+            skill.actionSequence.repeatMode = CombatActionSequenceRepeatMode.FixedCount;
+            skill.actionSequence.repeatCount = 20;
+            skill.actionSequence.durationSeconds = 5f;
+            skill.actionSequence.intervalSeconds = 0.25f;
+            skill.actionSequence.windupSeconds = 0f;
+            skill.actionSequence.recoverySeconds = 0f;
+            skill.actionSequence.temporaryBasicAttackRangeOverride = 40f;
+            skill.actionSequence.temporarySkillCastRangeOverride = 0f;
+            skill.actionSequence.targetRefreshMode = CombatActionSequenceTargetRefreshMode.RefreshOnInvalid;
+            skill.actionSequence.interruptFlags =
+                CombatActionSequenceInterruptFlags.HardControl | CombatActionSequenceInterruptFlags.ForcedMovement;
+
+            ResetUltimateDecision(skill);
+            skill.ultimateDecision.targetingType = UltimateTargetingType.CurrentTarget;
+            skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.EnemyLowHealthInRange;
+            skill.ultimateDecision.primaryCondition.searchRadius = 0.1f;
+            skill.ultimateDecision.primaryCondition.requiredUnitCount = 1;
+            skill.ultimateDecision.primaryCondition.healthPercentThreshold = 0.65f;
+            skill.ultimateDecision.secondaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;
+            skill.ultimateDecision.secondaryCondition.searchRadius = 6f;
+            skill.ultimateDecision.secondaryCondition.requiredUnitCount = 2;
+            skill.ultimateDecision.combineMode = UltimateConditionCombineMode.AnyPass;
+            skill.ultimateDecision.fallback.fallbackType = UltimateFallbackType.LowerPrimaryThreshold;
+            skill.ultimateDecision.fallback.triggerAfterSeconds = 40f;
+            skill.ultimateDecision.fallback.overrideHealthPercentThreshold = 1f;
             EditorUtility.SetDirty(skill);
             return skill;
         }
