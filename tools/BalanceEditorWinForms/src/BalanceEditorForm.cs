@@ -517,12 +517,7 @@ namespace Fight.Tools.BalanceEditor
 
         private Control CreateSkillEditorGroup(HeroSkillEntryViewModel skill)
         {
-            GroupBox skillGroup = CreateGroupBox(
-                string.Format("{0}  [{1}]", skill.DisplayName, string.IsNullOrWhiteSpace(skill.SlotLabel) ? skill.SlotTypeValue : skill.SlotLabel),
-                900);
-
-            FlowLayoutPanel skillFlow = CreateGroupContentFlow();
-            skillGroup.Controls.Add(skillFlow);
+            FlowLayoutPanel skillFlow = CreateSectionContentFlow();
 
             skillFlow.Controls.Add(CreateInfoGroup("技能信息", new[]
             {
@@ -588,44 +583,71 @@ namespace Fight.Tools.BalanceEditor
                 }
             }
 
-            return skillGroup;
+            return CreateSectionPanel(
+                string.Format("{0}  [{1}]", skill.DisplayName, string.IsNullOrWhiteSpace(skill.SlotLabel) ? skill.SlotTypeValue : skill.SlotLabel),
+                900,
+                skillFlow);
         }
 
-        private static FlowLayoutPanel CreateGroupContentFlow()
+        private static FlowLayoutPanel CreateSectionContentFlow()
         {
             FlowLayoutPanel flow = new FlowLayoutPanel();
-            flow.Dock = DockStyle.Fill;
+            flow.Dock = DockStyle.Top;
             flow.FlowDirection = FlowDirection.TopDown;
             flow.WrapContents = false;
             flow.AutoSize = true;
             flow.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-            flow.Padding = new Padding(8);
+            flow.AutoScroll = false;
+            flow.Margin = Padding.Empty;
+            flow.Padding = Padding.Empty;
             return flow;
         }
 
-        private static GroupBox CreateGroupBox(string title, int width)
+        private static Control CreateSectionPanel(string title, int width, Control body)
         {
-            GroupBox groupBox = new GroupBox();
-            groupBox.Text = title;
-            groupBox.AutoSize = true;
-            groupBox.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-            groupBox.Width = width;
-            groupBox.Margin = new Padding(0, 0, 0, 12);
-            return groupBox;
+            Panel panel = new Panel();
+            panel.Width = width;
+            panel.AutoSize = true;
+            panel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            panel.Margin = new Padding(0, 0, 0, 12);
+            panel.Padding = new Padding(10);
+            panel.BorderStyle = BorderStyle.FixedSingle;
+
+            TableLayoutPanel layout = new TableLayoutPanel();
+            layout.Dock = DockStyle.Top;
+            layout.AutoSize = true;
+            layout.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            layout.ColumnCount = 1;
+            layout.RowCount = 2;
+            layout.Margin = Padding.Empty;
+            layout.Padding = Padding.Empty;
+            layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
+
+            Label titleLabel = new Label();
+            titleLabel.Text = title;
+            titleLabel.AutoSize = true;
+            titleLabel.Font = new Font(SystemFonts.MessageBoxFont, FontStyle.Bold);
+            titleLabel.Margin = new Padding(0, 0, 0, 8);
+
+            body.Dock = DockStyle.Top;
+            body.Margin = Padding.Empty;
+
+            layout.Controls.Add(titleLabel, 0, 0);
+            layout.Controls.Add(body, 0, 1);
+            panel.Controls.Add(layout);
+            return panel;
         }
 
         private Control CreateInfoGroup(string title, KeyValuePair<string, string>[] items)
         {
-            GroupBox group = CreateGroupBox(title, 900);
             TableLayoutPanel table = CreateTwoColumnTable();
-            group.Controls.Add(table);
 
             for (int index = 0; index < items.Length; index++)
             {
                 AddReadOnlyRow(table, items[index].Key, items[index].Value);
             }
 
-            return group;
+            return CreateSectionPanel(title, 900, table);
         }
 
         private static TableLayoutPanel CreateTwoColumnTable()
@@ -674,16 +696,14 @@ namespace Fight.Tools.BalanceEditor
                 return;
             }
 
-            GroupBox group = CreateGroupBox(title, 900);
             TableLayoutPanel tableLayout = CreateTwoColumnTable();
-            group.Controls.Add(tableLayout);
 
             for (int index = 0; index < visibleKeys.Count; index++)
             {
                 AddEditableRow(tableLayout, table, row, visibleKeys[index], bindings);
             }
 
-            parent.Controls.Add(group);
+            parent.Controls.Add(CreateSectionPanel(title, 900, tableLayout));
         }
 
         private void AddEditableRow(
