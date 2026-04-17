@@ -45,6 +45,25 @@ namespace Fight.Battle
 
         public static void BeginAttack(BattleContext context, RuntimeHero attacker, RuntimeHero target, BattleManager battleManager)
         {
+            BeginAttack(
+                context,
+                attacker,
+                target,
+                battleManager,
+                CombatActionTiming.DefaultWindupSeconds,
+                CombatActionTiming.DefaultRecoverySeconds,
+                consumeAttackCooldown: true);
+        }
+
+        internal static void BeginAttack(
+            BattleContext context,
+            RuntimeHero attacker,
+            RuntimeHero target,
+            BattleManager battleManager,
+            float windupSeconds,
+            float recoverySeconds,
+            bool consumeAttackCooldown)
+        {
             if (context == null || attacker == null || target == null || battleManager == null)
             {
                 return;
@@ -62,7 +81,7 @@ namespace Fight.Battle
                 return;
             }
 
-            attacker.BeginBasicAttack(target, CombatActionTiming.DefaultWindupSeconds, CombatActionTiming.DefaultRecoverySeconds);
+            attacker.BeginBasicAttack(target, windupSeconds, recoverySeconds, consumeAttackCooldown);
             context.EventBus.Publish(new AttackPerformedEvent(attacker, target));
         }
 

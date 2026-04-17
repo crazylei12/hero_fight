@@ -258,6 +258,38 @@ namespace Fight.Battle
             }
         }
 
+        private static RuntimeHero SelectSequencePrimaryTarget(
+            BattleContext context,
+            RuntimeHero caster,
+            SkillData skill,
+            RuntimeHero preferredTarget,
+            CombatActionSequenceTargetRefreshMode targetRefreshMode,
+            float effectiveCastRange)
+        {
+            var preferredTargetIsValid = IsPrimaryTargetStillValidForCastRange(skill, caster, preferredTarget, effectiveCastRange);
+            if (targetRefreshMode != CombatActionSequenceTargetRefreshMode.RefreshEveryIteration && preferredTargetIsValid)
+            {
+                return preferredTarget;
+            }
+
+            if (targetRefreshMode == CombatActionSequenceTargetRefreshMode.KeepCurrentTarget)
+            {
+                return null;
+            }
+
+            return skill.targetType switch
+            {
+                SkillTargetType.Self => caster,
+                SkillTargetType.AllAllies => FindFirstGlobalTeamTarget(context.Heroes, caster, skill, includeAllies: true),
+                SkillTargetType.AllEnemies => FindFirstGlobalTeamTarget(context.Heroes, caster, skill, includeAllies: false),
+                SkillTargetType.NearestEnemy => FindNearest(context.Heroes, caster, includeAllies: false, effectiveCastRange),
+                SkillTargetType.LowestHealthEnemy => FindLowestHealth(context.Heroes, caster, skill, includeAllies: false, effectiveCastRange),
+                SkillTargetType.LowestHealthAlly => FindLowestHealth(context.Heroes, caster, skill, includeAllies: true, effectiveCastRange),
+                SkillTargetType.DensestEnemyArea => FindDensestEnemyAnchor(context.Heroes, caster, effectiveCastRange, skill.areaRadius),
+                _ => null,
+            };
+        }
+
         private static List<RuntimeHero> CollectTargets(BattleContext context, RuntimeHero caster, SkillData skill, RuntimeHero primaryTarget)
         {
             var results = new List<RuntimeHero>();
@@ -325,6 +357,78 @@ namespace Fight.Battle
             return results;
         }
 
+        private static List<RuntimeHero> CollectTargetsForCastRange(
+            BattleContext context,
+            RuntimeHero caster,
+            SkillData skill,
+            RuntimeHero primaryTarget,
+            float effectiveCastRange)
+        {
+            var results = new List<RuntimeHero>();
+            if (context == null || caster == null || skill == null)
+            {
+                return results;
+            }
+
+            if (IsGlobalTeamTargeting(skill.targetType))
+            {
+                for (var i = 0; i < context.Heroes.Count; i++)
+                {
+                    var candidate = context.Heroes[i];
+                    if (candidate.IsDead)
+                    {
+                        continue;
+                    }
+
+                    if (!IsValidGlobalTeamTarget(skill, caster, candidate))
+                    {
+                        continue;
+                    }
+
+                    results.Add(candidate);
+                }
+
+                return results;
+            }
+
+            if (primaryTarget == null)
+            {
+                return results;
+            }
+
+            if (skill.areaRadius <= 0f)
+            {
+                if (!IsPrimaryTargetStillValidForCastRange(skill, caster, primaryTarget, effectiveCastRange))
+                {
+                    return results;
+                }
+
+                results.Add(primaryTarget);
+                return results;
+            }
+
+            for (var i = 0; i < context.Heroes.Count; i++)
+            {
+                var candidate = context.Heroes[i];
+                if (candidate.IsDead)
+                {
+                    continue;
+                }
+
+                if (!IsValidTargetForSkill(skill, caster, candidate))
+                {
+                    continue;
+                }
+
+                if (Vector3.Distance(candidate.CurrentPosition, primaryTarget.CurrentPosition) <= skill.areaRadius)
+                {
+                    results.Add(candidate);
+                }
+            }
+
+            return results;
+        }
+
         private static bool IsPrimaryTargetStillValid(SkillData skill, RuntimeHero caster, RuntimeHero primaryTarget)
         {
             if (primaryTarget == null)
@@ -350,6 +454,35 @@ namespace Fight.Battle
             if (skill.targetType == SkillTargetType.AllAllies || skill.targetType == SkillTargetType.AllEnemies)
             {
                 return true;
+            }
+
+            return IsDirectTargetAllowed(skill, caster, primaryTarget);
+        }
+
+        private static bool IsPrimaryTargetStillValidForCastRange(
+            SkillData skill,
+            RuntimeHero caster,
+            RuntimeHero primaryTarget,
+            float effectiveCastRange)
+        {
+            if (primaryTarget == null || primaryTarget.IsDead || skill == null)
+            {
+                return false;
+            }
+
+            if (skill.targetType == SkillTargetType.Self)
+            {
+                return true;
+            }
+
+            if (skill.targetType == SkillTargetType.AllAllies || skill.targetType == SkillTargetType.AllEnemies)
+            {
+                return true;
+            }
+
+            if (Vector3.Distance(caster.CurrentPosition, primaryTarget.CurrentPosition) > effectiveCastRange)
+            {
+                return false;
             }
 
             return IsDirectTargetAllowed(skill, caster, primaryTarget);
@@ -751,7 +884,49 @@ namespace Fight.Battle
                 pendingAction.Skill,
                 pendingAction.PrimaryTarget,
                 CopyAliveTargets(pendingAction.AffectedTargets),
-                battleManager);
+                battleManager,
+                !pendingAction.SuppressActionSequenceTrigger);
+        }
+
+        internal static bool TryPrepareSequenceSkillCast(
+            BattleContext context,
+            RuntimeHero caster,
+            SkillData skill,
+            RuntimeHero preferredTarget,
+            CombatActionSequenceTargetRefreshMode targetRefreshMode,
+            float castRangeOverride,
+            out RuntimeHero primaryTarget,
+            out List<RuntimeHero> affectedTargets)
+        {
+            primaryTarget = null;
+            affectedTargets = new List<RuntimeHero>();
+            if (context == null || caster == null || skill == null)
+            {
+                return false;
+            }
+
+            var effectiveCastRange = castRangeOverride > 0f
+                ? castRangeOverride
+                : skill.castRange;
+            primaryTarget = SelectSequencePrimaryTarget(
+                context,
+                caster,
+                skill,
+                preferredTarget,
+                targetRefreshMode,
+                effectiveCastRange);
+            if (!IsPrimaryTargetStillValidForCastRange(skill, caster, primaryTarget, effectiveCastRange))
+            {
+                return false;
+            }
+
+            if (primaryTarget == null && !skill.allowsSelfCast && skill.targetType != SkillTargetType.DensestEnemyArea)
+            {
+                return false;
+            }
+
+            affectedTargets = CollectTargetsForCastRange(context, caster, skill, primaryTarget, effectiveCastRange);
+            return affectedTargets.Count >= Mathf.Max(1, skill.minTargetsToCast);
         }
 
         public static void TickDelayedSkillEffects(BattleContext context, float deltaTime, BattleManager battleManager)
@@ -783,12 +958,67 @@ namespace Fight.Battle
 
         private static void BeginSkillCast(BattleContext context, RuntimeHero caster, SkillData skill, RuntimeHero primaryTarget, List<RuntimeHero> affectedTargets, BattleManager battleManager)
         {
+            QueueSkillCast(
+                context,
+                caster,
+                skill,
+                primaryTarget,
+                affectedTargets,
+                CombatActionTiming.DefaultWindupSeconds,
+                CombatActionTiming.DefaultRecoverySeconds,
+                consumeCooldown: true,
+                suppressActionSequenceTrigger: false,
+                battleManager);
+        }
+
+        internal static void BeginSequenceSkillCast(
+            BattleContext context,
+            RuntimeHero caster,
+            SkillData skill,
+            RuntimeHero primaryTarget,
+            List<RuntimeHero> affectedTargets,
+            float windupSeconds,
+            float recoverySeconds,
+            BattleManager battleManager)
+        {
+            QueueSkillCast(
+                context,
+                caster,
+                skill,
+                primaryTarget,
+                affectedTargets,
+                windupSeconds,
+                recoverySeconds,
+                consumeCooldown: false,
+                suppressActionSequenceTrigger: true,
+                battleManager);
+        }
+
+        private static void QueueSkillCast(
+            BattleContext context,
+            RuntimeHero caster,
+            SkillData skill,
+            RuntimeHero primaryTarget,
+            List<RuntimeHero> affectedTargets,
+            float windupSeconds,
+            float recoverySeconds,
+            bool consumeCooldown,
+            bool suppressActionSequenceTrigger,
+            BattleManager battleManager)
+        {
             if (context == null || caster == null || skill == null || battleManager == null)
             {
                 return;
             }
 
-            caster.BeginSkillCast(skill, primaryTarget, affectedTargets, CombatActionTiming.DefaultWindupSeconds, CombatActionTiming.DefaultRecoverySeconds);
+            caster.BeginSkillCast(
+                skill,
+                primaryTarget,
+                affectedTargets,
+                windupSeconds,
+                recoverySeconds,
+                consumeCooldown,
+                suppressActionSequenceTrigger);
             context.EventBus.Publish(new SkillCastEvent(
                 caster,
                 skill,
@@ -796,7 +1026,14 @@ namespace Fight.Battle
                 GetSkillCastAffectedTargetCount(context, caster, skill, primaryTarget, affectedTargets)));
         }
 
-        private static void ResolveSkillEffects(BattleContext context, RuntimeHero caster, SkillData skill, RuntimeHero primaryTarget, List<RuntimeHero> affectedTargets, BattleManager battleManager)
+        private static void ResolveSkillEffects(
+            BattleContext context,
+            RuntimeHero caster,
+            SkillData skill,
+            RuntimeHero primaryTarget,
+            List<RuntimeHero> affectedTargets,
+            BattleManager battleManager,
+            bool allowActionSequenceTrigger = true)
         {
             if (context == null || caster == null || caster.IsDead || skill == null || battleManager == null)
             {
@@ -810,26 +1047,31 @@ namespace Fight.Battle
                 {
                     ExecuteSkillEffect(context, caster, skill, primaryTarget, affectedTargets, skill.effects[i], resolutionState, battleManager);
                 }
-
-                return;
+            }
+            else
+            {
+                switch (skill.skillType)
+                {
+                    case SkillType.SingleTargetDamage:
+                    case SkillType.AreaDamage:
+                    case SkillType.Dash:
+                    case SkillType.Stun:
+                    case SkillType.KnockUp:
+                        ApplyDamageToTargets(context, caster, skill, CreateLegacyDamageEffect(skill), affectedTargets, battleManager);
+                        break;
+                    case SkillType.SingleTargetHeal:
+                    case SkillType.AreaHeal:
+                        ApplyHealToTargets(context, caster, skill, CreateLegacyHealEffect(skill), affectedTargets);
+                        break;
+                    case SkillType.Buff:
+                        ApplyStatusEffectsToTargets(context, caster, skill, CreateLegacyStatusEffect(skill), affectedTargets);
+                        break;
+                }
             }
 
-            switch (skill.skillType)
+            if (allowActionSequenceTrigger)
             {
-                case SkillType.SingleTargetDamage:
-                case SkillType.AreaDamage:
-                case SkillType.Dash:
-                case SkillType.Stun:
-                case SkillType.KnockUp:
-                    ApplyDamageToTargets(context, caster, skill, CreateLegacyDamageEffect(skill), affectedTargets, battleManager);
-                    break;
-                case SkillType.SingleTargetHeal:
-                case SkillType.AreaHeal:
-                    ApplyHealToTargets(context, caster, skill, CreateLegacyHealEffect(skill), affectedTargets);
-                    break;
-                case SkillType.Buff:
-                    ApplyStatusEffectsToTargets(context, caster, skill, CreateLegacyStatusEffect(skill), affectedTargets);
-                    break;
+                BattleCombatActionSequenceSystem.TryStartSequence(caster, skill, primaryTarget);
             }
         }
 

@@ -1,0 +1,208 @@
+using Fight.Data;
+using Fight.Heroes;
+using UnityEngine;
+
+namespace Fight.Battle
+{
+    public static class BattleCombatActionSequenceSystem
+    {
+        public static void TryStartSequence(RuntimeHero actor, SkillData sourceSkill, RuntimeHero primaryTarget)
+        {
+            var definition = sourceSkill?.actionSequence;
+            if (actor == null || sourceSkill == null || definition == null || !definition.enabled || definition.repeatCount <= 0)
+            {
+                return;
+            }
+
+            actor.StartCombatActionSequence(new RuntimeCombatActionSequence(sourceSkill, definition, primaryTarget));
+        }
+
+        public static bool TryProgressSequence(BattleContext context, RuntimeHero actor, BattleManager battleManager)
+        {
+            if (context == null || actor == null || battleManager == null)
+            {
+                return false;
+            }
+
+            var sequence = actor.ActiveCombatActionSequence;
+            if (sequence == null)
+            {
+                return false;
+            }
+
+            if (sequence.ShouldInterrupt(actor))
+            {
+                actor.ClearCombatActionSequence();
+                return false;
+            }
+
+            if (!sequence.IsReady)
+            {
+                return true;
+            }
+
+            var queued = sequence.PayloadType switch
+            {
+                CombatActionSequencePayloadType.SourceSkill => TryQueueSkillSequenceStep(context, actor, sequence, battleManager),
+                _ => TryQueueBasicAttackSequenceStep(context, actor, sequence, battleManager),
+            };
+
+            if (!queued)
+            {
+                actor.ClearCombatActionSequence();
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool TryQueueBasicAttackSequenceStep(
+            BattleContext context,
+            RuntimeHero actor,
+            RuntimeCombatActionSequence sequence,
+            BattleManager battleManager)
+        {
+            var target = ResolveBasicAttackTarget(context, actor, sequence);
+            if (target == null)
+            {
+                return false;
+            }
+
+            ApplySequenceTarget(context, actor, sequence, target);
+            BattleBasicAttackSystem.BeginAttack(
+                context,
+                actor,
+                target,
+                battleManager,
+                sequence.WindupSeconds,
+                sequence.RecoverySeconds,
+                consumeAttackCooldown: false);
+            sequence.MarkExecutionQueued(target);
+            if (sequence.IsComplete)
+            {
+                actor.ClearCombatActionSequence();
+            }
+
+            return true;
+        }
+
+        private static bool TryQueueSkillSequenceStep(
+            BattleContext context,
+            RuntimeHero actor,
+            RuntimeCombatActionSequence sequence,
+            BattleManager battleManager)
+        {
+            if (!BattleSkillSystem.TryPrepareSequenceSkillCast(
+                    context,
+                    actor,
+                    sequence.SourceSkill,
+                    sequence.PreferredTarget,
+                    sequence.TargetRefreshMode,
+                    sequence.TemporarySkillCastRangeOverride,
+                    out var primaryTarget,
+                    out var affectedTargets))
+            {
+                return false;
+            }
+
+            ApplySequenceTarget(context, actor, sequence, primaryTarget);
+            BattleSkillSystem.BeginSequenceSkillCast(
+                context,
+                actor,
+                sequence.SourceSkill,
+                primaryTarget,
+                affectedTargets,
+                sequence.WindupSeconds,
+                sequence.RecoverySeconds,
+                battleManager);
+            sequence.MarkExecutionQueued(primaryTarget);
+            if (sequence.IsComplete)
+            {
+                actor.ClearCombatActionSequence();
+            }
+
+            return true;
+        }
+
+        private static RuntimeHero ResolveBasicAttackTarget(BattleContext context, RuntimeHero actor, RuntimeCombatActionSequence sequence)
+        {
+            if (context == null || actor?.Definition?.basicAttack == null)
+            {
+                return null;
+            }
+
+            var preferredTargetIsValid = IsValidBasicAttackTarget(actor, sequence.PreferredTarget);
+            if (sequence.TargetRefreshMode != CombatActionSequenceTargetRefreshMode.RefreshEveryIteration
+                && preferredTargetIsValid)
+            {
+                return sequence.PreferredTarget;
+            }
+
+            if (sequence.TargetRefreshMode == CombatActionSequenceTargetRefreshMode.KeepCurrentTarget)
+            {
+                return null;
+            }
+
+            var selected = actor.Definition.basicAttack.targetType switch
+            {
+                BasicAttackTargetType.LowestHealthAlly => BattleAiDirector.SelectPreferredAllyTarget(
+                    context.Heroes,
+                    actor,
+                    actor.AttackRange,
+                    allowHealthyFallback: true),
+                _ => BattleAiDirector.SelectPreferredEnemyTarget(context.Heroes, actor, actor.AttackRange),
+            };
+
+            return IsValidBasicAttackTarget(actor, selected)
+                ? selected
+                : null;
+        }
+
+        private static bool IsValidBasicAttackTarget(RuntimeHero actor, RuntimeHero target)
+        {
+            if (actor?.Definition?.basicAttack == null || target == null || target.IsDead || !target.CanBeDirectTargeted)
+            {
+                return false;
+            }
+
+            var targetMatches = actor.Definition.basicAttack.targetType switch
+            {
+                BasicAttackTargetType.LowestHealthAlly => target.Side == actor.Side,
+                _ => target.Side != actor.Side,
+            };
+            if (!targetMatches)
+            {
+                return false;
+            }
+
+            if (Vector3.Distance(actor.CurrentPosition, target.CurrentPosition) > actor.AttackRange)
+            {
+                return false;
+            }
+
+            if (actor.Definition.basicAttack.effectType == BasicAttackEffectType.Heal
+                && target.CurrentHealth >= target.MaxHealth - Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private static void ApplySequenceTarget(
+            BattleContext context,
+            RuntimeHero actor,
+            RuntimeCombatActionSequence sequence,
+            RuntimeHero target)
+        {
+            sequence.UpdatePreferredTarget(target);
+            if (actor.CurrentTarget == target)
+            {
+                return;
+            }
+
+            actor.SetTarget(target);
+            context.EventBus.Publish(new TargetChangedEvent(actor, target));
+        }
+    }
+}

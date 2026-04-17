@@ -79,6 +79,11 @@ namespace Fight.Battle
                 return;
             }
 
+            if (BattleCombatActionSequenceSystem.TryProgressSequence(context, hero, battleManager))
+            {
+                return;
+            }
+
             if (context.Input.enableSkills && hero.CanCastSkills && BattleSkillSystem.TryCastSkill(context, hero, battleManager))
             {
                 return;
