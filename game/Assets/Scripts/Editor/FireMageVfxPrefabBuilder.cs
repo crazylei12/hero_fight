@@ -92,7 +92,6 @@ namespace Fight.Editor
         private static void BuildMeteorFieldPrefab(Sprite softCircleSprite)
         {
             var topDownRocketCircleRedPrefab = LoadRequiredAsset<GameObject>(TopDownRocketCircleRedSourcePrefabPath);
-            var fireSmallPrefab = LoadRequiredAsset<GameObject>(FireSmallSourcePrefabPath);
 
             var root = new GameObject("FireMageMeteorField");
             root.AddComponent<SortingGroup>();
@@ -101,45 +100,42 @@ namespace Fight.Editor
                 root.transform,
                 "OuterWarning",
                 softCircleSprite,
-                new Color(1f, 0.32f, 0.08f, 0.12f),
+                new Color(1f, 0.34f, 0.1f, 0.08f),
                 0,
                 Vector3.zero,
                 new Vector3(1.02f, 1.02f, 1f));
             CreateSprite(
                 root.transform,
-                "WarningEdge",
+                "WarningRing",
                 softCircleSprite,
-                new Color(1f, 0.54f, 0.16f, 0.18f),
+                new Color(0.96f, 0.16f, 0.05f, 0.12f),
                 1,
                 Vector3.zero,
                 new Vector3(0.84f, 0.84f, 1f));
             CreateSprite(
                 root.transform,
-                "ScorchCore",
+                "HeatField",
                 softCircleSprite,
-                new Color(0.76f, 0.12f, 0.04f, 0.16f),
+                new Color(0.72f, 0.08f, 0.03f, 0.2f),
                 2,
                 Vector3.zero,
                 new Vector3(0.62f, 0.62f, 1f));
             CreateSprite(
                 root.transform,
-                "MeteorCore",
+                "CoreHeat",
                 softCircleSprite,
-                new Color(1f, 0.78f, 0.24f, 0.08f),
+                new Color(1f, 0.56f, 0.16f, 0.06f),
                 3,
                 Vector3.zero,
                 new Vector3(0.34f, 0.34f, 1f));
 
             var meteorPulse = InstantiateNestedPrefab(topDownRocketCircleRedPrefab, root.transform, "MeteorPulse");
-            meteorPulse.transform.localScale = Vector3.one * 0.108f;
+            meteorPulse.transform.localScale = Vector3.one * 0.116f;
             meteorPulse.transform.localPosition = Vector3.zero;
-            RemoveDirectChild(meteorPulse.transform, "shot_controller");
+            KeepOnlyDirectChildren(meteorPulse.transform, "markers", "hit_controller");
+            KeepOnlyDirectChildren(FindDirectChild(meteorPulse.transform, "markers"), "ring01", "ring02");
+            KeepOnlyDirectChildren(FindDirectChild(meteorPulse.transform, "hit_controller"), "circle");
             OffsetRendererOrders(meteorPulse, 8);
-
-            CreateMeteorEmber(root.transform, fireSmallPrefab, "CoreEmber", Vector3.zero, 0.082f, 13, 0f);
-            CreateMeteorEmber(root.transform, fireSmallPrefab, "NorthWestEmber", new Vector3(-0.2f, 0.14f, 0f), 0.058f, 12, 28f);
-            CreateMeteorEmber(root.transform, fireSmallPrefab, "NorthEastEmber", new Vector3(0.2f, 0.14f, 0f), 0.058f, 12, -28f);
-            CreateMeteorEmber(root.transform, fireSmallPrefab, "SouthEmber", new Vector3(0f, -0.22f, 0f), 0.056f, 12, 180f);
 
             SavePrefab(root, MeteorFieldPrefabPath);
         }
@@ -206,15 +202,6 @@ namespace Fight.Editor
             CreateBurstShard(root.transform, fireTrailPrefab, "TrailSouthEast", new Vector3(0.18f, -0.14f, 0f), 0.055f, 8, -146f);
 
             SavePrefab(root, EmberBurstPrefabPath);
-        }
-
-        private static void CreateMeteorEmber(Transform parent, GameObject sourcePrefab, string name, Vector3 localPosition, float scale, int orderOffset, float localRotationZ)
-        {
-            var ember = InstantiateNestedPrefab(sourcePrefab, parent, name);
-            ember.transform.localPosition = localPosition;
-            ember.transform.localScale = Vector3.one * scale;
-            ember.transform.localRotation = Quaternion.Euler(0f, 0f, localRotationZ);
-            OffsetRendererOrders(ember, orderOffset);
         }
 
         private static void CreateBurstShard(Transform parent, GameObject sourcePrefab, string name, Vector3 localPosition, float scale, int orderOffset, float localRotationZ)
@@ -294,9 +281,28 @@ namespace Fight.Editor
             return instance;
         }
 
-        private static void RemoveDirectChild(Transform parent, string childName)
+        private static Transform FindDirectChild(Transform parent, string childName)
         {
             if (parent == null || string.IsNullOrWhiteSpace(childName))
+            {
+                return null;
+            }
+
+            for (var i = 0; i < parent.childCount; i++)
+            {
+                var child = parent.GetChild(i);
+                if (child != null && child.name == childName)
+                {
+                    return child;
+                }
+            }
+
+            return null;
+        }
+
+        private static void KeepOnlyDirectChildren(Transform parent, params string[] childNames)
+        {
+            if (parent == null)
             {
                 return;
             }
@@ -304,7 +310,24 @@ namespace Fight.Editor
             for (var i = parent.childCount - 1; i >= 0; i--)
             {
                 var child = parent.GetChild(i);
-                if (child != null && child.name == childName)
+                if (child == null)
+                {
+                    continue;
+                }
+
+                var keep = false;
+                for (var nameIndex = 0; nameIndex < childNames.Length; nameIndex++)
+                {
+                    if (child.name != childNames[nameIndex])
+                    {
+                        continue;
+                    }
+
+                    keep = true;
+                    break;
+                }
+
+                if (!keep)
                 {
                     Object.DestroyImmediate(child.gameObject);
                 }
