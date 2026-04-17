@@ -13,18 +13,24 @@ namespace Fight.Heroes
 
     public sealed class PendingCombatAction
     {
-        public PendingCombatAction(RuntimeHero target)
+        public PendingCombatAction(RuntimeHero target, bool suppressActionSequenceTrigger = false)
         {
             ActionType = CombatActionType.BasicAttack;
             Target = target;
             AffectedTargets = Array.Empty<RuntimeHero>();
+            SuppressActionSequenceTrigger = suppressActionSequenceTrigger;
         }
 
-        public PendingCombatAction(SkillData skill, RuntimeHero primaryTarget, IReadOnlyList<RuntimeHero> affectedTargets)
+        public PendingCombatAction(
+            SkillData skill,
+            RuntimeHero primaryTarget,
+            IReadOnlyList<RuntimeHero> affectedTargets,
+            bool suppressActionSequenceTrigger = false)
         {
             ActionType = CombatActionType.SkillCast;
             Skill = skill;
             PrimaryTarget = primaryTarget;
+            SuppressActionSequenceTrigger = suppressActionSequenceTrigger;
             if (affectedTargets != null)
             {
                 AffectedTargets = new List<RuntimeHero>(affectedTargets);
@@ -44,6 +50,8 @@ namespace Fight.Heroes
         public RuntimeHero PrimaryTarget { get; }
 
         public IReadOnlyList<RuntimeHero> AffectedTargets { get; }
+
+        public bool SuppressActionSequenceTrigger { get; }
     }
 
     public class RuntimeHero
@@ -126,7 +134,13 @@ namespace Fight.Heroes
                 var baseRange = Definition.basicAttack.rangeOverride > 0f
                     ? Definition.basicAttack.rangeOverride
                     : Definition.baseStats.attackRange;
-                return StatusEffectSystem.GetModifiedStat(this, baseRange, StatusEffectType.AttackRangeModifier);
+                var modifiedRange = StatusEffectSystem.GetModifiedStat(this, baseRange, StatusEffectType.AttackRangeModifier);
+                if (activeCombatActionSequence == null || activeCombatActionSequence.TemporaryBasicAttackRangeOverride <= 0f)
+                {
+                    return modifiedRange;
+                }
+
+                return Mathf.Max(modifiedRange, activeCombatActionSequence.TemporaryBasicAttackRangeOverride);
             }
         }
 
@@ -191,8 +205,13 @@ namespace Fight.Heroes
 
         public RuntimeHero ActiveRetreatThreatSource { get; private set; }
 
+        public bool HasActiveCombatActionSequence => activeCombatActionSequence != null;
+
+        public RuntimeCombatActionSequence ActiveCombatActionSequence => activeCombatActionSequence;
+
         private readonly List<RuntimeStatusEffect> activeStatusEffects = new List<RuntimeStatusEffect>();
         private RuntimeForcedMovement activeForcedMovement;
+        private RuntimeCombatActionSequence activeCombatActionSequence;
         private PendingCombatAction pendingCombatAction;
         private float pendingActionTriggerRemainingSeconds;
         private float actionLockRemainingSeconds;
@@ -205,6 +224,7 @@ namespace Fight.Heroes
             RespawnRemainingSeconds = 0f;
             AttackCooldownRemainingSeconds = 0f;
             ClearCombatActionState();
+            ClearCombatActionSequence();
             CurrentTarget = null;
             IsDead = false;
             CombatEngagedSeconds = 0f;
@@ -249,6 +269,19 @@ namespace Fight.Heroes
             actionLockRemainingSeconds = Mathf.Max(0f, actionLockRemainingSeconds - deltaTime);
             TickForcedMovement(deltaTime);
             StatusEffectSystem.Tick(this, deltaTime, onPeriodicStatusTick, onExpiredStatus);
+            if (HasHardControl)
+            {
+                ClearCombatActionState();
+            }
+
+            if (activeCombatActionSequence != null)
+            {
+                activeCombatActionSequence.Tick(deltaTime);
+                if (activeCombatActionSequence.ShouldInterrupt(this))
+                {
+                    ClearCombatActionSequence();
+                }
+            }
 
             if (CurrentTarget != null && !CurrentTarget.IsDead)
             {
@@ -275,6 +308,7 @@ namespace Fight.Heroes
                 return;
             }
 
+            ClearCombatActionState();
             activeForcedMovement = new RuntimeForcedMovement(CurrentPosition, destination, durationSeconds, peakHeight);
         }
 
@@ -338,26 +372,44 @@ namespace Fight.Heroes
             AttackCooldownRemainingSeconds = AttackInterval;
         }
 
-        public void BeginBasicAttack(RuntimeHero target, float windupSeconds, float recoverySeconds)
+        public void BeginBasicAttack(RuntimeHero target, float windupSeconds, float recoverySeconds, bool consumeAttackCooldown = true)
         {
             if (Definition?.basicAttack == null || target == null || IsDead)
             {
                 return;
             }
 
-            StartAttackCooldown();
+            if (consumeAttackCooldown)
+            {
+                StartAttackCooldown();
+            }
+
             StartCombatAction(new PendingCombatAction(target), windupSeconds, recoverySeconds);
         }
 
-        public void BeginSkillCast(SkillData skill, RuntimeHero primaryTarget, IReadOnlyList<RuntimeHero> affectedTargets, float windupSeconds, float recoverySeconds)
+        public void BeginSkillCast(
+            SkillData skill,
+            RuntimeHero primaryTarget,
+            IReadOnlyList<RuntimeHero> affectedTargets,
+            float windupSeconds,
+            float recoverySeconds,
+            bool consumeCooldown = true,
+            bool suppressActionSequenceTrigger = false)
         {
             if (skill == null || IsDead)
             {
                 return;
             }
 
-            StartSkillCooldown(skill.slotType, skill.cooldownSeconds);
-            StartCombatAction(new PendingCombatAction(skill, primaryTarget, affectedTargets), windupSeconds, recoverySeconds);
+            if (consumeCooldown)
+            {
+                StartSkillCooldown(skill.slotType, skill.cooldownSeconds);
+            }
+
+            StartCombatAction(
+                new PendingCombatAction(skill, primaryTarget, affectedTargets, suppressActionSequenceTrigger),
+                windupSeconds,
+                recoverySeconds);
         }
 
         public bool TryConsumeReadyCombatAction(out PendingCombatAction action)
@@ -398,6 +450,7 @@ namespace Fight.Heroes
             Deaths++;
             CombatEngagedSeconds = 0f;
             ClearCombatActionState();
+            ClearCombatActionSequence();
             VisualHeightOffset = 0f;
             activeForcedMovement = null;
             StatusEffectSystem.ClearStatuses(this, onRemovedStatus);
@@ -462,6 +515,16 @@ namespace Fight.Heroes
         {
             NextUltimateDecisionCheckTimeSeconds = Mathf.Max(0f, nextCheckTimeSeconds);
             HasInitializedUltimateDecisionSchedule = true;
+        }
+
+        public void StartCombatActionSequence(RuntimeCombatActionSequence sequence)
+        {
+            activeCombatActionSequence = sequence;
+        }
+
+        public void ClearCombatActionSequence()
+        {
+            activeCombatActionSequence = null;
         }
 
         private void ClearThreatTracking()

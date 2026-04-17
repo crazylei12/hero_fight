@@ -26,6 +26,9 @@ namespace Fight.Data
         public List<SkillEffectData> effects = new List<SkillEffectData>();
         public bool allowsSelfCast;
 
+        [Header("Action Sequence")]
+        public CombatActionSequenceData actionSequence = new CombatActionSequenceData();
+
         [Header("Presentation")]
         public GameObject persistentAreaVfxPrefab;
         [Min(0.1f)] public float persistentAreaVfxScaleMultiplier = 1f;
