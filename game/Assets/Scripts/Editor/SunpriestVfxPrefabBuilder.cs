@@ -171,18 +171,18 @@ namespace Fight.Editor
                 Vector3.one * 0.15f);
 
             var trailOrb = InstantiateNestedPrefab(orbsGoldPrefab, root.transform, "TrailOrb");
-            trailOrb.transform.localPosition = new Vector3(-0.06f, 0f, 0f);
-            trailOrb.transform.localScale = Vector3.one * 0.05f;
+            trailOrb.transform.localPosition = new Vector3(-0.035f, 0f, 0f);
+            trailOrb.transform.localScale = Vector3.one * 0.04f;
             OffsetRendererOrders(trailOrb, 5);
 
             var lightSpark = InstantiateNestedPrefab(lightSparkPrefab, root.transform, "LightSpark");
-            lightSpark.transform.localPosition = new Vector3(-0.02f, 0f, 0f);
+            lightSpark.transform.localPosition = new Vector3(-0.01f, 0f, 0f);
             lightSpark.transform.localScale = Vector3.one * 0.16f;
             OffsetRendererOrders(lightSpark, 8);
 
             var projectile = InstantiateNestedPrefab(lightProjectilePrefab, root.transform, "LightTrail");
-            projectile.transform.localScale = Vector3.one * 0.11f;
-            projectile.transform.localPosition = new Vector3(-0.015f, 0f, 0f);
+            projectile.transform.localScale = new Vector3(0.075f, 0.09f, 0.09f);
+            projectile.transform.localPosition = new Vector3(-0.006f, 0f, 0f);
             OffsetRendererOrders(projectile, 11);
 
             var missile = InstantiateNestedPrefab(lightMissilePrefab, root.transform, "MissileCore");
