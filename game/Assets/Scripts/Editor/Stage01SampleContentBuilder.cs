@@ -32,7 +32,8 @@ namespace Fight.Editor
         private const string MarksmanPrefabPath = "Assets/Prefabs/Heroes/marksman_001_longshot/Longshot.prefab";
         private const string SupportPrefabPath = "Assets/Prefabs/Heroes/support_001_sunpriest/Sunpriest.prefab";
         private const string WarriorPrefabPath = "Assets/Prefabs/Heroes/warrior_001_skybreaker/Skybreaker.prefab";
-        private const string MagePrefabPath = "Assets/HeroEditor4D/heroes/FIREMAGE.prefab";
+        private const string FireMagePrefabPath = "Assets/HeroEditor4D/heroes/FIREMAGE.prefab";
+        private const string FrostMagePrefabPath = "Assets/Prefabs/Heroes/mage_002_frostmage/Frostmage.prefab";
         private const string TankPrefabPath = "Assets/Prefabs/Heroes/tank_001_ironwall/Ironwall.prefab";
         private const string HeroEditorControllerPath = "Assets/HeroEditor4D/Common/Animation/Controller.controller";
         private const string FireMageProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/FireMageBasicAttackProjectile.prefab";
@@ -402,12 +403,14 @@ namespace Fight.Editor
             var prefabPath = heroId switch
             {
                 "assassin_001_shadowstep" => AssassinPrefabPath,
+                "mage_001_firemage" => FireMagePrefabPath,
+                "mage_002_frostmage" => FrostMagePrefabPath,
                 "marksman_001_longshot" => MarksmanPrefabPath,
                 _ => heroClass switch
                 {
                     HeroClass.Support => SupportPrefabPath,
                     HeroClass.Warrior => WarriorPrefabPath,
-                    HeroClass.Mage => MagePrefabPath,
+                    HeroClass.Mage => FireMagePrefabPath,
                     HeroClass.Tank => TankPrefabPath,
                     _ => null,
                 },
