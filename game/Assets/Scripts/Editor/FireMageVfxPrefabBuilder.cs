@@ -7,6 +7,8 @@ namespace Fight.Editor
 {
     public static class FireMageVfxPrefabBuilder
     {
+        private const string BuildMenuPath = "Fight/Stage 01/Build FireMage VFX Prefabs";
+        private const string BuildEmberBurstMenuPath = "Fight/Stage 01/Build FireMage Ember Burst VFX";
         private const string GeneratedArtFolder = "Assets/Art/VFX/Generated";
         private const string PrefabsRootFolder = "Assets/Prefabs/VFX";
         private const string ProjectilePrefabsFolder = PrefabsRootFolder + "/Projectiles";
@@ -19,10 +21,13 @@ namespace Fight.Editor
         private const string SparkSourcePrefabPath = "Assets/Super Pixel Projectiles Pack 3/Prefabs/pj3_light_spark_small_orange.prefab";
         private const string FireTrailSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Fire/Fire_trail.prefab";
         private const string FireSmallSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Fire/Fire_small.prefab";
-        private const string FireBurstSmallSourcePrefabPath = "Assets/Super Pixel Effects Pack 2/Prefabs/fx2_fire_burst_small_orange.prefab";
-        private const string FireBurstLargeSourcePrefabPath = "Assets/Super Pixel Effects Pack 2/Prefabs/fx2_fire_burst_large_orange.prefab";
-        private const string ExplosionSmallSourcePrefabPath = "Assets/Super Pixel Effects Pack 2/Prefabs/fx2_explosion_small_orange.prefab";
+        private const string AreaGenericOrangeOutbreakSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Area_generic/Area_generic_orange_outbreak.prefab";
+        private const string FireExplosionAirSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Fire/Fire_explosion_air.prefab";
+        private const string BurstRingsSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Burst/Burst_rings.prefab";
+        private const string FlashDubbleCircleSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Burst/Flash_dubble_circle.prefab";
         private const string TopDownRocketCircleRedSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Top_down_attack/top_down_rocket_circle_red.prefab";
+
+        [MenuItem(BuildMenuPath)]
         public static void BuildFireMageVfxPrefabs()
         {
             EnsureFolder(GeneratedArtFolder);
@@ -42,6 +47,25 @@ namespace Fight.Editor
         public static void BuildFireMageVfxPrefabsBatch()
         {
             BuildFireMageVfxPrefabs();
+        }
+
+        [MenuItem(BuildEmberBurstMenuPath)]
+        public static void BuildFireMageEmberBurstPrefab()
+        {
+            EnsureFolder(GeneratedArtFolder);
+            EnsureFolder(PrefabsRootFolder);
+            EnsureFolder(SkillPrefabsFolder);
+
+            var softCircleSprite = EnsureSoftCircleSprite();
+            BuildEmberBurstPrefab(softCircleSprite);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            Debug.Log("FireMage Ember Burst prefab rebuilt.");
+        }
+
+        public static void BuildFireMageEmberBurstPrefabBatch()
+        {
+            BuildFireMageEmberBurstPrefab();
         }
 
         private static void BuildProjectilePrefab(Sprite softCircleSprite)
@@ -108,9 +132,10 @@ namespace Fight.Editor
 
         private static void BuildEmberBurstPrefab(Sprite softCircleSprite)
         {
-            var fireBurstSmallPrefab = LoadRequiredAsset<GameObject>(FireBurstSmallSourcePrefabPath);
-            var fireBurstLargePrefab = LoadRequiredAsset<GameObject>(FireBurstLargeSourcePrefabPath);
-            var explosionSmallPrefab = LoadRequiredAsset<GameObject>(ExplosionSmallSourcePrefabPath);
+            var areaGenericOutbreakPrefab = LoadRequiredAsset<GameObject>(AreaGenericOrangeOutbreakSourcePrefabPath);
+            var fireExplosionAirPrefab = LoadRequiredAsset<GameObject>(FireExplosionAirSourcePrefabPath);
+            var burstRingsPrefab = LoadRequiredAsset<GameObject>(BurstRingsSourcePrefabPath);
+            var flashDubbleCirclePrefab = LoadRequiredAsset<GameObject>(FlashDubbleCircleSourcePrefabPath);
             var fireSmallPrefab = LoadRequiredAsset<GameObject>(FireSmallSourcePrefabPath);
             var fireTrailPrefab = LoadRequiredAsset<GameObject>(FireTrailSourcePrefabPath);
 
@@ -121,51 +146,58 @@ namespace Fight.Editor
                 root.transform,
                 "FloorWarmth",
                 softCircleSprite,
-                new Color(1f, 0.38f, 0.12f, 0.24f),
-                0,
+                new Color(1f, 0.40f, 0.12f, 0.20f),
+                -2,
                 Vector3.zero,
-                new Vector3(0.92f, 0.84f, 1f));
+                new Vector3(0.96f, 0.88f, 1f));
             CreateSprite(
                 root.transform,
                 "CoreFlash",
                 softCircleSprite,
-                new Color(1f, 0.76f, 0.28f, 0.28f),
-                1,
+                new Color(1f, 0.78f, 0.30f, 0.16f),
+                -1,
                 Vector3.zero,
-                new Vector3(0.54f, 0.48f, 1f));
+                new Vector3(0.60f, 0.54f, 1f));
             CreateSprite(
                 root.transform,
                 "ScorchTint",
                 softCircleSprite,
-                new Color(0.96f, 0.22f, 0.06f, 0.14f),
-                2,
+                new Color(0.90f, 0.18f, 0.04f, 0.10f),
+                0,
                 Vector3.zero,
-                new Vector3(0.68f, 0.62f, 1f));
+                new Vector3(0.76f, 0.70f, 1f));
 
-            var centerBurst = InstantiateNestedPrefab(fireBurstLargePrefab, root.transform, "CenterBurst");
-            centerBurst.transform.localScale = Vector3.one * 0.22f;
-            centerBurst.transform.localPosition = new Vector3(0f, 0.01f, 0f);
-            OffsetRendererOrders(centerBurst, 10);
+            var outbreakArea = InstantiateNestedPrefab(areaGenericOutbreakPrefab, root.transform, "OutbreakArea");
+            outbreakArea.transform.localScale = Vector3.one * 0.17f;
+            outbreakArea.transform.localPosition = Vector3.zero;
+            OffsetRendererOrders(outbreakArea, 4);
 
-            var centerExplosion = InstantiateNestedPrefab(explosionSmallPrefab, root.transform, "CenterExplosion");
-            centerExplosion.transform.localScale = Vector3.one * 0.18f;
-            centerExplosion.transform.localPosition = new Vector3(0f, 0.02f, 0f);
-            OffsetRendererOrders(centerExplosion, 13);
+            var impactFlash = InstantiateNestedPrefab(flashDubbleCirclePrefab, root.transform, "ImpactFlash");
+            impactFlash.transform.localScale = Vector3.one * 0.14f;
+            impactFlash.transform.localPosition = new Vector3(0f, 0.01f, 0f);
+            OffsetRendererOrders(impactFlash, 8);
+
+            var impactRings = InstantiateNestedPrefab(burstRingsPrefab, root.transform, "ImpactRings");
+            impactRings.transform.localScale = Vector3.one * 0.15f;
+            impactRings.transform.localPosition = new Vector3(0f, 0.01f, 0f);
+            OffsetRendererOrders(impactRings, 10);
+
+            var centerExplosion = InstantiateNestedPrefab(fireExplosionAirPrefab, root.transform, "CenterExplosion");
+            centerExplosion.transform.localScale = Vector3.one * 0.14f;
+            centerExplosion.transform.localPosition = new Vector3(0f, 0.03f, 0f);
+            OffsetRendererOrders(centerExplosion, 12);
 
             var centerFire = InstantiateNestedPrefab(fireSmallPrefab, root.transform, "CenterFire");
-            centerFire.transform.localScale = Vector3.one * 0.09f;
+            centerFire.transform.localScale = Vector3.one * 0.08f;
             centerFire.transform.localPosition = new Vector3(0f, 0f, 0f);
-            OffsetRendererOrders(centerFire, 12);
+            OffsetRendererOrders(centerFire, 11);
 
-            CreateBurstShard(root.transform, fireBurstSmallPrefab, "ShardNorth", new Vector3(0f, 0.24f, 0f), 0.13f, 11, 0f);
-            CreateBurstShard(root.transform, fireBurstSmallPrefab, "ShardSouth", new Vector3(0f, -0.22f, 0f), 0.12f, 11, 180f);
-            CreateBurstShard(root.transform, fireBurstSmallPrefab, "ShardWest", new Vector3(-0.28f, 0.02f, 0f), 0.12f, 10, 92f);
-            CreateBurstShard(root.transform, fireBurstSmallPrefab, "ShardEast", new Vector3(0.28f, 0.02f, 0f), 0.12f, 10, -88f);
-
-            CreateBurstShard(root.transform, fireTrailPrefab, "TrailNorthWest", new Vector3(-0.18f, 0.16f, 0f), 0.06f, 9, 34f);
-            CreateBurstShard(root.transform, fireTrailPrefab, "TrailNorthEast", new Vector3(0.18f, 0.16f, 0f), 0.06f, 9, -34f);
-            CreateBurstShard(root.transform, fireTrailPrefab, "TrailSouthWest", new Vector3(-0.18f, -0.14f, 0f), 0.055f, 8, 146f);
-            CreateBurstShard(root.transform, fireTrailPrefab, "TrailSouthEast", new Vector3(0.18f, -0.14f, 0f), 0.055f, 8, -146f);
+            CreateBurstShard(root.transform, fireTrailPrefab, "TrailNorthWest", new Vector3(-0.16f, 0.15f, 0f), 0.05f, 9, 36f);
+            CreateBurstShard(root.transform, fireTrailPrefab, "TrailNorthEast", new Vector3(0.16f, 0.15f, 0f), 0.05f, 9, -36f);
+            CreateBurstShard(root.transform, fireTrailPrefab, "TrailSouthWest", new Vector3(-0.17f, -0.13f, 0f), 0.045f, 8, 144f);
+            CreateBurstShard(root.transform, fireTrailPrefab, "TrailSouthEast", new Vector3(0.17f, -0.13f, 0f), 0.045f, 8, -144f);
+            CreateBurstShard(root.transform, fireTrailPrefab, "TrailWest", new Vector3(-0.23f, 0.01f, 0f), 0.042f, 8, 92f);
+            CreateBurstShard(root.transform, fireTrailPrefab, "TrailEast", new Vector3(0.23f, 0.01f, 0f), 0.042f, 8, -92f);
 
             SavePrefab(root, EmberBurstPrefabPath);
         }
