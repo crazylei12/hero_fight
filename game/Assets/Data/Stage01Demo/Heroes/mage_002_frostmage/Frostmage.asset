@@ -40,7 +40,7 @@ MonoBehaviour:
   specialLogicNotes: 
   visualConfig:
     portrait: {fileID: 0}
-    battlePrefab: {fileID: 6237993116064068715, guid: 7acaa5000dc1980468f4466e2c192fe9, type: 3}
+    battlePrefab: {fileID: 3330166180694201101, guid: 7fcbcaf2e4fe9874491c0b4a45733bb4, type: 3}
     animatorController: {fileID: 9100000, guid: c0fbc9a82051e94429aa17cc4b2f48e5, type: 2}
     projectilePrefab: {fileID: 4475302993740453698, guid: 4440117f42dc64246807d6d985d5220b, type: 3}
     projectileAlignToMovement: 1
