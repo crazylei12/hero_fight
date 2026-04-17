@@ -40,6 +40,7 @@ namespace Fight.Editor
         private const string FrostMageProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/FrostMageBasicAttackProjectile.prefab";
         private const string LongshotProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/LongshotBasicAttackProjectile.prefab";
         private const string MageActiveAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FireMageEmberBurst.prefab";
+        private const string FrostMageActiveAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FrostMageFrostBurst.prefab";
         private const string FrostMageUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FrostMageBlizzardField.prefab";
         private const string MageUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FireMageMeteorField.prefab";
         private const string SunpriestProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/SunpriestBasicAttackProjectile.prefab";
@@ -700,7 +701,7 @@ namespace Fight.Editor
             skill.cooldownSeconds = 6.5f;
             skill.minTargetsToCast = 1;
             skill.allowsSelfCast = false;
-            skill.persistentAreaVfxPrefab = null;
+            skill.persistentAreaVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(FrostMageActiveAreaVfxPrefabPath);
             skill.persistentAreaVfxScaleMultiplier = 1f;
             skill.persistentAreaVfxEulerAngles = Vector3.zero;
             skill.skillAreaPresentationType = SkillAreaPresentationType.None;
@@ -715,6 +716,7 @@ namespace Fight.Editor
                 maxStacks = 1,
                 refreshDurationOnReapply = true,
             });
+            AddPersistentAreaEffect(skill, PersistentAreaPulseEffectType.None, PersistentAreaTargetType.Enemies, 0f, skill.areaRadius, 0.45f, 1f, false);
 
             ResetUltimateDecision(skill);
             EditorUtility.SetDirty(skill);

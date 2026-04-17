@@ -15,12 +15,16 @@ namespace Fight.Editor
         private const string SkillPrefabsFolder = PrefabsRootFolder + "/Skills";
         private const string SoftCircleSpritePath = GeneratedArtFolder + "/vfx_soft_circle.png";
         private const string ProjectilePrefabPath = ProjectilePrefabsFolder + "/FrostMageBasicAttackProjectile.prefab";
+        private const string FrostBurstPrefabPath = SkillPrefabsFolder + "/FrostMageFrostBurst.prefab";
         private const string BlizzardFieldPrefabPath = SkillPrefabsFolder + "/FrostMageBlizzardField.prefab";
         private const string FrostMageHeroAssetPath = "Assets/Data/Stage01Demo/Heroes/mage_002_frostmage/Frostmage.asset";
+        private const string FrostMageActiveSkillAssetPath = "Assets/Data/Stage01Demo/Skills/mage_002_frostmage/Frost Burst.asset";
         private const string FrostProjectileSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Range_attack/Projectiles_frost.prefab";
+        private const string FrostBurstSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Range_attack/Hit_frost.prefab";
         private const string IceLineSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Top_down_attack/top_down_ice_line.prefab";
         private const string IceCircleSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Top_down_attack/top_down_ice_circle.prefab";
         private const float ProjectileVisualScale = 3f;
+        private const float FrostBurstVisualScale = 0.28f;
 
         [MenuItem(BuildMenuPath)]
         public static void BuildFrostMageVfxPrefabs()
@@ -32,6 +36,7 @@ namespace Fight.Editor
 
             var softCircleSprite = EnsureSoftCircleSprite();
             BuildProjectilePrefab(softCircleSprite);
+            BuildFrostBurstPrefab();
             BuildBlizzardFieldPrefab(softCircleSprite);
             SyncStage01DemoAssets();
 
@@ -48,6 +53,7 @@ namespace Fight.Editor
         private static void SyncStage01DemoAssets()
         {
             var projectilePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ProjectilePrefabPath);
+            var frostBurstPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(FrostBurstPrefabPath);
             var hero = AssetDatabase.LoadAssetAtPath<HeroDefinition>(FrostMageHeroAssetPath);
             if (hero == null)
             {
@@ -60,6 +66,16 @@ namespace Fight.Editor
             hero.visualConfig.projectileEulerAngles = Vector3.zero;
             hero.visualConfig.hitVfxPrefab = null;
             EditorUtility.SetDirty(hero);
+
+            var activeSkill = AssetDatabase.LoadAssetAtPath<SkillData>(FrostMageActiveSkillAssetPath);
+            if (activeSkill != null)
+            {
+                activeSkill.persistentAreaVfxPrefab = frostBurstPrefab;
+                activeSkill.persistentAreaVfxScaleMultiplier = 1f;
+                activeSkill.persistentAreaVfxEulerAngles = Vector3.zero;
+                activeSkill.skillAreaPresentationType = SkillAreaPresentationType.None;
+                EditorUtility.SetDirty(activeSkill);
+            }
         }
 
         private static void BuildProjectilePrefab(Sprite softCircleSprite)
@@ -92,6 +108,20 @@ namespace Fight.Editor
             projectile.transform.localPosition = Vector3.zero;
 
             SavePrefab(root, ProjectilePrefabPath);
+        }
+
+        private static void BuildFrostBurstPrefab()
+        {
+            var frostBurstPrefab = LoadRequiredAsset<GameObject>(FrostBurstSourcePrefabPath);
+
+            var root = new GameObject("FrostMageFrostBurst");
+            root.AddComponent<SortingGroup>();
+
+            var burst = InstantiateNestedPrefab(frostBurstPrefab, root.transform, "BurstCore");
+            burst.transform.localScale = Vector3.one * FrostBurstVisualScale;
+            burst.transform.localPosition = Vector3.zero;
+
+            SavePrefab(root, FrostBurstPrefabPath);
         }
 
         private static void BuildBlizzardFieldPrefab(Sprite softCircleSprite)
