@@ -58,7 +58,7 @@ MonoBehaviour:
     temporarySkillCastRangeOverride: 0
     targetRefreshMode: 1
     interruptFlags: 3
-  persistentAreaVfxPrefab: {fileID: 0}
+  persistentAreaVfxPrefab: {fileID: 5101000000000000001, guid: bca5fbb9bd9f4528894543402452a3ca, type: 3}
   persistentAreaVfxScaleMultiplier: 1
   persistentAreaVfxEulerAngles: {x: 0, y: 0, z: 0}
   skillAreaPresentationType: 0
