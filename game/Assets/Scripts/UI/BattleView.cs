@@ -21,6 +21,7 @@ namespace Fight.UI
         private const string KnockUpStatusBurstVfxResourcesPath = "Stage01Demo/VFX/Statuses/KnockUpStatusBurst";
         private const string HealReceivedImpactVfxResourcesPath = "Stage01Demo/VFX/Shared/HealReceivedImpact";
         private const string BlinkFlashVfxResourcesPath = "Stage01Demo/VFX/Shared/BlinkFlash";
+        private const string DashChargeTrailVfxResourcesPath = "Stage01Demo/VFX/Shared/DashChargeTrail";
         private const float CorpseVisibleSeconds = 1f;
         private const float HealthBarWidth = 0.9f;
         private const float HealthBarBackgroundHeight = 0.11f;
@@ -30,9 +31,14 @@ namespace Fight.UI
         private const float DefaultTransientVfxLifetime = 1f;
         private const float InstantBlinkDurationThreshold = 0.01f;
         private const float InstantBlinkMinDistance = 0.15f;
+        private const float DashChargeMinDistance = 0.2f;
+        private const float DashChargeLifetimePaddingSeconds = 0.08f;
+        private const float DashChargeMinLifetimeSeconds = 0.18f;
         private const int HealEventVfxSortOrderOffset = 190;
         private const int BlinkFlashSortOrderOffset = -60;
+        private const int DashChargeSortOrderOffset = -6;
         private const string HealImpactTransientKey = "heal_received";
+        private const string DashChargeTransientKey = "dash_charge";
         private static readonly Dictionary<StatusEffectType, StatusEffectVfxConfig> StatusEffectVfxConfigs = new Dictionary<StatusEffectType, StatusEffectVfxConfig>
         {
             { StatusEffectType.Stun, new StatusEffectVfxConfig(StunStatusLoopVfxResourcesPath, new Vector3(0f, 1.1f, 0f), Vector3.one * 0.85f, Vector3.zero, 180) },
@@ -85,6 +91,7 @@ namespace Fight.UI
         private static Sprite customArenaBackgroundSprite;
         private static string customArenaBackgroundSourcePath;
         private static GameObject sharedHealImpactPrefab;
+        private static GameObject sharedDashChargePrefab;
         private static GameObject sharedBlinkFlashPrefab;
 
         protected BattleManager BattleManager => battleManager;
@@ -1462,6 +1469,11 @@ namespace Fight.UI
                 {
                     PlayBlinkFlashVfx(forcedMovementAppliedEvent);
                 }
+
+                if (ShouldPlayDashChargeVfx(forcedMovementAppliedEvent))
+                {
+                    PlayDashChargeVfx(forcedMovementAppliedEvent);
+                }
             }
         }
 
@@ -1536,6 +1548,16 @@ namespace Fight.UI
             return sharedBlinkFlashPrefab;
         }
 
+        private static GameObject GetSharedDashChargePrefab()
+        {
+            if (sharedDashChargePrefab == null)
+            {
+                sharedDashChargePrefab = Resources.Load<GameObject>(DashChargeTrailVfxResourcesPath);
+            }
+
+            return sharedDashChargePrefab;
+        }
+
         private static bool ShouldPlayBlinkFlash(ForcedMovementAppliedEvent forcedMovementAppliedEvent)
         {
             if (forcedMovementAppliedEvent?.SourceSkill == null
@@ -1556,6 +1578,26 @@ namespace Fight.UI
             return offset.sqrMagnitude >= InstantBlinkMinDistance * InstantBlinkMinDistance;
         }
 
+        private static bool ShouldPlayDashChargeVfx(ForcedMovementAppliedEvent forcedMovementAppliedEvent)
+        {
+            if (forcedMovementAppliedEvent?.SourceSkill == null
+                || forcedMovementAppliedEvent.Source == null
+                || forcedMovementAppliedEvent.Target == null
+                || forcedMovementAppliedEvent.SourceSkill.skillType != SkillType.Dash
+                || forcedMovementAppliedEvent.DurationSeconds <= InstantBlinkDurationThreshold
+                || !string.Equals(
+                    forcedMovementAppliedEvent.Source.RuntimeId,
+                    forcedMovementAppliedEvent.Target.RuntimeId,
+                    StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            var offset = forcedMovementAppliedEvent.Destination - forcedMovementAppliedEvent.StartPosition;
+            offset.y = 0f;
+            return offset.sqrMagnitude >= DashChargeMinDistance * DashChargeMinDistance;
+        }
+
         private void PlayBlinkFlashVfx(ForcedMovementAppliedEvent forcedMovementAppliedEvent)
         {
             var blinkFlashPrefab = GetSharedBlinkFlashPrefab();
@@ -1572,6 +1614,48 @@ namespace Fight.UI
             {
                 SpawnWorldTransientVfx(blinkFlashPrefab, destinationPosition, BlinkFlashSortOrderOffset);
             }
+        }
+
+        private void PlayDashChargeVfx(ForcedMovementAppliedEvent forcedMovementAppliedEvent)
+        {
+            if (forcedMovementAppliedEvent?.Target == null
+                || !heroViews.TryGetValue(forcedMovementAppliedEvent.Target.RuntimeId, out var heroView)
+                || forcedMovementAppliedEvent.Target.IsDead
+                || ShouldHideCorpse(heroView))
+            {
+                return;
+            }
+
+            var dashChargePrefab = GetSharedDashChargePrefab();
+            if (dashChargePrefab == null)
+            {
+                return;
+            }
+
+            var horizontalOffset = forcedMovementAppliedEvent.Destination - forcedMovementAppliedEvent.StartPosition;
+            horizontalOffset.y = 0f;
+            var mappedDirection = Map(horizontalOffset);
+            var direction2D = new Vector2(mappedDirection.x, mappedDirection.y);
+            if (direction2D.sqrMagnitude <= Mathf.Epsilon)
+            {
+                return;
+            }
+
+            var angle = Mathf.Atan2(direction2D.y, direction2D.x) * Mathf.Rad2Deg;
+            var distance = horizontalOffset.magnitude;
+            var scaleMultiplier = Mathf.Clamp(0.92f + (distance * 0.15f), 0.92f, 1.35f);
+            var lifetimeSeconds = Mathf.Max(
+                DashChargeMinLifetimeSeconds,
+                forcedMovementAppliedEvent.DurationSeconds + DashChargeLifetimePaddingSeconds);
+            SpawnTransientHeroVfx(
+                heroView,
+                dashChargePrefab,
+                Vector3.zero,
+                DashChargeSortOrderOffset,
+                DashChargeTransientKey,
+                Quaternion.Euler(0f, 0f, angle),
+                new Vector3(scaleMultiplier, scaleMultiplier, 1f),
+                lifetimeSeconds);
         }
 
         private void SpawnWorldTransientVfx(GameObject prefab, Vector3 worldPosition, int sortingOrderOffset)
@@ -1601,7 +1685,15 @@ namespace Fight.UI
             Destroy(instance, GetTransientVfxLifetime(instance));
         }
 
-        private void SpawnTransientHeroVfx(HeroViewState heroView, GameObject prefab, Vector3 localOffset, int sortingOrderOffset, string uniqueKey = null)
+        private void SpawnTransientHeroVfx(
+            HeroViewState heroView,
+            GameObject prefab,
+            Vector3 localOffset,
+            int sortingOrderOffset,
+            string uniqueKey = null,
+            Quaternion? localRotation = null,
+            Vector3? localScaleMultiplier = null,
+            float? lifetimeOverrideSeconds = null)
         {
             if (heroView?.Root == null || prefab == null)
             {
@@ -1619,6 +1711,16 @@ namespace Fight.UI
             var instance = Instantiate(prefab, parent);
             instance.name = $"{prefab.name}_Transient";
             instance.transform.localPosition += localOffset;
+            if (localRotation.HasValue)
+            {
+                instance.transform.localRotation = localRotation.Value;
+            }
+
+            if (localScaleMultiplier.HasValue)
+            {
+                instance.transform.localScale = Vector3.Scale(instance.transform.localScale, localScaleMultiplier.Value);
+            }
+
             RemovePrefabPhysics(instance);
             ConfigureTransientParticleSystems(instance);
 
@@ -1631,7 +1733,7 @@ namespace Fight.UI
                 ParticleSystems = instance.GetComponentsInChildren<ParticleSystem>(true),
                 UniqueKey = uniqueKey,
                 SortingOrderOffset = sortingOrderOffset,
-                ExpiresAtSeconds = GetElapsedTimeSeconds() + GetTransientVfxLifetime(instance),
+                ExpiresAtSeconds = GetElapsedTimeSeconds() + Mathf.Max(0.05f, lifetimeOverrideSeconds ?? GetTransientVfxLifetime(instance)),
             };
 
             heroView.TransientVfx.Add(transientState);
