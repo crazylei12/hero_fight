@@ -72,21 +72,21 @@ namespace Fight.Editor
                 root.transform,
                 "OuterGlow",
                 softCircleSprite,
-                new Color(0.56f, 0.84f, 1f, 0.16f),
-                -2,
-                new Vector3(-0.01f, 0f, 0f),
-                Vector3.one * 0.38f);
+                new Color(0.08f, 0.46f, 1f, 0.34f),
+                4,
+                new Vector3(-0.08f, 0f, 0f),
+                new Vector3(0.44f, 0.2f, 1f));
             CreateSprite(
                 root.transform,
                 "InnerGlow",
                 softCircleSprite,
-                new Color(0.88f, 0.97f, 1f, 0.34f),
-                -1,
-                new Vector3(0.01f, 0f, 0f),
-                Vector3.one * 0.22f);
+                new Color(0.24f, 0.72f, 1f, 0.88f),
+                6,
+                new Vector3(0.04f, 0f, 0f),
+                new Vector3(0.24f, 0.16f, 1f));
 
             var projectile = InstantiateNestedPrefab(frostProjectilePrefab, root.transform, "FrostProjectile");
-            projectile.transform.localScale = Vector3.one * 0.11f;
+            projectile.transform.localScale = Vector3.one * 0.09f;
             projectile.transform.localPosition = Vector3.zero;
 
             SavePrefab(root, ProjectilePrefabPath);
