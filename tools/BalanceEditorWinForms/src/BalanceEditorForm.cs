@@ -56,8 +56,8 @@ namespace Fight.Tools.BalanceEditor
             @"^effect(?<effectIndex>\d+)Status(?<statusIndex>\d+)(Label|DurationSeconds|Magnitude|TickIntervalSeconds|MaxStacks)$",
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-        private readonly TextBox folderPathTextBox;
-        private readonly Button browseFolderButton;
+        private readonly string fixedBalanceFolderPath;
+        private readonly Label fixedFolderPathValueLabel;
         private readonly Button reloadButton;
         private readonly Button saveButton;
         private readonly TextBox heroSearchTextBox;
@@ -85,6 +85,9 @@ namespace Fight.Tools.BalanceEditor
             StartPosition = FormStartPosition.CenterScreen;
             MinimumSize = new Size(1200, 780);
             Size = new Size(1400, 900);
+            fixedBalanceFolderPath = string.IsNullOrWhiteSpace(initialFolder)
+                ? string.Empty
+                : Path.GetFullPath(initialFolder);
 
             heroFieldBindings = new List<FieldEditorBinding>();
             skillFieldBindings = new List<FieldEditorBinding>();
@@ -106,7 +109,7 @@ namespace Fight.Tools.BalanceEditor
             rootLayout.Controls.Add(topPanel, 0, 0);
 
             TableLayoutPanel topLayout = new TableLayoutPanel();
-            topLayout.ColumnCount = 5;
+            topLayout.ColumnCount = 4;
             topLayout.RowCount = 2;
             topLayout.Dock = DockStyle.Top;
             topLayout.AutoSize = true;
@@ -114,40 +117,36 @@ namespace Fight.Tools.BalanceEditor
             topLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
             topLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
             topLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-            topLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
             topPanel.Controls.Add(topLayout);
 
             Label folderLabel = new Label();
-            folderLabel.Text = "表格目录";
+            folderLabel.Text = "默认表格目录";
             folderLabel.AutoSize = true;
             folderLabel.Margin = new Padding(0, 8, 8, 0);
             topLayout.Controls.Add(folderLabel, 0, 0);
 
-            folderPathTextBox = new TextBox();
-            folderPathTextBox.Dock = DockStyle.Fill;
-            folderPathTextBox.Margin = new Padding(0, 4, 8, 0);
-            topLayout.Controls.Add(folderPathTextBox, 1, 0);
-
-            browseFolderButton = new Button();
-            browseFolderButton.Text = "打开目录";
-            browseFolderButton.AutoSize = true;
-            browseFolderButton.Margin = new Padding(0, 2, 8, 0);
-            browseFolderButton.Click += BrowseFolderButton_Click;
-            topLayout.Controls.Add(browseFolderButton, 2, 0);
+            fixedFolderPathValueLabel = new Label();
+            fixedFolderPathValueLabel.Text = string.IsNullOrWhiteSpace(fixedBalanceFolderPath)
+                ? "未找到默认目录"
+                : fixedBalanceFolderPath;
+            fixedFolderPathValueLabel.AutoSize = true;
+            fixedFolderPathValueLabel.MaximumSize = new Size(700, 0);
+            fixedFolderPathValueLabel.Margin = new Padding(0, 8, 8, 0);
+            topLayout.Controls.Add(fixedFolderPathValueLabel, 1, 0);
 
             reloadButton = new Button();
             reloadButton.Text = "重新载入";
             reloadButton.AutoSize = true;
             reloadButton.Margin = new Padding(0, 2, 8, 0);
             reloadButton.Click += ReloadButton_Click;
-            topLayout.Controls.Add(reloadButton, 3, 0);
+            topLayout.Controls.Add(reloadButton, 2, 0);
 
             saveButton = new Button();
             saveButton.Text = "保存";
             saveButton.AutoSize = true;
             saveButton.Margin = new Padding(0, 2, 0, 0);
             saveButton.Click += SaveButton_Click;
-            topLayout.Controls.Add(saveButton, 4, 0);
+            topLayout.Controls.Add(saveButton, 3, 0);
 
             Label searchLabel = new Label();
             searchLabel.Text = "搜索英雄";
@@ -160,7 +159,7 @@ namespace Fight.Tools.BalanceEditor
             heroSearchTextBox.Margin = new Padding(0, 8, 8, 0);
             heroSearchTextBox.TextChanged += HeroSearchTextBox_TextChanged;
             topLayout.Controls.Add(heroSearchTextBox, 1, 1);
-            topLayout.SetColumnSpan(heroSearchTextBox, 4);
+            topLayout.SetColumnSpan(heroSearchTextBox, 3);
 
             SplitContainer splitContainer = new SplitContainer();
             splitContainer.Dock = DockStyle.Fill;
@@ -227,14 +226,15 @@ namespace Fight.Tools.BalanceEditor
             rootLayout.Controls.Add(statusPanel, 0, 2);
 
             statusLabel = new Label();
-            statusLabel.Text = "请选择表格目录并载入。";
+            statusLabel.Text = string.IsNullOrWhiteSpace(fixedBalanceFolderPath)
+                ? "未找到 Unity 默认导表目录。"
+                : string.Format("固定使用 Unity 默认导表目录：{0}", fixedBalanceFolderPath);
             statusLabel.AutoSize = true;
             statusPanel.Controls.Add(statusLabel);
 
-            if (!string.IsNullOrWhiteSpace(initialFolder))
+            if (!string.IsNullOrWhiteSpace(fixedBalanceFolderPath))
             {
-                folderPathTextBox.Text = initialFolder;
-                TryLoadTables(initialFolder, false);
+                TryLoadTables(false);
             }
         }
 
@@ -247,24 +247,6 @@ namespace Fight.Tools.BalanceEditor
             flowPanel.WrapContents = false;
             flowPanel.Padding = new Padding(8);
             return flowPanel;
-        }
-
-        private void BrowseFolderButton_Click(object sender, EventArgs e)
-        {
-            using (FolderBrowserDialog dialog = new FolderBrowserDialog())
-            {
-                dialog.Description = "选择包含 heroes.csv 和 skills.csv 的目录";
-                if (Directory.Exists(folderPathTextBox.Text))
-                {
-                    dialog.SelectedPath = folderPathTextBox.Text;
-                }
-
-                if (dialog.ShowDialog(this) == DialogResult.OK)
-                {
-                    folderPathTextBox.Text = dialog.SelectedPath;
-                    TryLoadTables(dialog.SelectedPath, true);
-                }
-            }
         }
 
         private void ReloadButton_Click(object sender, EventArgs e)
@@ -283,7 +265,7 @@ namespace Fight.Tools.BalanceEditor
                 }
             }
 
-            TryLoadTables(folderPathTextBox.Text, true);
+            TryLoadTables(true);
         }
 
         private void SaveButton_Click(object sender, EventArgs e)
@@ -304,7 +286,7 @@ namespace Fight.Tools.BalanceEditor
                 heroesTable.Save();
                 skillsTable.Save();
                 isDirty = false;
-                UpdateStatus(string.Format("已保存：{0}", folderPathTextBox.Text));
+                UpdateStatus(string.Format("已保存：{0}", fixedBalanceFolderPath));
             }
             catch (Exception exception)
             {
@@ -375,24 +357,23 @@ namespace Fight.Tools.BalanceEditor
             }
         }
 
-        private void TryLoadTables(string folderPath, bool showSuccessMessage)
+        private void TryLoadTables(bool showSuccessMessage)
         {
             try
             {
-                string safeFolderPath = string.IsNullOrWhiteSpace(folderPath)
-                    ? string.Empty
-                    : Path.GetFullPath(folderPath.Trim());
+                string safeFolderPath = fixedBalanceFolderPath;
 
                 if (string.IsNullOrWhiteSpace(safeFolderPath))
                 {
-                    throw new InvalidOperationException("目录不能为空。");
+                    throw new InvalidOperationException("未找到 Unity 默认导表目录。请把 EXE 放在仓库内，或从仓库路径启动。");
                 }
 
                 string heroesFilePath = Path.Combine(safeFolderPath, "heroes.csv");
                 string skillsFilePath = Path.Combine(safeFolderPath, "skills.csv");
                 if (!File.Exists(heroesFilePath) || !File.Exists(skillsFilePath))
                 {
-                    throw new FileNotFoundException("目录中必须同时存在 heroes.csv 和 skills.csv。");
+                    throw new FileNotFoundException(
+                        string.Format("默认目录中没有找到 heroes.csv 和 skills.csv：{0}\r\n请先在 Unity 里使用默认导出功能生成表格。", safeFolderPath));
                 }
 
                 CsvTable loadedHeroesTable = CsvTable.Load(heroesFilePath);
@@ -406,8 +387,6 @@ namespace Fight.Tools.BalanceEditor
                 allHeroes = loadedHeroes;
                 currentHero = null;
                 isDirty = false;
-
-                folderPathTextBox.Text = safeFolderPath;
                 ApplyHeroFilter(string.Empty);
 
                 if (heroListBox.Items.Count > 0)

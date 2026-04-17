@@ -7,14 +7,12 @@ namespace Fight.Tools.BalanceEditor
     internal static class Program
     {
         [STAThread]
-        private static void Main(string[] args)
+        private static void Main()
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
-            string initialFolder = args != null && args.Length > 0
-                ? args[0]
-                : BalanceEditorPathHelper.ResolveDefaultFolder(AppDomain.CurrentDomain.BaseDirectory);
+            string initialFolder = BalanceEditorPathHelper.ResolveDefaultFolder(AppDomain.CurrentDomain.BaseDirectory);
 
             Application.Run(new BalanceEditorForm(initialFolder));
         }
@@ -44,6 +42,11 @@ namespace Fight.Tools.BalanceEditor
                     return repoCandidate;
                 }
 
+                if (Directory.Exists(Path.Combine(currentDirectory, "game")))
+                {
+                    return repoCandidate;
+                }
+
                 DirectoryInfo parent = Directory.GetParent(currentDirectory);
                 if (parent == null)
                 {
@@ -53,7 +56,7 @@ namespace Fight.Tools.BalanceEditor
                 currentDirectory = parent.FullName;
             }
 
-            return string.Empty;
+            return Path.Combine(directCandidate, "game", "BalanceSheets", "Stage01");
         }
 
         private static bool ContainsBalanceSheets(string folderPath)
