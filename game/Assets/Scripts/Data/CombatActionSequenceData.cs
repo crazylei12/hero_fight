@@ -9,6 +9,12 @@ namespace Fight.Data
         SourceSkill = 1,
     }
 
+    public enum CombatActionSequenceRepeatMode
+    {
+        FixedCount = 0,
+        FixedDuration = 1,
+    }
+
     public enum CombatActionSequenceTargetRefreshMode
     {
         KeepCurrentTarget = 0,
@@ -29,8 +35,10 @@ namespace Fight.Data
     {
         public bool enabled;
         public CombatActionSequencePayloadType payloadType = CombatActionSequencePayloadType.BasicAttack;
+        public CombatActionSequenceRepeatMode repeatMode = CombatActionSequenceRepeatMode.FixedCount;
         [Min(1)] public int repeatCount = 1;
-        [Min(0.01f)] public float intervalSeconds = 0.25f;
+        [Min(0.01f)] public float durationSeconds = 1f;
+        [Min(0f)] public float intervalSeconds = 0.25f;
         [Min(0f)] public float windupSeconds = 0f;
         [Min(0f)] public float recoverySeconds = 0f;
         [Min(0f)] public float temporaryBasicAttackRangeOverride = 0f;

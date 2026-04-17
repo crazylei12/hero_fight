@@ -68,7 +68,7 @@ namespace Fight.Battle
                 return false;
             }
 
-            if (primaryTarget == null && !skill.allowsSelfCast && skill.targetType != SkillTargetType.DensestEnemyArea)
+            if (primaryTarget == null && !skill.allowsSelfCast && !AllowsMissingPrimaryTarget(skill))
             {
                 ScheduleNextUltimateAttempt(context, caster);
                 return false;
@@ -139,7 +139,7 @@ namespace Fight.Battle
                 return false;
             }
 
-            if (primaryTarget == null && !skill.allowsSelfCast && skill.targetType != SkillTargetType.DensestEnemyArea)
+            if (primaryTarget == null && !skill.allowsSelfCast && !AllowsMissingPrimaryTarget(skill))
             {
                 return false;
             }
@@ -209,6 +209,7 @@ namespace Fight.Battle
 
         private static RuntimeHero SelectPrimaryTarget(BattleContext context, RuntimeHero caster, SkillData skill)
         {
+            var effectiveCastRange = GetSkillSelectionCastRange(skill);
             switch (skill.targetType)
             {
                 case SkillTargetType.Self:
@@ -218,13 +219,13 @@ namespace Fight.Battle
                 case SkillTargetType.AllEnemies:
                     return FindFirstGlobalTeamTarget(context.Heroes, caster, skill, includeAllies: false);
                 case SkillTargetType.NearestEnemy:
-                    return FindNearest(context.Heroes, caster, includeAllies: false, skill.castRange);
+                    return FindNearest(context.Heroes, caster, includeAllies: false, effectiveCastRange);
                 case SkillTargetType.LowestHealthEnemy:
-                    return FindLowestHealth(context.Heroes, caster, skill, includeAllies: false, skill.castRange);
+                    return FindLowestHealth(context.Heroes, caster, skill, includeAllies: false, effectiveCastRange);
                 case SkillTargetType.LowestHealthAlly:
-                    return FindLowestHealth(context.Heroes, caster, skill, includeAllies: true, skill.castRange);
+                    return FindLowestHealth(context.Heroes, caster, skill, includeAllies: true, effectiveCastRange);
                 case SkillTargetType.DensestEnemyArea:
-                    return FindDensestEnemyAnchor(context.Heroes, caster, skill.castRange, skill.areaRadius);
+                    return FindDensestEnemyAnchor(context.Heroes, caster, effectiveCastRange, skill.areaRadius);
                 default:
                     return null;
             }
@@ -233,6 +234,7 @@ namespace Fight.Battle
         private static RuntimeHero SelectUltimatePrimaryTarget(BattleContext context, RuntimeHero caster, SkillData skill)
         {
             var decision = skill?.ultimateDecision;
+            var effectiveCastRange = GetSkillSelectionCastRange(skill);
             if (decision == null)
             {
                 return SelectPrimaryTarget(context, caster, skill);
@@ -245,11 +247,11 @@ namespace Fight.Battle
                         ? caster.CurrentTarget
                         : SelectPrimaryTarget(context, caster, skill);
                 case UltimateTargetingType.LowestHealthEnemyInRange:
-                    return FindLowestHealth(context.Heroes, caster, skill, includeAllies: false, skill.castRange);
+                    return FindLowestHealth(context.Heroes, caster, skill, includeAllies: false, effectiveCastRange);
                 case UltimateTargetingType.LowestHealthAllyInRange:
-                    return FindLowestHealth(context.Heroes, caster, skill, includeAllies: true, skill.castRange);
+                    return FindLowestHealth(context.Heroes, caster, skill, includeAllies: true, effectiveCastRange);
                 case UltimateTargetingType.EnemyDensestPosition:
-                    return FindDensestEnemyAnchor(context.Heroes, caster, skill.castRange, skill.areaRadius);
+                    return FindDensestEnemyAnchor(context.Heroes, caster, effectiveCastRange, skill.areaRadius);
                 case UltimateTargetingType.Self:
                     return caster;
                 case UltimateTargetingType.UseSkillTargetType:
@@ -431,32 +433,11 @@ namespace Fight.Battle
 
         private static bool IsPrimaryTargetStillValid(SkillData skill, RuntimeHero caster, RuntimeHero primaryTarget)
         {
-            if (primaryTarget == null)
-            {
-                return false;
-            }
-
-            if (primaryTarget.IsDead)
-            {
-                return false;
-            }
-
-            if (skill == null)
-            {
-                return false;
-            }
-
-            if (skill.targetType == SkillTargetType.Self)
-            {
-                return true;
-            }
-
-            if (skill.targetType == SkillTargetType.AllAllies || skill.targetType == SkillTargetType.AllEnemies)
-            {
-                return true;
-            }
-
-            return IsDirectTargetAllowed(skill, caster, primaryTarget);
+            return IsPrimaryTargetStillValidForCastRange(
+                skill,
+                caster,
+                primaryTarget,
+                GetSkillSelectionCastRange(skill));
         }
 
         private static bool IsPrimaryTargetStillValidForCastRange(
@@ -465,7 +446,17 @@ namespace Fight.Battle
             RuntimeHero primaryTarget,
             float effectiveCastRange)
         {
-            if (primaryTarget == null || primaryTarget.IsDead || skill == null)
+            if (skill == null || caster == null)
+            {
+                return false;
+            }
+
+            if (primaryTarget == null)
+            {
+                return AllowsMissingPrimaryTarget(skill);
+            }
+
+            if (primaryTarget.IsDead)
             {
                 return false;
             }
@@ -905,9 +896,7 @@ namespace Fight.Battle
                 return false;
             }
 
-            var effectiveCastRange = castRangeOverride > 0f
-                ? castRangeOverride
-                : skill.castRange;
+            var effectiveCastRange = GetSequenceCastRange(skill, castRangeOverride);
             primaryTarget = SelectSequencePrimaryTarget(
                 context,
                 caster,
@@ -920,7 +909,7 @@ namespace Fight.Battle
                 return false;
             }
 
-            if (primaryTarget == null && !skill.allowsSelfCast && skill.targetType != SkillTargetType.DensestEnemyArea)
+            if (primaryTarget == null && !skill.allowsSelfCast && !AllowsMissingPrimaryTarget(skill))
             {
                 return false;
             }
@@ -968,6 +957,7 @@ namespace Fight.Battle
                 CombatActionTiming.DefaultRecoverySeconds,
                 consumeCooldown: true,
                 suppressActionSequenceTrigger: false,
+                isActionSequenceStep: false,
                 battleManager);
         }
 
@@ -991,6 +981,7 @@ namespace Fight.Battle
                 recoverySeconds,
                 consumeCooldown: false,
                 suppressActionSequenceTrigger: true,
+                isActionSequenceStep: true,
                 battleManager);
         }
 
@@ -1004,6 +995,7 @@ namespace Fight.Battle
             float recoverySeconds,
             bool consumeCooldown,
             bool suppressActionSequenceTrigger,
+            bool isActionSequenceStep,
             BattleManager battleManager)
         {
             if (context == null || caster == null || skill == null || battleManager == null)
@@ -1018,7 +1010,8 @@ namespace Fight.Battle
                 windupSeconds,
                 recoverySeconds,
                 consumeCooldown,
-                suppressActionSequenceTrigger);
+                suppressActionSequenceTrigger,
+                isActionSequenceStep);
             context.EventBus.Publish(new SkillCastEvent(
                 caster,
                 skill,
@@ -1829,6 +1822,41 @@ namespace Fight.Battle
             return skill.allowsSelfCast && IsValidTargetForSkill(skill, caster, caster);
         }
 
+        private static bool AllowsMissingPrimaryTarget(SkillData skill)
+        {
+            return skill != null && skill.targetType == SkillTargetType.DensestEnemyArea;
+        }
+
+        private static float GetSkillSelectionCastRange(SkillData skill)
+        {
+            if (skill == null)
+            {
+                return 0f;
+            }
+
+            var effectiveRange = Mathf.Max(0f, skill.castRange);
+            var sequence = skill.actionSequence;
+            if (sequence == null || !sequence.enabled)
+            {
+                return effectiveRange;
+            }
+
+            effectiveRange = Mathf.Max(effectiveRange, Mathf.Max(0f, sequence.temporarySkillCastRangeOverride));
+            if (sequence.payloadType == CombatActionSequencePayloadType.BasicAttack)
+            {
+                effectiveRange = Mathf.Max(effectiveRange, Mathf.Max(0f, sequence.temporaryBasicAttackRangeOverride));
+            }
+
+            return effectiveRange;
+        }
+
+        private static float GetSequenceCastRange(SkillData skill, float castRangeOverride)
+        {
+            return Mathf.Max(
+                skill != null ? Mathf.Max(0f, skill.castRange) : 0f,
+                Mathf.Max(0f, castRangeOverride));
+        }
+
         private static RuntimeHero FindLowestHealth(IReadOnlyList<RuntimeHero> heroes, RuntimeHero caster, SkillData skill, bool includeAllies, float maxRange)
         {
             RuntimeHero best = null;
@@ -1988,12 +2016,6 @@ namespace Fight.Battle
                 : GetDashDestination(startPosition, target.CurrentPosition);
             var durationSeconds = effect != null ? Mathf.Max(0f, effect.durationSeconds) : 0f;
             var peakHeight = effect != null ? Mathf.Max(0f, effect.forcedMovementPeakHeight) : 0f;
-            if (durationSeconds <= Mathf.Epsilon && peakHeight <= Mathf.Epsilon)
-            {
-                caster.CurrentPosition = destination;
-                return;
-            }
-
             caster.StartForcedMovement(destination, durationSeconds, peakHeight);
             context.EventBus.Publish(new ForcedMovementAppliedEvent(
                 caster,

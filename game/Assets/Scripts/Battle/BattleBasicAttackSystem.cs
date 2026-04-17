@@ -62,7 +62,8 @@ namespace Fight.Battle
             BattleManager battleManager,
             float windupSeconds,
             float recoverySeconds,
-            bool consumeAttackCooldown)
+            bool consumeAttackCooldown,
+            bool isActionSequenceStep = false)
         {
             if (context == null || attacker == null || target == null || battleManager == null)
             {
@@ -81,7 +82,7 @@ namespace Fight.Battle
                 return;
             }
 
-            attacker.BeginBasicAttack(target, windupSeconds, recoverySeconds, consumeAttackCooldown);
+            attacker.BeginBasicAttack(target, windupSeconds, recoverySeconds, consumeAttackCooldown, isActionSequenceStep);
             context.EventBus.Publish(new AttackPerformedEvent(attacker, target));
         }
 
