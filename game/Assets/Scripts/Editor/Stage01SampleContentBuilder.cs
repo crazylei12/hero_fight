@@ -36,6 +36,7 @@ namespace Fight.Editor
         private const string TankPrefabPath = "Assets/Prefabs/Heroes/tank_001_ironwall/Ironwall.prefab";
         private const string HeroEditorControllerPath = "Assets/HeroEditor4D/Common/Animation/Controller.controller";
         private const string FireMageProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/FireMageBasicAttackProjectile.prefab";
+        private const string LongshotProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/LongshotBasicAttackProjectile.prefab";
         private const string MageActiveAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FireMageEmberBurst.prefab";
         private const string MageUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FireMageMeteorField.prefab";
         private const string SunpriestProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/SunpriestBasicAttackProjectile.prefab";
@@ -381,12 +382,14 @@ namespace Fight.Editor
             hero.visualConfig.projectilePrefab = heroId switch
             {
                 "mage_001_firemage" or "mage_002_frostmage" => AssetDatabase.LoadAssetAtPath<GameObject>(FireMageProjectilePrefabPath),
+                "marksman_001_longshot" => AssetDatabase.LoadAssetAtPath<GameObject>(LongshotProjectilePrefabPath),
                 "support_001_sunpriest" => AssetDatabase.LoadAssetAtPath<GameObject>(SunpriestProjectilePrefabPath),
                 _ => null,
             };
             hero.visualConfig.projectileAlignToMovement =
                 heroId == "mage_001_firemage"
                 || heroId == "mage_002_frostmage"
+                || heroId == "marksman_001_longshot"
                 || heroId == "support_001_sunpriest";
             hero.visualConfig.projectileEulerAngles = Vector3.zero;
             hero.visualConfig.hitVfxPrefab = null;
