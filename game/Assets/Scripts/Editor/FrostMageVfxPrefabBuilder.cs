@@ -20,6 +20,7 @@ namespace Fight.Editor
         private const string FrostProjectileSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Range_attack/Projectiles_frost.prefab";
         private const string IceLineSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Top_down_attack/top_down_ice_line.prefab";
         private const string IceCircleSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Top_down_attack/top_down_ice_circle.prefab";
+        private const float ProjectileVisualScale = 3f;
 
         [MenuItem(BuildMenuPath)]
         public static void BuildFrostMageVfxPrefabs()
@@ -67,6 +68,7 @@ namespace Fight.Editor
 
             var root = new GameObject("FrostMageBasicAttackProjectile");
             root.AddComponent<SortingGroup>();
+            root.transform.localScale = Vector3.one * ProjectileVisualScale;
 
             CreateSprite(
                 root.transform,
