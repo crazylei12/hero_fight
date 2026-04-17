@@ -31,6 +31,8 @@ MonoBehaviour:
     rangeOverride: 1.8
     usesProjectile: 0
     projectileSpeed: 0
+    effectType: 0
+    targetType: 0
   activeSkill: {fileID: 11400000, guid: edd3f6c38f6acf741858fadfb8076162, type: 2}
   ultimateSkill: {fileID: 11400000, guid: f19b0854986a2c7458cf415e40884521, type: 2}
   aiTemplateId: tank_default

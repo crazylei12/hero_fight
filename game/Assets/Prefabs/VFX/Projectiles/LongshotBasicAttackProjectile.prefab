@@ -33,7 +33,7 @@ Transform:
   - {fileID: 1000000000000000012}
   - {fileID: 1000000000000000022}
   - {fileID: 1000000000000000032}
-  - {fileID: 23504263354982709}
+  - {fileID: 1463649948008114078}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!210 &1000000000000000003
@@ -382,20 +382,20 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 9105356761309954279, guid: e99d4f02711db1f4f9cdc133740fbc41, type: 3}
-      propertyPath: m_SortingOrder
-      value: 10
-      objectReference: {fileID: 0}
     - target: {fileID: 2904941688791708293, guid: e99d4f02711db1f4f9cdc133740fbc41, type: 3}
       propertyPath: m_Name
       value: ArrowCore
+      objectReference: {fileID: 0}
+    - target: {fileID: 9105356761309954279, guid: e99d4f02711db1f4f9cdc133740fbc41, type: 3}
+      propertyPath: m_SortingOrder
+      value: 10
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: e99d4f02711db1f4f9cdc133740fbc41, type: 3}
---- !u!4 &23504263354982709 stripped
+--- !u!4 &1463649948008114078 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1808781359192799002, guid: e99d4f02711db1f4f9cdc133740fbc41, type: 3}
   m_PrefabInstance: {fileID: 960947665292628100}

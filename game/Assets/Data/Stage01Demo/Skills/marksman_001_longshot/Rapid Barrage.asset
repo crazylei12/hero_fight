@@ -24,11 +24,18 @@ MonoBehaviour:
   minTargetsToCast: 1
   effects:
   - effectType: 0
+    targetMode: 0
     powerMultiplier: 0
     radiusOverride: 0
     durationSeconds: 0
     tickIntervalSeconds: 1
     followCaster: 0
+    persistentAreaPulseEffectType: 1
+    persistentAreaTargetType: 0
+    forcedMovementDirection: 0
+    forcedMovementDistance: 0
+    forcedMovementDurationSeconds: 0
+    forcedMovementPeakHeight: 0
     statusEffects: []
   allowsSelfCast: 0
   actionSequence:

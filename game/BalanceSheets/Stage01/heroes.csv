@@ -3,6 +3,7 @@ heroId|英雄ID,displayName|英雄名,heroClass|职业,maxHealth|最大生命,at
 #表用途,只展示英雄基础属性与普攻数值；非数值配置不在这张表里维护，空白单元格导入时会跳过。
 assassin_001_shadowstep,Shadowstep,Assassin|刺客,290,52,8,1.2,5.4,0.2,1.8,1.3,1,1.3,0
 mage_001_firemage,FIREMAGE,Mage|法师,300,48,10,0.8,3.8,0.08,1.5,5.8,1,5.8,14
+mage_002_frostmage,Frostmage,Mage|法师,310,42,10,0.7692308,3.7,0.08,1.5,5.8,1,5.8,14
 marksman_001_longshot,Longshot,Marksman|射手,310,34,12,1.351351,4.1,0.22,1.9,6,1,6,16
 support_001_sunpriest,Sunpriest,Support|辅助,320,22,12,0.9,4,0.05,1.5,5.2,1,5.2,14
 tank_001_ironwall,Ironwall,Tank|坦克,560,28,40,0.9,3.6,0.05,1.5,1.8,1,1.8,0

@@ -31,6 +31,8 @@ MonoBehaviour:
     rangeOverride: 1.7
     usesProjectile: 0
     projectileSpeed: 0
+    effectType: 0
+    targetType: 0
   activeSkill: {fileID: 11400000, guid: 74fe555414b359b47b2aa76707ca8691, type: 2}
   ultimateSkill: {fileID: 11400000, guid: 151f74625b0f45b488bf263f7cea6791, type: 2}
   aiTemplateId: warrior_default

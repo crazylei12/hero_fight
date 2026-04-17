@@ -68,10 +68,24 @@ MonoBehaviour:
     - effectType: 11
       durationSeconds: 1
       magnitude: 1
+      activeSkillCooldownCapSeconds: 0
       tickIntervalSeconds: 1
       maxStacks: 1
       refreshDurationOnReapply: 1
   allowsSelfCast: 1
+  actionSequence:
+    enabled: 0
+    payloadType: 0
+    repeatMode: 0
+    repeatCount: 1
+    durationSeconds: 1
+    intervalSeconds: 0.25
+    windupSeconds: 0
+    recoverySeconds: 0
+    temporaryBasicAttackRangeOverride: 0
+    temporarySkillCastRangeOverride: 0
+    targetRefreshMode: 1
+    interruptFlags: 3
   persistentAreaVfxPrefab: {fileID: 0}
   persistentAreaVfxScaleMultiplier: 1
   persistentAreaVfxEulerAngles: {x: 0, y: 0, z: 0}
