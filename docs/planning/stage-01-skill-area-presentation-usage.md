@@ -63,12 +63,18 @@
 
 - 编辑器菜单：`Fight -> Stage 01 -> Build FireMage VFX Prefabs`
 - batchmode 执行方法：`Fight.Editor.FireMageVfxPrefabBuilder.BuildFireMageVfxPrefabsBatch`
+- 编辑器菜单：`Fight -> Stage 01 -> Build Shared Blink VFX`
+- batchmode 执行方法：`Fight.Editor.SharedBlinkVfxPrefabBuilder.BuildSharedBlinkVfxBatch`
+- 编辑器菜单：`Fight -> Stage 01 -> Build Shared Dash Charge VFX`
+- batchmode 执行方法：`Fight.Editor.SharedDashChargeVfxPrefabBuilder.BuildSharedDashChargeVfxBatch`
 
 当前这条 builder 已覆盖：
 
 - 火法普攻投射物
 - 火法小技能 `Ember Burst`
 - 火法大招 `Meteor Fall`
+- 共享瞬移闪现 `BlinkFlash`
+- 共享冲锋拖尾 `DashChargeTrail`
 
 执行注意事项：
 
@@ -85,6 +91,8 @@
 - `game/Assets/Scripts/Battle/RuntimeBasicAttackProjectile.cs`
 - `game/Assets/Scripts/UI/BattleView.cs`
 - `game/Assets/Scripts/Editor/FireMageVfxPrefabBuilder.cs`
+- `game/Assets/Scripts/Editor/SharedBlinkVfxPrefabBuilder.cs`
+- `game/Assets/Scripts/Editor/SharedDashChargeVfxPrefabBuilder.cs`
 - `game/Assets/Scripts/UI/Presentation/Skills/SkillAreaPresentationController.cs`
 - `game/Assets/Scripts/UI/Presentation/Skills/FireSeaSkillAreaPresentationController.cs`
 - `game/Assets/Scripts/Data/SkillAreaPresentationType.cs`
@@ -455,6 +463,45 @@
 - 如果后续英雄也要复用治疗身上特效，优先继续走“共享 runtime prefab + `HealAppliedEvent` 统一触发”的路径
 - 如果某个护盾确实需要额外辨识度，再在“盾量条”之上补少量附加表现，而不是拿附着特效替代盾量读数
 
+## 瞬移闪现表现的当前规则
+
+当前第一阶段把“零时长瞬移切位”的闪现反馈也收敛为一条共享表现语义，不只服务 `Shadowstep`：
+
+- 逻辑层仍完全由 `SkillType.Dash` 和 `ForcedMovementAppliedEvent` 决定
+- 当一次位移同时满足以下条件时，表现层默认把它视为 `瞬移 / 闪现`
+  - 来源技能是 `Dash`
+  - 位移对象是施法者自己
+  - 位移时长约等于 `0`
+- 表现层会在 `起点` 和 `终点` 各播放一次共享 one-shot prefab，不反向修改落点、时序或伤害
+- 项目工程源 prefab 当前整理在：`game/Assets/Prefabs/VFX/Shared/BlinkFlash.prefab`
+- 运行时统一加载路径当前为：`game/Assets/Resources/Stage01Demo/VFX/Shared/BlinkFlash.prefab`
+
+对后续 AI 的要求：
+
+- 以后再做“瞬移到目标身边”“短距离闪现”“零时长 re-position”这类技能时，优先复用这条共享 blink 路径
+- 有明显飞行时间或滑步过程的 dash，继续优先沿用统一 `ForcedMovement` 位移表现，不要强行套 blink prefab
+- 不要在单个英雄脚本里额外手写“旧位置播一次、新位置再播一次”的专用闪现逻辑
+
+## 冲锋突进表现的当前规则
+
+当前第一阶段把“有明显位移过程的冲锋 / 滑步 dash”也收敛为一条共享表现语义，不只服务 `Skybreaker`：
+
+- 逻辑层仍完全由 `SkillType.Dash` 和 `ForcedMovementAppliedEvent` 决定
+- 当一次位移同时满足以下条件时，表现层默认把它视为 `冲锋 / 突进`
+  - 来源技能是 `Dash`
+  - 位移对象是施法者自己
+  - 位移时长明显大于 `0`
+- 表现层会在位移开始时给施法者挂上一段共享 follow-trail prefab，并按冲锋方向旋转
+- 这条 prefab 只表达“正在冲锋”，不反向修改落点、时序、伤害或路径命中
+- 项目工程源 prefab 当前整理在：`game/Assets/Prefabs/VFX/Shared/DashChargeTrail.prefab`
+- 运行时统一加载路径当前为：`game/Assets/Resources/Stage01Demo/VFX/Shared/DashChargeTrail.prefab`
+
+对后续 AI 的要求：
+
+- 以后再做“短冲锋切入”“滑步贴脸”“带过程时间的 dash”时，优先复用这条共享 `DashChargeTrail` 路径
+- 如果是 `零时长` 的瞬移切位，继续走共享 `BlinkFlash`，不要两套效果混着播
+- 不要在单个英雄脚本里额外手写“冲锋时挂一个 trail”的专用表现逻辑
+
 ## 单位附着状态特效的当前规则
 
 当前第一阶段已经开始接入“跟随英雄本体的状态特效”，用于让硬控或关键状态在顶视角战斗里能被快速识别。
@@ -477,6 +524,25 @@
   - 项目内运行时 prefab：`game/Assets/Resources/Stage01Demo/VFX/Statuses/KnockUpStatusBurst.prefab`
   - 素材来源：`Assets/Lana Studio/Casual RPG VFX/Prefabs/Burst/Burst_rings.prefab`
   - 接入方式：`BattleView` 通过统一状态 VFX 映射在击飞开始时创建 one-shot 爆圈，并随状态生命周期自动清理
+
+## 强制位移 / 击退表现的当前规则
+
+当前第一阶段把“水平击退 / 拉拽这类强制位移表现”单独看作一条共享表现通路，而不是再额外扩一个新的 `StatusEffectType`。
+
+当前规则：
+
+- 强制位移的逻辑是否生效、持续多久、把单位带到哪里，仍完全由 `SkillEffectType.ApplyForcedMovement`、`RuntimeHero.IsUnderForcedMovement` 和运行时位移过程决定
+- 表现层只读取 `ForcedMovementAppliedEvent` 给出的方向 / 距离 / 时长，再叠加当前英雄是否仍处于强制位移中
+- 不要在 `Longshot` 这类具体英雄里再手写一次“被击退时播放特效”的专属分支
+- 只要是明显的水平强制位移，默认都应复用同一套共享击退表现
+
+当前已接入示例：
+
+- `击退 / 水平强制位移`
+  - 项目内工程 prefab：`game/Assets/Prefabs/VFX/Shared/KnockbackStatusLoop.prefab`
+  - 项目内运行时 prefab：`game/Assets/Resources/Stage01Demo/VFX/Statuses/KnockbackStatusLoop.prefab`
+  - 构建入口：`game/Assets/Scripts/Editor/StatusVfxPrefabBuilder.cs`
+  - 接入方式：`BattleView` 在检测到英雄处于 `IsUnderForcedMovement` 且存在明显水平位移时，自动创建并跟随这套共享 loop 特效；特效会按位移方向旋转，并在位移结束后自动移除
 
 对后续 AI 的要求：
 

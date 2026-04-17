@@ -20,6 +20,7 @@ namespace Fight.UI
         private const string StunStatusLoopVfxResourcesPath = "Stage01Demo/VFX/Statuses/StunStatusLoop";
         private const string KnockUpStatusBurstVfxResourcesPath = "Stage01Demo/VFX/Statuses/KnockUpStatusBurst";
         private const string HealReceivedImpactVfxResourcesPath = "Stage01Demo/VFX/Shared/HealReceivedImpact";
+        private const string BlinkFlashVfxResourcesPath = "Stage01Demo/VFX/Shared/BlinkFlash";
         private const float CorpseVisibleSeconds = 1f;
         private const float HealthBarWidth = 0.9f;
         private const float HealthBarBackgroundHeight = 0.11f;
@@ -27,7 +28,10 @@ namespace Fight.UI
         private const float ArenaBackgroundHeight = Stage01ArenaSpec.HeightWorldUnits;
         private const float MinAirborneEffectHeight = 0.12f;
         private const float DefaultTransientVfxLifetime = 1f;
+        private const float InstantBlinkDurationThreshold = 0.01f;
+        private const float InstantBlinkMinDistance = 0.15f;
         private const int HealEventVfxSortOrderOffset = 190;
+        private const int BlinkFlashSortOrderOffset = -60;
         private const string HealImpactTransientKey = "heal_received";
         private static readonly Dictionary<StatusEffectType, StatusEffectVfxConfig> StatusEffectVfxConfigs = new Dictionary<StatusEffectType, StatusEffectVfxConfig>
         {
@@ -73,6 +77,7 @@ namespace Fight.UI
         private Transform heroRoot;
         private Transform projectileRoot;
         private Transform skillAreaRoot;
+        private Transform transientWorldVfxRoot;
         private BattleEventBus subscribedEventBus;
 
         private static Sprite squareSprite;
@@ -80,6 +85,7 @@ namespace Fight.UI
         private static Sprite customArenaBackgroundSprite;
         private static string customArenaBackgroundSourcePath;
         private static GameObject sharedHealImpactPrefab;
+        private static GameObject sharedBlinkFlashPrefab;
 
         protected BattleManager BattleManager => battleManager;
 
@@ -218,6 +224,8 @@ namespace Fight.UI
             projectileRoot.SetParent(transform, false);
             skillAreaRoot = new GameObject("BattleSkillAreaViews").transform;
             skillAreaRoot.SetParent(transform, false);
+            transientWorldVfxRoot = new GameObject("BattleTransientWorldVfx").transform;
+            transientWorldVfxRoot.SetParent(transform, false);
 
             EnsureSprites();
             if (autoCreateArena)
@@ -1442,11 +1450,18 @@ namespace Fight.UI
                 heroView.HitFlashUntilSeconds = GetElapsedTimeSeconds() + Mathf.Max(0.01f, prefabHitFlashDuration);
             }
 
-            if (battleEvent is ForcedMovementAppliedEvent forcedMovementAppliedEvent
-                && forcedMovementAppliedEvent.Target != null
-                && heroViews.TryGetValue(forcedMovementAppliedEvent.Target.RuntimeId, out var displacedHeroView))
+            if (battleEvent is ForcedMovementAppliedEvent forcedMovementAppliedEvent)
             {
-                RegisterForcedMovementPresentation(displacedHeroView, forcedMovementAppliedEvent);
+                if (forcedMovementAppliedEvent.Target != null
+                    && heroViews.TryGetValue(forcedMovementAppliedEvent.Target.RuntimeId, out var displacedHeroView))
+                {
+                    RegisterForcedMovementPresentation(displacedHeroView, forcedMovementAppliedEvent);
+                }
+
+                if (ShouldPlayBlinkFlash(forcedMovementAppliedEvent))
+                {
+                    PlayBlinkFlashVfx(forcedMovementAppliedEvent);
+                }
             }
         }
 
@@ -1509,6 +1524,81 @@ namespace Fight.UI
             }
 
             return sharedHealImpactPrefab;
+        }
+
+        private static GameObject GetSharedBlinkFlashPrefab()
+        {
+            if (sharedBlinkFlashPrefab == null)
+            {
+                sharedBlinkFlashPrefab = Resources.Load<GameObject>(BlinkFlashVfxResourcesPath);
+            }
+
+            return sharedBlinkFlashPrefab;
+        }
+
+        private static bool ShouldPlayBlinkFlash(ForcedMovementAppliedEvent forcedMovementAppliedEvent)
+        {
+            if (forcedMovementAppliedEvent?.SourceSkill == null
+                || forcedMovementAppliedEvent.Source == null
+                || forcedMovementAppliedEvent.Target == null
+                || forcedMovementAppliedEvent.SourceSkill.skillType != SkillType.Dash
+                || forcedMovementAppliedEvent.DurationSeconds > InstantBlinkDurationThreshold
+                || !string.Equals(
+                    forcedMovementAppliedEvent.Source.RuntimeId,
+                    forcedMovementAppliedEvent.Target.RuntimeId,
+                    StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            var offset = forcedMovementAppliedEvent.Destination - forcedMovementAppliedEvent.StartPosition;
+            offset.y = 0f;
+            return offset.sqrMagnitude >= InstantBlinkMinDistance * InstantBlinkMinDistance;
+        }
+
+        private void PlayBlinkFlashVfx(ForcedMovementAppliedEvent forcedMovementAppliedEvent)
+        {
+            var blinkFlashPrefab = GetSharedBlinkFlashPrefab();
+            if (blinkFlashPrefab == null)
+            {
+                return;
+            }
+
+            var startPosition = Map(forcedMovementAppliedEvent.StartPosition);
+            var destinationPosition = Map(forcedMovementAppliedEvent.Destination);
+            SpawnWorldTransientVfx(blinkFlashPrefab, startPosition, BlinkFlashSortOrderOffset);
+
+            if ((destinationPosition - startPosition).sqrMagnitude > 0.0001f)
+            {
+                SpawnWorldTransientVfx(blinkFlashPrefab, destinationPosition, BlinkFlashSortOrderOffset);
+            }
+        }
+
+        private void SpawnWorldTransientVfx(GameObject prefab, Vector3 worldPosition, int sortingOrderOffset)
+        {
+            if (prefab == null || transientWorldVfxRoot == null)
+            {
+                return;
+            }
+
+            var instance = Instantiate(prefab, transientWorldVfxRoot);
+            instance.name = $"{prefab.name}_WorldTransient";
+            instance.transform.position = worldPosition;
+            RemovePrefabPhysics(instance);
+            ConfigureTransientParticleSystems(instance);
+
+            var sortingOrder = Sort(worldPosition.y, sortingOrderOffset);
+            var sortingGroup = instance.GetComponent<SortingGroup>();
+            if (sortingGroup != null)
+            {
+                sortingGroup.sortingOrder = sortingOrder;
+            }
+            else
+            {
+                SetRendererSorting(instance.GetComponentsInChildren<Renderer>(true), sortingOrder);
+            }
+
+            Destroy(instance, GetTransientVfxLifetime(instance));
         }
 
         private void SpawnTransientHeroVfx(HeroViewState heroView, GameObject prefab, Vector3 localOffset, int sortingOrderOffset, string uniqueKey = null)
