@@ -592,7 +592,6 @@ namespace Fight.Tools.BalanceEditor
         private static FlowLayoutPanel CreateSectionContentFlow()
         {
             FlowLayoutPanel flow = new FlowLayoutPanel();
-            flow.Dock = DockStyle.Top;
             flow.FlowDirection = FlowDirection.TopDown;
             flow.WrapContents = false;
             flow.AutoSize = true;
@@ -600,27 +599,30 @@ namespace Fight.Tools.BalanceEditor
             flow.AutoScroll = false;
             flow.Margin = Padding.Empty;
             flow.Padding = Padding.Empty;
+            flow.Anchor = AnchorStyles.Top | AnchorStyles.Left;
             return flow;
         }
 
         private static Control CreateSectionPanel(string title, int width, Control body)
         {
             Panel panel = new Panel();
-            panel.Width = width;
             panel.AutoSize = true;
             panel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            panel.MinimumSize = new Size(width, 0);
+            panel.MaximumSize = new Size(width, 0);
             panel.Margin = new Padding(0, 0, 0, 12);
             panel.Padding = new Padding(10);
             panel.BorderStyle = BorderStyle.FixedSingle;
 
             TableLayoutPanel layout = new TableLayoutPanel();
-            layout.Dock = DockStyle.Top;
             layout.AutoSize = true;
             layout.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             layout.ColumnCount = 1;
             layout.RowCount = 2;
             layout.Margin = Padding.Empty;
             layout.Padding = Padding.Empty;
+            layout.MinimumSize = new Size(width - 22, 0);
+            layout.MaximumSize = new Size(width - 22, 0);
             layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
 
             Label titleLabel = new Label();
@@ -629,8 +631,9 @@ namespace Fight.Tools.BalanceEditor
             titleLabel.Font = new Font(SystemFonts.MessageBoxFont, FontStyle.Bold);
             titleLabel.Margin = new Padding(0, 0, 0, 8);
 
-            body.Dock = DockStyle.Top;
+            body.AutoSize = true;
             body.Margin = Padding.Empty;
+            body.Anchor = AnchorStyles.Top | AnchorStyles.Left;
 
             layout.Controls.Add(titleLabel, 0, 0);
             layout.Controls.Add(body, 0, 1);
@@ -653,12 +656,13 @@ namespace Fight.Tools.BalanceEditor
         private static TableLayoutPanel CreateTwoColumnTable()
         {
             TableLayoutPanel table = new TableLayoutPanel();
-            table.Dock = DockStyle.Top;
             table.AutoSize = true;
             table.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             table.ColumnCount = 2;
             table.RowCount = 0;
             table.Padding = new Padding(8);
+            table.Margin = Padding.Empty;
+            table.MinimumSize = new Size(840, 0);
             table.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 220f));
             table.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
             return table;
