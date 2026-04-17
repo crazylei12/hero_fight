@@ -1541,8 +1541,6 @@ namespace Fight.Editor
         {
             return skillId switch
             {
-                "skill_assassin_active_shadowblink" => "Shadow Dash",
-                "skill_assassin_ultimate_smokeveil" => "Execution Mark",
                 "skill_tank_ultimate_ironoath" => "Ground Lock",
                 _ => null,
             };
