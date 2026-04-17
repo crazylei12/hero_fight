@@ -25,13 +25,9 @@ namespace Fight.Editor
         private const string SunpriestHeroAssetPath = "Assets/Data/Stage01Demo/Heroes/support_001_sunpriest/Sunpriest.asset";
         private const string SunBlessingSkillAssetPath = "Assets/Data/Stage01Demo/Skills/support_001_sunpriest/Sun Blessing.asset";
 
-        private const string LightProjectileSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Range_attack/Projectiles_light.prefab";
         private const string RegenerationHealthLoopSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Regeneration/Regeneration_health_loop.prefab";
         private const string RegenerationHealthAreaSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Regeneration/Regeneration_health_area.prefab";
         private const string RegenerationHealthAreaLoopSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Regeneration/Regeneration_health_area_loop.prefab";
-        private const string OrbsGoldSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Orbs/Orbs_gold.prefab";
-        private const string LightMissileSourcePrefabPath = "Assets/Super Pixel Projectiles Pack 3/Prefabs/pj3_magic_missile_small_yellow.prefab";
-        private const string LightSparkSourcePrefabPath = "Assets/Super Pixel Projectiles Pack 3/Prefabs/pj3_light_spark_small_yellow.prefab";
         private const string HealImpactSourceChildName = "plus";
         private static readonly Vector3 HealImpactLocalOffset = new Vector3(-0.36f, 0.04f, 0f);
         private const float HealImpactLoopScale = 0.54f;
@@ -145,50 +141,41 @@ namespace Fight.Editor
 
         private static void BuildProjectilePrefab(Sprite softCircleSprite)
         {
-            var lightProjectilePrefab = LoadRequiredAsset<GameObject>(LightProjectileSourcePrefabPath);
-            var lightMissilePrefab = LoadRequiredAsset<GameObject>(LightMissileSourcePrefabPath);
-            var lightSparkPrefab = LoadRequiredAsset<GameObject>(LightSparkSourcePrefabPath);
-            var orbsGoldPrefab = LoadRequiredAsset<GameObject>(OrbsGoldSourcePrefabPath);
-
             var root = new GameObject("SunpriestBasicAttackProjectile");
             root.AddComponent<SortingGroup>();
 
             CreateSprite(
                 root.transform,
-                "OuterGlow",
+                "OuterAura",
                 softCircleSprite,
-                new Color(1f, 0.94f, 0.72f, 0.14f),
+                new Color(0.4f, 1f, 0.58f, 0.16f),
                 2,
                 Vector3.zero,
-                Vector3.one * 0.26f);
+                Vector3.one * 0.34f);
             CreateSprite(
                 root.transform,
-                "InnerGlow",
+                "OrbBody",
                 softCircleSprite,
-                new Color(1f, 0.99f, 0.9f, 0.44f),
+                new Color(0.64f, 1f, 0.76f, 0.42f),
                 4,
                 Vector3.zero,
-                Vector3.one * 0.15f);
-
-            var trailOrb = InstantiateNestedPrefab(orbsGoldPrefab, root.transform, "TrailOrb");
-            trailOrb.transform.localPosition = new Vector3(-0.035f, 0f, 0f);
-            trailOrb.transform.localScale = Vector3.one * 0.04f;
-            OffsetRendererOrders(trailOrb, 5);
-
-            var lightSpark = InstantiateNestedPrefab(lightSparkPrefab, root.transform, "LightSpark");
-            lightSpark.transform.localPosition = new Vector3(-0.01f, 0f, 0f);
-            lightSpark.transform.localScale = Vector3.one * 0.16f;
-            OffsetRendererOrders(lightSpark, 8);
-
-            var projectile = InstantiateNestedPrefab(lightProjectilePrefab, root.transform, "LightTrail");
-            projectile.transform.localScale = new Vector3(0.075f, 0.09f, 0.09f);
-            projectile.transform.localPosition = new Vector3(-0.006f, 0f, 0f);
-            OffsetRendererOrders(projectile, 11);
-
-            var missile = InstantiateNestedPrefab(lightMissilePrefab, root.transform, "MissileCore");
-            missile.transform.localPosition = new Vector3(0.015f, 0f, 0f);
-            missile.transform.localScale = Vector3.one * 0.22f;
-            OffsetRendererOrders(missile, 15);
+                Vector3.one * 0.22f);
+            CreateSprite(
+                root.transform,
+                "OrbCore",
+                softCircleSprite,
+                new Color(0.88f, 1f, 0.94f, 0.78f),
+                6,
+                Vector3.zero,
+                Vector3.one * 0.13f);
+            CreateSprite(
+                root.transform,
+                "OrbHighlight",
+                softCircleSprite,
+                new Color(0.96f, 1f, 0.92f, 0.48f),
+                7,
+                new Vector3(0.028f, 0.024f, 0f),
+                Vector3.one * 0.06f);
 
             SavePrefab(root, ProjectilePrefabPath);
         }
