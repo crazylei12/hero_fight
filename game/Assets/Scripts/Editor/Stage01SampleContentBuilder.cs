@@ -28,6 +28,8 @@ namespace Fight.Editor
         private const string ResultScenePath = ScenesFolder + "/Result.unity";
         private const string DefaultBattleInputAssetPath = ResourcesDemoFolder + "/Stage01DemoBattleInput.asset";
         private const string DefaultHeroCatalogAssetPath = ResourcesDemoFolder + "/Stage01HeroCatalog.asset";
+        private const string AssassinPrefabPath = "Assets/Prefabs/Heroes/assassin_001_shadowstep/Shadowstep.prefab";
+        private const string MarksmanPrefabPath = "Assets/Prefabs/Heroes/marksman_001_longshot/Longshot.prefab";
         private const string SupportPrefabPath = "Assets/Prefabs/Heroes/support_001_sunpriest/Sunpriest.prefab";
         private const string WarriorPrefabPath = "Assets/Prefabs/Heroes/warrior_001_skybreaker/Skybreaker.prefab";
         private const string MagePrefabPath = "Assets/HeroEditor4D/heroes/FIREMAGE.prefab";
@@ -371,7 +373,7 @@ namespace Fight.Editor
             hero.usesSpecialLogic = false;
             hero.specialLogicNotes = string.Empty;
             hero.debugNotes = $"Stage-01 demo hero for {heroClass}.";
-            var battlePrefab = LoadBattlePrefab(heroClass);
+            var battlePrefab = LoadBattlePrefab(heroId, heroClass);
             hero.visualConfig.battlePrefab = battlePrefab;
             hero.visualConfig.animatorController = battlePrefab != null
                 ? AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(HeroEditorControllerPath)
@@ -392,15 +394,20 @@ namespace Fight.Editor
             return hero;
         }
 
-        private static GameObject LoadBattlePrefab(HeroClass heroClass)
+        private static GameObject LoadBattlePrefab(string heroId, HeroClass heroClass)
         {
-            var prefabPath = heroClass switch
+            var prefabPath = heroId switch
             {
-                HeroClass.Support => SupportPrefabPath,
-                HeroClass.Warrior => WarriorPrefabPath,
-                HeroClass.Mage => MagePrefabPath,
-                HeroClass.Tank => TankPrefabPath,
-                _ => null,
+                "assassin_001_shadowstep" => AssassinPrefabPath,
+                "marksman_001_longshot" => MarksmanPrefabPath,
+                _ => heroClass switch
+                {
+                    HeroClass.Support => SupportPrefabPath,
+                    HeroClass.Warrior => WarriorPrefabPath,
+                    HeroClass.Mage => MagePrefabPath,
+                    HeroClass.Tank => TankPrefabPath,
+                    _ => null,
+                },
             };
 
             return string.IsNullOrWhiteSpace(prefabPath)
