@@ -58,6 +58,20 @@ MonoBehaviour:
       tickIntervalSeconds: 1
       maxStacks: 1
       refreshDurationOnReapply: 1
+  - effectType: 4
+    targetMode: 0
+    powerMultiplier: 0
+    radiusOverride: 2
+    durationSeconds: 0.45
+    tickIntervalSeconds: 1
+    followCaster: 0
+    persistentAreaPulseEffectType: 0
+    persistentAreaTargetType: 0
+    forcedMovementDirection: 0
+    forcedMovementDistance: 0
+    forcedMovementDurationSeconds: 0
+    forcedMovementPeakHeight: 0
+    statusEffects: []
   allowsSelfCast: 0
   actionSequence:
     enabled: 0
@@ -72,7 +86,7 @@ MonoBehaviour:
     temporarySkillCastRangeOverride: 0
     targetRefreshMode: 1
     interruptFlags: 3
-  persistentAreaVfxPrefab: {fileID: 0}
+  persistentAreaVfxPrefab: {fileID: 5101000000000000001, guid: fef796fb01ae40338cbdf53ccfbab83e, type: 3}
   persistentAreaVfxScaleMultiplier: 1
   persistentAreaVfxEulerAngles: {x: 0, y: 0, z: 0}
   skillAreaPresentationType: 0
