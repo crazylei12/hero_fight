@@ -69,7 +69,7 @@ namespace Fight.Editor
         {
             new("skillId", "技能ID", "唯一且稳定的技能ID，用来定位资产。"),
             new("displayName", "技能名", "显示名，主要用于人工识别。"),
-            new("effectIndex", "效果序号", "从 0 开始；可新增更大的序号来追加效果。"),
+            new("effectIndex", "效果序号", "从 0 开始；只能修改已有项，或在末尾连续追加 1 个 effect。"),
             new("effectType", "效果类型", "枚举值，建议保留左侧英文键。"),
             new("targetMode", "效果目标模式", "枚举值，建议保留左侧英文键。"),
             new("powerMultiplier", "倍率", "直接伤害/治疗等效果的倍率。"),
@@ -90,7 +90,7 @@ namespace Fight.Editor
             new("skillId", "技能ID", "唯一且稳定的技能ID，用来定位资产。"),
             new("displayName", "技能名", "显示名，主要用于人工识别。"),
             new("effectIndex", "效果序号", "挂在哪个 SkillEffectData 下。"),
-            new("statusIndex", "状态序号", "从 0 开始；可新增更大的序号来追加状态。"),
+            new("statusIndex", "状态序号", "从 0 开始；只能修改已有项，或在末尾连续追加 1 个 status。"),
             new("effectType", "状态类型", "枚举值，建议保留左侧英文键。"),
             new("durationSeconds", "持续时间", "状态持续秒数。"),
             new("magnitude", "数值强度", "属性类状态通常是小数百分比；护盾是原始值。"),
@@ -116,7 +116,6 @@ namespace Fight.Editor
             WriteSkillStatusEffectsCsv(folderPath, assetIndex.Skills.Values.OrderBy(skill => skill.skillId, StringComparer.OrdinalIgnoreCase));
             WriteReadme(folderPath);
 
-            AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             Debug.Log($"[BalanceSheets] 已导出批量调数表到 {folderPath}");
         }
@@ -295,7 +294,7 @@ namespace Fight.Editor
 
             WriteCsv(
                 Path.Combine(folderPath, SkillEffectsFileName),
-                "技能效果列表；删除表格行不会自动删除资产里的旧效果，但可以通过新增更大的 effectIndex 追加效果。",
+                "技能效果列表；删除表格行不会自动删除资产里的旧效果，新增 effect 也只允许在末尾连续追加 1 个，不能跳号补洞。",
                 SkillEffectColumns,
                 rows);
         }
@@ -330,7 +329,7 @@ namespace Fight.Editor
 
             WriteCsv(
                 Path.Combine(folderPath, SkillStatusEffectsFileName),
-                "技能附带状态；删除表格行不会自动删除资产里的旧状态，但可以通过新增更大的 statusIndex 追加状态。",
+                "技能附带状态；删除表格行不会自动删除资产里的旧状态，新增 status 也只允许在末尾连续追加 1 个，不能跳号补洞。",
                 SkillStatusEffectColumns,
                 rows);
         }
@@ -354,8 +353,10 @@ namespace Fight.Editor
                 "2. 枚举列默认导出为 `英文枚举|中文说明`。导入时推荐保留左侧英文键；如果只填中文，工具也会尝试识别。",
                 "3. 布尔列支持 `是/否`、`true/false`、`1/0`。",
                 "4. 空白单元格在导入时会被跳过，不会把原值清空。",
-                "5. `skill_effects.csv` 和 `skill_status_effects.csv` 支持通过更大的序号追加新项，但删除表格行不会自动删除旧项。",
-                "6. 当前构建流程和 demo 内容确保流程已经改成“只补缺失，不覆盖已有调数”；只有显式执行覆盖重建菜单时才会回到默认值。");
+                "5. `skill_effects.csv` 和 `skill_status_effects.csv` 只允许在末尾连续追加新项，不允许跳号补洞；删除表格行也不会自动删除旧项。",
+                "6. `skill_status_effects.csv` 不会凭空创建父 effect；如果目标 effect 不存在，需先在 `skill_effects.csv` 中创建它。",
+                "7. 导出是只读文件输出，不会调用 SaveAssets 去顺手保存编辑器里其他脏资产。",
+                "8. 当前构建流程和 demo 内容确保流程已经改成“只补缺失，不覆盖已有调数”；只有显式执行覆盖重建菜单时才会回到默认值。");
 
             File.WriteAllText(readmePath, content, new UTF8Encoding(true));
         }
@@ -556,7 +557,7 @@ namespace Fight.Editor
                 var skillId = RequireValue(row, "skillId", filePath);
                 var skill = assetIndex.GetSkill(skillId, filePath);
                 var effectIndex = RequireIntValue(row, "effectIndex", filePath);
-                var effect = EnsureSkillEffect(skill, effectIndex);
+                var effect = GetOrAppendSkillEffect(skill, effectIndex, row);
 
                 if (TryGetEnumValue(row, "effectType", filePath, out SkillEffectType effectType))
                 {
@@ -646,8 +647,8 @@ namespace Fight.Editor
                 var skill = assetIndex.GetSkill(skillId, filePath);
                 var effectIndex = RequireIntValue(row, "effectIndex", filePath);
                 var statusIndex = RequireIntValue(row, "statusIndex", filePath);
-                var effect = EnsureSkillEffect(skill, effectIndex);
-                var statusEffect = EnsureStatusEffect(effect, statusIndex);
+                var effect = RequireExistingSkillEffect(skill, effectIndex, row);
+                var statusEffect = GetOrAppendStatusEffect(effect, statusIndex, row);
 
                 if (TryGetEnumValue(row, "effectType", filePath, out StatusEffectType effectType))
                 {
@@ -687,24 +688,85 @@ namespace Fight.Editor
             }
         }
 
-        private static SkillEffectData EnsureSkillEffect(SkillData skill, int effectIndex)
+        private static SkillEffectData GetOrAppendSkillEffect(SkillData skill, int effectIndex, RowData row)
         {
-            while (skill.effects.Count <= effectIndex)
+            if (effectIndex < 0)
             {
-                skill.effects.Add(new SkillEffectData());
+                throw CreateRowException(row, $"effectIndex 不能小于 0：{effectIndex}");
+            }
+
+            if (effectIndex < skill.effects.Count)
+            {
+                return skill.effects[effectIndex];
+            }
+
+            if (effectIndex > skill.effects.Count)
+            {
+                throw CreateRowException(
+                    row,
+                    $"effectIndex={effectIndex} 不能跳号追加。当前 skill.effects.Count={skill.effects.Count}，只允许修改已有项或在末尾连续追加 1 个 effect。");
+            }
+
+            if (!TryGetEnumValue(row, "effectType", row.FilePath, out SkillEffectType effectType))
+            {
+                throw CreateRowException(row, "新增 effect 时必须显式填写 effectType，避免把默认 DirectDamage 静默写进资产。");
+            }
+
+            var effect = new SkillEffectData
+            {
+                effectType = effectType,
+            };
+            skill.effects.Add(effect);
+            return effect;
+        }
+
+        private static SkillEffectData RequireExistingSkillEffect(SkillData skill, int effectIndex, RowData row)
+        {
+            if (effectIndex < 0)
+            {
+                throw CreateRowException(row, $"effectIndex 不能小于 0：{effectIndex}");
+            }
+
+            if (effectIndex >= skill.effects.Count)
+            {
+                throw CreateRowException(
+                    row,
+                    $"skill_status_effects.csv 不能凭空创建父 effect。skillId={skill.skillId} 当前只有 {skill.effects.Count} 个 effect，但请求写入 effectIndex={effectIndex}。请先在 skill_effects.csv 中创建对应 effect，或确保资产里已存在该 effect。");
             }
 
             return skill.effects[effectIndex];
         }
 
-        private static StatusEffectData EnsureStatusEffect(SkillEffectData effect, int statusIndex)
+        private static StatusEffectData GetOrAppendStatusEffect(SkillEffectData effect, int statusIndex, RowData row)
         {
-            while (effect.statusEffects.Count <= statusIndex)
+            if (statusIndex < 0)
             {
-                effect.statusEffects.Add(new StatusEffectData());
+                throw CreateRowException(row, $"statusIndex 不能小于 0：{statusIndex}");
             }
 
-            return effect.statusEffects[statusIndex];
+            if (statusIndex < effect.statusEffects.Count)
+            {
+                return effect.statusEffects[statusIndex];
+            }
+
+            if (statusIndex > effect.statusEffects.Count)
+            {
+                throw CreateRowException(
+                    row,
+                    $"statusIndex={statusIndex} 不能跳号追加。当前 effect.statusEffects.Count={effect.statusEffects.Count}，只允许修改已有项或在末尾连续追加 1 个 status。");
+            }
+
+            if (!TryGetEnumValue(row, "effectType", row.FilePath, out StatusEffectType statusEffectType))
+            {
+                throw CreateRowException(row, "新增 status 时必须显式填写 effectType，避免把默认 None 静默写进资产。");
+            }
+
+            var statusEffect = new StatusEffectData
+            {
+                effectType = statusEffectType,
+            };
+            effect.statusEffects.Add(statusEffect);
+            return statusEffect;
         }
 
         private static AssetIndex BuildAssetIndex()
