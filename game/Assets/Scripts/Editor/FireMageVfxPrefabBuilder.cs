@@ -1,4 +1,5 @@
 using System.IO;
+using Fight.UI.Presentation.Skills;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -114,7 +115,7 @@ namespace Fight.Editor
                 root.transform,
                 "OuterWarning",
                 softCircleSprite,
-                new Color(0.98f, 0.1f, 0.08f, 0.12f),
+                new Color(1f, 0.22f, 0.09f, 0.1f),
                 0,
                 Vector3.zero,
                 new Vector3(1.02f, 1.02f, 1f));
@@ -122,34 +123,34 @@ namespace Fight.Editor
                 root.transform,
                 "WarningRing",
                 softCircleSprite,
-                new Color(1f, 0.05f, 0.05f, 0.16f),
+                new Color(1f, 0.12f, 0.06f, 0.14f),
                 1,
                 Vector3.zero,
-                new Vector3(0.88f, 0.88f, 1f));
+                new Vector3(0.86f, 0.86f, 1f));
             CreateSprite(
                 root.transform,
                 "HeatField",
                 softCircleSprite,
-                new Color(0.82f, 0.05f, 0.04f, 0.26f),
+                new Color(0.78f, 0.08f, 0.04f, 0.22f),
                 2,
                 Vector3.zero,
-                new Vector3(0.7f, 0.7f, 1f));
+                new Vector3(0.66f, 0.66f, 1f));
             CreateSprite(
                 root.transform,
                 "CoreHeat",
                 softCircleSprite,
-                new Color(1f, 0.14f, 0.08f, 0.16f),
+                new Color(1f, 0.34f, 0.12f, 0.1f),
                 3,
                 Vector3.zero,
-                new Vector3(0.44f, 0.44f, 1f));
+                new Vector3(0.4f, 0.4f, 1f));
             CreateSprite(
                 root.transform,
                 "CrimsonCenter",
                 softCircleSprite,
-                new Color(0.9f, 0.03f, 0.03f, 0.18f),
+                new Color(0.96f, 0.18f, 0.08f, 0.08f),
                 4,
                 Vector3.zero,
-                new Vector3(0.28f, 0.28f, 1f));
+                new Vector3(0.24f, 0.24f, 1f));
 
             var meteorPulse = InstantiateNestedPrefab(topDownRocketCircleRedPrefab, root.transform, "MeteorPulse");
             meteorPulse.transform.localScale = Vector3.one * 0.116f;
@@ -163,7 +164,7 @@ namespace Fight.Editor
                 root.transform,
                 "FlameNorthWest",
                 LoadPyromancerFlameSprite("pyromancer_effect_6__3507.png"),
-                new Color(1f, 0.78f, 0.68f, 0.96f),
+                new Color(1f, 0.88f, 0.72f, 0.98f),
                 10,
                 new Vector3(-0.28f, 0.27f, 0f),
                 Vector3.one * 0.18f,
@@ -172,7 +173,7 @@ namespace Fight.Editor
                 root.transform,
                 "FlameNorth",
                 LoadPyromancerFlameSprite("pyromancer_effect_9__1675.png"),
-                new Color(1f, 0.72f, 0.62f, 0.92f),
+                new Color(1f, 0.86f, 0.74f, 0.96f),
                 11,
                 new Vector3(-0.04f, 0.31f, 0f),
                 Vector3.one * 0.26f,
@@ -181,7 +182,7 @@ namespace Fight.Editor
                 root.transform,
                 "FlameNorthEast",
                 LoadPyromancerFlameSprite("pyromancer_effect_10__3404.png"),
-                new Color(1f, 0.74f, 0.66f, 0.94f),
+                new Color(1f, 0.9f, 0.76f, 0.98f),
                 10,
                 new Vector3(0.23f, 0.24f, 0f),
                 Vector3.one * 0.3f,
@@ -190,7 +191,7 @@ namespace Fight.Editor
                 root.transform,
                 "FlameWestOuter",
                 LoadPyromancerFlameSprite("pyromancer_effect_11__2838.png"),
-                new Color(1f, 0.68f, 0.58f, 0.9f),
+                new Color(1f, 0.84f, 0.72f, 0.94f),
                 9,
                 new Vector3(-0.39f, 0.03f, 0f),
                 Vector3.one * 0.28f,
@@ -199,7 +200,7 @@ namespace Fight.Editor
                 root.transform,
                 "FlameWestInner",
                 LoadPyromancerFlameSprite("pyromancer_effect_8__4109.png"),
-                new Color(1f, 0.8f, 0.7f, 0.96f),
+                new Color(1f, 0.94f, 0.82f, 1f),
                 11,
                 new Vector3(-0.18f, 0.04f, 0f),
                 Vector3.one * 0.38f,
@@ -208,7 +209,7 @@ namespace Fight.Editor
                 root.transform,
                 "FlameCenterRight",
                 LoadPyromancerFlameSprite("pyromancer_effect_3__2764.png"),
-                new Color(1f, 0.84f, 0.76f, 0.92f),
+                new Color(1f, 0.92f, 0.8f, 0.96f),
                 12,
                 new Vector3(0.16f, 0.02f, 0f),
                 Vector3.one * 0.18f,
@@ -217,7 +218,7 @@ namespace Fight.Editor
                 root.transform,
                 "FlameSouthWest",
                 LoadPyromancerFlameSprite("pyromancer_effect_5__4209.png"),
-                new Color(1f, 0.78f, 0.68f, 0.94f),
+                new Color(1f, 0.88f, 0.74f, 0.96f),
                 10,
                 new Vector3(-0.23f, -0.2f, 0f),
                 Vector3.one * 0.18f,
@@ -226,7 +227,7 @@ namespace Fight.Editor
                 root.transform,
                 "FlameSouth",
                 LoadPyromancerFlameSprite("pyromancer_effect_9__1675.png"),
-                new Color(1f, 0.76f, 0.66f, 0.9f),
+                new Color(1f, 0.86f, 0.74f, 0.94f),
                 10,
                 new Vector3(0.03f, -0.27f, 0f),
                 Vector3.one * 0.22f,
@@ -235,7 +236,7 @@ namespace Fight.Editor
                 root.transform,
                 "FlameSouthEast",
                 LoadPyromancerFlameSprite("pyromancer_effect_6__3507.png"),
-                new Color(1f, 0.74f, 0.64f, 0.92f),
+                new Color(1f, 0.88f, 0.72f, 0.96f),
                 10,
                 new Vector3(0.27f, -0.19f, 0f),
                 Vector3.one * 0.17f,
@@ -245,12 +246,15 @@ namespace Fight.Editor
                 root.transform,
                 "FlameEastOuter",
                 LoadPyromancerFlameSprite("pyromancer_effect_11__2838.png"),
-                new Color(1f, 0.68f, 0.58f, 0.88f),
+                new Color(1f, 0.84f, 0.72f, 0.92f),
                 9,
                 new Vector3(0.39f, 0.06f, 0f),
                 Vector3.one * 0.28f,
                 12f,
                 true);
+
+            var flameScatter = root.AddComponent<SkillAreaFlameScatterPulseController>();
+            flameScatter.Configure("Flame", 0.08f, 0.05f, 0.14f, 10f, 0.88f, 1f);
 
             SavePrefab(root, MeteorFieldPrefabPath);
         }
