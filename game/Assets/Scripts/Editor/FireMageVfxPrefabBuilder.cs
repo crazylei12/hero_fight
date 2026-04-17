@@ -90,17 +90,20 @@ namespace Fight.Editor
 
         private static void BuildMeteorFieldPrefab()
         {
+            const float meteorFieldScale = 0.118f;
             var topDownRocketCircleRedPrefab = LoadRequiredAsset<GameObject>(TopDownRocketCircleRedSourcePrefabPath);
 
             var root = new GameObject("FireMageMeteorField");
             root.AddComponent<SortingGroup>();
             var meteorField = InstantiateNestedPrefab(topDownRocketCircleRedPrefab, root.transform, "MeteorField");
-            meteorField.transform.localScale = Vector3.one * 0.118f;
+            meteorField.transform.localScale = Vector3.one * meteorFieldScale;
             meteorField.transform.localPosition = Vector3.zero;
             meteorField.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            RemoveDirectChild(meteorField.transform, "shot_controller");
             OffsetRendererOrders(meteorField, 8);
 
             SavePrefab(root, MeteorFieldPrefabPath);
+            AddMeteorShotController(meteorFieldScale);
         }
 
         private static void BuildEmberBurstPrefab(Sprite softCircleSprite)
@@ -242,6 +245,71 @@ namespace Fight.Editor
             instance.name = name;
             instance.transform.SetParent(parent, false);
             return instance;
+        }
+
+        private static void AddMeteorShotController(float scaleMultiplier)
+        {
+            var editableRoot = PrefabUtility.LoadPrefabContents(MeteorFieldPrefabPath);
+            var sourceRoot = PrefabUtility.LoadPrefabContents(TopDownRocketCircleRedSourcePrefabPath);
+            try
+            {
+                RemoveDirectChild(editableRoot.transform, "shot_controller");
+
+                var sourceShotController = FindDirectChild(sourceRoot.transform, "shot_controller");
+                if (sourceShotController == null)
+                {
+                    throw new FileNotFoundException("Missing shot_controller in top_down_rocket_circle_red prefab.");
+                }
+
+                var shotInstance = Object.Instantiate(sourceShotController.gameObject, editableRoot.transform, false);
+                shotInstance.name = sourceShotController.name;
+                shotInstance.transform.localPosition = sourceShotController.localPosition * scaleMultiplier;
+                shotInstance.transform.localRotation = sourceShotController.localRotation;
+                shotInstance.transform.localScale = sourceShotController.localScale * scaleMultiplier;
+                OffsetRendererOrders(shotInstance, 8);
+                PrefabUtility.SaveAsPrefabAsset(editableRoot, MeteorFieldPrefabPath);
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(editableRoot);
+                PrefabUtility.UnloadPrefabContents(sourceRoot);
+            }
+        }
+
+        private static Transform FindDirectChild(Transform parent, string childName)
+        {
+            if (parent == null || string.IsNullOrWhiteSpace(childName))
+            {
+                return null;
+            }
+
+            for (var i = 0; i < parent.childCount; i++)
+            {
+                var child = parent.GetChild(i);
+                if (child != null && child.name == childName)
+                {
+                    return child;
+                }
+            }
+
+            return null;
+        }
+
+        private static void RemoveDirectChild(Transform parent, string childName)
+        {
+            if (parent == null || string.IsNullOrWhiteSpace(childName))
+            {
+                return;
+            }
+
+            for (var i = parent.childCount - 1; i >= 0; i--)
+            {
+                var child = parent.GetChild(i);
+                if (child != null && child.name == childName)
+                {
+                    Object.DestroyImmediate(child.gameObject);
+                }
+            }
         }
 
         private static void OffsetRendererOrders(GameObject root, int baseOrder)
