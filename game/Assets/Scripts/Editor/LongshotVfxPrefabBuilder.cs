@@ -16,8 +16,7 @@ namespace Fight.Editor
         private const string ProjectilePrefabPath = ProjectilePrefabsFolder + "/LongshotBasicAttackProjectile.prefab";
         private const string LongshotHeroAssetPath = "Assets/Data/Stage01Demo/Heroes/marksman_001_longshot/Longshot.asset";
 
-        private const string ArrowSourcePrefabPath = "Assets/Super Pixel Projectiles Pack 3/Prefabs/pj3_arrow_small_yellow.prefab";
-        private const string LightSparkSourcePrefabPath = "Assets/Super Pixel Projectiles Pack 3/Prefabs/pj3_light_spark_small_yellow.prefab";
+        private const string ArrowSourcePrefabPath = "Assets/Super Pixel Projectiles Pack 3/Prefabs/pj3_arrow_small_black.prefab";
 
         private static bool autoBuildScheduled;
 
@@ -85,7 +84,6 @@ namespace Fight.Editor
         private static void BuildProjectilePrefab(Sprite softCircleSprite)
         {
             var arrowPrefab = LoadRequiredAsset<GameObject>(ArrowSourcePrefabPath);
-            var lightSparkPrefab = LoadRequiredAsset<GameObject>(LightSparkSourcePrefabPath);
 
             var root = new GameObject("LongshotBasicAttackProjectile");
             root.AddComponent<SortingGroup>();
@@ -94,41 +92,31 @@ namespace Fight.Editor
                 root.transform,
                 "TrailBloom",
                 softCircleSprite,
-                new Color(1f, 0.84f, 0.32f, 0.14f),
+                new Color(0.78f, 0.86f, 0.96f, 0.09f),
                 1,
-                new Vector3(-0.15f, 0f, 0f),
-                new Vector3(0.42f, 0.18f, 1f));
+                new Vector3(-0.17f, 0f, 0f),
+                new Vector3(0.38f, 0.12f, 1f));
             CreateSprite(
                 root.transform,
                 "SpeedStreak",
                 softCircleSprite,
-                new Color(1f, 0.94f, 0.66f, 0.34f),
+                new Color(0.92f, 0.96f, 1f, 0.16f),
                 2,
                 new Vector3(-0.08f, 0f, 0f),
-                new Vector3(0.26f, 0.09f, 1f));
+                new Vector3(0.24f, 0.07f, 1f));
             CreateSprite(
                 root.transform,
                 "ArrowGlow",
                 softCircleSprite,
-                new Color(1f, 0.95f, 0.72f, 0.5f),
+                new Color(0.86f, 0.92f, 1f, 0.18f),
                 4,
-                new Vector3(0.05f, 0f, 0f),
-                new Vector3(0.18f, 0.18f, 1f));
-
-            var trailingSpark = InstantiateNestedPrefab(lightSparkPrefab, root.transform, "TrailingSpark");
-            trailingSpark.transform.localPosition = new Vector3(-0.14f, 0f, 0f);
-            trailingSpark.transform.localScale = Vector3.one * 0.12f;
-            OffsetRendererOrders(trailingSpark, 6);
+                new Vector3(0.03f, 0f, 0f),
+                new Vector3(0.16f, 0.1f, 1f));
 
             var arrow = InstantiateNestedPrefab(arrowPrefab, root.transform, "ArrowCore");
             arrow.transform.localPosition = new Vector3(0.02f, 0f, 0f);
             arrow.transform.localScale = Vector3.one * 0.27f;
             OffsetRendererOrders(arrow, 10);
-
-            var tipSpark = InstantiateNestedPrefab(lightSparkPrefab, root.transform, "TipSpark");
-            tipSpark.transform.localPosition = new Vector3(0.17f, 0f, 0f);
-            tipSpark.transform.localScale = Vector3.one * 0.09f;
-            OffsetRendererOrders(tipSpark, 13);
 
             SavePrefab(root, ProjectilePrefabPath);
         }
