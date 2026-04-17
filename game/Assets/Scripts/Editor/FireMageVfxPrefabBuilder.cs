@@ -98,7 +98,6 @@ namespace Fight.Editor
             meteorField.transform.localScale = Vector3.one * 0.118f;
             meteorField.transform.localPosition = Vector3.zero;
             meteorField.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-            RemoveDirectChild(meteorField.transform, "shot_controller");
             OffsetRendererOrders(meteorField, 8);
 
             SavePrefab(root, MeteorFieldPrefabPath);
@@ -243,23 +242,6 @@ namespace Fight.Editor
             instance.name = name;
             instance.transform.SetParent(parent, false);
             return instance;
-        }
-
-        private static void RemoveDirectChild(Transform parent, string childName)
-        {
-            if (parent == null || string.IsNullOrWhiteSpace(childName))
-            {
-                return;
-            }
-
-            for (var i = parent.childCount - 1; i >= 0; i--)
-            {
-                var child = parent.GetChild(i);
-                if (child != null && child.name == childName)
-                {
-                    Object.DestroyImmediate(child.gameObject);
-                }
-            }
         }
 
         private static void OffsetRendererOrders(GameObject root, int baseOrder)
