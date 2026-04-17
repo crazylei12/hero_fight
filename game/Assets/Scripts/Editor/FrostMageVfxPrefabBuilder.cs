@@ -1,4 +1,5 @@
 using System.IO;
+using Fight.Data;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -10,9 +11,13 @@ namespace Fight.Editor
         private const string BuildMenuPath = "Fight/Stage 01/Build FrostMage VFX Prefabs";
         private const string GeneratedArtFolder = "Assets/Art/VFX/Generated";
         private const string PrefabsRootFolder = "Assets/Prefabs/VFX";
+        private const string ProjectilePrefabsFolder = PrefabsRootFolder + "/Projectiles";
         private const string SkillPrefabsFolder = PrefabsRootFolder + "/Skills";
         private const string SoftCircleSpritePath = GeneratedArtFolder + "/vfx_soft_circle.png";
+        private const string ProjectilePrefabPath = ProjectilePrefabsFolder + "/FrostMageBasicAttackProjectile.prefab";
         private const string BlizzardFieldPrefabPath = SkillPrefabsFolder + "/FrostMageBlizzardField.prefab";
+        private const string FrostMageHeroAssetPath = "Assets/Data/Stage01Demo/Heroes/mage_002_frostmage/Frostmage.asset";
+        private const string FrostProjectileSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Range_attack/Projectiles_frost.prefab";
         private const string IceLineSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Top_down_attack/top_down_ice_line.prefab";
         private const string IceCircleSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Top_down_attack/top_down_ice_circle.prefab";
 
@@ -21,10 +26,13 @@ namespace Fight.Editor
         {
             EnsureFolder(GeneratedArtFolder);
             EnsureFolder(PrefabsRootFolder);
+            EnsureFolder(ProjectilePrefabsFolder);
             EnsureFolder(SkillPrefabsFolder);
 
             var softCircleSprite = EnsureSoftCircleSprite();
+            BuildProjectilePrefab(softCircleSprite);
             BuildBlizzardFieldPrefab(softCircleSprite);
+            SyncStage01DemoAssets();
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -34,6 +42,54 @@ namespace Fight.Editor
         public static void BuildFrostMageVfxPrefabsBatch()
         {
             BuildFrostMageVfxPrefabs();
+        }
+
+        private static void SyncStage01DemoAssets()
+        {
+            var projectilePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ProjectilePrefabPath);
+            var hero = AssetDatabase.LoadAssetAtPath<HeroDefinition>(FrostMageHeroAssetPath);
+            if (hero == null)
+            {
+                return;
+            }
+
+            hero.visualConfig ??= new HeroVisualConfig();
+            hero.visualConfig.projectilePrefab = projectilePrefab;
+            hero.visualConfig.projectileAlignToMovement = projectilePrefab != null;
+            hero.visualConfig.projectileEulerAngles = Vector3.zero;
+            hero.visualConfig.hitVfxPrefab = null;
+            EditorUtility.SetDirty(hero);
+        }
+
+        private static void BuildProjectilePrefab(Sprite softCircleSprite)
+        {
+            var frostProjectilePrefab = LoadRequiredAsset<GameObject>(FrostProjectileSourcePrefabPath);
+
+            var root = new GameObject("FrostMageBasicAttackProjectile");
+            root.AddComponent<SortingGroup>();
+
+            CreateSprite(
+                root.transform,
+                "OuterGlow",
+                softCircleSprite,
+                new Color(0.56f, 0.84f, 1f, 0.16f),
+                -2,
+                new Vector3(-0.01f, 0f, 0f),
+                Vector3.one * 0.38f);
+            CreateSprite(
+                root.transform,
+                "InnerGlow",
+                softCircleSprite,
+                new Color(0.88f, 0.97f, 1f, 0.34f),
+                -1,
+                new Vector3(0.01f, 0f, 0f),
+                Vector3.one * 0.22f);
+
+            var projectile = InstantiateNestedPrefab(frostProjectilePrefab, root.transform, "FrostProjectile");
+            projectile.transform.localScale = Vector3.one * 0.11f;
+            projectile.transform.localPosition = Vector3.zero;
+
+            SavePrefab(root, ProjectilePrefabPath);
         }
 
         private static void BuildBlizzardFieldPrefab(Sprite softCircleSprite)
