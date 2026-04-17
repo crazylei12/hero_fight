@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using Fight.Data;
 using UnityEditor;
 using UnityEngine;
@@ -16,87 +17,55 @@ namespace Fight.Editor
 
         private const string DataSearchRoot = "Assets/Data";
         private const string HeroesFileName = "heroes.csv";
-        private const string BasicAttacksFileName = "basic_attacks.csv";
         private const string SkillsFileName = "skills.csv";
+        private const string BasicAttacksFileName = "basic_attacks.csv";
         private const string SkillEffectsFileName = "skill_effects.csv";
         private const string SkillStatusEffectsFileName = "skill_status_effects.csv";
         private const string ReadmeFileName = "README_批量调数说明.md";
+
+        private static readonly Regex EffectValueColumnPattern = new Regex(
+            @"^effect(?<effectIndex>\d+)(?<suffix>PowerMultiplier|RadiusOverride|DurationSeconds|TickIntervalSeconds|ForcedMovementDistance|ForcedMovementDurationSeconds|ForcedMovementPeakHeight)$",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+        private static readonly Regex EffectStatusValueColumnPattern = new Regex(
+            @"^effect(?<effectIndex>\d+)Status(?<statusIndex>\d+)(?<suffix>DurationSeconds|Magnitude|TickIntervalSeconds|MaxStacks)$",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
         private static readonly CsvColumn[] HeroColumns =
         {
             new("heroId", "英雄ID", "唯一且稳定的英雄ID，用来定位资产。"),
             new("displayName", "英雄名", "显示名，主要用于人工识别。"),
-            new("heroClass", "职业", "职业枚举，通常只读。"),
+            new("heroClass", "职业", "只读说明列，帮助识别英雄职业。"),
             new("maxHealth", "最大生命", "基础最大生命值。"),
             new("attackPower", "攻击力", "基础攻击力。"),
             new("defense", "防御力", "基础防御力。"),
-            new("attackSpeed", "攻速", "基础攻速，实际普攻节奏主要由它决定。"),
+            new("attackSpeed", "攻速", "基础攻速。"),
             new("moveSpeed", "移速", "基础移动速度。"),
             new("criticalChance", "暴击率", "0 到 1 之间的小数，例如 0.25 = 25%。"),
             new("criticalDamageMultiplier", "暴击伤害", "暴击伤害倍率，例如 1.5。"),
             new("attackRange", "攻击距离", "基础攻击距离。"),
+            new("basicAttackDamageMultiplier", "普攻倍率", "普攻伤害或治疗倍率。"),
+            new("basicAttackRangeOverride", "普攻射程覆盖", "0 表示沿用基础攻击距离。"),
+            new("basicAttackProjectileSpeed", "普攻投射物速度", "使用投射物时的飞行速度。"),
         };
 
-        private static readonly CsvColumn[] BasicAttackColumns =
-        {
-            new("heroId", "英雄ID", "唯一且稳定的英雄ID，用来定位资产。"),
-            new("displayName", "英雄名", "显示名，主要用于人工识别。"),
-            new("effectType", "普攻效果类型", "枚举值，建议保留左侧英文键。"),
-            new("targetType", "普攻目标类型", "枚举值，建议保留左侧英文键。"),
-            new("damageMultiplier", "普攻倍率", "普攻伤害或治疗倍率。"),
-            new("attackInterval", "旧版攻间隔", "兼容字段，通常优先调 attackSpeed。"),
-            new("rangeOverride", "普攻射程覆盖", "0 表示沿用基础 attackRange。"),
-            new("usesProjectile", "是否投射物", "布尔值，支持 是/否、true/false、1/0。"),
-            new("projectileSpeed", "投射物速度", "投射物飞行速度。"),
-        };
-
-        private static readonly CsvColumn[] SkillColumns =
+        private static readonly CsvColumn[] SkillFixedColumns =
         {
             new("skillId", "技能ID", "唯一且稳定的技能ID，用来定位资产。"),
             new("displayName", "技能名", "显示名，主要用于人工识别。"),
-            new("slotType", "技能槽位", "枚举值，建议保留左侧英文键。"),
-            new("skillType", "技能类型", "枚举值，建议保留左侧英文键。"),
-            new("targetType", "目标类型", "枚举值，建议保留左侧英文键。"),
+            new("ownerHeroes", "所属英雄", "只读说明列，显示哪些英雄在使用这个技能。"),
+            new("slotType", "技能槽位", "只读说明列，显示这个技能当前配置的小技能/大招槽位。"),
             new("castRange", "施法距离", "技能施法距离。"),
-            new("areaRadius", "范围半径", "技能范围半径。"),
+            new("areaRadius", "范围半径", "技能作用范围半径。"),
             new("cooldownSeconds", "冷却秒数", "技能冷却时间。"),
             new("minTargetsToCast", "最少目标数", "满足该人数条件后才施放。"),
-            new("allowsSelfCast", "允许自施法", "布尔值，支持 是/否、true/false、1/0。"),
-            new("skillAreaPresentationType", "范围表现类型", "表现层范围显示类型。"),
-        };
-
-        private static readonly CsvColumn[] SkillEffectColumns =
-        {
-            new("skillId", "技能ID", "唯一且稳定的技能ID，用来定位资产。"),
-            new("displayName", "技能名", "显示名，主要用于人工识别。"),
-            new("effectIndex", "效果序号", "从 0 开始；只能修改已有项，或在末尾连续追加 1 个 effect。"),
-            new("effectType", "效果类型", "枚举值，建议保留左侧英文键。"),
-            new("targetMode", "效果目标模式", "枚举值，建议保留左侧英文键。"),
-            new("powerMultiplier", "倍率", "直接伤害/治疗等效果的倍率。"),
-            new("radiusOverride", "半径覆盖", "为 0 时通常沿用技能主半径。"),
-            new("durationSeconds", "持续时间", "持续区域或持续效果时长。"),
-            new("tickIntervalSeconds", "跳动间隔", "周期效果的 tick 间隔。"),
-            new("followCaster", "跟随施法者", "持续区域是否跟随施法者。"),
-            new("persistentAreaPulseEffectType", "区域脉冲类型", "持续区域每次脉冲做什么。"),
-            new("persistentAreaTargetType", "区域目标阵营", "持续区域命中敌方、友方或双方。"),
-            new("forcedMovementDirection", "强制位移方向", "推开还是拉近。"),
-            new("forcedMovementDistance", "强制位移距离", "水平位移距离。"),
-            new("forcedMovementDurationSeconds", "强制位移时长", "位移过程持续秒数。"),
-            new("forcedMovementPeakHeight", "强制位移峰值高度", "表现层抬升高度。"),
-        };
-
-        private static readonly CsvColumn[] SkillStatusEffectColumns =
-        {
-            new("skillId", "技能ID", "唯一且稳定的技能ID，用来定位资产。"),
-            new("displayName", "技能名", "显示名，主要用于人工识别。"),
-            new("effectIndex", "效果序号", "挂在哪个 SkillEffectData 下。"),
-            new("statusIndex", "状态序号", "从 0 开始；只能修改已有项，或在末尾连续追加 1 个 status。"),
-            new("effectType", "状态类型", "枚举值，建议保留左侧英文键。"),
-            new("durationSeconds", "持续时间", "状态持续秒数。"),
-            new("magnitude", "数值强度", "属性类状态通常是小数百分比；护盾是原始值。"),
-            new("tickIntervalSeconds", "跳动间隔", "DOT/HOT 等周期状态的 tick 间隔。"),
-            new("maxStacks", "最大层数", "状态最多可叠层数。"),
-            new("refreshDurationOnReapply", "重上是否刷新", "重复施加时是否刷新持续时间。"),
+            new("actionSequenceRepeatCount", "动作序列重复次数", "动作序列采用固定次数模式时的重复次数。"),
+            new("actionSequenceDurationSeconds", "动作序列持续秒数", "动作序列采用固定时长模式时的总时长。"),
+            new("actionSequenceIntervalSeconds", "动作序列间隔", "动作序列每次重复之间的间隔。"),
+            new("actionSequenceWindupSeconds", "动作序列前摇", "动作序列开始前的准备时间。"),
+            new("actionSequenceRecoverySeconds", "动作序列后摇", "动作序列完成后的恢复时间。"),
+            new("actionSequenceTemporaryBasicAttackRangeOverride", "动作序列临时普攻射程", "动作序列期间临时覆盖的普攻射程。"),
+            new("actionSequenceTemporarySkillCastRangeOverride", "动作序列临时技能射程", "动作序列期间临时覆盖的技能施法距离。"),
         };
 
         public static void Export(string folderPath)
@@ -107,17 +76,21 @@ namespace Fight.Editor
             }
 
             var assetIndex = BuildAssetIndex();
-            Directory.CreateDirectory(folderPath);
+            var heroes = assetIndex.Heroes.Values
+                .OrderBy(hero => hero.heroId, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            var skills = assetIndex.Skills.Values
+                .OrderBy(skill => skill.skillId, StringComparer.OrdinalIgnoreCase)
+                .ToList();
 
-            WriteHeroesCsv(folderPath, assetIndex.Heroes.Values.OrderBy(hero => hero.heroId, StringComparer.OrdinalIgnoreCase));
-            WriteBasicAttacksCsv(folderPath, assetIndex.Heroes.Values.OrderBy(hero => hero.heroId, StringComparer.OrdinalIgnoreCase));
-            WriteSkillsCsv(folderPath, assetIndex.Skills.Values.OrderBy(skill => skill.skillId, StringComparer.OrdinalIgnoreCase));
-            WriteSkillEffectsCsv(folderPath, assetIndex.Skills.Values.OrderBy(skill => skill.skillId, StringComparer.OrdinalIgnoreCase));
-            WriteSkillStatusEffectsCsv(folderPath, assetIndex.Skills.Values.OrderBy(skill => skill.skillId, StringComparer.OrdinalIgnoreCase));
-            WriteReadme(folderPath);
+            Directory.CreateDirectory(folderPath);
+            CleanupLegacyFiles(folderPath);
+
+            WriteHeroesCsv(folderPath, heroes);
+            WriteSkillsCsv(folderPath, skills, assetIndex);
 
             AssetDatabase.Refresh();
-            Debug.Log($"[BalanceSheets] 已导出批量调数表到 {folderPath}");
+            Debug.Log($"[BalanceSheets] 已导出两张调数表到 {folderPath}（heroes.csv / skills.csv）。");
         }
 
         public static void Import(string folderPath)
@@ -142,28 +115,10 @@ namespace Fight.Editor
                 importedFiles.Add(HeroesFileName);
             }
 
-            if (TryGetTablePath(folderPath, BasicAttacksFileName, out var basicAttacksPath))
-            {
-                ImportBasicAttacks(basicAttacksPath, assetIndex, dirtyAssets);
-                importedFiles.Add(BasicAttacksFileName);
-            }
-
             if (TryGetTablePath(folderPath, SkillsFileName, out var skillsPath))
             {
                 ImportSkills(skillsPath, assetIndex, dirtyAssets);
                 importedFiles.Add(SkillsFileName);
-            }
-
-            if (TryGetTablePath(folderPath, SkillEffectsFileName, out var skillEffectsPath))
-            {
-                ImportSkillEffects(skillEffectsPath, assetIndex, dirtyAssets);
-                importedFiles.Add(SkillEffectsFileName);
-            }
-
-            if (TryGetTablePath(folderPath, SkillStatusEffectsFileName, out var skillStatusEffectsPath))
-            {
-                ImportSkillStatusEffects(skillStatusEffectsPath, assetIndex, dirtyAssets);
-                importedFiles.Add(SkillStatusEffectsFileName);
             }
 
             foreach (var asset in dirtyAssets)
@@ -176,13 +131,13 @@ namespace Fight.Editor
 
             var importedSummary = importedFiles.Count > 0
                 ? string.Join(", ", importedFiles)
-                : "没有找到任何已知调数表";
+                : "没有找到 heroes.csv 或 skills.csv";
             Debug.Log($"[BalanceSheets] 已从 {folderPath} 导入：{importedSummary}。变更资产数：{dirtyAssets.Count}");
         }
 
-        private static void WriteHeroesCsv(string folderPath, IEnumerable<HeroDefinition> heroes)
+        private static void WriteHeroesCsv(string folderPath, IReadOnlyList<HeroDefinition> heroes)
         {
-            var rows = new List<IReadOnlyList<string>>();
+            var rows = new List<IReadOnlyList<string>>(heroes.Count);
             foreach (var hero in heroes)
             {
                 rows.Add(new[]
@@ -190,292 +145,139 @@ namespace Fight.Editor
                     hero.heroId,
                     hero.displayName,
                     FormatEnum(hero.heroClass),
-                    FormatFloat(hero.baseStats.maxHealth),
-                    FormatFloat(hero.baseStats.attackPower),
-                    FormatFloat(hero.baseStats.defense),
-                    FormatFloat(hero.baseStats.attackSpeed),
-                    FormatFloat(hero.baseStats.moveSpeed),
-                    FormatFloat(hero.baseStats.criticalChance),
-                    FormatFloat(hero.baseStats.criticalDamageMultiplier),
-                    FormatFloat(hero.baseStats.attackRange),
+                    FormatFloat(hero.baseStats?.maxHealth),
+                    FormatFloat(hero.baseStats?.attackPower),
+                    FormatFloat(hero.baseStats?.defense),
+                    FormatFloat(hero.baseStats?.attackSpeed),
+                    FormatFloat(hero.baseStats?.moveSpeed),
+                    FormatFloat(hero.baseStats?.criticalChance),
+                    FormatFloat(hero.baseStats?.criticalDamageMultiplier),
+                    FormatFloat(hero.baseStats?.attackRange),
+                    FormatFloat(hero.basicAttack?.damageMultiplier),
+                    FormatFloat(hero.basicAttack?.rangeOverride),
+                    FormatFloat(hero.basicAttack?.projectileSpeed),
                 });
             }
 
             WriteCsv(
                 Path.Combine(folderPath, HeroesFileName),
-                "英雄基础属性；heroId 用于定位资产，空白单元格导入时会跳过，不会清空原值。",
+                "只展示英雄基础属性与普攻数值；非数值配置不在这张表里维护，空白单元格导入时会跳过。",
                 HeroColumns,
                 rows);
         }
 
-        private static void WriteBasicAttacksCsv(string folderPath, IEnumerable<HeroDefinition> heroes)
+        private static void WriteSkillsCsv(string folderPath, IReadOnlyList<SkillData> skills, AssetIndex assetIndex)
         {
-            var rows = new List<IReadOnlyList<string>>();
-            foreach (var hero in heroes)
-            {
-                rows.Add(new[]
-                {
-                    hero.heroId,
-                    hero.displayName,
-                    FormatEnum(hero.basicAttack.effectType),
-                    FormatEnum(hero.basicAttack.targetType),
-                    FormatFloat(hero.basicAttack.damageMultiplier),
-                    FormatFloat(hero.basicAttack.attackInterval),
-                    FormatFloat(hero.basicAttack.rangeOverride),
-                    FormatBool(hero.basicAttack.usesProjectile),
-                    FormatFloat(hero.basicAttack.projectileSpeed),
-                });
-            }
+            var layout = SkillSheetLayout.Create(skills);
+            var columns = BuildSkillColumns(layout);
+            var rows = new List<IReadOnlyList<string>>(skills.Count);
 
-            WriteCsv(
-                Path.Combine(folderPath, BasicAttacksFileName),
-                "英雄普攻参数；attackInterval 主要为兼容字段，通常优先调英雄 attackSpeed。",
-                BasicAttackColumns,
-                rows);
-        }
-
-        private static void WriteSkillsCsv(string folderPath, IEnumerable<SkillData> skills)
-        {
-            var rows = new List<IReadOnlyList<string>>();
             foreach (var skill in skills)
             {
-                rows.Add(new[]
+                var actionSequence = skill.actionSequence;
+                var row = new List<string>(columns.Count)
                 {
                     skill.skillId,
                     skill.displayName,
+                    assetIndex.GetSkillOwnerSummary(skill.skillId),
                     FormatEnum(skill.slotType),
-                    FormatEnum(skill.skillType),
-                    FormatEnum(skill.targetType),
                     FormatFloat(skill.castRange),
                     FormatFloat(skill.areaRadius),
                     FormatFloat(skill.cooldownSeconds),
-                    skill.minTargetsToCast.ToString(CultureInfo.InvariantCulture),
-                    FormatBool(skill.allowsSelfCast),
-                    FormatEnum(skill.skillAreaPresentationType),
-                });
+                    FormatInt(skill.minTargetsToCast),
+                    FormatInt(actionSequence?.repeatCount),
+                    FormatFloat(actionSequence?.durationSeconds),
+                    FormatFloat(actionSequence?.intervalSeconds),
+                    FormatFloat(actionSequence?.windupSeconds),
+                    FormatFloat(actionSequence?.recoverySeconds),
+                    FormatFloat(actionSequence?.temporaryBasicAttackRangeOverride),
+                    FormatFloat(actionSequence?.temporarySkillCastRangeOverride),
+                };
+
+                for (var effectIndex = 0; effectIndex < layout.MaxEffectCount; effectIndex++)
+                {
+                    var effect = TryGetSkillEffect(skill, effectIndex);
+                    row.Add(BuildSkillEffectLabel(effect));
+                    row.Add(FormatFloat(effect?.powerMultiplier));
+                    row.Add(FormatFloat(effect?.radiusOverride));
+                    row.Add(FormatFloat(effect?.durationSeconds));
+                    row.Add(FormatFloat(effect?.tickIntervalSeconds));
+                    row.Add(FormatFloat(effect?.forcedMovementDistance));
+                    row.Add(FormatFloat(effect?.forcedMovementDurationSeconds));
+                    row.Add(FormatFloat(effect?.forcedMovementPeakHeight));
+
+                    var maxStatusCount = layout.GetMaxStatusCount(effectIndex);
+                    for (var statusIndex = 0; statusIndex < maxStatusCount; statusIndex++)
+                    {
+                        var status = TryGetStatusEffect(effect, statusIndex);
+                        row.Add(BuildStatusEffectLabel(status));
+                        row.Add(FormatFloat(status?.durationSeconds));
+                        row.Add(FormatFloat(status?.magnitude));
+                        row.Add(FormatFloat(status?.tickIntervalSeconds));
+                        row.Add(FormatInt(status?.maxStacks));
+                    }
+                }
+
+                rows.Add(row);
             }
 
             WriteCsv(
                 Path.Combine(folderPath, SkillsFileName),
-                "技能主配置；枚举和布尔列建议直接沿用导出内容修改。",
-                SkillColumns,
+                "只展示技能主数值，以及现有 effect/status 的数值槽位；导入不会创建、补齐或删除结构，给不存在的槽位填值会直接报错。",
+                columns,
                 rows);
         }
 
-        private static void WriteSkillEffectsCsv(string folderPath, IEnumerable<SkillData> skills)
+        private static List<CsvColumn> BuildSkillColumns(SkillSheetLayout layout)
         {
-            var rows = new List<IReadOnlyList<string>>();
-            foreach (var skill in skills)
+            var columns = new List<CsvColumn>(SkillFixedColumns);
+            for (var effectIndex = 0; effectIndex < layout.MaxEffectCount; effectIndex++)
             {
-                for (var effectIndex = 0; effectIndex < skill.effects.Count; effectIndex++)
+                columns.Add(new CsvColumn($"effect{effectIndex}Label", $"效果{effectIndex}说明", "只读说明列，帮助识别这个效果是什么。"));
+                columns.Add(new CsvColumn($"effect{effectIndex}PowerMultiplier", $"效果{effectIndex}倍率", "该效果的倍率/强度。"));
+                columns.Add(new CsvColumn($"effect{effectIndex}RadiusOverride", $"效果{effectIndex}半径覆盖", "该效果自身的范围半径；0 通常表示沿用技能主半径。"));
+                columns.Add(new CsvColumn($"effect{effectIndex}DurationSeconds", $"效果{effectIndex}持续时间", "该效果的持续时间。"));
+                columns.Add(new CsvColumn($"effect{effectIndex}TickIntervalSeconds", $"效果{effectIndex}跳动间隔", "该效果的周期跳动间隔。"));
+                columns.Add(new CsvColumn($"effect{effectIndex}ForcedMovementDistance", $"效果{effectIndex}位移距离", "强制位移的水平距离。"));
+                columns.Add(new CsvColumn($"effect{effectIndex}ForcedMovementDurationSeconds", $"效果{effectIndex}位移时长", "强制位移过程持续时间。"));
+                columns.Add(new CsvColumn($"effect{effectIndex}ForcedMovementPeakHeight", $"效果{effectIndex}位移峰值高度", "强制位移的抬升高度。"));
+
+                var maxStatusCount = layout.GetMaxStatusCount(effectIndex);
+                for (var statusIndex = 0; statusIndex < maxStatusCount; statusIndex++)
                 {
-                    var effect = skill.effects[effectIndex];
-                    rows.Add(new[]
-                    {
-                        skill.skillId,
-                        skill.displayName,
-                        effectIndex.ToString(CultureInfo.InvariantCulture),
-                        FormatEnum(effect.effectType),
-                        FormatEnum(effect.targetMode),
-                        FormatFloat(effect.powerMultiplier),
-                        FormatFloat(effect.radiusOverride),
-                        FormatFloat(effect.durationSeconds),
-                        FormatFloat(effect.tickIntervalSeconds),
-                        FormatBool(effect.followCaster),
-                        FormatEnum(effect.persistentAreaPulseEffectType),
-                        FormatEnum(effect.persistentAreaTargetType),
-                        FormatEnum(effect.forcedMovementDirection),
-                        FormatFloat(effect.forcedMovementDistance),
-                        FormatFloat(effect.forcedMovementDurationSeconds),
-                        FormatFloat(effect.forcedMovementPeakHeight),
-                    });
+                    columns.Add(new CsvColumn($"effect{effectIndex}Status{statusIndex}Label", $"效果{effectIndex}-状态{statusIndex}说明", "只读说明列，帮助识别这个状态是什么。"));
+                    columns.Add(new CsvColumn($"effect{effectIndex}Status{statusIndex}DurationSeconds", $"效果{effectIndex}-状态{statusIndex}持续时间", "状态持续时间。"));
+                    columns.Add(new CsvColumn($"effect{effectIndex}Status{statusIndex}Magnitude", $"效果{effectIndex}-状态{statusIndex}强度", "状态强度；百分比类通常是小数，护盾是原始值。"));
+                    columns.Add(new CsvColumn($"effect{effectIndex}Status{statusIndex}TickIntervalSeconds", $"效果{effectIndex}-状态{statusIndex}跳动间隔", "DOT/HOT 等周期状态的跳动间隔。"));
+                    columns.Add(new CsvColumn($"effect{effectIndex}Status{statusIndex}MaxStacks", $"效果{effectIndex}-状态{statusIndex}最大层数", "状态最大叠层数。"));
                 }
             }
 
-            WriteCsv(
-                Path.Combine(folderPath, SkillEffectsFileName),
-                "技能效果列表；删除表格行不会自动删除资产里的旧效果，新增 effect 也只允许在末尾连续追加 1 个，不能跳号补洞。",
-                SkillEffectColumns,
-                rows);
-        }
-
-        private static void WriteSkillStatusEffectsCsv(string folderPath, IEnumerable<SkillData> skills)
-        {
-            var rows = new List<IReadOnlyList<string>>();
-            foreach (var skill in skills)
-            {
-                for (var effectIndex = 0; effectIndex < skill.effects.Count; effectIndex++)
-                {
-                    var effect = skill.effects[effectIndex];
-                    for (var statusIndex = 0; statusIndex < effect.statusEffects.Count; statusIndex++)
-                    {
-                        var statusEffect = effect.statusEffects[statusIndex];
-                        rows.Add(new[]
-                        {
-                            skill.skillId,
-                            skill.displayName,
-                            effectIndex.ToString(CultureInfo.InvariantCulture),
-                            statusIndex.ToString(CultureInfo.InvariantCulture),
-                            FormatEnum(statusEffect.effectType),
-                            FormatFloat(statusEffect.durationSeconds),
-                            FormatFloat(statusEffect.magnitude),
-                            FormatFloat(statusEffect.tickIntervalSeconds),
-                            statusEffect.maxStacks.ToString(CultureInfo.InvariantCulture),
-                            FormatBool(statusEffect.refreshDurationOnReapply),
-                        });
-                    }
-                }
-            }
-
-            WriteCsv(
-                Path.Combine(folderPath, SkillStatusEffectsFileName),
-                "技能附带状态；删除表格行不会自动删除资产里的旧状态，新增 status 也只允许在末尾连续追加 1 个，不能跳号补洞。",
-                SkillStatusEffectColumns,
-                rows);
-        }
-
-        private static void WriteReadme(string folderPath)
-        {
-            var readmePath = Path.Combine(folderPath, ReadmeFileName);
-            var content = string.Join(
-                Environment.NewLine,
-                "# Stage-01 批量调数说明",
-                string.Empty,
-                "导出文件：",
-                "- heroes.csv：英雄基础属性",
-                "- basic_attacks.csv：普攻参数",
-                "- skills.csv：技能主配置",
-                "- skill_effects.csv：技能效果列表",
-                "- skill_status_effects.csv：技能附带状态列表",
-                string.Empty,
-                "使用规则：",
-                "1. 表头格式是 `稳定英文键|中文名`，导入只识别 `|` 左侧。",
-                "2. 枚举列默认导出为 `英文枚举|中文说明`。导入时推荐保留左侧英文键；如果只填中文，工具也会尝试识别。",
-                "3. 布尔列支持 `是/否`、`true/false`、`1/0`。",
-                "4. 空白单元格在导入时会被跳过，不会把原值清空。",
-                "5. `skill_effects.csv` 和 `skill_status_effects.csv` 只允许在末尾连续追加新项，不允许跳号补洞；删除表格行也不会自动删除旧项。",
-                "6. `skill_status_effects.csv` 不会凭空创建父 effect；如果目标 effect 不存在，需先在 `skill_effects.csv` 中创建它。",
-                "7. 导出是只读文件输出，不会调用 SaveAssets 去顺手保存编辑器里其他脏资产。",
-                "8. 当前构建流程和 demo 内容确保流程已经改成“只补缺失，不覆盖已有调数”；只有显式执行覆盖重建菜单时才会回到默认值。");
-
-            File.WriteAllText(readmePath, content, new UTF8Encoding(true));
+            return columns;
         }
 
         private static void ImportHeroes(string filePath, AssetIndex assetIndex, ISet<ScriptableObject> dirtyAssets)
         {
             foreach (var row in ReadRows(filePath))
             {
-                var heroId = RequireValue(row, "heroId", filePath);
+                var heroId = RequireValue(row, "heroId");
                 var hero = assetIndex.GetHero(heroId, filePath);
+                var changed = false;
 
-                if (TryGetNonEmptyValue(row, "displayName", out var displayName))
+                changed |= TryApplyFloat(row, "maxHealth", value => GetBaseStatsOrThrow(hero, row).maxHealth = value);
+                changed |= TryApplyFloat(row, "attackPower", value => GetBaseStatsOrThrow(hero, row).attackPower = value);
+                changed |= TryApplyFloat(row, "defense", value => GetBaseStatsOrThrow(hero, row).defense = value);
+                changed |= TryApplyFloat(row, "attackSpeed", value => GetBaseStatsOrThrow(hero, row).attackSpeed = value);
+                changed |= TryApplyFloat(row, "moveSpeed", value => GetBaseStatsOrThrow(hero, row).moveSpeed = value);
+                changed |= TryApplyFloat(row, "criticalChance", value => GetBaseStatsOrThrow(hero, row).criticalChance = value);
+                changed |= TryApplyFloat(row, "criticalDamageMultiplier", value => GetBaseStatsOrThrow(hero, row).criticalDamageMultiplier = value);
+                changed |= TryApplyFloat(row, "attackRange", value => GetBaseStatsOrThrow(hero, row).attackRange = value);
+                changed |= TryApplyFloat(row, "basicAttackDamageMultiplier", value => GetBasicAttackOrThrow(hero, row).damageMultiplier = value);
+                changed |= TryApplyFloat(row, "basicAttackRangeOverride", value => GetBasicAttackOrThrow(hero, row).rangeOverride = value);
+                changed |= TryApplyFloat(row, "basicAttackProjectileSpeed", value => GetBasicAttackOrThrow(hero, row).projectileSpeed = value);
+
+                if (changed)
                 {
-                    hero.displayName = displayName;
-                    dirtyAssets.Add(hero);
-                }
-
-                if (TryGetEnumValue(row, "heroClass", filePath, out HeroClass heroClass))
-                {
-                    hero.heroClass = heroClass;
-                    dirtyAssets.Add(hero);
-                }
-
-                if (TryGetFloatValue(row, "maxHealth", filePath, out var maxHealth))
-                {
-                    hero.baseStats.maxHealth = maxHealth;
-                    dirtyAssets.Add(hero);
-                }
-
-                if (TryGetFloatValue(row, "attackPower", filePath, out var attackPower))
-                {
-                    hero.baseStats.attackPower = attackPower;
-                    dirtyAssets.Add(hero);
-                }
-
-                if (TryGetFloatValue(row, "defense", filePath, out var defense))
-                {
-                    hero.baseStats.defense = defense;
-                    dirtyAssets.Add(hero);
-                }
-
-                if (TryGetFloatValue(row, "attackSpeed", filePath, out var attackSpeed))
-                {
-                    hero.baseStats.attackSpeed = attackSpeed;
-                    dirtyAssets.Add(hero);
-                }
-
-                if (TryGetFloatValue(row, "moveSpeed", filePath, out var moveSpeed))
-                {
-                    hero.baseStats.moveSpeed = moveSpeed;
-                    dirtyAssets.Add(hero);
-                }
-
-                if (TryGetFloatValue(row, "criticalChance", filePath, out var criticalChance))
-                {
-                    hero.baseStats.criticalChance = criticalChance;
-                    dirtyAssets.Add(hero);
-                }
-
-                if (TryGetFloatValue(row, "criticalDamageMultiplier", filePath, out var criticalDamageMultiplier))
-                {
-                    hero.baseStats.criticalDamageMultiplier = criticalDamageMultiplier;
-                    dirtyAssets.Add(hero);
-                }
-
-                if (TryGetFloatValue(row, "attackRange", filePath, out var attackRange))
-                {
-                    hero.baseStats.attackRange = attackRange;
-                    dirtyAssets.Add(hero);
-                }
-            }
-        }
-
-        private static void ImportBasicAttacks(string filePath, AssetIndex assetIndex, ISet<ScriptableObject> dirtyAssets)
-        {
-            foreach (var row in ReadRows(filePath))
-            {
-                var heroId = RequireValue(row, "heroId", filePath);
-                var hero = assetIndex.GetHero(heroId, filePath);
-
-                if (TryGetEnumValue(row, "effectType", filePath, out BasicAttackEffectType effectType))
-                {
-                    hero.basicAttack.effectType = effectType;
-                    dirtyAssets.Add(hero);
-                }
-
-                if (TryGetEnumValue(row, "targetType", filePath, out BasicAttackTargetType targetType))
-                {
-                    hero.basicAttack.targetType = targetType;
-                    dirtyAssets.Add(hero);
-                }
-
-                if (TryGetFloatValue(row, "damageMultiplier", filePath, out var damageMultiplier))
-                {
-                    hero.basicAttack.damageMultiplier = damageMultiplier;
-                    dirtyAssets.Add(hero);
-                }
-
-                if (TryGetFloatValue(row, "attackInterval", filePath, out var attackInterval))
-                {
-                    hero.basicAttack.attackInterval = attackInterval;
-                    dirtyAssets.Add(hero);
-                }
-
-                if (TryGetFloatValue(row, "rangeOverride", filePath, out var rangeOverride))
-                {
-                    hero.basicAttack.rangeOverride = rangeOverride;
-                    dirtyAssets.Add(hero);
-                }
-
-                if (TryGetBoolValue(row, "usesProjectile", filePath, out var usesProjectile))
-                {
-                    hero.basicAttack.usesProjectile = usesProjectile;
-                    dirtyAssets.Add(hero);
-                }
-
-                if (TryGetFloatValue(row, "projectileSpeed", filePath, out var projectileSpeed))
-                {
-                    hero.basicAttack.projectileSpeed = projectileSpeed;
                     dirtyAssets.Add(hero);
                 }
             }
@@ -485,337 +287,104 @@ namespace Fight.Editor
         {
             foreach (var row in ReadRows(filePath))
             {
-                var skillId = RequireValue(row, "skillId", filePath);
+                var skillId = RequireValue(row, "skillId");
                 var skill = assetIndex.GetSkill(skillId, filePath);
+                var changed = false;
 
-                if (TryGetNonEmptyValue(row, "displayName", out var displayName))
-                {
-                    skill.displayName = displayName;
-                    dirtyAssets.Add(skill);
-                }
+                changed |= TryApplyFloat(row, "castRange", value => skill.castRange = value);
+                changed |= TryApplyFloat(row, "areaRadius", value => skill.areaRadius = value);
+                changed |= TryApplyFloat(row, "cooldownSeconds", value => skill.cooldownSeconds = value);
+                changed |= TryApplyInt(row, "minTargetsToCast", value => skill.minTargetsToCast = value);
+                changed |= TryApplyInt(row, "actionSequenceRepeatCount", value => GetActionSequenceOrThrow(skill, row).repeatCount = value);
+                changed |= TryApplyFloat(row, "actionSequenceDurationSeconds", value => GetActionSequenceOrThrow(skill, row).durationSeconds = value);
+                changed |= TryApplyFloat(row, "actionSequenceIntervalSeconds", value => GetActionSequenceOrThrow(skill, row).intervalSeconds = value);
+                changed |= TryApplyFloat(row, "actionSequenceWindupSeconds", value => GetActionSequenceOrThrow(skill, row).windupSeconds = value);
+                changed |= TryApplyFloat(row, "actionSequenceRecoverySeconds", value => GetActionSequenceOrThrow(skill, row).recoverySeconds = value);
+                changed |= TryApplyFloat(row, "actionSequenceTemporaryBasicAttackRangeOverride", value => GetActionSequenceOrThrow(skill, row).temporaryBasicAttackRangeOverride = value);
+                changed |= TryApplyFloat(row, "actionSequenceTemporarySkillCastRangeOverride", value => GetActionSequenceOrThrow(skill, row).temporarySkillCastRangeOverride = value);
+                changed |= TryApplyDynamicSkillValues(row, skill);
 
-                if (TryGetEnumValue(row, "slotType", filePath, out SkillSlotType slotType))
+                if (changed)
                 {
-                    skill.slotType = slotType;
-                    dirtyAssets.Add(skill);
-                }
-
-                if (TryGetEnumValue(row, "skillType", filePath, out SkillType skillType))
-                {
-                    skill.skillType = skillType;
-                    dirtyAssets.Add(skill);
-                }
-
-                if (TryGetEnumValue(row, "targetType", filePath, out SkillTargetType targetType))
-                {
-                    skill.targetType = targetType;
-                    dirtyAssets.Add(skill);
-                }
-
-                if (TryGetFloatValue(row, "castRange", filePath, out var castRange))
-                {
-                    skill.castRange = castRange;
-                    dirtyAssets.Add(skill);
-                }
-
-                if (TryGetFloatValue(row, "areaRadius", filePath, out var areaRadius))
-                {
-                    skill.areaRadius = areaRadius;
-                    dirtyAssets.Add(skill);
-                }
-
-                if (TryGetFloatValue(row, "cooldownSeconds", filePath, out var cooldownSeconds))
-                {
-                    skill.cooldownSeconds = cooldownSeconds;
-                    dirtyAssets.Add(skill);
-                }
-
-                if (TryGetIntValue(row, "minTargetsToCast", filePath, out var minTargetsToCast))
-                {
-                    skill.minTargetsToCast = minTargetsToCast;
-                    dirtyAssets.Add(skill);
-                }
-
-                if (TryGetBoolValue(row, "allowsSelfCast", filePath, out var allowsSelfCast))
-                {
-                    skill.allowsSelfCast = allowsSelfCast;
-                    dirtyAssets.Add(skill);
-                }
-
-                if (TryGetEnumValue(row, "skillAreaPresentationType", filePath, out SkillAreaPresentationType presentationType))
-                {
-                    skill.skillAreaPresentationType = presentationType;
                     dirtyAssets.Add(skill);
                 }
             }
-        }
-
-        private static void ImportSkillEffects(string filePath, AssetIndex assetIndex, ISet<ScriptableObject> dirtyAssets)
-        {
-            foreach (var row in ReadRows(filePath))
-            {
-                var skillId = RequireValue(row, "skillId", filePath);
-                var skill = assetIndex.GetSkill(skillId, filePath);
-                var effectIndex = RequireIntValue(row, "effectIndex", filePath);
-                var effect = GetOrAppendSkillEffect(skill, effectIndex, row);
-
-                if (TryGetEnumValue(row, "effectType", filePath, out SkillEffectType effectType))
-                {
-                    effect.effectType = effectType;
-                    dirtyAssets.Add(skill);
-                }
-
-                if (TryGetEnumValue(row, "targetMode", filePath, out SkillEffectTargetMode targetMode))
-                {
-                    effect.targetMode = targetMode;
-                    dirtyAssets.Add(skill);
-                }
-
-                if (TryGetFloatValue(row, "powerMultiplier", filePath, out var powerMultiplier))
-                {
-                    effect.powerMultiplier = powerMultiplier;
-                    dirtyAssets.Add(skill);
-                }
-
-                if (TryGetFloatValue(row, "radiusOverride", filePath, out var radiusOverride))
-                {
-                    effect.radiusOverride = radiusOverride;
-                    dirtyAssets.Add(skill);
-                }
-
-                if (TryGetFloatValue(row, "durationSeconds", filePath, out var durationSeconds))
-                {
-                    effect.durationSeconds = durationSeconds;
-                    dirtyAssets.Add(skill);
-                }
-
-                if (TryGetFloatValue(row, "tickIntervalSeconds", filePath, out var tickIntervalSeconds))
-                {
-                    effect.tickIntervalSeconds = tickIntervalSeconds;
-                    dirtyAssets.Add(skill);
-                }
-
-                if (TryGetBoolValue(row, "followCaster", filePath, out var followCaster))
-                {
-                    effect.followCaster = followCaster;
-                    dirtyAssets.Add(skill);
-                }
-
-                if (TryGetEnumValue(row, "persistentAreaPulseEffectType", filePath, out PersistentAreaPulseEffectType pulseEffectType))
-                {
-                    effect.persistentAreaPulseEffectType = pulseEffectType;
-                    dirtyAssets.Add(skill);
-                }
-
-                if (TryGetEnumValue(row, "persistentAreaTargetType", filePath, out PersistentAreaTargetType persistentAreaTargetType))
-                {
-                    effect.persistentAreaTargetType = persistentAreaTargetType;
-                    dirtyAssets.Add(skill);
-                }
-
-                if (TryGetEnumValue(row, "forcedMovementDirection", filePath, out ForcedMovementDirectionMode forcedMovementDirection))
-                {
-                    effect.forcedMovementDirection = forcedMovementDirection;
-                    dirtyAssets.Add(skill);
-                }
-
-                if (TryGetFloatValue(row, "forcedMovementDistance", filePath, out var forcedMovementDistance))
-                {
-                    effect.forcedMovementDistance = forcedMovementDistance;
-                    dirtyAssets.Add(skill);
-                }
-
-                if (TryGetFloatValue(row, "forcedMovementDurationSeconds", filePath, out var forcedMovementDurationSeconds))
-                {
-                    effect.forcedMovementDurationSeconds = forcedMovementDurationSeconds;
-                    dirtyAssets.Add(skill);
-                }
-
-                if (TryGetFloatValue(row, "forcedMovementPeakHeight", filePath, out var forcedMovementPeakHeight))
-                {
-                    effect.forcedMovementPeakHeight = forcedMovementPeakHeight;
-                    dirtyAssets.Add(skill);
-                }
-            }
-        }
-
-        private static void ImportSkillStatusEffects(string filePath, AssetIndex assetIndex, ISet<ScriptableObject> dirtyAssets)
-        {
-            foreach (var row in ReadRows(filePath))
-            {
-                var skillId = RequireValue(row, "skillId", filePath);
-                var skill = assetIndex.GetSkill(skillId, filePath);
-                var effectIndex = RequireIntValue(row, "effectIndex", filePath);
-                var statusIndex = RequireIntValue(row, "statusIndex", filePath);
-                var effect = RequireExistingSkillEffect(skill, effectIndex, row);
-                var statusEffect = GetOrAppendStatusEffect(effect, statusIndex, row);
-
-                if (TryGetEnumValue(row, "effectType", filePath, out StatusEffectType effectType))
-                {
-                    statusEffect.effectType = effectType;
-                    dirtyAssets.Add(skill);
-                }
-
-                if (TryGetFloatValue(row, "durationSeconds", filePath, out var durationSeconds))
-                {
-                    statusEffect.durationSeconds = durationSeconds;
-                    dirtyAssets.Add(skill);
-                }
-
-                if (TryGetFloatValue(row, "magnitude", filePath, out var magnitude))
-                {
-                    statusEffect.magnitude = magnitude;
-                    dirtyAssets.Add(skill);
-                }
-
-                if (TryGetFloatValue(row, "tickIntervalSeconds", filePath, out var tickIntervalSeconds))
-                {
-                    statusEffect.tickIntervalSeconds = tickIntervalSeconds;
-                    dirtyAssets.Add(skill);
-                }
-
-                if (TryGetIntValue(row, "maxStacks", filePath, out var maxStacks))
-                {
-                    statusEffect.maxStacks = maxStacks;
-                    dirtyAssets.Add(skill);
-                }
-
-                if (TryGetBoolValue(row, "refreshDurationOnReapply", filePath, out var refreshDurationOnReapply))
-                {
-                    statusEffect.refreshDurationOnReapply = refreshDurationOnReapply;
-                    dirtyAssets.Add(skill);
-                }
-            }
-        }
-
-        private static SkillEffectData GetOrAppendSkillEffect(SkillData skill, int effectIndex, RowData row)
-        {
-            if (effectIndex < 0)
-            {
-                throw CreateRowException(row, $"effectIndex 不能小于 0：{effectIndex}");
-            }
-
-            if (effectIndex < skill.effects.Count)
-            {
-                return skill.effects[effectIndex];
-            }
-
-            if (effectIndex > skill.effects.Count)
-            {
-                throw CreateRowException(
-                    row,
-                    $"effectIndex={effectIndex} 不能跳号追加。当前 skill.effects.Count={skill.effects.Count}，只允许修改已有项或在末尾连续追加 1 个 effect。");
-            }
-
-            if (!TryGetEnumValue(row, "effectType", row.FilePath, out SkillEffectType effectType))
-            {
-                throw CreateRowException(row, "新增 effect 时必须显式填写 effectType，避免把默认 DirectDamage 静默写进资产。");
-            }
-
-            var effect = new SkillEffectData
-            {
-                effectType = effectType,
-            };
-            skill.effects.Add(effect);
-            return effect;
-        }
-
-        private static SkillEffectData RequireExistingSkillEffect(SkillData skill, int effectIndex, RowData row)
-        {
-            if (effectIndex < 0)
-            {
-                throw CreateRowException(row, $"effectIndex 不能小于 0：{effectIndex}");
-            }
-
-            if (effectIndex >= skill.effects.Count)
-            {
-                throw CreateRowException(
-                    row,
-                    $"skill_status_effects.csv 不能凭空创建父 effect。skillId={skill.skillId} 当前只有 {skill.effects.Count} 个 effect，但请求写入 effectIndex={effectIndex}。请先在 skill_effects.csv 中创建对应 effect，或确保资产里已存在该 effect。");
-            }
-
-            return skill.effects[effectIndex];
-        }
-
-        private static StatusEffectData GetOrAppendStatusEffect(SkillEffectData effect, int statusIndex, RowData row)
-        {
-            if (statusIndex < 0)
-            {
-                throw CreateRowException(row, $"statusIndex 不能小于 0：{statusIndex}");
-            }
-
-            if (statusIndex < effect.statusEffects.Count)
-            {
-                return effect.statusEffects[statusIndex];
-            }
-
-            if (statusIndex > effect.statusEffects.Count)
-            {
-                throw CreateRowException(
-                    row,
-                    $"statusIndex={statusIndex} 不能跳号追加。当前 effect.statusEffects.Count={effect.statusEffects.Count}，只允许修改已有项或在末尾连续追加 1 个 status。");
-            }
-
-            if (!TryGetEnumValue(row, "effectType", row.FilePath, out StatusEffectType statusEffectType))
-            {
-                throw CreateRowException(row, "新增 status 时必须显式填写 effectType，避免把默认 None 静默写进资产。");
-            }
-
-            var statusEffect = new StatusEffectData
-            {
-                effectType = statusEffectType,
-            };
-            effect.statusEffects.Add(statusEffect);
-            return statusEffect;
         }
 
         private static AssetIndex BuildAssetIndex()
         {
-            var heroes = new Dictionary<string, HeroDefinition>(StringComparer.OrdinalIgnoreCase);
-            foreach (var hero in LoadAssets<HeroDefinition>())
-            {
-                if (hero == null || string.IsNullOrWhiteSpace(hero.heroId))
-                {
-                    continue;
-                }
-
-                if (heroes.ContainsKey(hero.heroId))
-                {
-                    throw new InvalidOperationException($"检测到重复 heroId：{hero.heroId}");
-                }
-
-                heroes.Add(hero.heroId, hero);
-            }
-
-            var skills = new Dictionary<string, SkillData>(StringComparer.OrdinalIgnoreCase);
-            foreach (var skill in LoadAssets<SkillData>())
-            {
-                if (skill == null || string.IsNullOrWhiteSpace(skill.skillId))
-                {
-                    continue;
-                }
-
-                if (skills.ContainsKey(skill.skillId))
-                {
-                    throw new InvalidOperationException($"检测到重复 skillId：{skill.skillId}");
-                }
-
-                skills.Add(skill.skillId, skill);
-            }
-
-            return new AssetIndex(heroes, skills);
+            Dictionary<string, HeroDefinition> heroes = LoadAssetsById<HeroDefinition>(
+                "t:HeroDefinition",
+                static (HeroDefinition hero) => hero.heroId,
+                "HeroDefinition");
+            Dictionary<string, SkillData> skills = LoadAssetsById<SkillData>(
+                "t:SkillData",
+                static (SkillData skill) => skill.skillId,
+                "SkillData");
+            Dictionary<string, string> skillOwnerSummaries = BuildSkillOwnerSummaries(heroes.Values);
+            return new AssetIndex(heroes, skills, skillOwnerSummaries);
         }
 
-        private static IEnumerable<T> LoadAssets<T>() where T : ScriptableObject
+        private static Dictionary<string, TAsset> LoadAssetsById<TAsset>(string searchFilter, Func<TAsset, string> idSelector, string assetLabel)
+            where TAsset : ScriptableObject
         {
-            foreach (var guid in AssetDatabase.FindAssets($"t:{typeof(T).Name}", new[] { DataSearchRoot }))
+            var assets = new Dictionary<string, TAsset>(StringComparer.OrdinalIgnoreCase);
+            foreach (var guid in AssetDatabase.FindAssets(searchFilter, new[] { DataSearchRoot }))
             {
                 var assetPath = AssetDatabase.GUIDToAssetPath(guid);
-                var asset = AssetDatabase.LoadAssetAtPath<T>(assetPath);
-                if (asset != null)
+                var asset = AssetDatabase.LoadAssetAtPath<TAsset>(assetPath);
+                if (asset == null)
                 {
-                    yield return asset;
+                    continue;
                 }
+
+                var stableId = idSelector(asset)?.Trim();
+                if (string.IsNullOrWhiteSpace(stableId))
+                {
+                    throw new InvalidOperationException($"[BalanceSheets] {assetLabel} 缺少稳定ID：{assetPath}");
+                }
+
+                if (assets.TryGetValue(stableId, out var existing))
+                {
+                    throw new InvalidOperationException(
+                        $"[BalanceSheets] 发现重复的 {assetLabel} ID：{stableId}。{AssetDatabase.GetAssetPath(existing)} 与 {assetPath}");
+                }
+
+                assets.Add(stableId, asset);
+            }
+
+            return assets;
+        }
+
+        private static Dictionary<string, string> BuildSkillOwnerSummaries(IEnumerable<HeroDefinition> heroes)
+        {
+            var ownerEntries = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var hero in heroes)
+            {
+                RegisterSkillOwner(ownerEntries, hero, hero.activeSkill, SkillSlotType.ActiveSkill);
+                RegisterSkillOwner(ownerEntries, hero, hero.ultimateSkill, SkillSlotType.Ultimate);
+            }
+
+            return ownerEntries.ToDictionary(
+                pair => pair.Key,
+                pair => string.Join(" / ", pair.Value.OrderBy(value => value, StringComparer.OrdinalIgnoreCase)),
+                StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static void CleanupLegacyFiles(string folderPath)
+        {
+            DeleteIfExists(Path.Combine(folderPath, BasicAttacksFileName));
+            DeleteIfExists(Path.Combine(folderPath, SkillEffectsFileName));
+            DeleteIfExists(Path.Combine(folderPath, SkillStatusEffectsFileName));
+            DeleteIfExists(Path.Combine(folderPath, ReadmeFileName));
+        }
+
+        private static void DeleteIfExists(string path)
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
             }
         }
 
@@ -825,7 +394,304 @@ namespace Fight.Editor
             return File.Exists(filePath);
         }
 
-        private static void WriteCsv(string filePath, string description, IReadOnlyList<CsvColumn> columns, IReadOnlyList<IReadOnlyList<string>> rows)
+        private static void RegisterSkillOwner(
+            IDictionary<string, List<string>> ownerEntries,
+            HeroDefinition hero,
+            SkillData skill,
+            SkillSlotType slotType)
+        {
+            if (hero == null || skill == null || string.IsNullOrWhiteSpace(skill.skillId))
+            {
+                return;
+            }
+
+            if (!ownerEntries.TryGetValue(skill.skillId, out var owners))
+            {
+                owners = new List<string>();
+                ownerEntries.Add(skill.skillId, owners);
+            }
+
+            owners.Add($"{hero.displayName} [{hero.heroId}] {GetEnumDisplayName(slotType)}");
+        }
+
+        private static bool TryApplyDynamicSkillValues(RowData row, SkillData skill)
+        {
+            var changed = false;
+
+            foreach (var cell in row.Cells)
+            {
+                if (string.IsNullOrWhiteSpace(cell.Value))
+                {
+                    continue;
+                }
+
+                var effectMatch = EffectValueColumnPattern.Match(cell.Key);
+                if (effectMatch.Success)
+                {
+                    var effectIndex = ParseRequiredIndex(effectMatch, "effectIndex", row);
+                    var effect = GetSkillEffectOrThrow(skill, effectIndex, row);
+                    var floatValue = ParseFloatValue(row, cell.Key, cell.Value);
+
+                    switch (effectMatch.Groups["suffix"].Value)
+                    {
+                        case "PowerMultiplier":
+                            effect.powerMultiplier = floatValue;
+                            break;
+                        case "RadiusOverride":
+                            effect.radiusOverride = floatValue;
+                            break;
+                        case "DurationSeconds":
+                            effect.durationSeconds = floatValue;
+                            break;
+                        case "TickIntervalSeconds":
+                            effect.tickIntervalSeconds = floatValue;
+                            break;
+                        case "ForcedMovementDistance":
+                            effect.forcedMovementDistance = floatValue;
+                            break;
+                        case "ForcedMovementDurationSeconds":
+                            effect.forcedMovementDurationSeconds = floatValue;
+                            break;
+                        case "ForcedMovementPeakHeight":
+                            effect.forcedMovementPeakHeight = floatValue;
+                            break;
+                        default:
+                            continue;
+                    }
+
+                    changed = true;
+                    continue;
+                }
+
+                var statusMatch = EffectStatusValueColumnPattern.Match(cell.Key);
+                if (!statusMatch.Success)
+                {
+                    continue;
+                }
+
+                var effectSlotIndex = ParseRequiredIndex(statusMatch, "effectIndex", row);
+                var statusIndex = ParseRequiredIndex(statusMatch, "statusIndex", row);
+                var status = GetStatusEffectOrThrow(skill, effectSlotIndex, statusIndex, row);
+
+                switch (statusMatch.Groups["suffix"].Value)
+                {
+                    case "DurationSeconds":
+                        status.durationSeconds = ParseFloatValue(row, cell.Key, cell.Value);
+                        break;
+                    case "Magnitude":
+                        status.magnitude = ParseFloatValue(row, cell.Key, cell.Value);
+                        break;
+                    case "TickIntervalSeconds":
+                        status.tickIntervalSeconds = ParseFloatValue(row, cell.Key, cell.Value);
+                        break;
+                    case "MaxStacks":
+                        status.maxStacks = ParseIntValue(row, cell.Key, cell.Value);
+                        break;
+                    default:
+                        continue;
+                }
+
+                changed = true;
+            }
+
+            return changed;
+        }
+
+        private static HeroStatsData GetBaseStatsOrThrow(HeroDefinition hero, RowData row)
+        {
+            if (hero.baseStats != null)
+            {
+                return hero.baseStats;
+            }
+
+            throw CreateRowException(row, $"英雄 {hero.heroId} 的 baseStats 为空，无法安全导入数值。");
+        }
+
+        private static BasicAttackData GetBasicAttackOrThrow(HeroDefinition hero, RowData row)
+        {
+            if (hero.basicAttack != null)
+            {
+                return hero.basicAttack;
+            }
+
+            throw CreateRowException(row, $"英雄 {hero.heroId} 的 basicAttack 为空，无法安全导入数值。");
+        }
+
+        private static CombatActionSequenceData GetActionSequenceOrThrow(SkillData skill, RowData row)
+        {
+            if (skill.actionSequence != null)
+            {
+                return skill.actionSequence;
+            }
+
+            throw CreateRowException(row, $"技能 {skill.skillId} 的 actionSequence 为空，无法安全导入数值。");
+        }
+
+        private static SkillEffectData GetSkillEffectOrThrow(SkillData skill, int effectIndex, RowData row)
+        {
+            if (skill.effects == null)
+            {
+                throw CreateRowException(row, $"技能 {skill.skillId} 没有 effects 列表；不允许通过表格补结构。");
+            }
+
+            if (effectIndex < 0 || effectIndex >= skill.effects.Count || skill.effects[effectIndex] == null)
+            {
+                throw CreateRowException(row, $"技能 {skill.skillId} 不存在 effect{effectIndex}；不允许通过表格补默认 effect。");
+            }
+
+            return skill.effects[effectIndex];
+        }
+
+        private static StatusEffectData GetStatusEffectOrThrow(SkillData skill, int effectIndex, int statusIndex, RowData row)
+        {
+            var effect = GetSkillEffectOrThrow(skill, effectIndex, row);
+            if (effect.statusEffects == null)
+            {
+                throw CreateRowException(row, $"技能 {skill.skillId} 的 effect{effectIndex} 没有 statusEffects 列表；不允许通过表格补结构。");
+            }
+
+            if (statusIndex < 0 || statusIndex >= effect.statusEffects.Count || effect.statusEffects[statusIndex] == null)
+            {
+                throw CreateRowException(row, $"技能 {skill.skillId} 的 effect{effectIndex} 不存在 status{statusIndex}；不允许通过表格补默认 status。");
+            }
+
+            return effect.statusEffects[statusIndex];
+        }
+
+        private static SkillEffectData TryGetSkillEffect(SkillData skill, int effectIndex)
+        {
+            if (skill.effects == null || effectIndex < 0 || effectIndex >= skill.effects.Count)
+            {
+                return null;
+            }
+
+            return skill.effects[effectIndex];
+        }
+
+        private static StatusEffectData TryGetStatusEffect(SkillEffectData effect, int statusIndex)
+        {
+            if (effect?.statusEffects == null || statusIndex < 0 || statusIndex >= effect.statusEffects.Count)
+            {
+                return null;
+            }
+
+            return effect.statusEffects[statusIndex];
+        }
+
+        private static bool TryApplyFloat(RowData row, string key, Action<float> apply)
+        {
+            if (!TryGetNonEmptyValue(row, key, out var raw))
+            {
+                return false;
+            }
+
+            apply(ParseFloatValue(row, key, raw));
+            return true;
+        }
+
+        private static bool TryApplyInt(RowData row, string key, Action<int> apply)
+        {
+            if (!TryGetNonEmptyValue(row, key, out var raw))
+            {
+                return false;
+            }
+
+            apply(ParseIntValue(row, key, raw));
+            return true;
+        }
+
+        private static string RequireValue(RowData row, string key)
+        {
+            if (TryGetNonEmptyValue(row, key, out var value))
+            {
+                return value;
+            }
+
+            throw CreateRowException(row, $"缺少必填列 {key}。");
+        }
+
+        private static bool TryGetNonEmptyValue(RowData row, string key, out string value)
+        {
+            if (row.Cells.TryGetValue(key, out var raw) && !string.IsNullOrWhiteSpace(raw))
+            {
+                value = raw.Trim();
+                return true;
+            }
+
+            value = string.Empty;
+            return false;
+        }
+
+        private static int ParseRequiredIndex(Match match, string groupName, RowData row)
+        {
+            if (int.TryParse(match.Groups[groupName].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
+            {
+                return value;
+            }
+
+            throw CreateRowException(row, $"无法解析索引 {groupName}。");
+        }
+
+        private static float ParseFloatValue(RowData row, string key, string raw)
+        {
+            if (float.TryParse(raw.Trim(), NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out var value))
+            {
+                return value;
+            }
+
+            throw CreateRowException(row, $"列 {key} 不是合法数字：{raw}");
+        }
+
+        private static int ParseIntValue(RowData row, string key, string raw)
+        {
+            if (int.TryParse(raw.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
+            {
+                return value;
+            }
+
+            throw CreateRowException(row, $"列 {key} 不是合法整数：{raw}");
+        }
+
+        private static string BuildSkillEffectLabel(SkillEffectData effect)
+        {
+            if (effect == null)
+            {
+                return string.Empty;
+            }
+
+            var parts = new List<string>
+            {
+                FormatEnum(effect.effectType),
+                $"目标:{FormatEnum(effect.targetMode)}",
+            };
+
+            if (effect.effectType == SkillEffectType.CreatePersistentArea)
+            {
+                parts.Add($"脉冲:{FormatEnum(effect.persistentAreaPulseEffectType)}");
+                parts.Add($"阵营:{FormatEnum(effect.persistentAreaTargetType)}");
+                parts.Add($"跟随施法者:{FormatBool(effect.followCaster)}");
+            }
+
+            if (effect.effectType == SkillEffectType.ApplyForcedMovement)
+            {
+                parts.Add($"位移方向:{FormatEnum(effect.forcedMovementDirection)}");
+            }
+
+            return string.Join(" / ", parts);
+        }
+
+        private static string BuildStatusEffectLabel(StatusEffectData status)
+        {
+            return status == null
+                ? string.Empty
+                : $"{FormatEnum(status.effectType)} / 重上刷新:{FormatBool(status.refreshDurationOnReapply)}";
+        }
+
+        private static void WriteCsv(
+            string filePath,
+            string description,
+            IReadOnlyList<CsvColumn> columns,
+            IReadOnlyList<IReadOnlyList<string>> rows)
         {
             var builder = new StringBuilder();
             builder.AppendLine(BuildCsvLine(new[] { "#说明" }.Concat(columns.Select(column => column.Description))));
@@ -853,15 +719,15 @@ namespace Fight.Editor
 
             var headerRowIndex = -1;
             List<string> headerRow = null;
-            for (var i = 0; i < rows.Count; i++)
+            for (var index = 0; index < rows.Count; index++)
             {
-                if (IsSkippableRow(rows[i]))
+                if (IsSkippableRow(rows[index]))
                 {
                     continue;
                 }
 
-                headerRowIndex = i;
-                headerRow = rows[i];
+                headerRowIndex = index;
+                headerRow = rows[index];
                 break;
             }
 
@@ -904,7 +770,8 @@ namespace Fight.Editor
             }
 
             var firstNonEmptyCell = row.FirstOrDefault(cell => !string.IsNullOrWhiteSpace(cell));
-            return string.IsNullOrWhiteSpace(firstNonEmptyCell) || firstNonEmptyCell.TrimStart().StartsWith("#", StringComparison.Ordinal);
+            return string.IsNullOrWhiteSpace(firstNonEmptyCell) ||
+                firstNonEmptyCell.TrimStart().StartsWith("#", StringComparison.Ordinal);
         }
 
         private static List<List<string>> ParseCsv(string content)
@@ -947,6 +814,15 @@ namespace Fight.Editor
                         currentCell.Clear();
                         break;
                     case '\r':
+                        if (index + 1 < content.Length && content[index + 1] == '\n')
+                        {
+                            index++;
+                        }
+
+                        currentRow.Add(currentCell.ToString());
+                        currentCell.Clear();
+                        rows.Add(currentRow);
+                        currentRow = new List<string>();
                         break;
                     case '\n':
                         currentRow.Add(currentCell.ToString());
@@ -960,9 +836,9 @@ namespace Fight.Editor
                 }
             }
 
-            if (currentCell.Length > 0 || currentRow.Count > 0)
+            currentRow.Add(currentCell.ToString());
+            if (currentRow.Count > 1 || currentRow[0].Length > 0 || rows.Count == 0)
             {
-                currentRow.Add(currentCell.ToString());
                 rows.Add(currentRow);
             }
 
@@ -1009,177 +885,24 @@ namespace Fight.Editor
                 : normalized;
         }
 
-        private static string RequireValue(RowData row, string key, string filePath)
-        {
-            if (!TryGetNonEmptyValue(row, key, out var value))
-            {
-                throw CreateRowException(row, $"缺少必填列 {key}。文件：{filePath}");
-            }
-
-            return value;
-        }
-
-        private static int RequireIntValue(RowData row, string key, string filePath)
-        {
-            if (!TryGetIntValue(row, key, filePath, out var value))
-            {
-                throw CreateRowException(row, $"缺少或无法解析整数列 {key}。文件：{filePath}");
-            }
-
-            return value;
-        }
-
-        private static bool TryGetNonEmptyValue(RowData row, string key, out string value)
-        {
-            if (row.Cells.TryGetValue(key, out value) && !string.IsNullOrWhiteSpace(value))
-            {
-                value = value.Trim();
-                return true;
-            }
-
-            value = string.Empty;
-            return false;
-        }
-
-        private static bool TryGetFloatValue(RowData row, string key, string filePath, out float value)
-        {
-            value = default;
-            if (!TryGetNonEmptyValue(row, key, out var raw))
-            {
-                return false;
-            }
-
-            if (float.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out value))
-            {
-                return true;
-            }
-
-            if (float.TryParse(raw, NumberStyles.Float, CultureInfo.CurrentCulture, out value))
-            {
-                return true;
-            }
-
-            throw CreateRowException(row, $"无法解析浮点数列 {key} 的值：{raw}。文件：{filePath}");
-        }
-
-        private static bool TryGetIntValue(RowData row, string key, string filePath, out int value)
-        {
-            value = default;
-            if (!TryGetNonEmptyValue(row, key, out var raw))
-            {
-                return false;
-            }
-
-            if (int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out value))
-            {
-                return true;
-            }
-
-            if (int.TryParse(raw, NumberStyles.Integer, CultureInfo.CurrentCulture, out value))
-            {
-                return true;
-            }
-
-            throw CreateRowException(row, $"无法解析整数列 {key} 的值：{raw}。文件：{filePath}");
-        }
-
-        private static bool TryGetBoolValue(RowData row, string key, string filePath, out bool value)
-        {
-            value = default;
-            if (!TryGetNonEmptyValue(row, key, out var raw))
-            {
-                return false;
-            }
-
-            var normalized = NormalizeEnumLikeValue(raw);
-            switch (normalized.ToLowerInvariant())
-            {
-                case "true":
-                case "1":
-                case "yes":
-                case "y":
-                case "shi":
-                case "是":
-                    value = true;
-                    return true;
-                case "false":
-                case "0":
-                case "no":
-                case "n":
-                case "fou":
-                case "否":
-                    value = false;
-                    return true;
-            }
-
-            throw CreateRowException(row, $"无法解析布尔列 {key} 的值：{raw}。文件：{filePath}");
-        }
-
-        private static bool TryGetEnumValue<TEnum>(RowData row, string key, string filePath, out TEnum value) where TEnum : struct, Enum
-        {
-            value = default;
-            if (!TryGetNonEmptyValue(row, key, out var raw))
-            {
-                return false;
-            }
-
-            if (TryParseEnum(raw, out value))
-            {
-                return true;
-            }
-
-            throw CreateRowException(row, $"无法解析枚举列 {key} 的值：{raw}。文件：{filePath}");
-        }
-
-        private static bool TryParseEnum<TEnum>(string raw, out TEnum value) where TEnum : struct, Enum
-        {
-            value = default;
-            var normalized = NormalizeEnumLikeValue(raw);
-
-            if (Enum.TryParse(normalized, ignoreCase: true, out value))
-            {
-                return true;
-            }
-
-            if (int.TryParse(normalized, NumberStyles.Integer, CultureInfo.InvariantCulture, out var intValue) &&
-                Enum.IsDefined(typeof(TEnum), intValue))
-            {
-                value = (TEnum)Enum.ToObject(typeof(TEnum), intValue);
-                return true;
-            }
-
-            foreach (var candidate in Enum.GetValues(typeof(TEnum)).Cast<TEnum>())
-            {
-                if (string.Equals(GetEnumDisplayName(candidate), normalized, StringComparison.OrdinalIgnoreCase))
-                {
-                    value = candidate;
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static string NormalizeEnumLikeValue(string raw)
-        {
-            if (string.IsNullOrWhiteSpace(raw))
-            {
-                return string.Empty;
-            }
-
-            var normalized = raw.Trim();
-            var separatorIndex = normalized.IndexOf('|');
-            if (separatorIndex >= 0)
-            {
-                return normalized.Substring(0, separatorIndex).Trim();
-            }
-
-            return normalized;
-        }
-
         private static string FormatFloat(float value)
         {
-            return value.ToString("0.###", CultureInfo.InvariantCulture);
+            return value.ToString("0.########", CultureInfo.InvariantCulture);
+        }
+
+        private static string FormatFloat(float? value)
+        {
+            return value.HasValue ? FormatFloat(value.Value) : string.Empty;
+        }
+
+        private static string FormatInt(int value)
+        {
+            return value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        private static string FormatInt(int? value)
+        {
+            return value.HasValue ? FormatInt(value.Value) : string.Empty;
         }
 
         private static string FormatBool(bool value)
@@ -1207,52 +930,10 @@ namespace Fight.Editor
                     HeroClass.Marksman => "射手",
                     _ => value.ToString(),
                 },
-                BasicAttackEffectType basicAttackEffectType => basicAttackEffectType switch
-                {
-                    BasicAttackEffectType.Damage => "伤害",
-                    BasicAttackEffectType.Heal => "治疗",
-                    _ => value.ToString(),
-                },
-                BasicAttackTargetType basicAttackTargetType => basicAttackTargetType switch
-                {
-                    BasicAttackTargetType.NearestEnemy => "最近敌人",
-                    BasicAttackTargetType.LowestHealthAlly => "最低生命友军",
-                    _ => value.ToString(),
-                },
                 SkillSlotType skillSlotType => skillSlotType switch
                 {
                     SkillSlotType.ActiveSkill => "小技能",
                     SkillSlotType.Ultimate => "大招",
-                    _ => value.ToString(),
-                },
-                SkillType skillType => skillType switch
-                {
-                    SkillType.SingleTargetDamage => "单体伤害",
-                    SkillType.AreaDamage => "范围伤害",
-                    SkillType.SingleTargetHeal => "单体治疗",
-                    SkillType.Dash => "突进",
-                    SkillType.Buff => "增益",
-                    SkillType.Stun => "眩晕",
-                    SkillType.AreaHeal => "范围治疗",
-                    SkillType.KnockUp => "击飞",
-                    _ => value.ToString(),
-                },
-                SkillTargetType skillTargetType => skillTargetType switch
-                {
-                    SkillTargetType.None => "无",
-                    SkillTargetType.Self => "自身",
-                    SkillTargetType.NearestEnemy => "最近敌人",
-                    SkillTargetType.LowestHealthEnemy => "最低生命敌人",
-                    SkillTargetType.LowestHealthAlly => "最低生命友军",
-                    SkillTargetType.DensestEnemyArea => "敌方最密集区域",
-                    SkillTargetType.AllEnemies => "全体敌军",
-                    SkillTargetType.AllAllies => "全体友军",
-                    _ => value.ToString(),
-                },
-                SkillAreaPresentationType skillAreaPresentationType => skillAreaPresentationType switch
-                {
-                    SkillAreaPresentationType.None => "无",
-                    SkillAreaPresentationType.FireSea => "火海",
                     _ => value.ToString(),
                 },
                 SkillEffectType skillEffectType => skillEffectType switch
@@ -1298,21 +979,21 @@ namespace Fight.Editor
                 StatusEffectType statusEffectType => statusEffectType switch
                 {
                     StatusEffectType.None => "无",
+                    StatusEffectType.Stun => "眩晕",
                     StatusEffectType.AttackPowerModifier => "攻击力修正",
                     StatusEffectType.DefenseModifier => "防御力修正",
                     StatusEffectType.AttackSpeedModifier => "攻速修正",
                     StatusEffectType.MoveSpeedModifier => "移速修正",
-                    StatusEffectType.Stun => "眩晕",
-                    StatusEffectType.KnockUp => "击飞",
                     StatusEffectType.HealOverTime => "持续治疗",
-                    StatusEffectType.DamageOverTime => "持续伤害",
-                    StatusEffectType.Shield => "护盾",
-                    StatusEffectType.Invulnerable => "无敌",
-                    StatusEffectType.Untargetable => "不可选中",
                     StatusEffectType.MaxHealthModifier => "最大生命修正",
                     StatusEffectType.CriticalChanceModifier => "暴击率修正",
                     StatusEffectType.CriticalDamageModifier => "暴击伤害修正",
                     StatusEffectType.AttackRangeModifier => "攻击距离修正",
+                    StatusEffectType.KnockUp => "击飞",
+                    StatusEffectType.Invulnerable => "无敌",
+                    StatusEffectType.Untargetable => "不可选中",
+                    StatusEffectType.DamageOverTime => "持续伤害",
+                    StatusEffectType.Shield => "护盾",
                     _ => value.ToString(),
                 },
                 _ => value.ToString(),
@@ -1326,15 +1007,21 @@ namespace Fight.Editor
 
         private sealed class AssetIndex
         {
-            public AssetIndex(IReadOnlyDictionary<string, HeroDefinition> heroes, IReadOnlyDictionary<string, SkillData> skills)
+            public AssetIndex(
+                IReadOnlyDictionary<string, HeroDefinition> heroes,
+                IReadOnlyDictionary<string, SkillData> skills,
+                IReadOnlyDictionary<string, string> skillOwnerSummaries)
             {
                 Heroes = heroes;
                 Skills = skills;
+                SkillOwnerSummaries = skillOwnerSummaries;
             }
 
             public IReadOnlyDictionary<string, HeroDefinition> Heroes { get; }
 
             public IReadOnlyDictionary<string, SkillData> Skills { get; }
+
+            public IReadOnlyDictionary<string, string> SkillOwnerSummaries { get; }
 
             public HeroDefinition GetHero(string heroId, string filePath)
             {
@@ -1354,6 +1041,62 @@ namespace Fight.Editor
                 }
 
                 throw new InvalidOperationException($"[BalanceSheets] 在 {filePath} 中引用了不存在的 skillId：{skillId}");
+            }
+
+            public string GetSkillOwnerSummary(string skillId)
+            {
+                return SkillOwnerSummaries.TryGetValue(skillId, out var summary) ? summary : string.Empty;
+            }
+        }
+
+        private sealed class SkillSheetLayout
+        {
+            public SkillSheetLayout(int maxEffectCount, IReadOnlyDictionary<int, int> maxStatusCountsByEffectIndex)
+            {
+                MaxEffectCount = maxEffectCount;
+                MaxStatusCountsByEffectIndex = maxStatusCountsByEffectIndex;
+            }
+
+            public int MaxEffectCount { get; }
+
+            public IReadOnlyDictionary<int, int> MaxStatusCountsByEffectIndex { get; }
+
+            public int GetMaxStatusCount(int effectIndex)
+            {
+                return MaxStatusCountsByEffectIndex.TryGetValue(effectIndex, out var count) ? count : 0;
+            }
+
+            public static SkillSheetLayout Create(IEnumerable<SkillData> skills)
+            {
+                var maxEffectCount = 0;
+                var maxStatusCounts = new Dictionary<int, int>();
+
+                foreach (var skill in skills)
+                {
+                    var effectCount = skill?.effects?.Count ?? 0;
+                    if (effectCount > maxEffectCount)
+                    {
+                        maxEffectCount = effectCount;
+                    }
+
+                    for (var effectIndex = 0; effectIndex < effectCount; effectIndex++)
+                    {
+                        var statusCount = skill.effects[effectIndex]?.statusEffects?.Count ?? 0;
+                        if (maxStatusCounts.TryGetValue(effectIndex, out var currentMax))
+                        {
+                            if (statusCount > currentMax)
+                            {
+                                maxStatusCounts[effectIndex] = statusCount;
+                            }
+                        }
+                        else
+                        {
+                            maxStatusCounts[effectIndex] = statusCount;
+                        }
+                    }
+                }
+
+                return new SkillSheetLayout(maxEffectCount, maxStatusCounts);
             }
         }
 
