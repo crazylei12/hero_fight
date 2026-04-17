@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0e31a5dd748b3247a5281e3f94d1339, type: 3}
+  m_Name: Stage01HeroCatalog
+  m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroCatalogData
+  heroes:
+  - {fileID: 11400000, guid: 7cbd68688bebd1b43bc4bf957492bcae, type: 2}
+  - {fileID: 11400000, guid: 5c88f39b9ef5e8e44bb8b6ee15514b0a, type: 2}
+  - {fileID: 11400000, guid: b9486c517b38c634b808c23b8938e971, type: 2}
+  - {fileID: 11400000, guid: 748511f68e49c024ea386b2f7fb2a65c, type: 2}
+  - {fileID: 11400000, guid: babd481c3046edf4c96bf68d3f7e69d1, type: 2}
+  - {fileID: 11400000, guid: 30ca99db0702b0648a2a8e55ee11004f, type: 2}
+  - {fileID: 11400000, guid: 3486f75bec1d7d94b941b690bf5a0602, type: 2}

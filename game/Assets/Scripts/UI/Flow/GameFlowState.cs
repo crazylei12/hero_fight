@@ -7,8 +7,10 @@ namespace Fight.UI.Flow
     public static class GameFlowState
     {
         public const string DefaultInputResourcesPath = "Stage01Demo/Stage01DemoBattleInput";
+        public const string DefaultHeroCatalogResourcesPath = "Stage01Demo/Stage01HeroCatalog";
 
         private static BattleInputConfig defaultBattleTemplate;
+        private static HeroCatalogData defaultHeroCatalog;
         private static List<HeroDefinition> heroCatalog;
         private static List<HeroDefinition> blueSelection;
         private static List<HeroDefinition> redSelection;
@@ -165,12 +167,24 @@ namespace Fight.UI.Flow
             return defaultBattleTemplate;
         }
 
+        private static HeroCatalogData GetDefaultHeroCatalog()
+        {
+            if (defaultHeroCatalog == null)
+            {
+                defaultHeroCatalog = Resources.Load<HeroCatalogData>(DefaultHeroCatalogResourcesPath);
+            }
+
+            return defaultHeroCatalog;
+        }
+
         private static List<HeroDefinition> BuildHeroCatalog()
         {
             var template = GetDefaultBattleTemplate();
+            var catalogAsset = GetDefaultHeroCatalog();
             var catalog = new List<HeroDefinition>();
             var seenHeroIds = new HashSet<string>();
 
+            AppendUniqueHeroes(catalog, seenHeroIds, catalogAsset?.heroes);
             AppendUniqueHeroes(catalog, seenHeroIds, template?.blueTeam?.heroes);
             AppendUniqueHeroes(catalog, seenHeroIds, template?.redTeam?.heroes);
             catalog.Sort(CompareHeroes);
