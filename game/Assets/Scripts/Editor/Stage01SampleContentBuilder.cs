@@ -592,6 +592,9 @@ namespace Fight.Editor
                 return skill;
             }
 
+            // Smoke Veil is a self-buff, but we still require a valid enemy backliner before
+            // casting it. The BackmostEnemy target strategy is therefore used as cast gating,
+            // while the actual status payload lands on the caster.
             skill.skillType = SkillType.Buff;
             skill.targetType = SkillTargetType.BackmostEnemy;
             skill.castRange = 40f;
@@ -1271,26 +1274,6 @@ namespace Fight.Editor
                 return skill;
             }
 
-            skill.skillType = SkillType.Buff;
-            skill.targetType = SkillTargetType.BackmostEnemy;
-            skill.castRange = 40f;
-            skill.areaRadius = 0f;
-            skill.minTargetsToCast = 1;
-            skill.allowsSelfCast = false;
-            skill.effects.Clear();
-            var effect = AddApplyStatusEffectsEffect(skill);
-            effect.targetMode = SkillEffectTargetMode.Caster;
-            effect.statusEffects.Add(new StatusEffectData
-            {
-                effectType = StatusEffectType.Untargetable,
-                durationSeconds = 6f,
-                magnitude = 0f,
-                activeSkillCooldownCapSeconds = 1f,
-                maxStacks = 1,
-                refreshDurationOnReapply = true,
-            });
-
-            ResetActionSequence(skill);
             ResetUltimateDecision(skill);
             skill.ultimateDecision.targetingType = UltimateTargetingType.UseSkillTargetType;
             skill.ultimateDecision.combineMode = UltimateConditionCombineMode.AnyPass;
@@ -1299,6 +1282,9 @@ namespace Fight.Editor
             skill.ultimateDecision.primaryCondition.requiredUnitCount = 1;
             skill.ultimateDecision.primaryCondition.healthPercentThreshold = 0.6f;
             skill.ultimateDecision.secondaryCondition.conditionType = UltimateConditionType.EnemyLowHealthInRange;
+            // Stage-01 has no dedicated "primary target HP <= X%" ultimate condition. We use
+            // a tiny search radius so EnemyLowHealthInRange effectively checks the selected
+            // backline target itself instead of nearby units.
             skill.ultimateDecision.secondaryCondition.searchRadius = 0.25f;
             skill.ultimateDecision.secondaryCondition.requiredUnitCount = 1;
             skill.ultimateDecision.secondaryCondition.healthPercentThreshold = 0.7f;
