@@ -29,6 +29,7 @@ namespace Fight.Editor
         private const string RegenerationHealthAreaSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Regeneration/Regeneration_health_area.prefab";
         private const string RegenerationHealthAreaLoopSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Regeneration/Regeneration_health_area_loop.prefab";
         private const string HealImpactSourceChildName = "plus";
+        private const float ProjectileVisualScale = 3f;
         private static readonly Vector3 HealImpactLocalOffset = new Vector3(-0.36f, 0.04f, 0f);
         private const float HealImpactLoopScale = 0.54f;
         private const float HealImpactLoopDurationSeconds = 0.6f;
@@ -143,6 +144,7 @@ namespace Fight.Editor
         {
             var root = new GameObject("SunpriestBasicAttackProjectile");
             root.AddComponent<SortingGroup>();
+            root.transform.localScale = Vector3.one * ProjectileVisualScale;
 
             CreateSprite(
                 root.transform,
