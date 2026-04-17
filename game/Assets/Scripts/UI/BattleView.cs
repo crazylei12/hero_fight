@@ -134,7 +134,6 @@ namespace Fight.UI
             public Animator[] EffectAnimators;
             public ParticleSystem[] EffectParticleSystems;
             public Renderer[] EffectRenderers;
-            public ISkillAreaPulseReceiver[] EffectPulseReceivers;
             public Vector3 BaseEffectScale = Vector3.one;
             public SkillAreaPresentationController CustomController;
         }
@@ -1743,7 +1742,6 @@ namespace Fight.UI
             viewState.EffectAnimators = instance.GetComponentsInChildren<Animator>(true);
             viewState.EffectParticleSystems = instance.GetComponentsInChildren<ParticleSystem>(true);
             viewState.EffectRenderers = instance.GetComponentsInChildren<Renderer>(true);
-            viewState.EffectPulseReceivers = GetSkillAreaPulseReceivers(instance);
             viewState.BaseEffectScale = instance.transform.localScale;
             RestartSkillAreaEffect(viewState);
         }
@@ -1802,14 +1800,6 @@ namespace Fight.UI
                 viewState.CustomController.RestartPulse();
             }
 
-            if (viewState?.EffectPulseReceivers != null)
-            {
-                for (var i = 0; i < viewState.EffectPulseReceivers.Length; i++)
-                {
-                    viewState.EffectPulseReceivers[i]?.HandleSkillAreaPulse();
-                }
-            }
-
             if (viewState?.EffectAnimators != null)
             {
                 for (var i = 0; i < viewState.EffectAnimators.Length; i++)
@@ -1866,34 +1856,8 @@ namespace Fight.UI
 
             viewState.EffectSortingGroup = root.GetComponent<SortingGroup>();
             viewState.EffectRenderers = viewState.CustomController.Renderers;
-            viewState.EffectPulseReceivers = GetSkillAreaPulseReceivers(root);
             viewState.BaseEffectScale = Vector3.one;
             RestartSkillAreaEffect(viewState);
-        }
-
-        private static ISkillAreaPulseReceiver[] GetSkillAreaPulseReceivers(GameObject root)
-        {
-            if (root == null)
-            {
-                return Array.Empty<ISkillAreaPulseReceiver>();
-            }
-
-            var behaviours = root.GetComponentsInChildren<MonoBehaviour>(true);
-            if (behaviours == null || behaviours.Length == 0)
-            {
-                return Array.Empty<ISkillAreaPulseReceiver>();
-            }
-
-            var results = new List<ISkillAreaPulseReceiver>();
-            for (var i = 0; i < behaviours.Length; i++)
-            {
-                if (behaviours[i] is ISkillAreaPulseReceiver receiver)
-                {
-                    results.Add(receiver);
-                }
-            }
-
-            return results.ToArray();
         }
 
         private static SkillAreaPresentationController CreateSkillAreaPresentationController(RuntimeSkillArea area, GameObject root)

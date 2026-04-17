@@ -1,5 +1,4 @@
 using System.IO;
-using Fight.UI.Presentation.Skills;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -24,23 +23,9 @@ namespace Fight.Editor
         private const string FireBurstLargeSourcePrefabPath = "Assets/Super Pixel Effects Pack 2/Prefabs/fx2_fire_burst_large_orange.prefab";
         private const string ExplosionSmallSourcePrefabPath = "Assets/Super Pixel Effects Pack 2/Prefabs/fx2_explosion_small_orange.prefab";
         private const string TopDownRocketCircleRedSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Top_down_attack/top_down_rocket_circle_red.prefab";
-        private const string PyromancerFlameArtFolder = GeneratedArtFolder + "/pyromancer_flames";
-        private static readonly string[] PyromancerFlameFileNames =
-        {
-            "pyromancer_effect_3__2764.png",
-            "pyromancer_effect_4__5097.png",
-            "pyromancer_effect_5__4209.png",
-            "pyromancer_effect_6__3507.png",
-            "pyromancer_effect_8__4109.png",
-            "pyromancer_effect_9__1675.png",
-            "pyromancer_effect_10__3404.png",
-            "pyromancer_effect_11__2838.png",
-        };
-
         public static void BuildFireMageVfxPrefabs()
         {
             EnsureFolder(GeneratedArtFolder);
-            EnsureFolder(PyromancerFlameArtFolder);
             EnsureFolder(PrefabsRootFolder);
             EnsureFolder(ProjectilePrefabsFolder);
             EnsureFolder(SkillPrefabsFolder);
@@ -48,7 +33,7 @@ namespace Fight.Editor
             var softCircleSprite = EnsureSoftCircleSprite();
             BuildProjectilePrefab(softCircleSprite);
             BuildEmberBurstPrefab(softCircleSprite);
-            BuildMeteorFieldPrefab(softCircleSprite);
+            BuildMeteorFieldPrefab();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             Debug.Log("FireMage VFX prefabs rebuilt.");
@@ -103,158 +88,18 @@ namespace Fight.Editor
             SavePrefab(root, ProjectilePrefabPath);
         }
 
-        private static void BuildMeteorFieldPrefab(Sprite softCircleSprite)
+        private static void BuildMeteorFieldPrefab()
         {
             var topDownRocketCircleRedPrefab = LoadRequiredAsset<GameObject>(TopDownRocketCircleRedSourcePrefabPath);
-            EnsurePyromancerFlameSprites();
 
             var root = new GameObject("FireMageMeteorField");
             root.AddComponent<SortingGroup>();
-
-            CreateSprite(
-                root.transform,
-                "OuterWarning",
-                softCircleSprite,
-                new Color(1f, 0.22f, 0.09f, 0.1f),
-                0,
-                Vector3.zero,
-                new Vector3(1.02f, 1.02f, 1f));
-            CreateSprite(
-                root.transform,
-                "WarningRing",
-                softCircleSprite,
-                new Color(1f, 0.12f, 0.06f, 0.14f),
-                1,
-                Vector3.zero,
-                new Vector3(0.86f, 0.86f, 1f));
-            CreateSprite(
-                root.transform,
-                "HeatField",
-                softCircleSprite,
-                new Color(0.78f, 0.08f, 0.04f, 0.22f),
-                2,
-                Vector3.zero,
-                new Vector3(0.66f, 0.66f, 1f));
-            CreateSprite(
-                root.transform,
-                "CoreHeat",
-                softCircleSprite,
-                new Color(1f, 0.34f, 0.12f, 0.1f),
-                3,
-                Vector3.zero,
-                new Vector3(0.4f, 0.4f, 1f));
-            CreateSprite(
-                root.transform,
-                "CrimsonCenter",
-                softCircleSprite,
-                new Color(0.96f, 0.18f, 0.08f, 0.08f),
-                4,
-                Vector3.zero,
-                new Vector3(0.24f, 0.24f, 1f));
-
-            var meteorPulse = InstantiateNestedPrefab(topDownRocketCircleRedPrefab, root.transform, "MeteorPulse");
-            meteorPulse.transform.localScale = Vector3.one * 0.116f;
-            meteorPulse.transform.localPosition = Vector3.zero;
-            KeepOnlyDirectChildren(meteorPulse.transform, "markers", "hit_controller");
-            KeepOnlyDirectChildren(FindDirectChild(meteorPulse.transform, "markers"), "ring01", "ring02");
-            KeepOnlyDirectChildren(FindDirectChild(meteorPulse.transform, "hit_controller"), "circle");
-            OffsetRendererOrders(meteorPulse, 8);
-
-            CreateFlameSprite(
-                root.transform,
-                "FlameNorthWest",
-                LoadPyromancerFlameSprite("pyromancer_effect_6__3507.png"),
-                new Color(1f, 0.88f, 0.72f, 0.98f),
-                10,
-                new Vector3(-0.28f, 0.27f, 0f),
-                Vector3.one * 0.18f,
-                6f);
-            CreateFlameSprite(
-                root.transform,
-                "FlameNorth",
-                LoadPyromancerFlameSprite("pyromancer_effect_9__1675.png"),
-                new Color(1f, 0.86f, 0.74f, 0.96f),
-                11,
-                new Vector3(-0.04f, 0.31f, 0f),
-                Vector3.one * 0.26f,
-                -4f);
-            CreateFlameSprite(
-                root.transform,
-                "FlameNorthEast",
-                LoadPyromancerFlameSprite("pyromancer_effect_10__3404.png"),
-                new Color(1f, 0.9f, 0.76f, 0.98f),
-                10,
-                new Vector3(0.23f, 0.24f, 0f),
-                Vector3.one * 0.3f,
-                8f);
-            CreateFlameSprite(
-                root.transform,
-                "FlameWestOuter",
-                LoadPyromancerFlameSprite("pyromancer_effect_11__2838.png"),
-                new Color(1f, 0.84f, 0.72f, 0.94f),
-                9,
-                new Vector3(-0.39f, 0.03f, 0f),
-                Vector3.one * 0.28f,
-                -10f);
-            CreateFlameSprite(
-                root.transform,
-                "FlameWestInner",
-                LoadPyromancerFlameSprite("pyromancer_effect_8__4109.png"),
-                new Color(1f, 0.94f, 0.82f, 1f),
-                11,
-                new Vector3(-0.18f, 0.04f, 0f),
-                Vector3.one * 0.38f,
-                0f);
-            CreateFlameSprite(
-                root.transform,
-                "FlameCenterRight",
-                LoadPyromancerFlameSprite("pyromancer_effect_3__2764.png"),
-                new Color(1f, 0.92f, 0.8f, 0.96f),
-                12,
-                new Vector3(0.16f, 0.02f, 0f),
-                Vector3.one * 0.18f,
-                0f);
-            CreateFlameSprite(
-                root.transform,
-                "FlameSouthWest",
-                LoadPyromancerFlameSprite("pyromancer_effect_5__4209.png"),
-                new Color(1f, 0.88f, 0.74f, 0.96f),
-                10,
-                new Vector3(-0.23f, -0.2f, 0f),
-                Vector3.one * 0.18f,
-                0f);
-            CreateFlameSprite(
-                root.transform,
-                "FlameSouth",
-                LoadPyromancerFlameSprite("pyromancer_effect_9__1675.png"),
-                new Color(1f, 0.86f, 0.74f, 0.94f),
-                10,
-                new Vector3(0.03f, -0.27f, 0f),
-                Vector3.one * 0.22f,
-                0f);
-            CreateFlameSprite(
-                root.transform,
-                "FlameSouthEast",
-                LoadPyromancerFlameSprite("pyromancer_effect_6__3507.png"),
-                new Color(1f, 0.88f, 0.72f, 0.96f),
-                10,
-                new Vector3(0.27f, -0.19f, 0f),
-                Vector3.one * 0.17f,
-                -6f,
-                true);
-            CreateFlameSprite(
-                root.transform,
-                "FlameEastOuter",
-                LoadPyromancerFlameSprite("pyromancer_effect_11__2838.png"),
-                new Color(1f, 0.84f, 0.72f, 0.92f),
-                9,
-                new Vector3(0.39f, 0.06f, 0f),
-                Vector3.one * 0.28f,
-                12f,
-                true);
-
-            var flameScatter = root.AddComponent<SkillAreaFlameScatterPulseController>();
-            flameScatter.Configure("Flame", 0.08f, 0.05f, 0.14f, 10f, 0.88f, 1f);
+            var meteorField = InstantiateNestedPrefab(topDownRocketCircleRedPrefab, root.transform, "MeteorField");
+            meteorField.transform.localScale = Vector3.one * 0.118f;
+            meteorField.transform.localPosition = Vector3.zero;
+            meteorField.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            RemoveDirectChild(meteorField.transform, "shot_controller");
+            OffsetRendererOrders(meteorField, 8);
 
             SavePrefab(root, MeteorFieldPrefabPath);
         }
@@ -400,28 +245,9 @@ namespace Fight.Editor
             return instance;
         }
 
-        private static Transform FindDirectChild(Transform parent, string childName)
+        private static void RemoveDirectChild(Transform parent, string childName)
         {
             if (parent == null || string.IsNullOrWhiteSpace(childName))
-            {
-                return null;
-            }
-
-            for (var i = 0; i < parent.childCount; i++)
-            {
-                var child = parent.GetChild(i);
-                if (child != null && child.name == childName)
-                {
-                    return child;
-                }
-            }
-
-            return null;
-        }
-
-        private static void KeepOnlyDirectChildren(Transform parent, params string[] childNames)
-        {
-            if (parent == null)
             {
                 return;
             }
@@ -429,24 +255,7 @@ namespace Fight.Editor
             for (var i = parent.childCount - 1; i >= 0; i--)
             {
                 var child = parent.GetChild(i);
-                if (child == null)
-                {
-                    continue;
-                }
-
-                var keep = false;
-                for (var nameIndex = 0; nameIndex < childNames.Length; nameIndex++)
-                {
-                    if (child.name != childNames[nameIndex])
-                    {
-                        continue;
-                    }
-
-                    keep = true;
-                    break;
-                }
-
-                if (!keep)
+                if (child != null && child.name == childName)
                 {
                     Object.DestroyImmediate(child.gameObject);
                 }
@@ -492,99 +301,6 @@ namespace Fight.Editor
             renderer.color = color;
             renderer.sortingOrder = sortingOrder;
             return renderer;
-        }
-
-        private static SpriteRenderer CreateFlameSprite(
-            Transform parent,
-            string name,
-            Sprite sprite,
-            Color color,
-            int sortingOrder,
-            Vector3 localPosition,
-            Vector3 localScale,
-            float localRotationZ,
-            bool flipX = false)
-        {
-            var renderer = CreateSprite(parent, name, sprite, color, sortingOrder, localPosition, localScale);
-            renderer.transform.localRotation = Quaternion.Euler(0f, 0f, localRotationZ);
-            renderer.flipX = flipX;
-            return renderer;
-        }
-
-        private static void EnsurePyromancerFlameSprites()
-        {
-            EnsureFolder(PyromancerFlameArtFolder);
-
-            var projectRoot = Path.GetDirectoryName(Application.dataPath) ?? string.Empty;
-            var repoRoot = Directory.GetParent(projectRoot)?.FullName ?? projectRoot;
-            var sourceFolder = string.Empty;
-            var sourceCandidates = new[]
-            {
-                Path.Combine(projectRoot, "src"),
-                Path.Combine(repoRoot, "src"),
-            };
-            for (var i = 0; i < sourceCandidates.Length; i++)
-            {
-                if (!Directory.Exists(sourceCandidates[i]))
-                {
-                    continue;
-                }
-
-                sourceFolder = sourceCandidates[i];
-                break;
-            }
-
-            if (string.IsNullOrWhiteSpace(sourceFolder))
-            {
-                throw new DirectoryNotFoundException($"Missing flame source folder. Checked: {string.Join(", ", sourceCandidates)}");
-            }
-
-            for (var i = 0; i < PyromancerFlameFileNames.Length; i++)
-            {
-                var fileName = PyromancerFlameFileNames[i];
-                var sourcePath = Path.Combine(sourceFolder, fileName);
-                if (!File.Exists(sourcePath))
-                {
-                    throw new FileNotFoundException($"Missing flame source image: {sourcePath}");
-                }
-
-                var assetPath = $"{PyromancerFlameArtFolder}/{fileName}";
-                var destinationPath = GetAbsoluteProjectPath(assetPath);
-                var destinationDirectory = Path.GetDirectoryName(destinationPath);
-                if (!string.IsNullOrWhiteSpace(destinationDirectory) && !Directory.Exists(destinationDirectory))
-                {
-                    Directory.CreateDirectory(destinationDirectory);
-                }
-
-                var shouldCopy = !File.Exists(destinationPath)
-                    || File.GetLastWriteTimeUtc(destinationPath) < File.GetLastWriteTimeUtc(sourcePath)
-                    || new FileInfo(destinationPath).Length != new FileInfo(sourcePath).Length;
-                if (shouldCopy)
-                {
-                    File.Copy(sourcePath, destinationPath, true);
-                    AssetDatabase.ImportAsset(assetPath, ImportAssetOptions.ForceSynchronousImport);
-                }
-
-                if (AssetImporter.GetAtPath(assetPath) is not TextureImporter importer)
-                {
-                    continue;
-                }
-
-                importer.textureType = TextureImporterType.Sprite;
-                importer.spriteImportMode = SpriteImportMode.Single;
-                importer.alphaIsTransparency = true;
-                importer.mipmapEnabled = false;
-                importer.wrapMode = TextureWrapMode.Clamp;
-                importer.filterMode = FilterMode.Point;
-                importer.textureCompression = TextureImporterCompression.Uncompressed;
-                importer.spritePixelsPerUnit = 100f;
-                importer.SaveAndReimport();
-            }
-        }
-
-        private static Sprite LoadPyromancerFlameSprite(string fileName)
-        {
-            return LoadRequiredAsset<Sprite>($"{PyromancerFlameArtFolder}/{fileName}");
         }
 
         private static T LoadRequiredAsset<T>(string assetPath) where T : Object
