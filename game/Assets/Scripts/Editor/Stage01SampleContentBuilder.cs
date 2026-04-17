@@ -1258,6 +1258,7 @@ namespace Fight.Editor
                 return skill;
             }
 
+            ResetUltimateDecision(skill);
             skill.ultimateDecision.targetingType = UltimateTargetingType.EnemyDensestPosition;
             skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;
             skill.ultimateDecision.primaryCondition.searchRadius = skill.areaRadius;
