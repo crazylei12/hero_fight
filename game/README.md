@@ -23,6 +23,14 @@
 当前 Windows 导出默认输出位置：
 - `game/Builds/Windows/FightStage01.exe`
 
+当前批量调数工具入口：
+- Unity 菜单 `Fight/Tools/Balance Sheets`
+- 默认导出目录：`game/BalanceSheets/Stage01/`
+
+当前调数安全规则：
+- 构建前的 demo 内容确保流程只会补齐缺失资产，不会覆盖你已经调好的英雄/技能数值
+- 如果确实要把样例内容重置回默认值，只能显式执行 `Fight/Dev/Regenerate Demo Content From Defaults (Overwrite Existing Tuning)`
+
 分工约定：
 - 根目录 `AGENTS.md`：总控、规划、阶段约束、文档沉淀
 - `game/AGENTS.md`：第一阶段编码规则、工程结构、代码优先级、实现边界
