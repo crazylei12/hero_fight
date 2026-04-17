@@ -70,27 +70,27 @@ namespace Fight.Editor
                 new Vector3(0.84f, 0.80f, 1f));
 
             var outerRing = InstantiateNestedPrefab(iceCirclePrefab, root.transform, "OuterIceRing");
-            ConfigureAreaSourceInstance(outerRing, new Vector3(0.104f, 0.104f, 0.104f), 90f);
+            ConfigureAreaSourceInstance(outerRing, Vector3.zero, new Vector3(0.104f, 0.104f, 0.104f), 0f);
 
-            CreateIceLine(root.transform, iceLinePrefab, "LineNorthSouth", 0f, 0.108f);
-            CreateIceLine(root.transform, iceLinePrefab, "LineEastWest", 90f, 0.108f);
-            CreateIceLine(root.transform, iceLinePrefab, "LineDiagonalA", 45f, 0.092f);
-            CreateIceLine(root.transform, iceLinePrefab, "LineDiagonalB", 135f, 0.092f);
+            CreateIceLine(root.transform, iceLinePrefab, "LineNorthSouth", new Vector3(0f, 0f, 0f), 0.108f);
+            CreateIceLine(root.transform, iceLinePrefab, "LineEastWest", new Vector3(-0.12f, 0f, 0f), 0.108f);
+            CreateIceLine(root.transform, iceLinePrefab, "LineDiagonalA", new Vector3(0.12f, 0f, 0f), 0.092f);
+            CreateIceLine(root.transform, iceLinePrefab, "LineDiagonalB", new Vector3(0f, 0.08f, 0f), 0.092f);
 
             SavePrefab(root, BlizzardFieldPrefabPath);
         }
 
-        private static void CreateIceLine(Transform parent, GameObject sourcePrefab, string name, float zRotation, float uniformScale)
+        private static void CreateIceLine(Transform parent, GameObject sourcePrefab, string name, Vector3 localPosition, float uniformScale)
         {
             var line = InstantiateNestedPrefab(sourcePrefab, parent, name);
-            ConfigureAreaSourceInstance(line, new Vector3(uniformScale, uniformScale, uniformScale), 90f, zRotation);
+            ConfigureAreaSourceInstance(line, localPosition, new Vector3(uniformScale, uniformScale, uniformScale), 0f);
         }
 
-        private static void ConfigureAreaSourceInstance(GameObject instance, Vector3 localScale, float xRotation, float zRotation = 0f)
+        private static void ConfigureAreaSourceInstance(GameObject instance, Vector3 localPosition, Vector3 localScale, float zRotation = 0f)
         {
-            instance.transform.localPosition = Vector3.zero;
+            instance.transform.localPosition = localPosition;
             instance.transform.localScale = localScale;
-            instance.transform.localRotation = Quaternion.Euler(xRotation, 0f, zRotation);
+            instance.transform.localRotation = Quaternion.Euler(0f, 0f, zRotation);
         }
 
         private static Sprite EnsureSoftCircleSprite()
