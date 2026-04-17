@@ -13,24 +13,30 @@ namespace Fight.Heroes
 
     public sealed class PendingCombatAction
     {
-        public PendingCombatAction(RuntimeHero target, bool suppressActionSequenceTrigger = false)
+        public PendingCombatAction(
+            RuntimeHero target,
+            bool suppressActionSequenceTrigger = false,
+            bool isActionSequenceStep = false)
         {
             ActionType = CombatActionType.BasicAttack;
             Target = target;
             AffectedTargets = Array.Empty<RuntimeHero>();
             SuppressActionSequenceTrigger = suppressActionSequenceTrigger;
+            IsActionSequenceStep = isActionSequenceStep;
         }
 
         public PendingCombatAction(
             SkillData skill,
             RuntimeHero primaryTarget,
             IReadOnlyList<RuntimeHero> affectedTargets,
-            bool suppressActionSequenceTrigger = false)
+            bool suppressActionSequenceTrigger = false,
+            bool isActionSequenceStep = false)
         {
             ActionType = CombatActionType.SkillCast;
             Skill = skill;
             PrimaryTarget = primaryTarget;
             SuppressActionSequenceTrigger = suppressActionSequenceTrigger;
+            IsActionSequenceStep = isActionSequenceStep;
             if (affectedTargets != null)
             {
                 AffectedTargets = new List<RuntimeHero>(affectedTargets);
@@ -52,6 +58,8 @@ namespace Fight.Heroes
         public IReadOnlyList<RuntimeHero> AffectedTargets { get; }
 
         public bool SuppressActionSequenceTrigger { get; }
+
+        public bool IsActionSequenceStep { get; }
     }
 
     public class RuntimeHero
@@ -107,6 +115,8 @@ namespace Fight.Heroes
         public bool HasHardControl => StatusEffectSystem.HasHardControl(this);
 
         public bool IsUnderForcedMovement => activeForcedMovement != null;
+
+        public bool HasRecentForcedMovementInterrupt => forcedMovementInterruptTicksRemaining > 0;
 
         public bool IsActionLocked => actionLockRemainingSeconds > 0f;
 
@@ -209,12 +219,15 @@ namespace Fight.Heroes
 
         public RuntimeCombatActionSequence ActiveCombatActionSequence => activeCombatActionSequence;
 
+        public bool HasPendingCombatAction => pendingCombatAction != null;
+
         private readonly List<RuntimeStatusEffect> activeStatusEffects = new List<RuntimeStatusEffect>();
         private RuntimeForcedMovement activeForcedMovement;
         private RuntimeCombatActionSequence activeCombatActionSequence;
         private PendingCombatAction pendingCombatAction;
         private float pendingActionTriggerRemainingSeconds;
         private float actionLockRemainingSeconds;
+        private int forcedMovementInterruptTicksRemaining;
 
         public void ResetToSpawn()
         {
@@ -232,6 +245,7 @@ namespace Fight.Heroes
             HasInitializedUltimateDecisionSchedule = false;
             VisualHeightOffset = 0f;
             activeForcedMovement = null;
+            forcedMovementInterruptTicksRemaining = 0;
             ClearThreatTracking();
         }
 
@@ -276,7 +290,7 @@ namespace Fight.Heroes
 
             if (activeCombatActionSequence != null)
             {
-                activeCombatActionSequence.Tick(deltaTime);
+                activeCombatActionSequence.Tick(this, deltaTime);
                 if (activeCombatActionSequence.ShouldInterrupt(this))
                 {
                     ClearCombatActionSequence();
@@ -293,12 +307,18 @@ namespace Fight.Heroes
             }
 
             CurrentHealth = Mathf.Min(CurrentHealth, MaxHealth);
+            if (forcedMovementInterruptTicksRemaining > 0)
+            {
+                forcedMovementInterruptTicksRemaining--;
+            }
         }
 
         public void StartForcedMovement(Vector3 destination, float durationSeconds, float peakHeight)
         {
             destination = Stage01ArenaSpec.ClampPosition(destination);
             destination = new Vector3(destination.x, 0f, destination.z);
+            RegisterForcedMovementInterrupt();
+            ClearCombatActionState();
 
             if (durationSeconds <= Mathf.Epsilon)
             {
@@ -308,7 +328,6 @@ namespace Fight.Heroes
                 return;
             }
 
-            ClearCombatActionState();
             activeForcedMovement = new RuntimeForcedMovement(CurrentPosition, destination, durationSeconds, peakHeight);
         }
 
@@ -372,7 +391,12 @@ namespace Fight.Heroes
             AttackCooldownRemainingSeconds = AttackInterval;
         }
 
-        public void BeginBasicAttack(RuntimeHero target, float windupSeconds, float recoverySeconds, bool consumeAttackCooldown = true)
+        public void BeginBasicAttack(
+            RuntimeHero target,
+            float windupSeconds,
+            float recoverySeconds,
+            bool consumeAttackCooldown = true,
+            bool isActionSequenceStep = false)
         {
             if (Definition?.basicAttack == null || target == null || IsDead)
             {
@@ -384,7 +408,13 @@ namespace Fight.Heroes
                 StartAttackCooldown();
             }
 
-            StartCombatAction(new PendingCombatAction(target), windupSeconds, recoverySeconds);
+            StartCombatAction(
+                new PendingCombatAction(
+                    target,
+                    suppressActionSequenceTrigger: false,
+                    isActionSequenceStep: isActionSequenceStep),
+                windupSeconds,
+                recoverySeconds);
         }
 
         public void BeginSkillCast(
@@ -394,7 +424,8 @@ namespace Fight.Heroes
             float windupSeconds,
             float recoverySeconds,
             bool consumeCooldown = true,
-            bool suppressActionSequenceTrigger = false)
+            bool suppressActionSequenceTrigger = false,
+            bool isActionSequenceStep = false)
         {
             if (skill == null || IsDead)
             {
@@ -407,7 +438,12 @@ namespace Fight.Heroes
             }
 
             StartCombatAction(
-                new PendingCombatAction(skill, primaryTarget, affectedTargets, suppressActionSequenceTrigger),
+                new PendingCombatAction(
+                    skill,
+                    primaryTarget,
+                    affectedTargets,
+                    suppressActionSequenceTrigger,
+                    isActionSequenceStep),
                 windupSeconds,
                 recoverySeconds);
         }
@@ -453,6 +489,7 @@ namespace Fight.Heroes
             ClearCombatActionSequence();
             VisualHeightOffset = 0f;
             activeForcedMovement = null;
+            forcedMovementInterruptTicksRemaining = 0;
             StatusEffectSystem.ClearStatuses(this, onRemovedStatus);
             ClearThreatTracking();
         }
@@ -536,6 +573,11 @@ namespace Fight.Heroes
 
         private void ClearCombatActionState()
         {
+            if (pendingCombatAction != null && pendingCombatAction.IsActionSequenceStep && activeCombatActionSequence != null)
+            {
+                activeCombatActionSequence.RestoreQueuedExecution();
+            }
+
             pendingCombatAction = null;
             pendingActionTriggerRemainingSeconds = 0f;
             actionLockRemainingSeconds = 0f;
@@ -568,6 +610,11 @@ namespace Fight.Heroes
 
             VisualHeightOffset = 0f;
             activeForcedMovement = null;
+        }
+
+        private void RegisterForcedMovementInterrupt()
+        {
+            forcedMovementInterruptTicksRemaining = 2;
         }
     }
 }

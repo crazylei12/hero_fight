@@ -9,7 +9,7 @@ namespace Fight.Battle
         public static void TryStartSequence(RuntimeHero actor, SkillData sourceSkill, RuntimeHero primaryTarget)
         {
             var definition = sourceSkill?.actionSequence;
-            if (actor == null || sourceSkill == null || definition == null || !definition.enabled || definition.repeatCount <= 0)
+            if (actor == null || sourceSkill == null || definition == null || !definition.enabled || !HasRemainingSequenceBudget(definition))
             {
                 return;
             }
@@ -36,7 +36,18 @@ namespace Fight.Battle
                 return false;
             }
 
+            if (sequence.IsComplete)
+            {
+                actor.ClearCombatActionSequence();
+                return false;
+            }
+
             if (!sequence.IsReady)
+            {
+                return true;
+            }
+
+            if (!CanExecuteSequencePayload(actor, sequence))
             {
                 return true;
             }
@@ -76,12 +87,9 @@ namespace Fight.Battle
                 battleManager,
                 sequence.WindupSeconds,
                 sequence.RecoverySeconds,
-                consumeAttackCooldown: false);
+                consumeAttackCooldown: false,
+                isActionSequenceStep: true);
             sequence.MarkExecutionQueued(target);
-            if (sequence.IsComplete)
-            {
-                actor.ClearCombatActionSequence();
-            }
 
             return true;
         }
@@ -116,10 +124,6 @@ namespace Fight.Battle
                 sequence.RecoverySeconds,
                 battleManager);
             sequence.MarkExecutionQueued(primaryTarget);
-            if (sequence.IsComplete)
-            {
-                actor.ClearCombatActionSequence();
-            }
 
             return true;
         }
@@ -203,6 +207,30 @@ namespace Fight.Battle
 
             actor.SetTarget(target);
             context.EventBus.Publish(new TargetChangedEvent(actor, target));
+        }
+
+        private static bool HasRemainingSequenceBudget(CombatActionSequenceData definition)
+        {
+            if (definition == null)
+            {
+                return false;
+            }
+
+            return definition.repeatMode == CombatActionSequenceRepeatMode.FixedDuration
+                ? definition.durationSeconds > 0f
+                : definition.repeatCount > 0;
+        }
+
+        private static bool CanExecuteSequencePayload(RuntimeHero actor, RuntimeCombatActionSequence sequence)
+        {
+            if (actor == null || sequence == null)
+            {
+                return false;
+            }
+
+            return sequence.PayloadType == CombatActionSequencePayloadType.SourceSkill
+                ? actor.CanCastSkills
+                : actor.CanAttack;
         }
     }
 }
