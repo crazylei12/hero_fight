@@ -27,6 +27,7 @@ namespace Fight.Editor
         private const string MainMenuScenePath = ScenesFolder + "/MainMenu.unity";
         private const string ResultScenePath = ScenesFolder + "/Result.unity";
         private const string DefaultBattleInputAssetPath = ResourcesDemoFolder + "/Stage01DemoBattleInput.asset";
+        private const string DefaultHeroCatalogAssetPath = ResourcesDemoFolder + "/Stage01HeroCatalog.asset";
         private const string SupportPrefabPath = "Assets/Prefabs/Heroes/support_001_sunpriest/Sunpriest.prefab";
         private const string WarriorPrefabPath = "Assets/Prefabs/Heroes/warrior_001_skybreaker/Skybreaker.prefab";
         private const string MagePrefabPath = "Assets/HeroEditor4D/heroes/FIREMAGE.prefab";
@@ -111,6 +112,18 @@ namespace Fight.Editor
                 overwriteExistingContent,
                 HeroTag.Ranged, HeroTag.Burst, HeroTag.AreaDamage);
 
+            var frostmageUltimateSkill = CreateFrostmageUltimateSkill(overwriteExistingContent, out var frostmageUltimateExisted);
+
+            var frostmage = CreateHero(
+                "mage_002_frostmage",
+                "Frostmage",
+                HeroClass.Mage,
+                310f, 42f, 10f, 1f / 1.30f, 3.7f, 0.08f, 1.5f, 5.8f,
+                CreateFrostmageActiveSkill(overwriteExistingContent),
+                ConfigureFrostmageUltimate(frostmageUltimateSkill, overwriteExistingContent, frostmageUltimateExisted),
+                overwriteExistingContent,
+                HeroTag.Ranged, HeroTag.Control, HeroTag.AreaDamage);
+
             CreateArchivedMageFireboltSkill(overwriteExistingContent);
 
             var assassinActive = CreateShadowstepActiveSkill(overwriteExistingContent);
@@ -168,6 +181,7 @@ namespace Fight.Editor
                 out var marksmanHeroExisted,
                 HeroTag.Ranged, HeroTag.SustainedDamage);
             ConfigureLongshotBasicAttack(marksman, overwriteExistingContent, marksmanHeroExisted);
+            CreateHeroCatalog(warrior, mage, frostmage, assassin, tank, support, marksman);
 
             var battleInput = CreateBattleInput(
                 "Stage01DemoBattleInput",
@@ -229,13 +243,15 @@ namespace Fight.Editor
             var hasResultScene = AssetDatabase.LoadAssetAtPath<SceneAsset>(ResultScenePath) != null;
             var hasBasicAttackOnlyScene = AssetDatabase.LoadAssetAtPath<SceneAsset>(BasicAttackOnlyBattleScenePath) != null;
             var hasDefaultBattleInput = AssetDatabase.LoadAssetAtPath<BattleInputConfig>(DefaultBattleInputAssetPath) != null;
+            var hasHeroCatalog = AssetDatabase.LoadAssetAtPath<HeroCatalogData>(DefaultHeroCatalogAssetPath) != null;
 
             if (hasMainMenuScene &&
                 hasHeroSelectScene &&
                 hasBattleScene &&
                 hasResultScene &&
                 hasBasicAttackOnlyScene &&
-                hasDefaultBattleInput)
+                hasDefaultBattleInput &&
+                hasHeroCatalog)
             {
                 return;
             }
@@ -362,11 +378,14 @@ namespace Fight.Editor
                 : null;
             hero.visualConfig.projectilePrefab = heroId switch
             {
-                "mage_001_firemage" => AssetDatabase.LoadAssetAtPath<GameObject>(FireMageProjectilePrefabPath),
+                "mage_001_firemage" or "mage_002_frostmage" => AssetDatabase.LoadAssetAtPath<GameObject>(FireMageProjectilePrefabPath),
                 "support_001_sunpriest" => AssetDatabase.LoadAssetAtPath<GameObject>(SunpriestProjectilePrefabPath),
                 _ => null,
             };
-            hero.visualConfig.projectileAlignToMovement = heroId == "mage_001_firemage" || heroId == "support_001_sunpriest";
+            hero.visualConfig.projectileAlignToMovement =
+                heroId == "mage_001_firemage"
+                || heroId == "mage_002_frostmage"
+                || heroId == "support_001_sunpriest";
             hero.visualConfig.projectileEulerAngles = Vector3.zero;
             hero.visualConfig.hitVfxPrefab = null;
             EditorUtility.SetDirty(hero);
@@ -628,6 +647,112 @@ namespace Fight.Editor
             skill.persistentAreaVfxScaleMultiplier = 1f;
             skill.skillAreaPresentationType = SkillAreaPresentationType.None;
             AddPersistentAreaEffect(skill, PersistentAreaPulseEffectType.DirectDamage, PersistentAreaTargetType.Enemies, 1.2f, 2f, 0.4f, 1f, false);
+            ResetUltimateDecision(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateFrostmageActiveSkill(bool overwriteExistingContent)
+        {
+            var skill = CreateSkill(
+                "skill_frostmage_active_frostburst",
+                "Frost Burst",
+                SkillSlotType.ActiveSkill,
+                SkillType.AreaDamage,
+                SkillTargetType.DensestEnemyArea,
+                6.2f,
+                2f,
+                0.9f,
+                6.5f,
+                1,
+                overwriteExistingContent,
+                out var existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.effects.Clear();
+            skill.skillType = SkillType.AreaDamage;
+            skill.targetType = SkillTargetType.DensestEnemyArea;
+            skill.castRange = 6.2f;
+            skill.areaRadius = 2f;
+            skill.cooldownSeconds = 6.5f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.persistentAreaVfxPrefab = null;
+            skill.persistentAreaVfxScaleMultiplier = 1f;
+            skill.persistentAreaVfxEulerAngles = Vector3.zero;
+            skill.skillAreaPresentationType = SkillAreaPresentationType.None;
+
+            AddDamageEffect(skill, 0.9f);
+            var slowEffect = AddApplyStatusEffectsEffect(skill);
+            slowEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.MoveSpeedModifier,
+                durationSeconds = 2.5f,
+                magnitude = -0.3f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
+            ResetUltimateDecision(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateFrostmageUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
+        {
+            var skill = CreateSkill(
+                "skill_frostmage_ultimate_blizzard",
+                "Blizzard",
+                SkillSlotType.Ultimate,
+                SkillType.AreaDamage,
+                SkillTargetType.DensestEnemyArea,
+                7f,
+                5.5f,
+                0.35f,
+                0f,
+                1,
+                overwriteExistingContent,
+                out existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.effects.Clear();
+            skill.skillType = SkillType.AreaDamage;
+            skill.targetType = SkillTargetType.DensestEnemyArea;
+            skill.castRange = 7f;
+            skill.areaRadius = 5.5f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.persistentAreaVfxPrefab = null;
+            skill.persistentAreaVfxScaleMultiplier = 1f;
+            skill.persistentAreaVfxEulerAngles = Vector3.zero;
+            skill.skillAreaPresentationType = SkillAreaPresentationType.None;
+
+            var areaEffect = AddPersistentAreaEffect(
+                skill,
+                PersistentAreaPulseEffectType.DirectDamage,
+                PersistentAreaTargetType.Enemies,
+                0.35f,
+                skill.areaRadius,
+                5f,
+                1f,
+                false);
+            areaEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.MoveSpeedModifier,
+                durationSeconds = 1.2f,
+                magnitude = -0.6f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
             ResetUltimateDecision(skill);
             EditorUtility.SetDirty(skill);
             return skill;
@@ -1123,6 +1248,22 @@ namespace Fight.Editor
             return skill;
         }
 
+        private static SkillData ConfigureFrostmageUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.ultimateDecision.targetingType = UltimateTargetingType.EnemyDensestPosition;
+            skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;
+            skill.ultimateDecision.primaryCondition.searchRadius = skill.areaRadius;
+            skill.ultimateDecision.primaryCondition.requiredUnitCount = 3;
+            ApplyCountFallback(skill, 30f, 2, 45f, 1);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
         private static SkillData ConfigureShadowstepUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
         {
             if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
@@ -1525,6 +1666,28 @@ namespace Fight.Editor
             return input;
         }
 
+        private static HeroCatalogData CreateHeroCatalog(params HeroDefinition[] heroes)
+        {
+            var catalog = LoadOrCreateAsset<HeroCatalogData>(DefaultHeroCatalogAssetPath);
+            catalog.heroes.Clear();
+            if (heroes != null)
+            {
+                for (var i = 0; i < heroes.Length; i++)
+                {
+                    var hero = heroes[i];
+                    if (hero == null || catalog.heroes.Contains(hero))
+                    {
+                        continue;
+                    }
+
+                    catalog.heroes.Add(hero);
+                }
+            }
+
+            EditorUtility.SetDirty(catalog);
+            return catalog;
+        }
+
         private static string GetHeroAssetPath(string heroId, string displayName)
         {
             return $"{HeroesRootFolder}/{heroId}/{displayName}.asset";
@@ -1553,10 +1716,26 @@ namespace Fight.Editor
                 return "shared";
             }
 
+            var explicitOwnerId = GetExplicitSkillOwnerIdOverride(skillId);
+            if (!string.IsNullOrWhiteSpace(explicitOwnerId))
+            {
+                return explicitOwnerId;
+            }
+
             var parts = skillId.Split('_');
             return parts.Length >= 2
                 ? $"{parts[1]}_001_{GetDefaultHeroName(parts[1])}"
                 : "shared";
+        }
+
+        private static string GetExplicitSkillOwnerIdOverride(string skillId)
+        {
+            return skillId switch
+            {
+                "skill_frostmage_active_frostburst" => "mage_002_frostmage",
+                "skill_frostmage_ultimate_blizzard" => "mage_002_frostmage",
+                _ => null,
+            };
         }
 
         private static string GetDefaultHeroName(string heroClassKey)
