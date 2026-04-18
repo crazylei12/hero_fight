@@ -213,20 +213,39 @@ namespace Fight.Editor
                 return;
             }
 
-            var particleSystems = healLoop.GetComponentsInChildren<ParticleSystem>(true);
-            for (var i = 0; i < particleSystems.Length; i++)
+            var wasActive = healLoop.activeSelf;
+            if (wasActive)
             {
-                var particleSystem = particleSystems[i];
-                if (particleSystem == null)
-                {
-                    continue;
-                }
+                healLoop.SetActive(false);
+            }
 
-                var main = particleSystem.main;
-                main.loop = false;
-                main.prewarm = false;
-                main.duration = Mathf.Min(main.duration, HealImpactLoopDurationSeconds);
-                main.simulationSpeed = Mathf.Max(main.simulationSpeed, HealImpactLoopSimulationSpeed);
+            try
+            {
+                var particleSystems = healLoop.GetComponentsInChildren<ParticleSystem>(true);
+                for (var i = 0; i < particleSystems.Length; i++)
+                {
+                    var particleSystem = particleSystems[i];
+                    if (particleSystem == null)
+                    {
+                        continue;
+                    }
+
+                    particleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                    particleSystem.Clear(true);
+
+                    var main = particleSystem.main;
+                    main.loop = false;
+                    main.prewarm = false;
+                    main.duration = Mathf.Min(main.duration, HealImpactLoopDurationSeconds);
+                    main.simulationSpeed = Mathf.Max(main.simulationSpeed, HealImpactLoopSimulationSpeed);
+                }
+            }
+            finally
+            {
+                if (wasActive)
+                {
+                    healLoop.SetActive(true);
+                }
             }
         }
 
