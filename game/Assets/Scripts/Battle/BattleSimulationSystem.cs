@@ -6,6 +6,9 @@ namespace Fight.Battle
 {
     public static class BattleSimulationSystem
     {
+        private const int SeparationResolutionPassCount = 4;
+        private const float SeparationSqrEpsilon = 0.0001f;
+
         public static void Tick(BattleContext context, float deltaTime, BattleManager battleManager)
         {
             if (context == null || battleManager == null)
@@ -22,6 +25,7 @@ namespace Fight.Battle
             }
 
             BattleSkillSystem.TickDelayedSkillEffects(context, deltaTime, battleManager);
+            ResolveHeroMinimumSeparation(context);
         }
 
         private static void TickSkillAreas(BattleContext context, float deltaTime, BattleManager battleManager)
@@ -244,6 +248,100 @@ namespace Fight.Battle
         private static bool IsInAttackRange(RuntimeHero hero, RuntimeHero target)
         {
             return Vector3.Distance(hero.CurrentPosition, target.CurrentPosition) <= BattleAiDirector.GetDesiredCombatRange(hero);
+        }
+
+        private static void ResolveHeroMinimumSeparation(BattleContext context)
+        {
+            if (context?.Heroes == null || context.Heroes.Count <= 1)
+            {
+                return;
+            }
+
+            var minimumDistance = Stage01ArenaSpec.UnitMinimumSeparationWorldUnits;
+            if (minimumDistance <= 0f)
+            {
+                return;
+            }
+
+            var minimumDistanceSqr = minimumDistance * minimumDistance;
+
+            for (var pass = 0; pass < SeparationResolutionPassCount; pass++)
+            {
+                var adjustedAny = false;
+
+                for (var i = 0; i < context.Heroes.Count - 1; i++)
+                {
+                    var first = context.Heroes[i];
+                    if (!ShouldResolveSeparation(first))
+                    {
+                        continue;
+                    }
+
+                    for (var j = i + 1; j < context.Heroes.Count; j++)
+                    {
+                        var second = context.Heroes[j];
+                        if (!ShouldResolveSeparation(second))
+                        {
+                            continue;
+                        }
+
+                        var offset = second.CurrentPosition - first.CurrentPosition;
+                        offset.y = 0f;
+                        var currentDistanceSqr = offset.sqrMagnitude;
+                        if (currentDistanceSqr >= minimumDistanceSqr - SeparationSqrEpsilon)
+                        {
+                            continue;
+                        }
+
+                        var currentDistance = Mathf.Sqrt(Mathf.Max(0f, currentDistanceSqr));
+                        var pushDirection = currentDistance > Mathf.Sqrt(SeparationSqrEpsilon)
+                            ? offset / currentDistance
+                            : GetSeparationFallbackDirection(first, second);
+                        var overlap = minimumDistance - currentDistance;
+                        if (overlap <= 0f)
+                        {
+                            continue;
+                        }
+
+                        var adjustment = pushDirection * (overlap * 0.5f);
+                        first.CurrentPosition = ClampGroundPosition(first.CurrentPosition - adjustment);
+                        second.CurrentPosition = ClampGroundPosition(second.CurrentPosition + adjustment);
+                        adjustedAny = true;
+                    }
+                }
+
+                if (!adjustedAny)
+                {
+                    return;
+                }
+            }
+        }
+
+        private static bool ShouldResolveSeparation(RuntimeHero hero)
+        {
+            return hero != null && !hero.IsDead;
+        }
+
+        private static Vector3 GetSeparationFallbackDirection(RuntimeHero first, RuntimeHero second)
+        {
+            if (first != null && second != null && first.Side != second.Side)
+            {
+                return first.Side == TeamSide.Blue ? Vector3.right : Vector3.left;
+            }
+
+            if (first != null && second != null && first.SlotIndex != second.SlotIndex)
+            {
+                return first.SlotIndex < second.SlotIndex ? Vector3.forward : Vector3.back;
+            }
+
+            return Vector3.right;
+        }
+
+        private static Vector3 ClampGroundPosition(Vector3 position)
+        {
+            position = Stage01ArenaSpec.ClampPosition(position);
+            position.y = 0f;
+            return position;
         }
 
         private static void ResolvePeriodicStatusTick(BattleContext context, RuntimeHero target, RuntimeStatusEffect status, BattleManager battleManager)

@@ -9,6 +9,7 @@ namespace Fight.Data
         public const float HeightWorldUnits = 18f;
         public const float HalfWidthWorldUnits = WidthWorldUnits * 0.5f;
         public const float HalfHeightWorldUnits = HeightWorldUnits * 0.5f;
+        public const float UnitMinimumSeparationWorldUnits = 1f;
         public const float CameraOrthographicSize = HeightWorldUnits * 0.5f;
         public const float ImportedSpritePixelsPerUnit = 100f;
         public const float SpawnSideInsetWorldUnits = 6f;
