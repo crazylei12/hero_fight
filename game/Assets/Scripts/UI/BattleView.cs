@@ -22,8 +22,14 @@ namespace Fight.UI
         private const string StunStatusLoopVfxResourcesPath = "Stage01Demo/VFX/Statuses/StunStatusLoop";
         private const string KnockUpStatusBurstVfxResourcesPath = "Stage01Demo/VFX/Statuses/KnockUpStatusBurst";
         private const string KnockbackStatusLoopVfxResourcesPath = "Stage01Demo/VFX/Statuses/KnockbackStatusLoop";
+        private const string AttackPowerUpStatusLoopVfxResourcesPath = "Stage01Demo/VFX/Statuses/AttackPowerUpStatusLoop";
         private const string AttackPowerDownStatusLoopVfxResourcesPath = "Stage01Demo/VFX/Statuses/AttackPowerDownStatusLoop";
+        private const string DefenseUpStatusLoopVfxResourcesPath = "Stage01Demo/VFX/Statuses/DefenseUpStatusLoop";
         private const string DefenseDownStatusLoopVfxResourcesPath = "Stage01Demo/VFX/Statuses/DefenseDownStatusLoop";
+        private const string AttackSpeedUpStatusLoopVfxResourcesPath = "Stage01Demo/VFX/Statuses/AttackSpeedUpStatusLoop";
+        private const string AttackSpeedDownStatusLoopVfxResourcesPath = "Stage01Demo/VFX/Statuses/AttackSpeedDownStatusLoop";
+        private const string MoveSpeedUpStatusLoopVfxResourcesPath = "Stage01Demo/VFX/Statuses/MoveSpeedUpStatusLoop";
+        private const string MoveSpeedDownStatusLoopVfxResourcesPath = "Stage01Demo/VFX/Statuses/MoveSpeedDownStatusLoop";
         private const string HealReceivedImpactVfxResourcesPath = "Stage01Demo/VFX/Shared/HealReceivedImpact";
         private const string DashChargeTrailVfxResourcesPath = "Stage01Demo/VFX/Shared/DashChargeTrail";
         private const float CorpseVisibleSeconds = 1f;
@@ -56,18 +62,31 @@ namespace Fight.UI
             Vector3.zero,
             170,
             alignToDirection: true);
+        private static readonly StatusEffectVfxConfig AttackPowerUpStatusVfxConfig = CreateStatModifierStatusVfxConfig(AttackPowerUpStatusLoopVfxResourcesPath);
         private static readonly StatusEffectVfxConfig AttackPowerDownStatusVfxConfig = new StatusEffectVfxConfig(
             AttackPowerDownStatusLoopVfxResourcesPath,
             new Vector3(0f, 0.64f, 0f),
             Vector3.one,
             Vector3.zero,
             176);
+        private static readonly StatusEffectVfxConfig DefenseUpStatusVfxConfig = CreateStatModifierStatusVfxConfig(DefenseUpStatusLoopVfxResourcesPath);
         private static readonly StatusEffectVfxConfig DefenseDownStatusVfxConfig = new StatusEffectVfxConfig(
             DefenseDownStatusLoopVfxResourcesPath,
             new Vector3(0f, 0.64f, 0f),
             Vector3.one,
             Vector3.zero,
             176);
+        private static readonly StatusEffectVfxConfig AttackSpeedUpStatusVfxConfig = CreateStatModifierStatusVfxConfig(AttackSpeedUpStatusLoopVfxResourcesPath);
+        private static readonly StatusEffectVfxConfig AttackSpeedDownStatusVfxConfig = CreateStatModifierStatusVfxConfig(AttackSpeedDownStatusLoopVfxResourcesPath);
+        private static readonly StatusEffectVfxConfig MoveSpeedUpStatusVfxConfig = CreateStatModifierStatusVfxConfig(MoveSpeedUpStatusLoopVfxResourcesPath);
+        private static readonly StatusEffectVfxConfig MoveSpeedDownStatusVfxConfig = CreateStatModifierStatusVfxConfig(MoveSpeedDownStatusLoopVfxResourcesPath);
+        private static readonly Dictionary<StatusEffectType, SignedStatusEffectVfxConfig> SignedStatusEffectVfxConfigs = new Dictionary<StatusEffectType, SignedStatusEffectVfxConfig>
+        {
+            { StatusEffectType.AttackPowerModifier, new SignedStatusEffectVfxConfig(AttackPowerUpStatusVfxConfig, AttackPowerDownStatusVfxConfig) },
+            { StatusEffectType.DefenseModifier, new SignedStatusEffectVfxConfig(DefenseUpStatusVfxConfig, DefenseDownStatusVfxConfig) },
+            { StatusEffectType.AttackSpeedModifier, new SignedStatusEffectVfxConfig(AttackSpeedUpStatusVfxConfig, AttackSpeedDownStatusVfxConfig) },
+            { StatusEffectType.MoveSpeedModifier, new SignedStatusEffectVfxConfig(MoveSpeedUpStatusVfxConfig, MoveSpeedDownStatusVfxConfig) },
+        };
         [SerializeField] private float heroMarkerScale = 1f;
         [SerializeField] private float prefabVisualScale = 0.9f;
         [SerializeField] private Vector3 footUiOffset = new Vector3(0f, -0.36f, 0f);
@@ -202,11 +221,25 @@ namespace Fight.UI
             public GameObject Root;
             public SortingGroup SortingGroup;
             public OrbitingStatusIconVfx OrbitController;
+            public string LoadedPrefabResourcesPath;
             public Renderer[] Renderers;
             public ParticleSystem[] ParticleSystems;
             public Vector3 BaseLocalPosition;
             public Vector3 BaseLocalScale = Vector3.one;
             public Quaternion BaseLocalRotation = Quaternion.identity;
+        }
+
+        private sealed class SignedStatusEffectVfxConfig
+        {
+            public SignedStatusEffectVfxConfig(StatusEffectVfxConfig positiveConfig, StatusEffectVfxConfig negativeConfig)
+            {
+                PositiveConfig = positiveConfig;
+                NegativeConfig = negativeConfig;
+            }
+
+            public StatusEffectVfxConfig PositiveConfig { get; }
+
+            public StatusEffectVfxConfig NegativeConfig { get; }
         }
 
         private sealed class TransientHeroVfxState
@@ -853,6 +886,18 @@ namespace Fight.UI
 
                     view.StatusEffectViews.Add(status.EffectType, statusView);
                 }
+                else if (!string.Equals(statusView.LoadedPrefabResourcesPath, config.LoopPrefabResourcesPath, StringComparison.Ordinal))
+                {
+                    DestroyStatusEffectView(statusView);
+                    statusView = CreateStatusEffectView(status.EffectType, view, config);
+                    if (statusView == null)
+                    {
+                        view.StatusEffectViews.Remove(status.EffectType);
+                        continue;
+                    }
+
+                    view.StatusEffectViews[status.EffectType] = statusView;
+                }
 
                 ApplyStatusEffectView(statusView, config, heroSortingOrder);
                 if (statusView.OrbitController != null)
@@ -953,6 +998,7 @@ namespace Fight.UI
                 Root = instance,
                 SortingGroup = instance.GetComponent<SortingGroup>(),
                 OrbitController = instance.GetComponent<OrbitingStatusIconVfx>(),
+                LoadedPrefabResourcesPath = config.LoopPrefabResourcesPath,
                 Renderers = instance.GetComponentsInChildren<Renderer>(true),
                 ParticleSystems = instance.GetComponentsInChildren<ParticleSystem>(true),
                 BaseLocalPosition = instance.transform.localPosition,
@@ -1013,6 +1059,10 @@ namespace Fight.UI
                 return;
             }
 
+            orbitViews.Sort((left, right) => string.CompareOrdinal(
+                left?.LoadedPrefabResourcesPath ?? string.Empty,
+                right?.LoadedPrefabResourcesPath ?? string.Empty));
+
             for (var i = 0; i < orbitViews.Count; i++)
             {
                 var orbitView = orbitViews[i];
@@ -1066,23 +1116,19 @@ namespace Fight.UI
                 return false;
             }
 
-            if (status.EffectType == StatusEffectType.AttackPowerModifier)
+            if (SignedStatusEffectVfxConfigs.TryGetValue(status.EffectType, out var signedConfig))
             {
-                if (GetCombinedStatusMagnitude(hero, StatusEffectType.AttackPowerModifier) < -Mathf.Epsilon)
+                var combinedMagnitude = GetCombinedStatusMagnitude(hero, status.EffectType);
+                if (combinedMagnitude > Mathf.Epsilon)
                 {
-                    config = AttackPowerDownStatusVfxConfig;
-                    return true;
+                    config = signedConfig.PositiveConfig;
+                    return config != null;
                 }
 
-                return false;
-            }
-
-            if (status.EffectType == StatusEffectType.DefenseModifier)
-            {
-                if (GetCombinedStatusMagnitude(hero, StatusEffectType.DefenseModifier) < -Mathf.Epsilon)
+                if (combinedMagnitude < -Mathf.Epsilon)
                 {
-                    config = DefenseDownStatusVfxConfig;
-                    return true;
+                    config = signedConfig.NegativeConfig;
+                    return config != null;
                 }
 
                 return false;
@@ -1112,6 +1158,16 @@ namespace Fight.UI
             }
 
             return combinedMagnitude;
+        }
+
+        private static StatusEffectVfxConfig CreateStatModifierStatusVfxConfig(string resourcesPath)
+        {
+            return new StatusEffectVfxConfig(
+                resourcesPath,
+                new Vector3(0f, 0.64f, 0f),
+                Vector3.one,
+                Vector3.zero,
+                176);
         }
 
         private static void SetRendererVisibility(Renderer[] renderers, bool visible)

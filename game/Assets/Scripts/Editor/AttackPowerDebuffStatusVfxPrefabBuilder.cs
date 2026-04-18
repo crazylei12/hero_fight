@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using Fight.UI.Presentation.Statuses;
 using UnityEditor;
@@ -8,19 +9,135 @@ namespace Fight.Editor
 {
     public static class AttackPowerDebuffStatusVfxPrefabBuilder
     {
+        private readonly struct StatModifierStatusVfxBuildSpec
+        {
+            public StatModifierStatusVfxBuildSpec(
+                string rootName,
+                string orbitAnchorName,
+                string iconSpritePath,
+                string sharedPrefabPath,
+                string resourcesPrefabPath,
+                Color outerHaloColor,
+                Color innerHaloColor,
+                Color orbitGlowColor)
+            {
+                RootName = rootName;
+                OrbitAnchorName = orbitAnchorName;
+                IconSpritePath = iconSpritePath;
+                SharedPrefabPath = sharedPrefabPath;
+                ResourcesPrefabPath = resourcesPrefabPath;
+                OuterHaloColor = outerHaloColor;
+                InnerHaloColor = innerHaloColor;
+                OrbitGlowColor = orbitGlowColor;
+            }
+
+            public string RootName { get; }
+
+            public string OrbitAnchorName { get; }
+
+            public string IconSpritePath { get; }
+
+            public string SharedPrefabPath { get; }
+
+            public string ResourcesPrefabPath { get; }
+
+            public Color OuterHaloColor { get; }
+
+            public Color InnerHaloColor { get; }
+
+            public Color OrbitGlowColor { get; }
+        }
+
         private const string BuildMenuPath = "Fight/Stage 01/Build Stat Modifier Status VFX";
         private const string GeneratedArtFolder = "Assets/Art/VFX/Generated";
         private const string StatusIconsFolder = "Assets/Art/VFX/StatusIcons";
         private const string SharedPrefabsFolder = "Assets/Prefabs/VFX/Shared";
         private const string StatusResourcesFolder = "Assets/Resources/Stage01Demo/VFX/Statuses";
-        private const string BuilderScriptAssetPath = "Assets/Scripts/Editor/AttackPowerDebuffStatusVfxPrefabBuilder.cs";
         private const string SoftCircleSpritePath = GeneratedArtFolder + "/vfx_soft_circle.png";
+        private const string AttackBuffIconSpritePath = StatusIconsFolder + "/AttackBuffEffect.png";
         private const string AttackDebuffIconSpritePath = StatusIconsFolder + "/AttackDebuffEffect.png";
+        private const string DefenseBuffIconSpritePath = StatusIconsFolder + "/DefenceBuffEffect.png";
         private const string DefenseDebuffIconSpritePath = StatusIconsFolder + "/DefenceDebuffEffect.png";
-        private const string AttackSharedPrefabPath = SharedPrefabsFolder + "/AttackPowerDownStatusLoop.prefab";
-        private const string AttackResourcesPrefabPath = StatusResourcesFolder + "/AttackPowerDownStatusLoop.prefab";
-        private const string DefenseSharedPrefabPath = SharedPrefabsFolder + "/DefenseDownStatusLoop.prefab";
-        private const string DefenseResourcesPrefabPath = StatusResourcesFolder + "/DefenseDownStatusLoop.prefab";
+        private const string AttackSpeedBuffIconSpritePath = StatusIconsFolder + "/AttackSpeedBuffEffect.png";
+        private const string AttackSpeedDebuffIconSpritePath = StatusIconsFolder + "/AttackSpeedDebuffEffect.png";
+        private const string MoveSpeedBuffIconSpritePath = StatusIconsFolder + "/MoveSpeedBuffEffect.png";
+        private const string MoveSpeedDebuffIconSpritePath = StatusIconsFolder + "/MoveSpeedDebuffEffect.png";
+
+        private static readonly StatModifierStatusVfxBuildSpec[] BuildSpecs =
+        {
+            new StatModifierStatusVfxBuildSpec(
+                "AttackPowerUpStatusLoop",
+                "AttackBuffOrbit",
+                AttackBuffIconSpritePath,
+                SharedPrefabsFolder + "/AttackPowerUpStatusLoop.prefab",
+                StatusResourcesFolder + "/AttackPowerUpStatusLoop.prefab",
+                new Color(1f, 0.72f, 0.2f, 0.16f),
+                new Color(1f, 0.9f, 0.42f, 0.12f),
+                new Color(1f, 0.8f, 0.28f, 0.26f)),
+            new StatModifierStatusVfxBuildSpec(
+                "AttackPowerDownStatusLoop",
+                "AttackDebuffOrbit",
+                AttackDebuffIconSpritePath,
+                SharedPrefabsFolder + "/AttackPowerDownStatusLoop.prefab",
+                StatusResourcesFolder + "/AttackPowerDownStatusLoop.prefab",
+                new Color(0.88f, 0.15f, 0.22f, 0.16f),
+                new Color(1f, 0.42f, 0.42f, 0.12f),
+                new Color(0.98f, 0.18f, 0.26f, 0.28f)),
+            new StatModifierStatusVfxBuildSpec(
+                "DefenseUpStatusLoop",
+                "DefenseBuffOrbit",
+                DefenseBuffIconSpritePath,
+                SharedPrefabsFolder + "/DefenseUpStatusLoop.prefab",
+                StatusResourcesFolder + "/DefenseUpStatusLoop.prefab",
+                new Color(0.18f, 0.76f, 1f, 0.16f),
+                new Color(0.56f, 0.9f, 1f, 0.12f),
+                new Color(0.3f, 0.82f, 1f, 0.24f)),
+            new StatModifierStatusVfxBuildSpec(
+                "DefenseDownStatusLoop",
+                "DefenseDebuffOrbit",
+                DefenseDebuffIconSpritePath,
+                SharedPrefabsFolder + "/DefenseDownStatusLoop.prefab",
+                StatusResourcesFolder + "/DefenseDownStatusLoop.prefab",
+                new Color(0.16f, 0.48f, 0.8f, 0.16f),
+                new Color(0.5f, 0.78f, 1f, 0.12f),
+                new Color(0.34f, 0.68f, 1f, 0.24f)),
+            new StatModifierStatusVfxBuildSpec(
+                "AttackSpeedUpStatusLoop",
+                "AttackSpeedBuffOrbit",
+                AttackSpeedBuffIconSpritePath,
+                SharedPrefabsFolder + "/AttackSpeedUpStatusLoop.prefab",
+                StatusResourcesFolder + "/AttackSpeedUpStatusLoop.prefab",
+                new Color(1f, 0.84f, 0.28f, 0.16f),
+                new Color(1f, 0.94f, 0.58f, 0.12f),
+                new Color(1f, 0.88f, 0.38f, 0.26f)),
+            new StatModifierStatusVfxBuildSpec(
+                "AttackSpeedDownStatusLoop",
+                "AttackSpeedDebuffOrbit",
+                AttackSpeedDebuffIconSpritePath,
+                SharedPrefabsFolder + "/AttackSpeedDownStatusLoop.prefab",
+                StatusResourcesFolder + "/AttackSpeedDownStatusLoop.prefab",
+                new Color(0.84f, 0.24f, 0.5f, 0.16f),
+                new Color(0.96f, 0.52f, 0.72f, 0.12f),
+                new Color(0.9f, 0.34f, 0.58f, 0.24f)),
+            new StatModifierStatusVfxBuildSpec(
+                "MoveSpeedUpStatusLoop",
+                "MoveSpeedBuffOrbit",
+                MoveSpeedBuffIconSpritePath,
+                SharedPrefabsFolder + "/MoveSpeedUpStatusLoop.prefab",
+                StatusResourcesFolder + "/MoveSpeedUpStatusLoop.prefab",
+                new Color(0.22f, 0.82f, 0.46f, 0.16f),
+                new Color(0.56f, 0.96f, 0.7f, 0.12f),
+                new Color(0.32f, 0.92f, 0.54f, 0.24f)),
+            new StatModifierStatusVfxBuildSpec(
+                "MoveSpeedDownStatusLoop",
+                "MoveSpeedDebuffOrbit",
+                MoveSpeedDebuffIconSpritePath,
+                SharedPrefabsFolder + "/MoveSpeedDownStatusLoop.prefab",
+                StatusResourcesFolder + "/MoveSpeedDownStatusLoop.prefab",
+                new Color(0.9f, 0.46f, 0.16f, 0.16f),
+                new Color(1f, 0.68f, 0.34f, 0.12f),
+                new Color(1f, 0.58f, 0.24f, 0.24f)),
+        };
 
         [MenuItem(BuildMenuPath)]
         public static void BuildAttackPowerDebuffStatusVfx()
@@ -36,49 +153,19 @@ namespace Fight.Editor
             EnsureFolder(StatusResourcesFolder);
 
             var softCircleSprite = EnsureSoftCircleSprite();
-            var attackDebuffIconSprite = EnsureStatusIconSprite(AttackDebuffIconSpritePath);
-            var defenseDebuffIconSprite = EnsureStatusIconSprite(DefenseDebuffIconSpritePath);
+            var iconSprites = new Dictionary<string, Sprite>();
+            for (var i = 0; i < BuildSpecs.Length; i++)
+            {
+                var spec = BuildSpecs[i];
+                if (!iconSprites.TryGetValue(spec.IconSpritePath, out var iconSprite))
+                {
+                    iconSprite = EnsureStatusIconSprite(spec.IconSpritePath);
+                    iconSprites.Add(spec.IconSpritePath, iconSprite);
+                }
 
-            SavePrefab(
-                CreateStatDebuffStatusRoot(
-                    "AttackPowerDownStatusLoop",
-                    "AttackDebuffOrbit",
-                    softCircleSprite,
-                    attackDebuffIconSprite,
-                    new Color(0.88f, 0.15f, 0.22f, 0.16f),
-                    new Color(1f, 0.42f, 0.42f, 0.12f),
-                    new Color(0.98f, 0.18f, 0.26f, 0.28f)),
-                AttackSharedPrefabPath);
-            SavePrefab(
-                CreateStatDebuffStatusRoot(
-                    "AttackPowerDownStatusLoop",
-                    "AttackDebuffOrbit",
-                    softCircleSprite,
-                    attackDebuffIconSprite,
-                    new Color(0.88f, 0.15f, 0.22f, 0.16f),
-                    new Color(1f, 0.42f, 0.42f, 0.12f),
-                    new Color(0.98f, 0.18f, 0.26f, 0.28f)),
-                AttackResourcesPrefabPath);
-            SavePrefab(
-                CreateStatDebuffStatusRoot(
-                    "DefenseDownStatusLoop",
-                    "DefenseDebuffOrbit",
-                    softCircleSprite,
-                    defenseDebuffIconSprite,
-                    new Color(0.16f, 0.48f, 0.8f, 0.16f),
-                    new Color(0.5f, 0.78f, 1f, 0.12f),
-                    new Color(0.34f, 0.68f, 1f, 0.24f)),
-                DefenseSharedPrefabPath);
-            SavePrefab(
-                CreateStatDebuffStatusRoot(
-                    "DefenseDownStatusLoop",
-                    "DefenseDebuffOrbit",
-                    softCircleSprite,
-                    defenseDebuffIconSprite,
-                    new Color(0.16f, 0.48f, 0.8f, 0.16f),
-                    new Color(0.5f, 0.78f, 1f, 0.12f),
-                    new Color(0.34f, 0.68f, 1f, 0.24f)),
-                DefenseResourcesPrefabPath);
+                SavePrefab(CreateStatModifierStatusRoot(spec, softCircleSprite, iconSprite), spec.SharedPrefabPath);
+                SavePrefab(CreateStatModifierStatusRoot(spec, softCircleSprite, iconSprite), spec.ResourcesPrefabPath);
+            }
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -91,23 +178,19 @@ namespace Fight.Editor
             EditorApplication.Exit(0);
         }
 
-        private static GameObject CreateStatDebuffStatusRoot(
-            string rootName,
-            string orbitAnchorName,
+        private static GameObject CreateStatModifierStatusRoot(
+            StatModifierStatusVfxBuildSpec spec,
             Sprite softCircleSprite,
-            Sprite debuffIconSprite,
-            Color outerHaloColor,
-            Color innerHaloColor,
-            Color orbitGlowColor)
+            Sprite iconSprite)
         {
-            var root = new GameObject(rootName);
+            var root = new GameObject(spec.RootName);
             root.AddComponent<SortingGroup>();
 
             CreateSprite(
                 root.transform,
                 "DebuffHaloOuter",
                 softCircleSprite,
-                outerHaloColor,
+                spec.OuterHaloColor,
                 -8,
                 new Vector3(0f, 0.02f, 0f),
                 new Vector3(0.38f, 0.24f, 1f));
@@ -115,27 +198,27 @@ namespace Fight.Editor
                 root.transform,
                 "DebuffHaloInner",
                 softCircleSprite,
-                innerHaloColor,
+                spec.InnerHaloColor,
                 -6,
                 new Vector3(0f, 0.02f, 0f),
                 new Vector3(0.24f, 0.16f, 1f));
 
-            var orbitAnchor = new GameObject(orbitAnchorName).transform;
+            var orbitAnchor = new GameObject(spec.OrbitAnchorName).transform;
             orbitAnchor.SetParent(root.transform, false);
-            orbitAnchor.localPosition = new Vector3(0f, 0f, 0f);
+            orbitAnchor.localPosition = Vector3.zero;
 
             CreateSprite(
                 orbitAnchor,
                 "OrbitGlow",
                 softCircleSprite,
-                orbitGlowColor,
+                spec.OrbitGlowColor,
                 10,
                 Vector3.zero,
                 new Vector3(0.18f, 0.12f, 1f));
             CreateSprite(
                 orbitAnchor,
                 "IconShadow",
-                debuffIconSprite,
+                iconSprite,
                 new Color(0f, 0f, 0f, 0.45f),
                 11,
                 new Vector3(0.02f, -0.02f, 0f),
@@ -143,7 +226,7 @@ namespace Fight.Editor
             CreateSprite(
                 orbitAnchor,
                 "Icon",
-                debuffIconSprite,
+                iconSprite,
                 Color.white,
                 14,
                 Vector3.zero,
@@ -168,7 +251,7 @@ namespace Fight.Editor
             var fullPath = GetAbsoluteProjectPath(iconSpritePath);
             if (!File.Exists(fullPath))
             {
-                throw new FileNotFoundException($"Missing source debuff icon at {iconSpritePath}");
+                throw new FileNotFoundException($"Missing source status icon at {iconSpritePath}");
             }
 
             AssetDatabase.ImportAsset(iconSpritePath, ImportAssetOptions.ForceSynchronousImport);
