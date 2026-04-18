@@ -248,6 +248,7 @@ namespace Fight.UI
                 direction = currentFacing != Vector2.zero ? currentFacing : GetDefaultFacing();
             }
 
+            direction = ResolveHorizontalFacing(direction);
             if (currentFacing == direction)
             {
                 return;
@@ -264,6 +265,22 @@ namespace Fight.UI
                 : (facesLeftByDefault ? 1f : -1f);
             scale.x = Mathf.Abs(scale.x) * facingSign;
             visualTransform.localScale = scale;
+        }
+
+        private Vector2 ResolveHorizontalFacing(Vector2 direction)
+        {
+            if (Mathf.Abs(direction.x) >= DirectionThreshold)
+            {
+                return direction.x >= 0f ? Vector2.right : Vector2.left;
+            }
+
+            if (Mathf.Abs(currentFacing.x) >= DirectionThreshold)
+            {
+                return currentFacing.x >= 0f ? Vector2.right : Vector2.left;
+            }
+
+            var defaultFacing = GetDefaultFacing();
+            return defaultFacing.x >= 0f ? Vector2.right : Vector2.left;
         }
 
         private void SetAction(bool value)
