@@ -26,6 +26,8 @@ namespace Fight.Editor
         private const string CrackDustSourcePrefabPath = "Assets/Game VFX -Explosion & Crack/Prefabs/FX_Crack_Dust.prefab";
         private const string RealisticExplosionSourcePrefabPath = "Assets/Game VFX -Explosion & Crack/Prefabs/FX_RealisticEXP_S02.prefab";
 
+        private const float FragGrenadeBurstBaseVisualDurationSeconds = 0.55f;
+        private const float FragGrenadeBurstDurationExtensionSeconds = 0.5f;
         private const int WhiteBackgroundThreshold = 242;
         private const byte MinimumVisibleAlpha = 8;
         private static bool autoBuildScheduled;
@@ -158,13 +160,21 @@ namespace Fight.Editor
             var crackDust = InstantiateNestedPrefab(crackDustPrefab, root.transform, "CrackDust");
             crackDust.transform.localScale = Vector3.one * 0.16f;
             crackDust.transform.localPosition = new Vector3(0f, 0.01f, 0f);
-            TuneBurstParticleSystems(crackDust, 0.55f, 1.2f);
+            TuneBurstParticleSystems(
+                crackDust,
+                FragGrenadeBurstBaseVisualDurationSeconds,
+                FragGrenadeBurstDurationExtensionSeconds,
+                1.2f);
             OffsetRendererOrders(crackDust, 8);
 
             var centerExplosion = InstantiateNestedPrefab(realisticExplosionPrefab, root.transform, "CenterExplosion");
             centerExplosion.transform.localScale = Vector3.one * 0.12f;
             centerExplosion.transform.localPosition = new Vector3(0f, 0.03f, 0f);
-            TuneBurstParticleSystems(centerExplosion, 0.55f, 1.3f);
+            TuneBurstParticleSystems(
+                centerExplosion,
+                FragGrenadeBurstBaseVisualDurationSeconds,
+                FragGrenadeBurstDurationExtensionSeconds,
+                1.3f);
             OffsetRendererOrders(centerExplosion, 12);
 
             SavePrefab(root, FragGrenadeBurstPrefabPath);
@@ -367,7 +377,11 @@ namespace Fight.Editor
                 && pixel.b >= WhiteBackgroundThreshold;
         }
 
-        private static void TuneBurstParticleSystems(GameObject root, float maxDurationSeconds, float minSimulationSpeed)
+        private static void TuneBurstParticleSystems(
+            GameObject root,
+            float baseDurationSeconds,
+            float extensionSeconds,
+            float minSimulationSpeed)
         {
             if (root == null)
             {
@@ -386,7 +400,7 @@ namespace Fight.Editor
                 var main = particleSystem.main;
                 main.loop = false;
                 main.prewarm = false;
-                main.duration = Mathf.Min(main.duration, maxDurationSeconds);
+                main.duration = Mathf.Min(main.duration, baseDurationSeconds) + extensionSeconds;
                 main.simulationSpeed = Mathf.Max(main.simulationSpeed, minSimulationSpeed);
             }
         }
