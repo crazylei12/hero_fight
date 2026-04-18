@@ -65,6 +65,11 @@ MonoBehaviour:
   orbitSpeedDegreesPerSecond: 108
   keepAnchorUpright: 1
   randomizeStartingAngle: 1
+  orbitMode: 1
+  bodyOrbitRadius: {x: 0.3, y: 0.11}
+  backScaleMultiplier: 0.72
+  backAlphaMultiplier: 0.24
+  backSortingOrderOffset: -158
 --- !u!1 &1000000000000000011
 GameObject:
   m_ObjectHideFlags: 0
@@ -272,7 +277,7 @@ Transform:
   m_GameObject: {fileID: 1000000000000000031}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.34, y: 0.02, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:

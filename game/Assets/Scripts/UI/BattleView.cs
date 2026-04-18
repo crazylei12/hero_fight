@@ -54,7 +54,7 @@ namespace Fight.UI
             alignToDirection: true);
         private static readonly StatusEffectVfxConfig AttackPowerDownStatusVfxConfig = new StatusEffectVfxConfig(
             AttackPowerDownStatusLoopVfxResourcesPath,
-            new Vector3(0f, 0.95f, 0f),
+            new Vector3(0f, 0.64f, 0f),
             Vector3.one,
             Vector3.zero,
             176);
