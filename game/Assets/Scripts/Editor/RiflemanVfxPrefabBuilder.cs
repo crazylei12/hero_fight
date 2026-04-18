@@ -17,17 +17,24 @@ namespace Fight.Editor
         private const string SkillPrefabsFolder = PrefabsRootFolder + "/Skills";
         private const string BuilderScriptAssetPath = "Assets/Scripts/Editor/RiflemanVfxPrefabBuilder.cs";
 
+        private const string RiflemanBasicAttackProjectilePrefabPath = ProjectilePrefabsFolder + "/RiflemanBasicAttackProjectile.prefab";
         private const string FragGrenadeProjectilePrefabPath = ProjectilePrefabsFolder + "/RiflemanFragGrenadeProjectile.prefab";
         private const string FragGrenadeBurstPrefabPath = SkillPrefabsFolder + "/RiflemanFragGrenadeBurst.prefab";
+        private const string RiflemanBasicAttackSpritePath = GeneratedArtFolder + "/RiflemanBasicAttackBullet.png";
         private const string FragGrenadeSourceTexturePath = SourceArtFolder + "/RiflemanFragGrenadeSource.png";
         private const string FragGrenadeSpritePath = GeneratedArtFolder + "/RiflemanFragGrenadeSprite.png";
+        private const string SoftCircleSpritePath = GeneratedArtFolder + "/vfx_soft_circle.png";
+        private const string RiflemanHeroAssetPath = "Assets/Data/Stage01Demo/Heroes/marksman_002_rifleman/Rifleman.asset";
         private const string FragGrenadeSkillAssetPath = "Assets/Data/Stage01Demo/Skills/marksman_002_rifleman/Frag Grenade.asset";
+        private const string RiflemanBasicAttackSourceFileName = "ChatGPT Image 2026年4月18日 19_52_36.png";
 
         private const string CrackDustSourcePrefabPath = "Assets/Game VFX -Explosion & Crack/Prefabs/FX_Crack_Dust.prefab";
         private const string RealisticExplosionSourcePrefabPath = "Assets/Game VFX -Explosion & Crack/Prefabs/FX_RealisticEXP_S02.prefab";
 
         private const float FragGrenadeBurstBaseVisualDurationSeconds = 0.55f;
         private const float FragGrenadeBurstDurationExtensionSeconds = 0.5f;
+        private const float RiflemanBasicAttackPixelsPerUnit = 1024f;
+        private const float RiflemanBasicAttackScale = 0.24f;
         private const int WhiteBackgroundThreshold = 242;
         private const byte MinimumVisibleAlpha = 8;
         private static bool autoBuildScheduled;
@@ -53,7 +60,10 @@ namespace Fight.Editor
             EnsureFolder(ProjectilePrefabsFolder);
             EnsureFolder(SkillPrefabsFolder);
 
+            var softCircleSprite = EnsureSoftCircleSprite();
+            var riflemanBulletSprite = EnsureRiflemanBasicAttackSprite();
             var grenadeSprite = EnsureFragGrenadeSprite();
+            BuildRiflemanBasicAttackProjectilePrefab(riflemanBulletSprite, softCircleSprite);
             BuildFragGrenadeProjectilePrefab(grenadeSprite);
             BuildFragGrenadeBurstPrefab();
             SyncStage01DemoAssets();
@@ -90,7 +100,10 @@ namespace Fight.Editor
 
         private static bool AllOutputAssetsExist()
         {
-            return AssetDatabase.LoadAssetAtPath<GameObject>(FragGrenadeProjectilePrefabPath) != null
+            return AssetDatabase.LoadAssetAtPath<Sprite>(SoftCircleSpritePath) != null
+                && AssetDatabase.LoadAssetAtPath<GameObject>(RiflemanBasicAttackProjectilePrefabPath) != null
+                && AssetDatabase.LoadAssetAtPath<Sprite>(RiflemanBasicAttackSpritePath) != null
+                && AssetDatabase.LoadAssetAtPath<GameObject>(FragGrenadeProjectilePrefabPath) != null
                 && AssetDatabase.LoadAssetAtPath<GameObject>(FragGrenadeBurstPrefabPath) != null
                 && AssetDatabase.LoadAssetAtPath<Sprite>(FragGrenadeSpritePath) != null;
         }
@@ -102,12 +115,23 @@ namespace Fight.Editor
                 return true;
             }
 
-            return GetLatestTimestampUtc(
-                    BuilderScriptAssetPath,
-                    FragGrenadeSourceTexturePath,
-                    CrackDustSourcePrefabPath,
-                    RealisticExplosionSourcePrefabPath)
+            var latestInputTimestamp = GetLatestTimestampUtc(
+                BuilderScriptAssetPath,
+                SoftCircleSpritePath,
+                FragGrenadeSourceTexturePath,
+                CrackDustSourcePrefabPath,
+                RealisticExplosionSourcePrefabPath);
+            var riflemanBulletSourceTimestamp = GetFileTimestampUtc(GetExternalRepoPath(RiflemanBasicAttackSourceFileName));
+            if (riflemanBulletSourceTimestamp > latestInputTimestamp)
+            {
+                latestInputTimestamp = riflemanBulletSourceTimestamp;
+            }
+
+            return latestInputTimestamp
                 > GetOldestTimestampUtc(
+                    RiflemanBasicAttackProjectilePrefabPath,
+                    RiflemanBasicAttackSpritePath,
+                    SoftCircleSpritePath,
                     FragGrenadeProjectilePrefabPath,
                     FragGrenadeBurstPrefabPath,
                     FragGrenadeSpritePath);
@@ -115,6 +139,18 @@ namespace Fight.Editor
 
         private static void SyncStage01DemoAssets()
         {
+            var riflemanProjectilePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(RiflemanBasicAttackProjectilePrefabPath);
+            var riflemanHero = AssetDatabase.LoadAssetAtPath<HeroDefinition>(RiflemanHeroAssetPath);
+            if (riflemanHero != null)
+            {
+                riflemanHero.visualConfig ??= new HeroVisualConfig();
+                riflemanHero.visualConfig.projectilePrefab = riflemanProjectilePrefab;
+                riflemanHero.visualConfig.projectileAlignToMovement = riflemanProjectilePrefab != null;
+                riflemanHero.visualConfig.projectileEulerAngles = Vector3.zero;
+                riflemanHero.visualConfig.hitVfxPrefab = null;
+                EditorUtility.SetDirty(riflemanHero);
+            }
+
             var fragGrenadeProjectilePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(FragGrenadeProjectilePrefabPath);
             var fragGrenadeBurstPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(FragGrenadeBurstPrefabPath);
             var fragGrenadeSkill = AssetDatabase.LoadAssetAtPath<SkillData>(FragGrenadeSkillAssetPath);
@@ -129,6 +165,48 @@ namespace Fight.Editor
             fragGrenadeSkill.persistentAreaVfxEulerAngles = Vector3.zero;
             fragGrenadeSkill.skillAreaPresentationType = SkillAreaPresentationType.ThrownProjectile;
             EditorUtility.SetDirty(fragGrenadeSkill);
+        }
+
+        private static void BuildRiflemanBasicAttackProjectilePrefab(Sprite riflemanBulletSprite, Sprite softCircleSprite)
+        {
+            var root = new GameObject("RiflemanBasicAttackProjectile");
+            root.AddComponent<SortingGroup>();
+
+            CreateSprite(
+                root.transform,
+                "TrailBloom",
+                softCircleSprite,
+                new Color(1f, 0.82f, 0.38f, 0.14f),
+                1,
+                new Vector3(-0.14f, 0f, 0f),
+                new Vector3(0.34f, 0.1f, 1f));
+            CreateSprite(
+                root.transform,
+                "SpeedStreak",
+                softCircleSprite,
+                new Color(1f, 0.95f, 0.78f, 0.18f),
+                2,
+                new Vector3(-0.04f, 0f, 0f),
+                new Vector3(0.22f, 0.06f, 1f));
+            CreateSprite(
+                root.transform,
+                "BulletHeat",
+                softCircleSprite,
+                new Color(1f, 0.76f, 0.34f, 0.14f),
+                4,
+                new Vector3(0.02f, 0f, 0f),
+                new Vector3(0.18f, 0.08f, 1f));
+
+            var bullet = new GameObject("BulletCore");
+            bullet.transform.SetParent(root.transform, false);
+            bullet.transform.localPosition = new Vector3(0.04f, 0f, 0f);
+            bullet.transform.localScale = Vector3.one * RiflemanBasicAttackScale;
+
+            var renderer = bullet.AddComponent<SpriteRenderer>();
+            renderer.sprite = riflemanBulletSprite;
+            renderer.sortingOrder = 10;
+
+            SavePrefab(root, RiflemanBasicAttackProjectilePrefabPath);
         }
 
         private static void BuildFragGrenadeProjectilePrefab(Sprite grenadeSprite)
@@ -180,6 +258,75 @@ namespace Fight.Editor
             SavePrefab(root, FragGrenadeBurstPrefabPath);
         }
 
+        private static Sprite EnsureRiflemanBasicAttackSprite()
+        {
+            var sourceAbsolutePath = GetExternalRepoPath(RiflemanBasicAttackSourceFileName);
+            if (!File.Exists(sourceAbsolutePath))
+            {
+                throw new FileNotFoundException($"Missing Rifleman basic attack source image at path: {sourceAbsolutePath}");
+            }
+
+            var sourceTexture = new Texture2D(2, 2, TextureFormat.RGBA32, false)
+            {
+                filterMode = FilterMode.Bilinear,
+                wrapMode = TextureWrapMode.Clamp,
+            };
+
+            if (!sourceTexture.LoadImage(File.ReadAllBytes(sourceAbsolutePath), false))
+            {
+                Object.DestroyImmediate(sourceTexture);
+                throw new FileNotFoundException($"Could not decode Rifleman basic attack source image: {sourceAbsolutePath}");
+            }
+
+            var sourcePixels = sourceTexture.GetPixels32();
+            var bounds = FindOpaqueBounds(sourcePixels, sourceTexture.width, sourceTexture.height);
+            if (!bounds.HasValue)
+            {
+                Object.DestroyImmediate(sourceTexture);
+                throw new FileNotFoundException("Could not isolate opaque bullet pixels from the Rifleman basic attack source image.");
+            }
+
+            var paddedBounds = bounds.Value;
+            paddedBounds.xMin = Mathf.Max(0, paddedBounds.xMin - 20);
+            paddedBounds.yMin = Mathf.Max(0, paddedBounds.yMin - 20);
+            paddedBounds.xMax = Mathf.Min(sourceTexture.width, paddedBounds.xMax + 20);
+            paddedBounds.yMax = Mathf.Min(sourceTexture.height, paddedBounds.yMax + 20);
+
+            var result = new Texture2D(paddedBounds.width, paddedBounds.height, TextureFormat.RGBA32, false)
+            {
+                filterMode = FilterMode.Bilinear,
+                wrapMode = TextureWrapMode.Clamp,
+            };
+
+            var croppedPixels = new Color32[paddedBounds.width * paddedBounds.height];
+            for (var y = 0; y < paddedBounds.height; y++)
+            {
+                var sourceY = paddedBounds.yMin + y;
+                for (var x = 0; x < paddedBounds.width; x++)
+                {
+                    var sourceX = paddedBounds.xMin + x;
+                    croppedPixels[(y * paddedBounds.width) + x] = sourcePixels[(sourceY * sourceTexture.width) + sourceX];
+                }
+            }
+
+            result.SetPixels32(croppedPixels);
+            result.Apply();
+
+            try
+            {
+                File.WriteAllBytes(GetAbsoluteProjectPath(RiflemanBasicAttackSpritePath), result.EncodeToPNG());
+            }
+            finally
+            {
+                Object.DestroyImmediate(result);
+                Object.DestroyImmediate(sourceTexture);
+            }
+
+            AssetDatabase.ImportAsset(RiflemanBasicAttackSpritePath, ImportAssetOptions.ForceSynchronousImport);
+            ConfigureGeneratedRiflemanBulletImporter();
+            return LoadRequiredAsset<Sprite>(RiflemanBasicAttackSpritePath);
+        }
+
         private static Sprite EnsureFragGrenadeSprite()
         {
             AssetDatabase.ImportAsset(FragGrenadeSourceTexturePath, ImportAssetOptions.ForceSynchronousImport);
@@ -216,6 +363,26 @@ namespace Fight.Editor
             importer.wrapMode = TextureWrapMode.Clamp;
             importer.filterMode = FilterMode.Point;
             importer.textureCompression = TextureImporterCompression.Uncompressed;
+            importer.SaveAndReimport();
+        }
+
+        private static void ConfigureGeneratedRiflemanBulletImporter()
+        {
+            if (AssetImporter.GetAtPath(RiflemanBasicAttackSpritePath) is not TextureImporter importer)
+            {
+                return;
+            }
+
+            importer.textureType = TextureImporterType.Sprite;
+            importer.spriteImportMode = SpriteImportMode.Single;
+            importer.alphaSource = TextureImporterAlphaSource.FromInput;
+            importer.alphaIsTransparency = true;
+            importer.isReadable = false;
+            importer.mipmapEnabled = false;
+            importer.wrapMode = TextureWrapMode.Clamp;
+            importer.filterMode = FilterMode.Bilinear;
+            importer.textureCompression = TextureImporterCompression.Uncompressed;
+            importer.spritePixelsPerUnit = RiflemanBasicAttackPixelsPerUnit;
             importer.SaveAndReimport();
         }
 
@@ -290,6 +457,39 @@ namespace Fight.Editor
             result.SetPixels32(croppedPixels);
             result.Apply();
             return result;
+        }
+
+        private static Sprite EnsureSoftCircleSprite()
+        {
+            if (File.Exists(GetAbsoluteProjectPath(SoftCircleSpritePath)))
+            {
+                return LoadRequiredAsset<Sprite>(SoftCircleSpritePath);
+            }
+
+            var texture = BuildSoftCircleTexture(128);
+            try
+            {
+                File.WriteAllBytes(GetAbsoluteProjectPath(SoftCircleSpritePath), texture.EncodeToPNG());
+            }
+            finally
+            {
+                Object.DestroyImmediate(texture);
+            }
+
+            AssetDatabase.ImportAsset(SoftCircleSpritePath, ImportAssetOptions.ForceSynchronousImport);
+            if (AssetImporter.GetAtPath(SoftCircleSpritePath) is TextureImporter importer)
+            {
+                importer.textureType = TextureImporterType.Sprite;
+                importer.spriteImportMode = SpriteImportMode.Single;
+                importer.alphaIsTransparency = true;
+                importer.mipmapEnabled = false;
+                importer.wrapMode = TextureWrapMode.Clamp;
+                importer.filterMode = FilterMode.Bilinear;
+                importer.textureCompression = TextureImporterCompression.Uncompressed;
+                importer.SaveAndReimport();
+            }
+
+            return LoadRequiredAsset<Sprite>(SoftCircleSpritePath);
         }
 
         private static bool[] FindEdgeConnectedWhiteBackground(Color32[] pixels, int width, int height)
@@ -377,6 +577,36 @@ namespace Fight.Editor
                 && pixel.b >= WhiteBackgroundThreshold;
         }
 
+        private static Texture2D BuildSoftCircleTexture(int size)
+        {
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false)
+            {
+                filterMode = FilterMode.Bilinear,
+                wrapMode = TextureWrapMode.Clamp,
+            };
+
+            var pixels = new Color[size * size];
+            var center = (size - 1) * 0.5f;
+            var radius = size * 0.5f;
+            for (var y = 0; y < size; y++)
+            {
+                for (var x = 0; x < size; x++)
+                {
+                    var dx = x - center;
+                    var dy = y - center;
+                    var distance = Mathf.Sqrt((dx * dx) + (dy * dy));
+                    var alpha = distance <= radius
+                        ? 1f - Mathf.Clamp01((distance - (radius * 0.62f)) / Mathf.Max(1f, radius * 0.38f))
+                        : 0f;
+                    pixels[(y * size) + x] = new Color(1f, 1f, 1f, alpha);
+                }
+            }
+
+            texture.SetPixels(pixels);
+            texture.Apply();
+            return texture;
+        }
+
         private static void TuneBurstParticleSystems(
             GameObject root,
             float baseDurationSeconds,
@@ -438,6 +668,27 @@ namespace Fight.Editor
             }
         }
 
+        private static SpriteRenderer CreateSprite(
+            Transform parent,
+            string name,
+            Sprite sprite,
+            Color color,
+            int sortingOrder,
+            Vector3 localPosition,
+            Vector3 localScale)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = localPosition;
+            go.transform.localScale = localScale;
+
+            var renderer = go.AddComponent<SpriteRenderer>();
+            renderer.sprite = sprite;
+            renderer.color = color;
+            renderer.sortingOrder = sortingOrder;
+            return renderer;
+        }
+
         private static T LoadRequiredAsset<T>(string assetPath) where T : Object
         {
             var asset = AssetDatabase.LoadAssetAtPath<T>(assetPath);
@@ -475,6 +726,23 @@ namespace Fight.Editor
         {
             var projectRoot = Path.GetDirectoryName(Application.dataPath);
             return Path.Combine(projectRoot ?? string.Empty, assetPath);
+        }
+
+        private static string GetExternalRepoPath(string fileName)
+        {
+            var projectRoot = Path.GetDirectoryName(Application.dataPath);
+            var repoRoot = Directory.GetParent(projectRoot ?? string.Empty)?.FullName;
+            return Path.Combine(repoRoot ?? string.Empty, fileName);
+        }
+
+        private static System.DateTime GetFileTimestampUtc(string absolutePath)
+        {
+            if (string.IsNullOrWhiteSpace(absolutePath) || !File.Exists(absolutePath))
+            {
+                return System.DateTime.MinValue;
+            }
+
+            return File.GetLastWriteTimeUtc(absolutePath);
         }
 
         private static System.DateTime GetLatestTimestampUtc(params string[] assetPaths)

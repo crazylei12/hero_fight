@@ -41,6 +41,7 @@ namespace Fight.Editor
         private const string FireMageProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/FireMageBasicAttackProjectile.prefab";
         private const string FrostMageProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/FrostMageBasicAttackProjectile.prefab";
         private const string LongshotProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/LongshotBasicAttackProjectile.prefab";
+        private const string RiflemanProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/RiflemanBasicAttackProjectile.prefab";
         private const string MageActiveAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FireMageEmberBurst.prefab";
         private const string FrostMageActiveAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FrostMageFrostBurst.prefab";
         private const string FrostMageUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FrostMageBlizzardField.prefab";
@@ -430,7 +431,7 @@ namespace Fight.Editor
                 "mage_001_firemage" => AssetDatabase.LoadAssetAtPath<GameObject>(FireMageProjectilePrefabPath),
                 "mage_002_frostmage" => AssetDatabase.LoadAssetAtPath<GameObject>(FrostMageProjectilePrefabPath),
                 "marksman_001_longshot" => AssetDatabase.LoadAssetAtPath<GameObject>(LongshotProjectilePrefabPath),
-                "marksman_002_rifleman" => AssetDatabase.LoadAssetAtPath<GameObject>(LongshotProjectilePrefabPath),
+                "marksman_002_rifleman" => AssetDatabase.LoadAssetAtPath<GameObject>(RiflemanProjectilePrefabPath),
                 "support_001_sunpriest" => AssetDatabase.LoadAssetAtPath<GameObject>(SunpriestProjectilePrefabPath),
                 _ => null,
             };

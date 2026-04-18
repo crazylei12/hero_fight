@@ -44,7 +44,7 @@ MonoBehaviour:
     battlePrefab: {fileID: 3353295136572895954, guid: 922f25239c36a2746a6f353a6d471dc2, type: 3}
     animatorController: {fileID: 9100000, guid: c0fbc9a82051e94429aa17cc4b2f48e5, type: 2}
     battlePrefabFacesLeftByDefault: 0
-    projectilePrefab: {fileID: 1000000000000000001, guid: 0b6d4f0aa0184954b8c50b3ee9bd5075, type: 3}
+    projectilePrefab: {fileID: 5244548776196279187, guid: 58c399ac48b74022ad827a6a55ca4bee, type: 3}
     projectileAlignToMovement: 1
     projectileEulerAngles: {x: 0, y: 0, z: 0}
     castVfxPrefab: {fileID: 0}
