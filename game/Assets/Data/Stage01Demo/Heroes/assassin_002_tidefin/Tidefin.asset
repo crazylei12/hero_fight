@@ -32,7 +32,7 @@ MonoBehaviour:
     usesProjectile: 0
     projectileSpeed: 0
     effectType: 0
-    targetType: 0
+    targetType: 2
     onHitStatusEffects:
     - effectType: 2
       durationSeconds: 3

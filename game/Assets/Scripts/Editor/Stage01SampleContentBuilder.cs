@@ -385,7 +385,9 @@ namespace Fight.Editor
             hero.basicAttack.usesProjectile = tags != null && System.Array.Exists(tags, tag => tag == HeroTag.Ranged);
             hero.basicAttack.projectileSpeed = hero.basicAttack.usesProjectile ? 14f : 0f;
             hero.basicAttack.effectType = BasicAttackEffectType.Damage;
-            hero.basicAttack.targetType = BasicAttackTargetType.NearestEnemy;
+            hero.basicAttack.targetType = heroClass == HeroClass.Assassin
+                ? BasicAttackTargetType.PreferredEnemy
+                : BasicAttackTargetType.NearestEnemy;
             EnsureBasicAttackStatusList(hero.basicAttack);
             hero.basicAttack.onHitStatusEffects.Clear();
 
@@ -1187,7 +1189,7 @@ namespace Fight.Editor
             hero.basicAttack.usesProjectile = false;
             hero.basicAttack.projectileSpeed = 0f;
             hero.basicAttack.effectType = BasicAttackEffectType.Damage;
-            hero.basicAttack.targetType = BasicAttackTargetType.NearestEnemy;
+            hero.basicAttack.targetType = BasicAttackTargetType.PreferredEnemy;
             EnsureBasicAttackStatusList(hero.basicAttack);
             hero.basicAttack.onHitStatusEffects.Clear();
             hero.basicAttack.onHitStatusEffects.Add(new StatusEffectData

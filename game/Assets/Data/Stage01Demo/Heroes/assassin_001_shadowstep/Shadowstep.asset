@@ -32,7 +32,7 @@ MonoBehaviour:
     usesProjectile: 0
     projectileSpeed: 0
     effectType: 0
-    targetType: 0
+    targetType: 2
   activeSkill: {fileID: 11400000, guid: 022eddc3b89a3fe4cb4b4bdcf101c47a, type: 2}
   ultimateSkill: {fileID: 11400000, guid: f8fdd7d0bf480e945ba46a4ed2ba398b, type: 2}
   aiTemplateId: assassin_default

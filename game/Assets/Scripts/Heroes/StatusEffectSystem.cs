@@ -129,25 +129,30 @@ namespace Fight.Heroes
             }
 
             var statuses = hero.MutableStatusEffects;
+            var definition = StatusEffectCatalog.Get(data.effectType);
             var sameTypeCount = 0;
             RuntimeStatusEffect refreshTarget = null;
 
             for (var i = 0; i < statuses.Count; i++)
             {
-                if (statuses[i].EffectType != data.effectType)
+                var status = statuses[i];
+                if (!BelongsToSameStackGroup(status, data, source, sourceSkill, definition))
                 {
                     continue;
                 }
 
                 sameTypeCount++;
-                refreshTarget ??= statuses[i];
+                if (refreshTarget == null || status.RemainingDurationSeconds < refreshTarget.RemainingDurationSeconds - Mathf.Epsilon)
+                {
+                    refreshTarget = status;
+                }
             }
 
             if (sameTypeCount >= Mathf.Max(1, data.maxStacks))
             {
                 if (data.refreshDurationOnReapply && refreshTarget != null)
                 {
-                    refreshTarget.Refresh(data);
+                    refreshTarget.Refresh(data, ShouldRefreshMagnitudeOnReapply(data.effectType));
                     return true;
                 }
 
@@ -268,6 +273,45 @@ namespace Fight.Heroes
                 onRemovedStatus?.Invoke(status);
                 statuses.RemoveAt(i);
             }
+        }
+
+        private static bool BelongsToSameStackGroup(
+            RuntimeStatusEffect status,
+            StatusEffectData data,
+            RuntimeHero source,
+            SkillData sourceSkill,
+            StatusEffectDefinition definition)
+        {
+            if (status == null || status.EffectType != data.effectType)
+            {
+                return false;
+            }
+
+            if (!UsesSourceScopedStackGroups(definition))
+            {
+                return true;
+            }
+
+            return status.Source == source
+                && status.SourceSkill == sourceSkill
+                && Approximately(status.Magnitude, data.magnitude)
+                && Approximately(status.ActiveSkillCooldownCapSeconds, Mathf.Max(0f, data.activeSkillCooldownCapSeconds))
+                && Approximately(status.TickIntervalSeconds, Mathf.Max(0.1f, data.tickIntervalSeconds));
+        }
+
+        private static bool UsesSourceScopedStackGroups(StatusEffectDefinition definition)
+        {
+            return definition.IsStatModifier || definition.IsPeriodic;
+        }
+
+        private static bool ShouldRefreshMagnitudeOnReapply(StatusEffectType effectType)
+        {
+            return effectType == StatusEffectType.Shield;
+        }
+
+        private static bool Approximately(float left, float right)
+        {
+            return Mathf.Abs(left - right) <= 0.0001f;
         }
     }
 }
