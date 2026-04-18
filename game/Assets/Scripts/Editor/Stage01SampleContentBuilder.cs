@@ -156,6 +156,8 @@ namespace Fight.Editor
                 ConfigureShadowstepUltimate(assassinUltimateSkill, overwriteExistingContent, assassinUltimateExisted),
                 overwriteExistingContent,
                 HeroTag.Melee, HeroTag.Dive, HeroTag.Burst);
+            assassin.basicAttack.targetType = BasicAttackTargetType.NearestEnemy;
+            EditorUtility.SetDirty(assassin);
 
             var tidefinActive = CreateTidefinActiveSkill(overwriteExistingContent);
             var tidefinUltimateSkill = CreateTidefinUltimateSkill(overwriteExistingContent, out _);
@@ -586,7 +588,7 @@ namespace Fight.Editor
                 "Shadow Blink",
                 SkillSlotType.ActiveSkill,
                 SkillType.Dash,
-                SkillTargetType.BackmostEnemy,
+                SkillTargetType.NearestEnemy,
                 Stage01ArenaSpec.FullMapTargetingRangeWorldUnits,
                 0f,
                 0f,
@@ -600,7 +602,7 @@ namespace Fight.Editor
             }
 
             skill.skillType = SkillType.Dash;
-            skill.targetType = SkillTargetType.BackmostEnemy;
+            skill.targetType = SkillTargetType.NearestEnemy;
             skill.castRange = Stage01ArenaSpec.FullMapTargetingRangeWorldUnits;
             skill.areaRadius = 0f;
             skill.cooldownSeconds = 6f;
@@ -742,7 +744,7 @@ namespace Fight.Editor
                 "Smoke Veil",
                 SkillSlotType.Ultimate,
                 SkillType.Buff,
-                SkillTargetType.BackmostEnemy,
+                SkillTargetType.NearestEnemy,
                 Stage01ArenaSpec.FullMapTargetingRangeWorldUnits,
                 0f,
                 0f,
@@ -755,11 +757,11 @@ namespace Fight.Editor
                 return skill;
             }
 
-            // Smoke Veil is a self-buff, but we still require a valid enemy backliner before
-            // casting it. The BackmostEnemy target strategy is therefore used as cast gating,
-            // while the actual status payload lands on the caster.
+            // Smoke Veil is a self-buff, but we still require a valid enemy target before
+            // casting it. NearestEnemy is therefore used as cast gating, while the actual
+            // status payload still lands on the caster.
             skill.skillType = SkillType.Buff;
-            skill.targetType = SkillTargetType.BackmostEnemy;
+            skill.targetType = SkillTargetType.NearestEnemy;
             skill.castRange = Stage01ArenaSpec.FullMapTargetingRangeWorldUnits;
             skill.areaRadius = 0f;
             skill.minTargetsToCast = 1;
@@ -1599,7 +1601,7 @@ namespace Fight.Editor
             skill.ultimateDecision.secondaryCondition.conditionType = UltimateConditionType.EnemyLowHealthInRange;
             // Stage-01 has no dedicated "primary target HP <= X%" ultimate condition. We use
             // a tiny search radius so EnemyLowHealthInRange effectively checks the selected
-            // backline target itself instead of nearby units.
+            // nearest target itself instead of nearby units.
             skill.ultimateDecision.secondaryCondition.searchRadius = 0.25f;
             skill.ultimateDecision.secondaryCondition.requiredUnitCount = 1;
             skill.ultimateDecision.secondaryCondition.healthPercentThreshold = 0.7f;
