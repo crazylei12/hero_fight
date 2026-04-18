@@ -510,6 +510,7 @@
 - 不要在技能逻辑里额外手写“眩晕时播放某个特效”的一次性特例
 - 单位附着状态特效如果需要运行时自动加载，当前优先放在 `game/Assets/Resources/Stage01Demo/VFX/Statuses/`
 - 即使放在 `Resources/` 路径下，也应优先使用“项目内整理后的 prefab”，不要直接长期引用资源包原始路径
+- 对同一个 `StatModifier` 枚举，如果正负方向需要不同视觉语义，优先按该状态当前合并后的实际数值方向决定显示哪套 VFX，不要只按 `StatusEffectType` 名称硬绑一套表现
 
 当前已接入示例：
 
@@ -521,6 +522,11 @@
   - 项目内运行时 prefab：`game/Assets/Resources/Stage01Demo/VFX/Statuses/KnockUpStatusBurst.prefab`
   - 素材来源：`Assets/Lana Studio/Casual RPG VFX/Prefabs/Burst/Burst_rings.prefab`
   - 接入方式：`BattleView` 通过统一状态 VFX 映射在击飞开始时创建 one-shot 爆圈，并随状态生命周期自动清理
+- `攻击力下降`
+  - 项目内工程 prefab：`game/Assets/Prefabs/VFX/Shared/AttackPowerDownStatusLoop.prefab`
+  - 项目内运行时 prefab：`game/Assets/Resources/Stage01Demo/VFX/Statuses/AttackPowerDownStatusLoop.prefab`
+  - 图标素材来源：`game/Assets/Art/VFX/StatusIcons/AttackDebuffEffect.png`
+  - 接入方式：`BattleView` 对 `StatusEffectType.AttackPowerModifier` 先合并当前英雄身上的总修正值；只有合并后仍为负数时，才创建这套“图标绕英雄旋转”的减攻状态特效
 
 ## 强制位移 / 击退表现的当前规则
 

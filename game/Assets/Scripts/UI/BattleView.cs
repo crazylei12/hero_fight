@@ -21,6 +21,7 @@ namespace Fight.UI
         private const string StunStatusLoopVfxResourcesPath = "Stage01Demo/VFX/Statuses/StunStatusLoop";
         private const string KnockUpStatusBurstVfxResourcesPath = "Stage01Demo/VFX/Statuses/KnockUpStatusBurst";
         private const string KnockbackStatusLoopVfxResourcesPath = "Stage01Demo/VFX/Statuses/KnockbackStatusLoop";
+        private const string AttackPowerDownStatusLoopVfxResourcesPath = "Stage01Demo/VFX/Statuses/AttackPowerDownStatusLoop";
         private const string HealReceivedImpactVfxResourcesPath = "Stage01Demo/VFX/Shared/HealReceivedImpact";
         private const string DashChargeTrailVfxResourcesPath = "Stage01Demo/VFX/Shared/DashChargeTrail";
         private const float CorpseVisibleSeconds = 1f;
@@ -51,6 +52,12 @@ namespace Fight.UI
             Vector3.zero,
             170,
             alignToDirection: true);
+        private static readonly StatusEffectVfxConfig AttackPowerDownStatusVfxConfig = new StatusEffectVfxConfig(
+            AttackPowerDownStatusLoopVfxResourcesPath,
+            new Vector3(0f, 0.95f, 0f),
+            Vector3.one,
+            Vector3.zero,
+            176);
         [SerializeField] private float heroMarkerScale = 1f;
         [SerializeField] private float prefabVisualScale = 0.9f;
         [SerializeField] private Vector3 footUiOffset = new Vector3(0f, -0.36f, 0f);
@@ -815,7 +822,7 @@ namespace Fight.UI
             for (var i = 0; i < activeStatuses.Count; i++)
             {
                 var status = activeStatuses[i];
-                if (status == null || !TryGetStatusEffectVfxConfig(status.EffectType, out var config))
+                if (status == null || !TryResolveStatusEffectVfxConfig(hero, status, out var config))
                 {
                     continue;
                 }
@@ -1000,6 +1007,51 @@ namespace Fight.UI
         private static bool TryGetStatusEffectVfxConfig(StatusEffectType effectType, out StatusEffectVfxConfig config)
         {
             return StatusEffectVfxConfigs.TryGetValue(effectType, out config) && config != null;
+        }
+
+        private static bool TryResolveStatusEffectVfxConfig(RuntimeHero hero, RuntimeStatusEffect status, out StatusEffectVfxConfig config)
+        {
+            config = null;
+            if (status == null)
+            {
+                return false;
+            }
+
+            if (status.EffectType == StatusEffectType.AttackPowerModifier)
+            {
+                if (GetCombinedStatusMagnitude(hero, StatusEffectType.AttackPowerModifier) < -Mathf.Epsilon)
+                {
+                    config = AttackPowerDownStatusVfxConfig;
+                    return true;
+                }
+
+                return false;
+            }
+
+            return TryGetStatusEffectVfxConfig(status.EffectType, out config);
+        }
+
+        private static float GetCombinedStatusMagnitude(RuntimeHero hero, StatusEffectType effectType)
+        {
+            if (hero == null)
+            {
+                return 0f;
+            }
+
+            var combinedMagnitude = 0f;
+            var activeStatuses = hero.ActiveStatusEffects;
+            for (var i = 0; i < activeStatuses.Count; i++)
+            {
+                var status = activeStatuses[i];
+                if (status == null || status.EffectType != effectType)
+                {
+                    continue;
+                }
+
+                combinedMagnitude += status.Magnitude;
+            }
+
+            return combinedMagnitude;
         }
 
         private static void SetRendererVisibility(Renderer[] renderers, bool visible)
