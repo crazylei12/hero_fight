@@ -1,3 +1,4 @@
+using Fight.Core;
 using UnityEngine;
 
 namespace Fight.Heroes
@@ -51,9 +52,7 @@ namespace Fight.Heroes
                 : 1f;
 
             CurrentGroundPosition = Vector3.Lerp(startPosition, endPosition, progress);
-            CurrentHeightOffset = PeakHeight <= Mathf.Epsilon
-                ? 0f
-                : PeakHeight * (4f * progress * (1f - progress));
+            CurrentHeightOffset = ParabolicMotionUtility.EvaluateHeightOffset(progress, PeakHeight);
         }
     }
 }

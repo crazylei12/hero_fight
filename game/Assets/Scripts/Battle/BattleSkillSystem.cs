@@ -2001,7 +2001,9 @@ namespace Fight.Battle
             var destination = resolutionState.HasDashPath
                 ? resolutionState.DashDestination
                 : GetDashDestination(startPosition, target.CurrentPosition);
-            var durationSeconds = effect != null ? Mathf.Max(0f, effect.durationSeconds) : 0f;
+            var durationSeconds = effect != null
+                ? Mathf.Max(0f, effect.durationSeconds > Mathf.Epsilon ? effect.durationSeconds : effect.forcedMovementDurationSeconds)
+                : 0f;
             var peakHeight = effect != null ? Mathf.Max(0f, effect.forcedMovementPeakHeight) : 0f;
             caster.StartForcedMovement(destination, durationSeconds, peakHeight);
             context.EventBus.Publish(new ForcedMovementAppliedEvent(

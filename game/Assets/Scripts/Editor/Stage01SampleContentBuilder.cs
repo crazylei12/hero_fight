@@ -405,6 +405,7 @@ namespace Fight.Editor
                 : battlePrefab != null
                     ? AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(HeroEditorControllerPath)
                     : null;
+            hero.visualConfig.battlePrefabFacesLeftByDefault = heroId == "assassin_002_tidefin";
             hero.visualConfig.projectilePrefab = heroId switch
             {
                 "mage_001_firemage" => AssetDatabase.LoadAssetAtPath<GameObject>(FireMageProjectilePrefabPath),
@@ -613,7 +614,7 @@ namespace Fight.Editor
             skill.minTargetsToCast = 1;
             skill.allowsSelfCast = false;
             skill.effects.Clear();
-            AddRepositionEffect(skill);
+            AddRepositionEffect(skill, 0.28f, 0.85f);
             var statusEffect = AddApplyStatusEffectsEffect(skill);
             statusEffect.statusEffects.Add(new StatusEffectData
             {
@@ -1133,6 +1134,7 @@ namespace Fight.Editor
             {
                 effectType = SkillEffectType.RepositionNearPrimaryTarget,
                 durationSeconds = durationSeconds,
+                forcedMovementDurationSeconds = durationSeconds,
                 forcedMovementPeakHeight = peakHeight,
             };
             skill.effects.Add(effect);

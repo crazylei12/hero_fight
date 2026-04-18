@@ -255,7 +255,14 @@ namespace Fight.UI
 
             currentFacing = direction;
             var scale = baseVisualScale;
-            scale.x = Mathf.Abs(scale.x) * (direction.x >= 0f ? 1f : -1f);
+            var facesLeftByDefault = hero != null
+                && hero.Definition != null
+                && hero.Definition.visualConfig != null
+                && hero.Definition.visualConfig.battlePrefabFacesLeftByDefault;
+            var facingSign = direction.x >= 0f
+                ? (facesLeftByDefault ? -1f : 1f)
+                : (facesLeftByDefault ? 1f : -1f);
+            scale.x = Mathf.Abs(scale.x) * facingSign;
             visualTransform.localScale = scale;
         }
 
