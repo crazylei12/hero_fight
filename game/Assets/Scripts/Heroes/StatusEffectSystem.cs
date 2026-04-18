@@ -242,8 +242,15 @@ namespace Fight.Heroes
             }
         }
 
-        public static bool TryApplyStatus(RuntimeHero hero, StatusEffectData data, RuntimeHero source = null, SkillData sourceSkill = null)
+        public static bool TryApplyStatus(
+            RuntimeHero hero,
+            StatusEffectData data,
+            RuntimeHero source,
+            SkillData sourceSkill,
+            RuntimeHero appliedBy,
+            out RuntimeStatusEffect appliedStatus)
         {
+            appliedStatus = null;
             if (hero == null || data == null || data.effectType == StatusEffectType.None)
             {
                 return false;
@@ -273,14 +280,16 @@ namespace Fight.Heroes
             {
                 if (data.refreshDurationOnReapply && refreshTarget != null)
                 {
-                    refreshTarget.Refresh(data, source, sourceSkill, ShouldRefreshMagnitudeOnReapply(data.effectType));
+                    refreshTarget.Refresh(data, source, sourceSkill, appliedBy, ShouldRefreshMagnitudeOnReapply(data.effectType));
+                    appliedStatus = refreshTarget;
                     return true;
                 }
 
                 return false;
             }
 
-            statuses.Add(new RuntimeStatusEffect(data, source, sourceSkill));
+            appliedStatus = new RuntimeStatusEffect(data, source, sourceSkill, appliedBy);
+            statuses.Add(appliedStatus);
             return true;
         }
 
@@ -420,6 +429,12 @@ namespace Fight.Heroes
                 return true;
             }
 
+            if (definition.EffectType == StatusEffectType.DamageShare)
+            {
+                return status.Source == source
+                    && status.SourceSkill == sourceSkill;
+            }
+
             return status.Source == source
                 && status.SourceSkill == sourceSkill
                 && Approximately(status.Magnitude, data.magnitude)
@@ -451,9 +466,22 @@ namespace Fight.Heroes
 
         private static bool ShouldExpireFromSourceLoss(RuntimeHero hero, RuntimeStatusEffect status)
         {
-            return status != null
-                && status.Definition.ForcesEnemyTarget
-                && !IsValidForcedTargetSource(hero, status);
+            if (hero == null || status == null)
+            {
+                return false;
+            }
+
+            if (status.Definition.ForcesEnemyTarget)
+            {
+                return !IsValidForcedTargetSource(hero, status);
+            }
+
+            if (status.EffectType == StatusEffectType.DamageShare)
+            {
+                return !IsValidDamageShareReceiver(hero, status.Source);
+            }
+
+            return false;
         }
 
         private static bool IsValidForcedTargetSource(RuntimeHero hero, RuntimeStatusEffect status)
@@ -470,7 +498,8 @@ namespace Fight.Heroes
 
         private static bool ShouldRefreshMagnitudeOnReapply(StatusEffectType effectType)
         {
-            return effectType == StatusEffectType.Shield;
+            return effectType == StatusEffectType.Shield
+                || effectType == StatusEffectType.DamageShare;
         }
 
         private static bool IsValidDamageShareReceiver(RuntimeHero protectedHero, RuntimeHero receiver)

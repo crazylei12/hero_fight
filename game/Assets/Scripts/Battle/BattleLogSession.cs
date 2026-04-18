@@ -146,15 +146,23 @@ namespace Fight.Battle
         private static string FormatStatusLog(StatusAppliedEvent statusApplied)
         {
             var sourceName = FormatHeroLabel(statusApplied.Source, "Unknown");
+            var appliedByName = FormatHeroLabel(statusApplied.AppliedBy, sourceName);
             var skillName = statusApplied.SourceSkill != null ? statusApplied.SourceSkill.displayName : "Basic Attack";
-            return $"{sourceName} applied {statusApplied.EffectType} to {FormatHeroLabel(statusApplied.Target)} via {skillName}, duration {statusApplied.DurationSeconds:0.0}s, magnitude {FormatStatusMagnitude(statusApplied.EffectType, statusApplied.Magnitude)}.";
+            var applierSuffix = statusApplied.AppliedBy != null && statusApplied.AppliedBy != statusApplied.Source
+                ? $", applied by {appliedByName}"
+                : string.Empty;
+            return $"{sourceName} applied {statusApplied.EffectType} to {FormatHeroLabel(statusApplied.Target)} via {skillName}, duration {statusApplied.DurationSeconds:0.0}s, magnitude {FormatStatusMagnitude(statusApplied.EffectType, statusApplied.Magnitude)}{applierSuffix}.";
         }
 
         private static string FormatStatusRemovedLog(StatusRemovedEvent statusRemoved)
         {
             var sourceName = FormatHeroLabel(statusRemoved.Source, "Unknown");
+            var appliedByName = FormatHeroLabel(statusRemoved.AppliedBy, sourceName);
             var skillName = statusRemoved.SourceSkill != null ? statusRemoved.SourceSkill.displayName : "Basic Attack";
-            return $"{statusRemoved.EffectType} on {FormatHeroLabel(statusRemoved.Target)} expired from {sourceName} via {skillName}.";
+            var applierSuffix = statusRemoved.AppliedBy != null && statusRemoved.AppliedBy != statusRemoved.Source
+                ? $" (applied by {appliedByName})"
+                : string.Empty;
+            return $"{statusRemoved.EffectType} on {FormatHeroLabel(statusRemoved.Target)} expired from {sourceName} via {skillName}{applierSuffix}.";
         }
 
         private static string FormatForcedMovementLog(ForcedMovementAppliedEvent forcedMovementApplied)

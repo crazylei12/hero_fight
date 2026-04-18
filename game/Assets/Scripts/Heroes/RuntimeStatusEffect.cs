@@ -7,7 +7,7 @@ namespace Fight.Heroes
     {
         private int pendingTickCount;
 
-        public RuntimeStatusEffect(StatusEffectData data, RuntimeHero source = null, SkillData sourceSkill = null)
+        public RuntimeStatusEffect(StatusEffectData data, RuntimeHero source = null, SkillData sourceSkill = null, RuntimeHero appliedBy = null)
         {
             EffectType = data.effectType;
             Definition = StatusEffectCatalog.Get(data.effectType);
@@ -20,6 +20,7 @@ namespace Fight.Heroes
             RefreshDurationOnReapply = data.refreshDurationOnReapply;
             Source = source;
             SourceSkill = sourceSkill;
+            AppliedBy = appliedBy ?? source;
         }
 
         public StatusEffectType EffectType { get; }
@@ -43,6 +44,8 @@ namespace Fight.Heroes
         public RuntimeHero Source { get; private set; }
 
         public SkillData SourceSkill { get; private set; }
+
+        public RuntimeHero AppliedBy { get; private set; }
 
         public void Tick(float deltaTime)
         {
@@ -69,7 +72,7 @@ namespace Fight.Heroes
             return result;
         }
 
-        public void Refresh(StatusEffectData data, RuntimeHero source, SkillData sourceSkill, bool refreshMagnitude = true)
+        public void Refresh(StatusEffectData data, RuntimeHero source, SkillData sourceSkill, RuntimeHero appliedBy, bool refreshMagnitude = true)
         {
             var previousTickIntervalSeconds = TickIntervalSeconds;
             var previousTimeUntilNextTickSeconds = TimeUntilNextTickSeconds;
@@ -83,6 +86,7 @@ namespace Fight.Heroes
             TickIntervalSeconds = Mathf.Max(0.1f, data.tickIntervalSeconds);
             Source = source;
             SourceSkill = sourceSkill;
+            AppliedBy = appliedBy ?? source;
 
             if (!Definition.IsPeriodic)
             {
