@@ -526,7 +526,7 @@
   - 项目内工程 prefab：`game/Assets/Prefabs/VFX/Shared/AttackPowerDownStatusLoop.prefab`
   - 项目内运行时 prefab：`game/Assets/Resources/Stage01Demo/VFX/Statuses/AttackPowerDownStatusLoop.prefab`
   - 图标素材来源：`game/Assets/Art/VFX/StatusIcons/AttackDebuffEffect.png`
-  - 接入方式：`BattleView` 对 `StatusEffectType.AttackPowerModifier` 先合并当前英雄身上的总修正值；只有合并后仍为负数时，才创建这套“图标绕英雄旋转”的减攻状态特效
+  - 接入方式：`BattleView` 对 `StatusEffectType.AttackPowerModifier` 先合并当前英雄身上的总修正值；只有合并后仍为负数时，才创建这套“图标绕英雄躯干前后环绕”的减攻状态特效
 
 ## 强制位移 / 击退表现的当前规则
 

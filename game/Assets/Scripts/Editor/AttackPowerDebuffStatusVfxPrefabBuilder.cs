@@ -73,7 +73,7 @@ namespace Fight.Editor
 
             var orbitAnchor = new GameObject("AttackDebuffOrbit").transform;
             orbitAnchor.SetParent(root.transform, false);
-            orbitAnchor.localPosition = new Vector3(0.34f, 0.02f, 0f);
+            orbitAnchor.localPosition = new Vector3(0f, 0f, 0f);
 
             CreateSprite(
                 orbitAnchor,
@@ -101,11 +101,15 @@ namespace Fight.Editor
                 Vector3.one * 0.9f);
 
             var orbitController = root.AddComponent<OrbitingStatusIconVfx>();
-            orbitController.Configure(
+            orbitController.ConfigureBodyOrbit(
                 orbitAnchor,
                 orbitSpeedDegreesPerSecond: 108f,
                 keepAnchorUpright: true,
-                randomizeStartingAngle: true);
+                randomizeStartingAngle: true,
+                orbitRadius: new Vector2(0.3f, 0.11f),
+                backScaleMultiplier: 0.72f,
+                backAlphaMultiplier: 0.24f,
+                backSortingOrderOffset: -158);
 
             return root;
         }
