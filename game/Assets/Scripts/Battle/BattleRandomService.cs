@@ -16,6 +16,16 @@ namespace Fight.Battle
             return (float)random.NextDouble();
         }
 
+        public float Range(float minInclusive, float maxInclusive)
+        {
+            if (maxInclusive <= minInclusive)
+            {
+                return minInclusive;
+            }
+
+            return minInclusive + ((float)random.NextDouble() * (maxInclusive - minInclusive));
+        }
+
         public int Range(int minInclusive, int maxExclusive)
         {
             return random.Next(minInclusive, maxExclusive);

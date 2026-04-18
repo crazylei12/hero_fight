@@ -13,6 +13,11 @@ namespace Fight.Data
         public const float ImportedSpritePixelsPerUnit = 100f;
         public const float SpawnSideInsetWorldUnits = 6f;
         public const float SpawnTopInsetWorldUnits = 3f;
+        public const float FrontlineSpawnMinDistanceFromCenterWorldUnits = 8.2f;
+        public const float FrontlineSpawnMaxDistanceFromCenterWorldUnits = 9.6f;
+        public const float BacklineSpawnMinDistanceFromCenterWorldUnits = 10.4f;
+        public const float BacklineSpawnMaxDistanceFromCenterWorldUnits = 11.8f;
+        public const float SpawnVerticalJitterWorldUnits = 0.45f;
         public const float FloorWidthWorldUnits = 30f;
         public const float FloorHeightWorldUnits = 16f;
         public const float SkyWidthWorldUnits = WidthWorldUnits + 10f;
@@ -43,11 +48,22 @@ namespace Fight.Data
                 return new Vector3(x, 0f, 0f);
             }
 
-            var clampedSlotIndex = Mathf.Clamp(slotIndex, 0, teamSize - 1);
-            var verticalExtent = HalfHeightWorldUnits - SpawnTopInsetWorldUnits;
-            var spacing = (verticalExtent * 2f) / (teamSize - 1);
-            var z = -verticalExtent + (clampedSlotIndex * spacing);
+            var z = GetSpawnLaneZ(slotIndex, teamSize);
             return new Vector3(x, 0f, z);
+        }
+
+        public static float GetSpawnLaneZ(int slotIndex, int teamSize)
+        {
+            var resolvedTeamSize = Mathf.Max(1, teamSize);
+            if (resolvedTeamSize == 1)
+            {
+                return 0f;
+            }
+
+            var clampedSlotIndex = Mathf.Clamp(slotIndex, 0, resolvedTeamSize - 1);
+            var verticalExtent = HalfHeightWorldUnits - SpawnTopInsetWorldUnits;
+            var spacing = (verticalExtent * 2f) / (resolvedTeamSize - 1);
+            return -verticalExtent + (clampedSlotIndex * spacing);
         }
     }
 }
