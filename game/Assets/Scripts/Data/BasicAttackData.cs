@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Fight.Data
@@ -26,5 +27,6 @@ namespace Fight.Data
         [Min(0f)] public float projectileSpeed = 0f;
         public BasicAttackEffectType effectType = BasicAttackEffectType.Damage;
         public BasicAttackTargetType targetType = BasicAttackTargetType.NearestEnemy;
+        public List<StatusEffectData> onHitStatusEffects = new List<StatusEffectData>();
     }
 }

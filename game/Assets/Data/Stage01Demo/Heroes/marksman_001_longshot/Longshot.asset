@@ -33,6 +33,7 @@ MonoBehaviour:
     projectileSpeed: 16
     effectType: 0
     targetType: 0
+    onHitStatusEffects: []
   activeSkill: {fileID: 11400000, guid: 440b9582223e6ae4588b77681abf091c, type: 2}
   ultimateSkill: {fileID: 11400000, guid: abc242b860bdb8f4f8872537594d63fd, type: 2}
   aiTemplateId: marksman_default

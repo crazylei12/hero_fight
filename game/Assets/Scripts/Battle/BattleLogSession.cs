@@ -143,14 +143,14 @@ namespace Fight.Battle
         private static string FormatStatusLog(StatusAppliedEvent statusApplied)
         {
             var sourceName = FormatHeroLabel(statusApplied.Source, "Unknown");
-            var skillName = statusApplied.SourceSkill != null ? statusApplied.SourceSkill.displayName : "Unknown Effect";
+            var skillName = statusApplied.SourceSkill != null ? statusApplied.SourceSkill.displayName : "Basic Attack";
             return $"{sourceName} applied {statusApplied.EffectType} to {FormatHeroLabel(statusApplied.Target)} via {skillName}, duration {statusApplied.DurationSeconds:0.0}s, magnitude {statusApplied.Magnitude:0.##}.";
         }
 
         private static string FormatStatusRemovedLog(StatusRemovedEvent statusRemoved)
         {
             var sourceName = FormatHeroLabel(statusRemoved.Source, "Unknown");
-            var skillName = statusRemoved.SourceSkill != null ? statusRemoved.SourceSkill.displayName : "Unknown Effect";
+            var skillName = statusRemoved.SourceSkill != null ? statusRemoved.SourceSkill.displayName : "Basic Attack";
             return $"{statusRemoved.EffectType} on {FormatHeroLabel(statusRemoved.Target)} expired from {sourceName} via {skillName}.";
         }
 

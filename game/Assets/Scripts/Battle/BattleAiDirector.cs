@@ -35,6 +35,11 @@ namespace Fight.Battle
             return FindBackmostEnemy(heroes, actor, maxRange);
         }
 
+        public static RuntimeHero SelectHighestDamageEnemyTarget(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange)
+        {
+            return FindHighestDamageEnemy(heroes, actor, maxRange);
+        }
+
         public static RuntimeHero SelectPreferredAllyTarget(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange, bool allowHealthyFallback = false)
         {
             return FindLowestHealthAlly(heroes, actor, maxRange, allowHealthyFallback);
@@ -179,6 +184,47 @@ namespace Fight.Battle
                 }
 
                 bestRatio = ratio;
+                best = candidate;
+            }
+
+            return best;
+        }
+
+        private static RuntimeHero FindHighestDamageEnemy(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange)
+        {
+            RuntimeHero best = null;
+            var highestDamageDealt = float.MinValue;
+            var lowestCurrentHealth = float.MaxValue;
+            var nearestDistance = float.MaxValue;
+
+            for (var i = 0; i < heroes.Count; i++)
+            {
+                var candidate = heroes[i];
+                if (candidate.IsDead || candidate.Side == actor.Side || !candidate.CanBeDirectTargeted)
+                {
+                    continue;
+                }
+
+                var distance = Vector3.Distance(actor.CurrentPosition, candidate.CurrentPosition);
+                if (distance > maxRange)
+                {
+                    continue;
+                }
+
+                if (!IsBetterHighestDamageEnemyCandidate(
+                        candidate.DamageDealt,
+                        candidate.CurrentHealth,
+                        distance,
+                        highestDamageDealt,
+                        lowestCurrentHealth,
+                        nearestDistance))
+                {
+                    continue;
+                }
+
+                highestDamageDealt = candidate.DamageDealt;
+                lowestCurrentHealth = candidate.CurrentHealth;
+                nearestDistance = distance;
                 best = candidate;
             }
 
@@ -351,6 +397,37 @@ namespace Fight.Battle
             }
 
             return currentHealth < bestCurrentHealth - Mathf.Epsilon;
+        }
+
+        private static bool IsBetterHighestDamageEnemyCandidate(
+            float damageDealt,
+            float currentHealth,
+            float distance,
+            float bestDamageDealt,
+            float bestCurrentHealth,
+            float bestDistance)
+        {
+            if (damageDealt > bestDamageDealt + Mathf.Epsilon)
+            {
+                return true;
+            }
+
+            if (Mathf.Abs(damageDealt - bestDamageDealt) > Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            if (currentHealth < bestCurrentHealth - Mathf.Epsilon)
+            {
+                return true;
+            }
+
+            if (Mathf.Abs(currentHealth - bestCurrentHealth) > Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            return distance < bestDistance;
         }
 
         private static RuntimeHero FindClusteredEnemy(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange)

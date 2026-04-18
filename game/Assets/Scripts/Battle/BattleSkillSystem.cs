@@ -224,6 +224,8 @@ namespace Fight.Battle
                     return FindLowestHealth(context.Heroes, caster, skill, includeAllies: false, effectiveCastRange);
                 case SkillTargetType.LowestHealthAlly:
                     return FindLowestHealth(context.Heroes, caster, skill, includeAllies: true, effectiveCastRange);
+                case SkillTargetType.HighestDamageEnemyInRange:
+                    return BattleAiDirector.SelectHighestDamageEnemyTarget(context.Heroes, caster, effectiveCastRange);
                 case SkillTargetType.DensestEnemyArea:
                     return FindDensestEnemyAnchor(context.Heroes, caster, effectiveCastRange, skill.areaRadius);
                 case SkillTargetType.BackmostEnemy:
@@ -289,6 +291,7 @@ namespace Fight.Battle
                 SkillTargetType.NearestEnemy => FindNearest(context.Heroes, caster, includeAllies: false, effectiveCastRange),
                 SkillTargetType.LowestHealthEnemy => FindLowestHealth(context.Heroes, caster, skill, includeAllies: false, effectiveCastRange),
                 SkillTargetType.LowestHealthAlly => FindLowestHealth(context.Heroes, caster, skill, includeAllies: true, effectiveCastRange),
+                SkillTargetType.HighestDamageEnemyInRange => BattleAiDirector.SelectHighestDamageEnemyTarget(context.Heroes, caster, effectiveCastRange),
                 SkillTargetType.DensestEnemyArea => FindDensestEnemyAnchor(context.Heroes, caster, effectiveCastRange, skill.areaRadius),
                 SkillTargetType.BackmostEnemy => BattleAiDirector.SelectBackmostEnemyTarget(context.Heroes, caster, effectiveCastRange),
                 _ => null,
