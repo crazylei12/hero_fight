@@ -21,6 +21,8 @@ namespace Fight.Data
         Untargetable = 13,
         DamageOverTime = 14,
         Shield = 15,
+        DamageShare = 16,
+        Taunt = 17,
     }
 
     [Flags]
@@ -34,6 +36,8 @@ namespace Fight.Data
         PreventsDamage = 1 << 4,
         Periodic = 1 << 5,
         StatModifier = 1 << 6,
+        ForcesEnemyTarget = 1 << 7,
+        HardControl = 1 << 8,
     }
 
     public readonly struct StatusEffectDefinition
@@ -61,6 +65,10 @@ namespace Fight.Data
         public bool IsPeriodic => (BehaviorFlags & StatusBehaviorFlags.Periodic) != 0;
 
         public bool IsStatModifier => (BehaviorFlags & StatusBehaviorFlags.StatModifier) != 0;
+
+        public bool ForcesEnemyTarget => (BehaviorFlags & StatusBehaviorFlags.ForcesEnemyTarget) != 0;
+
+        public bool IsHardControl => (BehaviorFlags & StatusBehaviorFlags.HardControl) != 0;
     }
 
     public static class StatusEffectCatalog
@@ -68,7 +76,7 @@ namespace Fight.Data
         private static readonly StatusEffectDefinition None = new StatusEffectDefinition(StatusEffectType.None, StatusBehaviorFlags.None);
         private static readonly StatusEffectDefinition Stun = new StatusEffectDefinition(
             StatusEffectType.Stun,
-            StatusBehaviorFlags.BlocksMovement | StatusBehaviorFlags.BlocksBasicAttacks | StatusBehaviorFlags.BlocksSkillCasts);
+            StatusBehaviorFlags.BlocksMovement | StatusBehaviorFlags.BlocksBasicAttacks | StatusBehaviorFlags.BlocksSkillCasts | StatusBehaviorFlags.HardControl);
         private static readonly StatusEffectDefinition AttackPowerModifier = new StatusEffectDefinition(StatusEffectType.AttackPowerModifier, StatusBehaviorFlags.StatModifier);
         private static readonly StatusEffectDefinition DefenseModifier = new StatusEffectDefinition(StatusEffectType.DefenseModifier, StatusBehaviorFlags.StatModifier);
         private static readonly StatusEffectDefinition AttackSpeedModifier = new StatusEffectDefinition(StatusEffectType.AttackSpeedModifier, StatusBehaviorFlags.StatModifier);
@@ -80,11 +88,15 @@ namespace Fight.Data
         private static readonly StatusEffectDefinition AttackRangeModifier = new StatusEffectDefinition(StatusEffectType.AttackRangeModifier, StatusBehaviorFlags.StatModifier);
         private static readonly StatusEffectDefinition KnockUp = new StatusEffectDefinition(
             StatusEffectType.KnockUp,
-            StatusBehaviorFlags.BlocksMovement | StatusBehaviorFlags.BlocksBasicAttacks | StatusBehaviorFlags.BlocksSkillCasts);
+            StatusBehaviorFlags.BlocksMovement | StatusBehaviorFlags.BlocksBasicAttacks | StatusBehaviorFlags.BlocksSkillCasts | StatusBehaviorFlags.HardControl);
         private static readonly StatusEffectDefinition Invulnerable = new StatusEffectDefinition(StatusEffectType.Invulnerable, StatusBehaviorFlags.PreventsDamage);
         private static readonly StatusEffectDefinition Untargetable = new StatusEffectDefinition(StatusEffectType.Untargetable, StatusBehaviorFlags.BlocksDirectTargeting);
         private static readonly StatusEffectDefinition DamageOverTime = new StatusEffectDefinition(StatusEffectType.DamageOverTime, StatusBehaviorFlags.Periodic);
         private static readonly StatusEffectDefinition Shield = new StatusEffectDefinition(StatusEffectType.Shield, StatusBehaviorFlags.None);
+        private static readonly StatusEffectDefinition DamageShare = new StatusEffectDefinition(StatusEffectType.DamageShare, StatusBehaviorFlags.None);
+        private static readonly StatusEffectDefinition Taunt = new StatusEffectDefinition(
+            StatusEffectType.Taunt,
+            StatusBehaviorFlags.BlocksSkillCasts | StatusBehaviorFlags.ForcesEnemyTarget);
 
         public static StatusEffectDefinition Get(StatusEffectType effectType)
         {
@@ -105,6 +117,8 @@ namespace Fight.Data
                 StatusEffectType.Untargetable => Untargetable,
                 StatusEffectType.DamageOverTime => DamageOverTime,
                 StatusEffectType.Shield => Shield,
+                StatusEffectType.DamageShare => DamageShare,
+                StatusEffectType.Taunt => Taunt,
                 _ => None,
             };
         }

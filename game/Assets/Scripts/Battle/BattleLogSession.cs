@@ -130,7 +130,10 @@ namespace Fight.Battle
         {
             var attackerName = FormatHeroLabel(damageApplied.Attacker, "Unknown");
             var skillName = damageApplied.SourceSkill != null ? damageApplied.SourceSkill.displayName : "Basic Attack";
-            return $"{attackerName} dealt {damageApplied.DamageAmount:0.0} to {FormatHeroLabel(damageApplied.Target)} via {skillName} [{damageApplied.SourceKind}], target HP {Mathf.Max(0f, damageApplied.RemainingHealth):0.0}.";
+            var sourceKindLabel = damageApplied.SourceKind == DamageSourceKind.DamageShare
+                ? "DamageShare"
+                : damageApplied.SourceKind.ToString();
+            return $"{attackerName} dealt {damageApplied.DamageAmount:0.0} to {FormatHeroLabel(damageApplied.Target)} via {skillName} [{sourceKindLabel}], target HP {Mathf.Max(0f, damageApplied.RemainingHealth):0.0}.";
         }
 
         private static string FormatHealLog(HealAppliedEvent healApplied)
@@ -144,7 +147,7 @@ namespace Fight.Battle
         {
             var sourceName = FormatHeroLabel(statusApplied.Source, "Unknown");
             var skillName = statusApplied.SourceSkill != null ? statusApplied.SourceSkill.displayName : "Basic Attack";
-            return $"{sourceName} applied {statusApplied.EffectType} to {FormatHeroLabel(statusApplied.Target)} via {skillName}, duration {statusApplied.DurationSeconds:0.0}s, magnitude {statusApplied.Magnitude:0.##}.";
+            return $"{sourceName} applied {statusApplied.EffectType} to {FormatHeroLabel(statusApplied.Target)} via {skillName}, duration {statusApplied.DurationSeconds:0.0}s, magnitude {FormatStatusMagnitude(statusApplied.EffectType, statusApplied.Magnitude)}.";
         }
 
         private static string FormatStatusRemovedLog(StatusRemovedEvent statusRemoved)
@@ -324,6 +327,13 @@ namespace Fight.Battle
                 ? hero.Definition.displayName
                 : "UnknownHero";
             return $"{displayName}[{hero.Side}|{hero.RuntimeId}]";
+        }
+
+        private static string FormatStatusMagnitude(StatusEffectType effectType, float magnitude)
+        {
+            return effectType == StatusEffectType.DamageShare
+                ? $"{magnitude * 100f:0.#}%"
+                : magnitude.ToString("0.##");
         }
     }
 }

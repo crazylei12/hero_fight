@@ -1500,37 +1500,25 @@ namespace Fight.Battle
                     target.Defense,
                     context.RandomService,
                     effect.powerMultiplier);
-                var actualDamage = target.ApplyDamage(
+                var actualDamage = BattleDamageSystem.ApplyResolvedDamage(
+                    context,
+                    battleManager,
+                    caster,
+                    target,
                     damage,
-                    status => PublishStatusRemovedEvent(context, target, status));
+                    damageSourceKind,
+                    skill);
                 if (actualDamage <= 0f)
                 {
                     ApplyStatuses(context, caster, skill, effect, target);
                     continue;
                 }
 
-                caster.RecordDamage(actualDamage);
-                RecordIncomingThreat(context, target, caster);
-                context.EventBus.Publish(new DamageAppliedEvent(
-                    caster,
-                    target,
-                    actualDamage,
-                    damageSourceKind,
-                    skill,
-                    target.CurrentHealth));
-
                 if (!target.IsDead && target.CurrentHealth > 0f)
                 {
                     ApplyStatuses(context, caster, skill, effect, target);
                     continue;
                 }
-
-                target.MarkDead(
-                    context.Input.respawnDelaySeconds,
-                    status => PublishStatusRemovedEvent(context, target, status));
-                caster.MarkKill();
-                context.EventBus.Publish(new UnitDiedEvent(target, caster));
-                battleManager.RegisterKill(caster.Side);
             }
         }
 
@@ -1660,26 +1648,6 @@ namespace Fight.Battle
                 PersistentAreaTargetType.Both => true,
                 _ => candidate.Side != caster.Side,
             };
-        }
-
-        private static void RecordIncomingThreat(BattleContext context, RuntimeHero target, RuntimeHero source)
-        {
-            if (context?.Clock == null || target == null || source == null)
-            {
-                return;
-            }
-
-            target.RecordThreat(source, context.Clock.ElapsedTimeSeconds);
-        }
-
-        private static void PublishStatusRemovedEvent(BattleContext context, RuntimeHero target, RuntimeStatusEffect status)
-        {
-            if (context?.EventBus == null || target == null || status == null)
-            {
-                return;
-            }
-
-            context.EventBus.Publish(new StatusRemovedEvent(status.Source, target, status.EffectType, status.SourceSkill));
         }
 
         private static SkillEffectData CreateLegacyDamageEffect(SkillData skill)

@@ -161,38 +161,16 @@ namespace Fight.Battle
                 return;
             }
 
-            var actualDamage = target.ApplyDamage(
+            var actualDamage = BattleDamageSystem.ApplyResolvedDamage(
+                context,
+                battleManager,
+                attacker,
+                target,
                 impactAmount,
-                status => PublishStatusRemovedEvent(context, target, status));
+                DamageSourceKind.BasicAttack);
             if (actualDamage <= 0f)
             {
                 ApplyOnHitStatuses(context, attacker, target);
-                return;
-            }
-
-            attacker?.RecordDamage(actualDamage);
-            RecordIncomingThreat(context, target, attacker);
-            context.EventBus.Publish(new DamageAppliedEvent(
-                attacker,
-                target,
-                actualDamage,
-                DamageSourceKind.BasicAttack,
-                null,
-                target.CurrentHealth));
-
-            if (target.IsDead || target.CurrentHealth <= 0f)
-            {
-                target.MarkDead(
-                    context.Input.respawnDelaySeconds,
-                    status => PublishStatusRemovedEvent(context, target, status));
-                attacker?.MarkKill();
-                context.EventBus.Publish(new UnitDiedEvent(target, attacker));
-
-                if (attacker != null)
-                {
-                    battleManager.RegisterKill(attacker.Side);
-                }
-
                 return;
             }
 
@@ -222,26 +200,6 @@ namespace Fight.Battle
                 BasicAttackTargetType.LowestHealthAlly => target.Side == attacker.Side && target.CanBeDirectTargeted,
                 _ => target.Side != attacker.Side && target.CanBeDirectTargeted,
             };
-        }
-
-        private static void RecordIncomingThreat(BattleContext context, RuntimeHero target, RuntimeHero source)
-        {
-            if (context?.Clock == null || target == null || source == null)
-            {
-                return;
-            }
-
-            target.RecordThreat(source, context.Clock.ElapsedTimeSeconds);
-        }
-
-        private static void PublishStatusRemovedEvent(BattleContext context, RuntimeHero target, RuntimeStatusEffect status)
-        {
-            if (context?.EventBus == null || target == null || status == null)
-            {
-                return;
-            }
-
-            context.EventBus.Publish(new StatusRemovedEvent(status.Source, target, status.EffectType, status.SourceSkill));
         }
 
         private static void ApplyOnHitStatuses(BattleContext context, RuntimeHero attacker, RuntimeHero target)
