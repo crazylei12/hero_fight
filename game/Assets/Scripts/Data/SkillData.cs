@@ -30,6 +30,7 @@ namespace Fight.Data
         public CombatActionSequenceData actionSequence = new CombatActionSequenceData();
 
         [Header("Presentation")]
+        public GameObject castProjectileVfxPrefab;
         public GameObject persistentAreaVfxPrefab;
         [Min(0.1f)] public float persistentAreaVfxScaleMultiplier = 1f;
         public Vector3 persistentAreaVfxEulerAngles = Vector3.zero;

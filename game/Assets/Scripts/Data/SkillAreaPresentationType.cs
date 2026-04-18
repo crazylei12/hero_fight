@@ -4,5 +4,6 @@ namespace Fight.Data
     {
         None = 0,
         FireSea = 1,
+        ThrownProjectile = 2,
     }
 }

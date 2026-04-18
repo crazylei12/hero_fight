@@ -363,6 +363,7 @@
 
 `SkillData` 当前与区域特效表现直接相关的字段如下：
 
+- `castProjectileVfxPrefab`
 - `persistentAreaVfxPrefab`
 - `persistentAreaVfxScaleMultiplier`
 - `persistentAreaVfxEulerAngles`
@@ -370,9 +371,13 @@
 
 它们的职责分别是：
 
+- `castProjectileVfxPrefab`
+  - 用于“技能先抛出一个可见投掷物，再在目标点结算”的表现入口
+  - 当前主要服务 `ThrownProjectile` 这类共享投掷表现，不参与逻辑命中、时机和伤害判定
 - `persistentAreaVfxPrefab`
   - 当 `skillAreaPresentationType = None` 时，表示直接实例化的区域 prefab
   - 当使用自定义 controller 时，表示供 controller 复用的资源来源，不一定等于“最终整体效果 prefab”
+  - 对 `ThrownProjectile` 这类延迟落地爆发技能，当前默认作为“落地爆炸 one-shot prefab”来消费
 - `persistentAreaVfxScaleMultiplier`
   - 表现层缩放修正参数
   - 只应用于视觉，不改变逻辑判定半径
@@ -399,6 +404,13 @@
 
 - `None`
 - `FireSea`
+- `ThrownProjectile`
+
+`ThrownProjectile` 当前的约定是：
+
+- 逻辑层仍然沿用正式 `RuntimeSkillArea` 的落点、持续时间和脉冲时机
+- 表现层只负责从施法者可用锚点抛出 `castProjectileVfxPrefab`，并在脉冲发生时于落点播放 `persistentAreaVfxPrefab`
+- 这条通路是共享投掷表现层，不要把它实现成某个英雄私有的“手雷专属底层”
 
 当前区域技能相关排序规则：
 
