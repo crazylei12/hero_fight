@@ -29,6 +29,7 @@ namespace Fight.Editor
         private const string DefaultBattleInputAssetPath = ResourcesDemoFolder + "/Stage01DemoBattleInput.asset";
         private const string DefaultHeroCatalogAssetPath = ResourcesDemoFolder + "/Stage01HeroCatalog.asset";
         private const string AssassinPrefabPath = "Assets/Prefabs/Heroes/assassin_001_shadowstep/Shadowstep.prefab";
+        private const string TidefinPrefabPath = "Assets/FantasyMonsters/Monsters/Insects/PurpleScarab/PurpleScarab.prefab";
         private const string MarksmanPrefabPath = "Assets/Prefabs/Heroes/marksman_001_longshot/Longshot.prefab";
         private const string SupportPrefabPath = "Assets/Prefabs/Heroes/support_001_sunpriest/Sunpriest.prefab";
         private const string WarriorPrefabPath = "Assets/Prefabs/Heroes/warrior_001_skybreaker/Skybreaker.prefab";
@@ -399,9 +400,11 @@ namespace Fight.Editor
             hero.debugNotes = $"Stage-01 demo hero for {heroClass}.";
             var battlePrefab = LoadBattlePrefab(heroId, heroClass);
             hero.visualConfig.battlePrefab = battlePrefab;
-            hero.visualConfig.animatorController = battlePrefab != null
-                ? AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(HeroEditorControllerPath)
-                : null;
+            hero.visualConfig.animatorController = heroId == "assassin_002_tidefin"
+                ? null
+                : battlePrefab != null
+                    ? AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(HeroEditorControllerPath)
+                    : null;
             hero.visualConfig.projectilePrefab = heroId switch
             {
                 "mage_001_firemage" => AssetDatabase.LoadAssetAtPath<GameObject>(FireMageProjectilePrefabPath),
@@ -426,7 +429,7 @@ namespace Fight.Editor
             var prefabPath = heroId switch
             {
                 "assassin_001_shadowstep" => AssassinPrefabPath,
-                "assassin_002_tidefin" => AssassinPrefabPath,
+                "assassin_002_tidefin" => TidefinPrefabPath,
                 "mage_001_firemage" => FireMagePrefabPath,
                 "mage_002_frostmage" => FrostMagePrefabPath,
                 "marksman_001_longshot" => MarksmanPrefabPath,

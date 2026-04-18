@@ -94,7 +94,7 @@ namespace Fight.UI
 
         private BattleManager battleManager;
         private readonly Dictionary<string, HeroViewState> heroViews = new Dictionary<string, HeroViewState>();
-        private readonly Dictionary<string, HeroEditor4DBattleAnimationDriver> heroAnimationDrivers = new Dictionary<string, HeroEditor4DBattleAnimationDriver>();
+        private readonly Dictionary<string, HeroBattleAnimationDriver> heroAnimationDrivers = new Dictionary<string, HeroBattleAnimationDriver>();
         private readonly Dictionary<string, ProjectileViewState> projectileViews = new Dictionary<string, ProjectileViewState>();
         private readonly Dictionary<string, SkillAreaViewState> skillAreaViews = new Dictionary<string, SkillAreaViewState>();
         private Transform heroRoot;
@@ -133,7 +133,7 @@ namespace Fight.UI
             public SpriteRenderer HealthFill;
             public SpriteRenderer ShieldFill;
             public SpriteRenderer UltimateIcon;
-            public HeroEditor4DBattleAnimationDriver AnimationDriver;
+            public HeroBattleAnimationDriver AnimationDriver;
             public Vector3 ShadowBaseScale = Vector3.one;
             public Color ShadowBaseColor = Color.white;
             public Vector3 AirborneRingBaseScale = Vector3.one;
@@ -394,12 +394,11 @@ namespace Fight.UI
                 var visual = Instantiate(hero.Definition.visualConfig.battlePrefab, view.VisualRoot);
                 visual.name = $"{hero.Definition.displayName}_Visual";
                 visual.transform.localPosition = new Vector3(0f, -0.1f, 0f);
-                visual.transform.localScale = Vector3.one * prefabVisualScale;
+                visual.transform.localScale *= prefabVisualScale;
                 DisablePrefabBehaviours(visual);
                 RemovePrefabPhysics(visual);
 
-                var driver = view.Root.AddComponent<HeroEditor4DBattleAnimationDriver>();
-                driver.Initialize(hero, visual);
+                var driver = TryCreateAnimationDriver(view.Root, hero, visual);
                 if (driver.IsReady)
                 {
                     view.AnimationDriver = driver;
@@ -442,6 +441,22 @@ namespace Fight.UI
             view.UltimateIcon = MakeSprite("UltimateIcon", view.FootUiRoot, squareSprite, new Color(1f, 0.9f, 0.36f, 0.98f), 303, new Vector3(-0.58f, 0f, 0f), new Vector3(0.16f, 0.16f, 1f));
             view.UltimateIcon.transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
             return view;
+        }
+
+        private static HeroBattleAnimationDriver TryCreateAnimationDriver(GameObject host, RuntimeHero hero, GameObject visual)
+        {
+            var heroEditorDriver = host.AddComponent<HeroEditor4DBattleAnimationDriver>();
+            heroEditorDriver.Initialize(hero, visual);
+            if (heroEditorDriver.IsReady)
+            {
+                return heroEditorDriver;
+            }
+
+            Destroy(heroEditorDriver);
+
+            var genericDriver = host.AddComponent<GenericAnimatorBattleAnimationDriver>();
+            genericDriver.Initialize(hero, visual);
+            return genericDriver;
         }
 
         private static void UpdateHealthFill(SpriteRenderer healthFill, float ratio, Color color)
@@ -1029,9 +1044,19 @@ namespace Fight.UI
                 Destroy(collider);
             }
 
+            foreach (var collider2D in instance.GetComponentsInChildren<Collider2D>(true))
+            {
+                Destroy(collider2D);
+            }
+
             foreach (var rigidbody in instance.GetComponentsInChildren<Rigidbody>(true))
             {
                 Destroy(rigidbody);
+            }
+
+            foreach (var rigidbody2D in instance.GetComponentsInChildren<Rigidbody2D>(true))
+            {
+                Destroy(rigidbody2D);
             }
         }
 

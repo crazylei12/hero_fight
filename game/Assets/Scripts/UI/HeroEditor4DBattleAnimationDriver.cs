@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace Fight.UI
 {
-    public class HeroEditor4DBattleAnimationDriver : MonoBehaviour
+    public class HeroEditor4DBattleAnimationDriver : HeroBattleAnimationDriver
     {
         private const float FacingMovementThresholdSqr = 0.0004f;
         private const float MoveStateEnterSpeed = 0.2f;
@@ -42,9 +42,9 @@ namespace Fight.UI
         private Vector2 currentFacing;
         private bool isInMoveState;
 
-        public bool IsReady => hero != null && character != null && animationManager != null && animator != null;
+        public override bool IsReady => hero != null && character != null && animationManager != null && animator != null;
 
-        public void Initialize(RuntimeHero runtimeHero, GameObject visualInstance)
+        public override void Initialize(RuntimeHero runtimeHero, GameObject visualInstance)
         {
             hero = runtimeHero;
 
@@ -79,7 +79,7 @@ namespace Fight.UI
             lastPosition = hero.CurrentPosition;
         }
 
-        public void Sync(RuntimeHero runtimeHero)
+        public override void Sync(RuntimeHero runtimeHero)
         {
             if (!IsReady || runtimeHero == null)
             {
@@ -143,7 +143,7 @@ namespace Fight.UI
             lastPosition = hero.CurrentPosition;
         }
 
-        public void OnBattleEvent(IBattleEvent battleEvent)
+        public override void OnBattleEvent(IBattleEvent battleEvent)
         {
             if (!IsReady || battleEvent == null || hero == null)
             {
