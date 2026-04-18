@@ -783,8 +783,8 @@ namespace Fight.Editor
                 SkillType.AreaDamage,
                 SkillTargetType.DensestEnemyArea,
                 7f,
-                2.8f,
-                2.4f,
+                4f,
+                4f,
                 0f,
                 1,
                 overwriteExistingContent,
@@ -797,11 +797,11 @@ namespace Fight.Editor
             skill.skillType = SkillType.AreaDamage;
             skill.targetType = SkillTargetType.DensestEnemyArea;
             skill.castRange = 7f;
-            skill.areaRadius = 2.8f;
+            skill.areaRadius = 4f;
             skill.minTargetsToCast = 1;
             skill.allowsSelfCast = false;
             skill.effects.Clear();
-            AddPersistentAreaEffect(skill, PersistentAreaPulseEffectType.DirectDamage, PersistentAreaTargetType.Enemies, 2.4f, skill.areaRadius, 0.45f, 0.45f, false);
+            AddPersistentAreaEffect(skill, PersistentAreaPulseEffectType.DirectDamage, PersistentAreaTargetType.Enemies, 4f, skill.areaRadius, 0.45f, 0.45f, false);
             skill.description = "Stage-01 demo skill: Frag Grenade";
             ResetActionSequence(skill);
             EditorUtility.SetDirty(skill);
@@ -1714,7 +1714,7 @@ namespace Fight.Editor
             skill.skillType = SkillType.AreaDamage;
             skill.targetType = SkillTargetType.DensestEnemyArea;
             skill.castRange = 7f;
-            skill.areaRadius = 2.8f;
+            skill.areaRadius = 4f;
             skill.minTargetsToCast = 1;
             skill.allowsSelfCast = false;
 
@@ -1723,6 +1723,10 @@ namespace Fight.Editor
             skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;
             skill.ultimateDecision.primaryCondition.searchRadius = skill.areaRadius;
             skill.ultimateDecision.primaryCondition.requiredUnitCount = 3;
+            skill.ultimateDecision.secondaryCondition.conditionType = UltimateConditionType.EnemyLowHealthInRange;
+            skill.ultimateDecision.secondaryCondition.searchRadius = skill.areaRadius;
+            skill.ultimateDecision.secondaryCondition.requiredUnitCount = 1;
+            skill.ultimateDecision.secondaryCondition.healthPercentThreshold = 0.5f;
             skill.ultimateDecision.combineMode = UltimateConditionCombineMode.PrimaryOnly;
             ApplyCountFallback(skill, 40f, 2, 52f, 1);
             EditorUtility.SetDirty(skill);
