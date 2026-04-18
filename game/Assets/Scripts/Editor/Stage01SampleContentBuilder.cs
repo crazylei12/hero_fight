@@ -163,7 +163,7 @@ namespace Fight.Editor
                 HeroTag.Melee, HeroTag.Dive, HeroTag.Control);
             ConfigureTidefinBasicAttack(tidefin, overwriteExistingContent, tidefinHeroExisted);
 
-            var tankActive = CreateStunSkill("skill_tank_active_shieldbash", "Shield Bash", SkillSlotType.ActiveSkill, 1.8f, 0f, 0.8f, 8f, 1f, overwriteExistingContent);
+            var tankActive = CreateTauntSkill("skill_tank_active_shieldbash", "Shield Bash", SkillSlotType.ActiveSkill, 1.8f, 0f, 0.8f, 8f, 1f, overwriteExistingContent);
             var tankUltimateSkill = CreateBuffSkill("skill_tank_ultimate_ironoath", "Iron Oath", SkillSlotType.Ultimate, SkillTargetType.AllAllies, 6f, 6f, 1f, 0f, StatusEffectType.DefenseModifier, 8f, 2f, overwriteExistingContent, out var tankUltimateExisted);
 
             var tank = CreateHero(
@@ -1173,6 +1173,9 @@ namespace Fight.Editor
                     AddRepositionEffect(skill);
                     AddDamageEffect(skill, powerMultiplier);
                     break;
+                case SkillType.Taunt:
+                    AddDamageEffect(skill, powerMultiplier);
+                    break;
             }
         }
 
@@ -1908,6 +1911,50 @@ namespace Fight.Editor
                 effectType = effectType,
                 durationSeconds = durationSeconds,
                 magnitude = magnitude,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateTauntSkill(
+            string skillId,
+            string displayName,
+            SkillSlotType slotType,
+            float castRange,
+            float areaRadius,
+            float powerMultiplier,
+            float cooldownSeconds,
+            float tauntDuration,
+            bool overwriteExistingContent)
+        {
+            var skill = CreateSkill(
+                skillId,
+                displayName,
+                slotType,
+                SkillType.Taunt,
+                areaRadius > 0f ? SkillTargetType.DensestEnemyArea : SkillTargetType.NearestEnemy,
+                castRange,
+                areaRadius,
+                powerMultiplier,
+                cooldownSeconds,
+                areaRadius > 0f ? 2 : 1,
+                overwriteExistingContent,
+                out var existedBefore);
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.effects.Clear();
+            AddDamageEffect(skill, powerMultiplier);
+            var statusEffect = AddApplyStatusEffectsEffect(skill);
+            statusEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.Taunt,
+                durationSeconds = tauntDuration,
+                magnitude = 1f,
                 maxStacks = 1,
                 refreshDurationOnReapply = true,
             });
