@@ -29,8 +29,6 @@ namespace Fight.Editor
         private const string RiflemanHeroAssetPath = "Assets/Data/Stage01Demo/Heroes/marksman_002_rifleman/Rifleman.asset";
         private const string BurstFireSkillAssetPath = "Assets/Data/Stage01Demo/Skills/marksman_002_rifleman/Burst Fire.asset";
         private const string FragGrenadeSkillAssetPath = "Assets/Data/Stage01Demo/Skills/marksman_002_rifleman/Frag Grenade.asset";
-        private const string RiflemanBasicAttackSourceFileName = "ChatGPT Image 2026年4月18日 19_52_36.png";
-
         private const string CrackDustSourcePrefabPath = "Assets/Game VFX -Explosion & Crack/Prefabs/FX_Crack_Dust.prefab";
         private const string RealisticExplosionSourcePrefabPath = "Assets/Game VFX -Explosion & Crack/Prefabs/FX_RealisticEXP_S02.prefab";
 
@@ -38,7 +36,8 @@ namespace Fight.Editor
         private const float FragGrenadeBurstDurationExtensionSeconds = 0.5f;
         private const float RiflemanBasicAttackPixelsPerUnit = 1024f;
         private const float RiflemanBasicAttackScale = 0.24f;
-        private const float RiflemanBasicAttackWidthMultiplier = 3f;
+        private const float RiflemanBasicAttackLengthMultiplier = 1.5f;
+        private const float RiflemanBasicAttackWidthMultiplier = 2f;
         private const int WhiteBackgroundThreshold = 242;
         private const byte MinimumVisibleAlpha = 8;
         private static bool autoBuildScheduled;
@@ -129,12 +128,6 @@ namespace Fight.Editor
                 FragGrenadeSourceTexturePath,
                 CrackDustSourcePrefabPath,
                 RealisticExplosionSourcePrefabPath);
-            var riflemanBulletSourceTimestamp = GetFileTimestampUtc(GetExternalRepoPath(RiflemanBasicAttackSourceFileName));
-            if (riflemanBulletSourceTimestamp > latestInputTimestamp)
-            {
-                latestInputTimestamp = riflemanBulletSourceTimestamp;
-            }
-
             return latestInputTimestamp
                 > GetOldestTimestampUtc(
                     RiflemanBasicAttackProjectilePrefabPath,
@@ -219,6 +212,7 @@ namespace Fight.Editor
             bullet.transform.SetParent(root.transform, false);
             bullet.transform.localPosition = new Vector3(0.04f, 0f, 0f);
             bullet.transform.localScale = new Vector3(
+                RiflemanBasicAttackScale * RiflemanBasicAttackLengthMultiplier,
                 RiflemanBasicAttackScale * RiflemanBasicAttackWidthMultiplier,
                 RiflemanBasicAttackScale,
                 RiflemanBasicAttackScale);
@@ -366,68 +360,6 @@ namespace Fight.Editor
 
         private static Sprite EnsureRiflemanBasicAttackSprite()
         {
-            var sourceAbsolutePath = GetExternalRepoPath(RiflemanBasicAttackSourceFileName);
-            if (!File.Exists(sourceAbsolutePath))
-            {
-                throw new FileNotFoundException($"Missing Rifleman basic attack source image at path: {sourceAbsolutePath}");
-            }
-
-            var sourceTexture = new Texture2D(2, 2, TextureFormat.RGBA32, false)
-            {
-                filterMode = FilterMode.Bilinear,
-                wrapMode = TextureWrapMode.Clamp,
-            };
-
-            if (!sourceTexture.LoadImage(File.ReadAllBytes(sourceAbsolutePath), false))
-            {
-                Object.DestroyImmediate(sourceTexture);
-                throw new FileNotFoundException($"Could not decode Rifleman basic attack source image: {sourceAbsolutePath}");
-            }
-
-            var sourcePixels = sourceTexture.GetPixels32();
-            var bounds = FindOpaqueBounds(sourcePixels, sourceTexture.width, sourceTexture.height);
-            if (!bounds.HasValue)
-            {
-                Object.DestroyImmediate(sourceTexture);
-                throw new FileNotFoundException("Could not isolate opaque bullet pixels from the Rifleman basic attack source image.");
-            }
-
-            var paddedBounds = bounds.Value;
-            paddedBounds.xMin = Mathf.Max(0, paddedBounds.xMin - 20);
-            paddedBounds.yMin = Mathf.Max(0, paddedBounds.yMin - 20);
-            paddedBounds.xMax = Mathf.Min(sourceTexture.width, paddedBounds.xMax + 20);
-            paddedBounds.yMax = Mathf.Min(sourceTexture.height, paddedBounds.yMax + 20);
-
-            var result = new Texture2D(paddedBounds.width, paddedBounds.height, TextureFormat.RGBA32, false)
-            {
-                filterMode = FilterMode.Bilinear,
-                wrapMode = TextureWrapMode.Clamp,
-            };
-
-            var croppedPixels = new Color32[paddedBounds.width * paddedBounds.height];
-            for (var y = 0; y < paddedBounds.height; y++)
-            {
-                var sourceY = paddedBounds.yMin + y;
-                for (var x = 0; x < paddedBounds.width; x++)
-                {
-                    var sourceX = paddedBounds.xMin + x;
-                    croppedPixels[(y * paddedBounds.width) + x] = sourcePixels[(sourceY * sourceTexture.width) + sourceX];
-                }
-            }
-
-            result.SetPixels32(croppedPixels);
-            result.Apply();
-
-            try
-            {
-                File.WriteAllBytes(GetAbsoluteProjectPath(RiflemanBasicAttackSpritePath), result.EncodeToPNG());
-            }
-            finally
-            {
-                Object.DestroyImmediate(result);
-                Object.DestroyImmediate(sourceTexture);
-            }
-
             AssetDatabase.ImportAsset(RiflemanBasicAttackSpritePath, ImportAssetOptions.ForceSynchronousImport);
             ConfigureGeneratedRiflemanBulletImporter();
             return LoadRequiredAsset<Sprite>(RiflemanBasicAttackSpritePath);
@@ -885,23 +817,6 @@ namespace Fight.Editor
         {
             var projectRoot = Path.GetDirectoryName(Application.dataPath);
             return Path.Combine(projectRoot ?? string.Empty, assetPath);
-        }
-
-        private static string GetExternalRepoPath(string fileName)
-        {
-            var projectRoot = Path.GetDirectoryName(Application.dataPath);
-            var repoRoot = Directory.GetParent(projectRoot ?? string.Empty)?.FullName;
-            return Path.Combine(repoRoot ?? string.Empty, fileName);
-        }
-
-        private static System.DateTime GetFileTimestampUtc(string absolutePath)
-        {
-            if (string.IsNullOrWhiteSpace(absolutePath) || !File.Exists(absolutePath))
-            {
-                return System.DateTime.MinValue;
-            }
-
-            return File.GetLastWriteTimeUtc(absolutePath);
         }
 
         private static System.DateTime GetLatestTimestampUtc(params string[] assetPaths)
