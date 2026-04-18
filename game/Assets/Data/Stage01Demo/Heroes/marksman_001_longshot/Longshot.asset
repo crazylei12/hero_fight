@@ -24,11 +24,11 @@ MonoBehaviour:
     moveSpeed: 4.1
     criticalChance: 0.22
     criticalDamageMultiplier: 1.9
-    attackRange: 6
+    attackRange: 9
   basicAttack:
     damageMultiplier: 1
     attackInterval: 0.74
-    rangeOverride: 6
+    rangeOverride: 9
     usesProjectile: 1
     projectileSpeed: 16
     effectType: 0

@@ -67,7 +67,7 @@ MonoBehaviour:
       requireTargetInCastRange: 1
     secondaryCondition:
       conditionType: 1
-      searchRadius: 6
+      searchRadius: 9
       requiredUnitCount: 2
       healthPercentThreshold: 1
       durationSeconds: 0

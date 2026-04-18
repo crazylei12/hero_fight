@@ -18,7 +18,7 @@ MonoBehaviour:
   slotType: 0
   skillType: 0
   targetType: 1
-  castRange: 6
+  castRange: 9
   areaRadius: 0
   cooldownSeconds: 6
   minTargetsToCast: 1
