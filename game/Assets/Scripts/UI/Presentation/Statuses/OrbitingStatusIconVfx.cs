@@ -28,9 +28,11 @@ namespace Fight.UI.Presentation.Statuses
         private SpriteRenderer[] orbitRenderers = new SpriteRenderer[0];
         private Color[] baseRendererColors = new Color[0];
         private SortingGroup rootSortingGroup;
-        private float currentAngleDegrees;
+        private int baseSortingOrder;
+        private int orbitSlotIndex;
+        private int orbitSlotCount = 1;
+        private float orbitStartPhaseDegrees;
         private float currentDepth = 1f;
-        private int lastAppliedSortingOrderOffset;
         private bool initialized;
 
         public void Configure(
@@ -71,6 +73,19 @@ namespace Fight.UI.Presentation.Statuses
             CaptureRendererState();
         }
 
+        public void SetBaseSortingOrder(int sortingOrder)
+        {
+            baseSortingOrder = sortingOrder;
+            ApplySortingOrder();
+        }
+
+        public void SetOrbitLayout(int slotIndex, int slotCount)
+        {
+            orbitSlotCount = Mathf.Max(1, slotCount);
+            orbitSlotIndex = Mathf.Clamp(slotIndex, 0, orbitSlotCount - 1);
+            ApplyOrbit();
+        }
+
         private void Awake()
         {
             InitializeIfNeeded();
@@ -89,24 +104,7 @@ namespace Fight.UI.Presentation.Statuses
                 return;
             }
 
-            currentAngleDegrees = Mathf.Repeat(
-                currentAngleDegrees + (orbitSpeedDegreesPerSecond * Time.deltaTime),
-                360f);
             ApplyOrbit();
-        }
-
-        private void LateUpdate()
-        {
-            if (!initialized || orbitMode != OrbitMode.BodyDepth || rootSortingGroup == null)
-            {
-                return;
-            }
-
-            var baseSortingOrder = rootSortingGroup.sortingOrder - lastAppliedSortingOrderOffset;
-            lastAppliedSortingOrderOffset = currentDepth < 0f
-                ? backSortingOrderOffset
-                : 0;
-            rootSortingGroup.sortingOrder = baseSortingOrder + lastAppliedSortingOrderOffset;
         }
 
         private void InitializeIfNeeded()
@@ -126,7 +124,7 @@ namespace Fight.UI.Presentation.Statuses
             CaptureRendererState();
             if (!initialized && randomizeStartingAngle)
             {
-                currentAngleDegrees = Random.Range(0f, 360f);
+                orbitStartPhaseDegrees = Random.Range(0f, 360f);
             }
 
             initialized = true;
@@ -147,6 +145,7 @@ namespace Fight.UI.Presentation.Statuses
         private void CaptureRendererState()
         {
             rootSortingGroup = GetComponent<SortingGroup>();
+            baseSortingOrder = rootSortingGroup != null ? rootSortingGroup.sortingOrder : 0;
             if (orbitAnchor == null)
             {
                 orbitRenderers = new SpriteRenderer[0];
@@ -177,22 +176,25 @@ namespace Fight.UI.Presentation.Statuses
                 return;
             }
 
-            var orbitRotation = Quaternion.Euler(0f, 0f, currentAngleDegrees);
+            var orbitAngleDegrees = GetOrbitAngleDegrees();
+            var orbitRotation = Quaternion.Euler(0f, 0f, orbitAngleDegrees);
             orbitAnchor.localPosition = orbitRotation * baseLocalPosition;
             orbitAnchor.localScale = baseLocalScale;
             orbitAnchor.localRotation = keepAnchorUpright
-                ? Quaternion.Euler(0f, 0f, -currentAngleDegrees) * baseLocalRotation
+                ? Quaternion.Euler(0f, 0f, -orbitAngleDegrees) * baseLocalRotation
                 : orbitRotation * baseLocalRotation;
             currentDepth = 1f;
             ApplyRendererAlpha(1f);
+            ApplySortingOrder();
         }
 
         private void ApplyBodyOrbit()
         {
-            var radians = currentAngleDegrees * Mathf.Deg2Rad;
+            var radians = GetOrbitAngleDegrees() * Mathf.Deg2Rad;
             var horizontal = Mathf.Sin(radians);
             currentDepth = Mathf.Cos(radians);
             var depthLerp = (currentDepth + 1f) * 0.5f;
+            var multiIconScaleMultiplier = Mathf.Lerp(1f, 0.8f, Mathf.Clamp01((orbitSlotCount - 1) / 3f));
 
             orbitAnchor.localPosition = new Vector3(
                 baseLocalPosition.x + (horizontal * bodyOrbitRadius.x),
@@ -200,11 +202,34 @@ namespace Fight.UI.Presentation.Statuses
                 baseLocalPosition.z);
 
             var scaleMultiplier = Mathf.Lerp(backScaleMultiplier, 1f, depthLerp);
-            orbitAnchor.localScale = baseLocalScale * scaleMultiplier;
+            orbitAnchor.localScale = baseLocalScale * (scaleMultiplier * multiIconScaleMultiplier);
             orbitAnchor.localRotation = keepAnchorUpright
                 ? baseLocalRotation
                 : Quaternion.Euler(0f, 0f, -horizontal * 12f) * baseLocalRotation;
             ApplyRendererAlpha(Mathf.Lerp(backAlphaMultiplier, 1f, depthLerp));
+            ApplySortingOrder();
+        }
+
+        private float GetOrbitAngleDegrees()
+        {
+            var sharedAngleDegrees = Time.time * orbitSpeedDegreesPerSecond;
+            var slotPhaseDegrees = orbitSlotCount > 1
+                ? 360f * orbitSlotIndex / orbitSlotCount
+                : 0f;
+            return Mathf.Repeat(sharedAngleDegrees + orbitStartPhaseDegrees + slotPhaseDegrees, 360f);
+        }
+
+        private void ApplySortingOrder()
+        {
+            if (rootSortingGroup == null)
+            {
+                return;
+            }
+
+            var sortingOffset = orbitMode == OrbitMode.BodyDepth && currentDepth < 0f
+                ? backSortingOrderOffset
+                : 0;
+            rootSortingGroup.sortingOrder = baseSortingOrder + sortingOffset;
         }
 
         private void ApplyRendererAlpha(float alphaMultiplier)

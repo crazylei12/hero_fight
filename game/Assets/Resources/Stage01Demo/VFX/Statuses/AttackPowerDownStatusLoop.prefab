@@ -64,9 +64,9 @@ MonoBehaviour:
   orbitAnchor: {fileID: 1000000000000000032}
   orbitSpeedDegreesPerSecond: 108
   keepAnchorUpright: 1
-  randomizeStartingAngle: 1
+  randomizeStartingAngle: 0
   orbitMode: 1
-  bodyOrbitRadius: {x: 0.3, y: 0.11}
+  bodyOrbitRadius: {x: 0.45, y: 0.165}
   backScaleMultiplier: 0.72
   backAlphaMultiplier: 0.24
   backSortingOrderOffset: -158

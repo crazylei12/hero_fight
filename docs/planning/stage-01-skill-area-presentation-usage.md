@@ -527,6 +527,15 @@
   - 项目内运行时 prefab：`game/Assets/Resources/Stage01Demo/VFX/Statuses/AttackPowerDownStatusLoop.prefab`
   - 图标素材来源：`game/Assets/Art/VFX/StatusIcons/AttackDebuffEffect.png`
   - 接入方式：`BattleView` 对 `StatusEffectType.AttackPowerModifier` 先合并当前英雄身上的总修正值；只有合并后仍为负数时，才创建这套“图标绕英雄躯干前后环绕”的减攻状态特效
+- `防御力下降`
+  - 项目内工程 prefab：`game/Assets/Prefabs/VFX/Shared/DefenseDownStatusLoop.prefab`
+  - 项目内运行时 prefab：`game/Assets/Resources/Stage01Demo/VFX/Statuses/DefenseDownStatusLoop.prefab`
+  - 图标素材来源：`game/Assets/Art/VFX/StatusIcons/DefenceDebuffEffect.png`
+  - 接入方式：`BattleView` 对 `StatusEffectType.DefenseModifier` 先合并当前英雄身上的总修正值；只有合并后仍为负数时，才创建这套“图标绕英雄躯干前后环绕”的减防状态特效
+- 属性增减类图标状态的当前共用规则：
+  - 这类图标优先共用同一条“绕躯干前后环绕”的身体轨道，而不是每个图标各自独立在平面上转圈
+  - 同一英雄同时存在多个这类图标状态时，由 `BattleView` 按当前激活数量自动分配轨道相位，让它们沿同一圈轨道错位分布并一起旋转
+  - 轨道半径、前后缩放、后半圈透明度等参数优先收敛在统一脚本里，不要为每个属性效果各写一套独立旋转逻辑
 
 ## 强制位移 / 击退表现的当前规则
 
