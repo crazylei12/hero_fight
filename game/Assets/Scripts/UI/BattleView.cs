@@ -40,6 +40,7 @@ namespace Fight.UI
         private const float DashChargeMinLifetimeSeconds = 0.18f;
         private const int HealEventVfxSortOrderOffset = 190;
         private const int DashChargeSortOrderOffset = -6;
+        private const int ThrownProjectileSortOrderOffset = -4;
         private const string HealImpactTransientKey = "heal_received";
         private const string DashChargeTransientKey = "dash_charge";
         private static readonly Dictionary<StatusEffectType, StatusEffectVfxConfig> StatusEffectVfxConfigs = new Dictionary<StatusEffectType, StatusEffectVfxConfig>
@@ -132,6 +133,7 @@ namespace Fight.UI
             public GameObject Root;
             public SortingGroup SortingGroup;
             public Transform VisualRoot;
+            public Transform ProjectileLaunchAnchor;
             public Renderer[] VisualRenderers;
             public SpriteRenderer[] VisualSpriteRenderers;
             public Color[] VisualSpriteBaseColors;
@@ -425,6 +427,7 @@ namespace Fight.UI
                     Destroy(driver);
                 }
 
+                view.ProjectileLaunchAnchor = FindPreferredVisualAnchor(visual.transform, "HandR", "HandL", "Handle");
             }
             else
             {
@@ -432,6 +435,8 @@ namespace Fight.UI
                 view.Accent = MakeSprite("Accent", view.VisualRoot, squareSprite, Accent(hero.Definition.heroClass), 21, new Vector3(0f, 0.05f, 0f), new Vector3(0.22f, 0.22f, 1f));
                 view.Accent.transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
             }
+
+            view.ProjectileLaunchAnchor ??= view.VisualRoot;
 
             view.VisualRenderers = view.VisualRoot.GetComponentsInChildren<Renderer>(true);
             view.VisualSpriteRenderers = view.VisualRoot.GetComponentsInChildren<SpriteRenderer>(true);
@@ -1492,6 +1497,11 @@ namespace Fight.UI
 
         private Color GetSkillAreaColor(BattleContext context, RuntimeSkillArea area, SkillAreaViewState viewState)
         {
+            if (IsThrownProjectilePresentation(area))
+            {
+                return Color.clear;
+            }
+
             var color = skillAreaTint;
             if (HasSkillAreaEffectPrefab(area))
             {
@@ -1647,6 +1657,7 @@ namespace Fight.UI
                     ? battleManager.Context.Clock.ElapsedTimeSeconds
                     : skillAreaView.LastPulseAtSeconds;
                 RestartSkillAreaEffect(skillAreaView);
+                SpawnThrownProjectileImpact(skillAreaPulseEvent.Area);
             }
 
             if (battleEvent is StatusAppliedEvent statusAppliedEvent
@@ -2022,6 +2033,78 @@ namespace Fight.UI
             ApplyTransientVfxState(transientState, heroView.SortingGroup != null ? heroView.SortingGroup.sortingOrder : HeroSortBase);
         }
 
+        private void SpawnTransientWorldVfx(
+            GameObject prefab,
+            Vector3 worldPosition,
+            int sortingOrder,
+            Quaternion? worldRotation = null,
+            Vector3? scaleMultiplier = null)
+        {
+            if (prefab == null || transientWorldVfxRoot == null)
+            {
+                return;
+            }
+
+            var instance = Instantiate(prefab, transientWorldVfxRoot, false);
+            instance.name = $"{prefab.name}_Transient";
+            instance.transform.position = worldPosition;
+            if (worldRotation.HasValue)
+            {
+                instance.transform.rotation = worldRotation.Value * instance.transform.rotation;
+            }
+
+            if (scaleMultiplier.HasValue)
+            {
+                instance.transform.localScale = Vector3.Scale(instance.transform.localScale, scaleMultiplier.Value);
+            }
+
+            RemovePrefabPhysics(instance);
+            ConfigureTransientParticleSystems(instance);
+
+            var sortingGroup = instance.GetComponent<SortingGroup>();
+            if (sortingGroup != null)
+            {
+                sortingGroup.sortingOrder = sortingOrder;
+            }
+            else
+            {
+                SetRendererSorting(instance.GetComponentsInChildren<Renderer>(true), sortingOrder);
+            }
+
+            StartCoroutine(DestroyTransientWorldVfxAfter(instance, Mathf.Max(0.05f, GetTransientVfxLifetime(instance))));
+        }
+
+        private IEnumerator DestroyTransientWorldVfxAfter(GameObject instance, float lifetimeSeconds)
+        {
+            if (instance == null)
+            {
+                yield break;
+            }
+
+            yield return new WaitForSeconds(lifetimeSeconds);
+            if (instance != null)
+            {
+                Destroy(instance);
+            }
+        }
+
+        private void SpawnThrownProjectileImpact(RuntimeSkillArea area)
+        {
+            if (!IsThrownProjectilePresentation(area) || area?.Skill?.persistentAreaVfxPrefab == null)
+            {
+                return;
+            }
+
+            var areaScale = GetSkillAreaScale(area);
+            var multiplier = Mathf.Max(0.1f, area.Skill.persistentAreaVfxScaleMultiplier);
+            SpawnTransientWorldVfx(
+                area.Skill.persistentAreaVfxPrefab,
+                Map(area.CurrentCenter),
+                SkillAreaEffectSortOrder,
+                Quaternion.Euler(area.Skill.persistentAreaVfxEulerAngles),
+                new Vector3(areaScale.x * multiplier, areaScale.y * multiplier, 1f));
+        }
+
         private IEnumerator FadeBlinkGhostSnapshot(
             Transform ghostTransform,
             GameObject ghostRoot,
@@ -2237,7 +2320,7 @@ namespace Fight.UI
 
         private void CreateSkillAreaEffect(RuntimeSkillArea area, SkillAreaViewState viewState)
         {
-            if (!HasSkillAreaEffectPrefab(area) || viewState == null)
+            if (viewState == null)
             {
                 return;
             }
@@ -2245,6 +2328,11 @@ namespace Fight.UI
             if (HasCustomSkillAreaPresentation(area))
             {
                 CreateCustomSkillAreaEffect(area, viewState);
+                return;
+            }
+
+            if (!HasSkillAreaEffectPrefab(area))
+            {
                 return;
             }
 
@@ -2279,6 +2367,18 @@ namespace Fight.UI
             if (viewState.CustomController != null)
             {
                 viewState.CustomController.Sync(area, position, effectSortingOrder, skillAreaExpiryFadeSeconds);
+                if (viewState.CustomController.UsesWorldSorting)
+                {
+                    effectSortingOrder = Sort(viewState.CustomController.GetWorldSortingPosition(position).y, ThrownProjectileSortOrderOffset);
+                    if (viewState.EffectSortingGroup != null)
+                    {
+                        viewState.EffectSortingGroup.sortingOrder = effectSortingOrder;
+                    }
+                    else
+                    {
+                        SetRendererSorting(viewState.EffectRenderers, effectSortingOrder);
+                    }
+                }
             }
             else if (viewState.EffectSortingGroup != null)
             {
@@ -2380,7 +2480,7 @@ namespace Fight.UI
             RestartSkillAreaEffect(viewState);
         }
 
-        private static SkillAreaPresentationController CreateSkillAreaPresentationController(RuntimeSkillArea area, GameObject root)
+        private SkillAreaPresentationController CreateSkillAreaPresentationController(RuntimeSkillArea area, GameObject root)
         {
             if (area?.Skill == null || root == null)
             {
@@ -2393,6 +2493,13 @@ namespace Fight.UI
                     var controller = root.AddComponent<FireSeaSkillAreaPresentationController>();
                     controller.Initialize();
                     return controller;
+                case SkillAreaPresentationType.ThrownProjectile:
+                    var thrownProjectileController = root.AddComponent<ThrownProjectileSkillAreaPresentationController>();
+                    thrownProjectileController.Initialize(
+                        area.Skill.castProjectileVfxPrefab,
+                        ResolveSkillProjectileLaunchPosition(area.Caster),
+                        area.TotalDurationSeconds);
+                    return thrownProjectileController;
                 default:
                     return null;
             }
@@ -2432,6 +2539,78 @@ namespace Fight.UI
             view.Root.transform.rotation = Quaternion.Euler(0f, 0f, angle) * offset;
             view.LastPosition = position;
             view.HasLastPosition = true;
+        }
+
+        private Vector3 ResolveSkillProjectileLaunchPosition(RuntimeHero caster)
+        {
+            if (caster != null
+                && heroViews.TryGetValue(caster.RuntimeId, out var heroView)
+                && heroView?.ProjectileLaunchAnchor != null)
+            {
+                return heroView.ProjectileLaunchAnchor.position;
+            }
+
+            if (caster != null
+                && heroViews.TryGetValue(caster.RuntimeId, out heroView)
+                && heroView?.VisualRoot != null)
+            {
+                return heroView.VisualRoot.position + new Vector3(0f, 0.32f, 0f);
+            }
+
+            return caster != null
+                ? Map(caster.CurrentPosition) + new Vector3(0f, 0.32f, 0f)
+                : Vector3.zero;
+        }
+
+        private static bool IsThrownProjectilePresentation(RuntimeSkillArea area)
+        {
+            return area != null
+                && area.Skill != null
+                && area.Skill.skillAreaPresentationType == SkillAreaPresentationType.ThrownProjectile;
+        }
+
+        private static Transform FindPreferredVisualAnchor(Transform root, params string[] preferredNames)
+        {
+            if (root == null || preferredNames == null || preferredNames.Length == 0)
+            {
+                return null;
+            }
+
+            for (var i = 0; i < preferredNames.Length; i++)
+            {
+                var anchor = FindChildRecursive(root, preferredNames[i]);
+                if (anchor != null)
+                {
+                    return anchor;
+                }
+            }
+
+            return null;
+        }
+
+        private static Transform FindChildRecursive(Transform root, string childName)
+        {
+            if (root == null || string.IsNullOrWhiteSpace(childName))
+            {
+                return null;
+            }
+
+            if (string.Equals(root.name, childName, StringComparison.Ordinal))
+            {
+                return root;
+            }
+
+            for (var i = 0; i < root.childCount; i++)
+            {
+                var child = root.GetChild(i);
+                var result = FindChildRecursive(child, childName);
+                if (result != null)
+                {
+                    return result;
+                }
+            }
+
+            return null;
         }
 
         private static void KillSkillAreaTweens(SkillAreaViewState viewState)

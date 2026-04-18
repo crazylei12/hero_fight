@@ -46,6 +46,7 @@ namespace Fight.Editor
         private const string FrostMageUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FrostMageBlizzardField.prefab";
         private const string MageUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FireMageMeteorField.prefab";
         private const string RiflemanUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/RiflemanFragGrenadeBurst.prefab";
+        private const string RiflemanUltimateProjectileVfxPrefabPath = "Assets/Prefabs/VFX/Projectiles/RiflemanFragGrenadeProjectile.prefab";
         private const string SunpriestProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/SunpriestBasicAttackProjectile.prefab";
         private const string SunpriestUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/SunpriestSunBlessingField.prefab";
 
@@ -1721,20 +1722,17 @@ namespace Fight.Editor
             skill.areaRadius = 4f;
             skill.minTargetsToCast = 1;
             skill.allowsSelfCast = false;
+            skill.castProjectileVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(RiflemanUltimateProjectileVfxPrefabPath);
             skill.persistentAreaVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(RiflemanUltimateAreaVfxPrefabPath);
             skill.persistentAreaVfxScaleMultiplier = 1f;
             skill.persistentAreaVfxEulerAngles = Vector3.zero;
-            skill.skillAreaPresentationType = SkillAreaPresentationType.None;
+            skill.skillAreaPresentationType = SkillAreaPresentationType.ThrownProjectile;
 
             ResetUltimateDecision(skill);
             skill.ultimateDecision.targetingType = UltimateTargetingType.EnemyDensestPosition;
             skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;
             skill.ultimateDecision.primaryCondition.searchRadius = skill.areaRadius;
             skill.ultimateDecision.primaryCondition.requiredUnitCount = 3;
-            skill.ultimateDecision.secondaryCondition.conditionType = UltimateConditionType.EnemyLowHealthInRange;
-            skill.ultimateDecision.secondaryCondition.searchRadius = skill.areaRadius;
-            skill.ultimateDecision.secondaryCondition.requiredUnitCount = 1;
-            skill.ultimateDecision.secondaryCondition.healthPercentThreshold = 0.5f;
             skill.ultimateDecision.combineMode = UltimateConditionCombineMode.PrimaryOnly;
             ApplyCountFallback(skill, 40f, 2, 52f, 1);
             EditorUtility.SetDirty(skill);

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using Fight.Data;
 using UnityEditor;
@@ -9,16 +10,24 @@ namespace Fight.Editor
     public static class RiflemanVfxPrefabBuilder
     {
         private const string BuildMenuPath = "Fight/Stage 01/Build Rifleman VFX Prefabs";
+        private const string GeneratedArtFolder = "Assets/Art/VFX/Generated";
+        private const string SourceArtFolder = "Assets/Art/VFX/Source";
         private const string PrefabsRootFolder = "Assets/Prefabs/VFX";
+        private const string ProjectilePrefabsFolder = PrefabsRootFolder + "/Projectiles";
         private const string SkillPrefabsFolder = PrefabsRootFolder + "/Skills";
         private const string BuilderScriptAssetPath = "Assets/Scripts/Editor/RiflemanVfxPrefabBuilder.cs";
 
-        private const string FragGrenadePrefabPath = SkillPrefabsFolder + "/RiflemanFragGrenadeBurst.prefab";
+        private const string FragGrenadeProjectilePrefabPath = ProjectilePrefabsFolder + "/RiflemanFragGrenadeProjectile.prefab";
+        private const string FragGrenadeBurstPrefabPath = SkillPrefabsFolder + "/RiflemanFragGrenadeBurst.prefab";
+        private const string FragGrenadeSourceTexturePath = SourceArtFolder + "/RiflemanFragGrenadeSource.png";
+        private const string FragGrenadeSpritePath = GeneratedArtFolder + "/RiflemanFragGrenadeSprite.png";
         private const string FragGrenadeSkillAssetPath = "Assets/Data/Stage01Demo/Skills/marksman_002_rifleman/Frag Grenade.asset";
 
         private const string CrackDustSourcePrefabPath = "Assets/Game VFX -Explosion & Crack/Prefabs/FX_Crack_Dust.prefab";
         private const string RealisticExplosionSourcePrefabPath = "Assets/Game VFX -Explosion & Crack/Prefabs/FX_RealisticEXP_S02.prefab";
 
+        private const int WhiteBackgroundThreshold = 242;
+        private const byte MinimumVisibleAlpha = 8;
         private static bool autoBuildScheduled;
 
         [InitializeOnLoadMethod]
@@ -36,9 +45,14 @@ namespace Fight.Editor
         [MenuItem(BuildMenuPath)]
         public static void BuildRiflemanVfxPrefabs()
         {
+            EnsureFolder(GeneratedArtFolder);
+            EnsureFolder(SourceArtFolder);
             EnsureFolder(PrefabsRootFolder);
+            EnsureFolder(ProjectilePrefabsFolder);
             EnsureFolder(SkillPrefabsFolder);
 
+            var grenadeSprite = EnsureFragGrenadeSprite();
+            BuildFragGrenadeProjectilePrefab(grenadeSprite);
             BuildFragGrenadeBurstPrefab();
             SyncStage01DemoAssets();
 
@@ -74,7 +88,9 @@ namespace Fight.Editor
 
         private static bool AllOutputAssetsExist()
         {
-            return AssetDatabase.LoadAssetAtPath<GameObject>(FragGrenadePrefabPath) != null;
+            return AssetDatabase.LoadAssetAtPath<GameObject>(FragGrenadeProjectilePrefabPath) != null
+                && AssetDatabase.LoadAssetAtPath<GameObject>(FragGrenadeBurstPrefabPath) != null
+                && AssetDatabase.LoadAssetAtPath<Sprite>(FragGrenadeSpritePath) != null;
         }
 
         private static bool NeedsRebuild()
@@ -86,25 +102,48 @@ namespace Fight.Editor
 
             return GetLatestTimestampUtc(
                     BuilderScriptAssetPath,
+                    FragGrenadeSourceTexturePath,
                     CrackDustSourcePrefabPath,
                     RealisticExplosionSourcePrefabPath)
-                > GetLatestTimestampUtc(FragGrenadePrefabPath);
+                > GetOldestTimestampUtc(
+                    FragGrenadeProjectilePrefabPath,
+                    FragGrenadeBurstPrefabPath,
+                    FragGrenadeSpritePath);
         }
 
         private static void SyncStage01DemoAssets()
         {
-            var fragGrenadePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(FragGrenadePrefabPath);
+            var fragGrenadeProjectilePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(FragGrenadeProjectilePrefabPath);
+            var fragGrenadeBurstPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(FragGrenadeBurstPrefabPath);
             var fragGrenadeSkill = AssetDatabase.LoadAssetAtPath<SkillData>(FragGrenadeSkillAssetPath);
             if (fragGrenadeSkill == null)
             {
                 return;
             }
 
-            fragGrenadeSkill.persistentAreaVfxPrefab = fragGrenadePrefab;
+            fragGrenadeSkill.castProjectileVfxPrefab = fragGrenadeProjectilePrefab;
+            fragGrenadeSkill.persistentAreaVfxPrefab = fragGrenadeBurstPrefab;
             fragGrenadeSkill.persistentAreaVfxScaleMultiplier = 1f;
             fragGrenadeSkill.persistentAreaVfxEulerAngles = Vector3.zero;
-            fragGrenadeSkill.skillAreaPresentationType = SkillAreaPresentationType.None;
+            fragGrenadeSkill.skillAreaPresentationType = SkillAreaPresentationType.ThrownProjectile;
             EditorUtility.SetDirty(fragGrenadeSkill);
+        }
+
+        private static void BuildFragGrenadeProjectilePrefab(Sprite grenadeSprite)
+        {
+            var root = new GameObject("RiflemanFragGrenadeProjectile");
+            root.AddComponent<SortingGroup>();
+
+            var grenadeBody = new GameObject("GrenadeBody");
+            grenadeBody.transform.SetParent(root.transform, false);
+            grenadeBody.transform.localScale = Vector3.one * 0.22f;
+            grenadeBody.transform.localRotation = Quaternion.Euler(0f, 0f, 14f);
+
+            var renderer = grenadeBody.AddComponent<SpriteRenderer>();
+            renderer.sprite = grenadeSprite;
+            renderer.sortingOrder = 10;
+
+            SavePrefab(root, FragGrenadeProjectilePrefabPath);
         }
 
         private static void BuildFragGrenadeBurstPrefab()
@@ -115,7 +154,7 @@ namespace Fight.Editor
             var root = new GameObject("RiflemanFragGrenadeBurst");
             root.AddComponent<SortingGroup>();
 
-            // Keep the final skill reference project-owned while swapping source-pack pieces freely.
+            // Keep the final impact project-owned while allowing source-pack swaps later.
             var crackDust = InstantiateNestedPrefab(crackDustPrefab, root.transform, "CrackDust");
             crackDust.transform.localScale = Vector3.one * 0.16f;
             crackDust.transform.localPosition = new Vector3(0f, 0.01f, 0f);
@@ -128,7 +167,204 @@ namespace Fight.Editor
             TuneBurstParticleSystems(centerExplosion, 0.55f, 1.3f);
             OffsetRendererOrders(centerExplosion, 12);
 
-            SavePrefab(root, FragGrenadePrefabPath);
+            SavePrefab(root, FragGrenadeBurstPrefabPath);
+        }
+
+        private static Sprite EnsureFragGrenadeSprite()
+        {
+            AssetDatabase.ImportAsset(FragGrenadeSourceTexturePath, ImportAssetOptions.ForceSynchronousImport);
+            ConfigureSourceTextureImporter();
+
+            var sourceTexture = LoadRequiredAsset<Texture2D>(FragGrenadeSourceTexturePath);
+            var processedTexture = BuildTransparentGrenadeTexture(sourceTexture);
+            try
+            {
+                File.WriteAllBytes(GetAbsoluteProjectPath(FragGrenadeSpritePath), processedTexture.EncodeToPNG());
+            }
+            finally
+            {
+                Object.DestroyImmediate(processedTexture);
+            }
+
+            AssetDatabase.ImportAsset(FragGrenadeSpritePath, ImportAssetOptions.ForceSynchronousImport);
+            ConfigureGeneratedSpriteImporter();
+            return LoadRequiredAsset<Sprite>(FragGrenadeSpritePath);
+        }
+
+        private static void ConfigureSourceTextureImporter()
+        {
+            if (AssetImporter.GetAtPath(FragGrenadeSourceTexturePath) is not TextureImporter importer)
+            {
+                return;
+            }
+
+            importer.textureType = TextureImporterType.Default;
+            importer.alphaSource = TextureImporterAlphaSource.FromInput;
+            importer.alphaIsTransparency = true;
+            importer.isReadable = true;
+            importer.mipmapEnabled = false;
+            importer.wrapMode = TextureWrapMode.Clamp;
+            importer.filterMode = FilterMode.Point;
+            importer.textureCompression = TextureImporterCompression.Uncompressed;
+            importer.SaveAndReimport();
+        }
+
+        private static void ConfigureGeneratedSpriteImporter()
+        {
+            if (AssetImporter.GetAtPath(FragGrenadeSpritePath) is not TextureImporter importer)
+            {
+                return;
+            }
+
+            importer.textureType = TextureImporterType.Sprite;
+            importer.spriteImportMode = SpriteImportMode.Single;
+            importer.alphaSource = TextureImporterAlphaSource.FromInput;
+            importer.alphaIsTransparency = true;
+            importer.isReadable = false;
+            importer.mipmapEnabled = false;
+            importer.wrapMode = TextureWrapMode.Clamp;
+            importer.filterMode = FilterMode.Point;
+            importer.textureCompression = TextureImporterCompression.Uncompressed;
+            importer.spritePixelsPerUnit = 512f;
+            importer.SaveAndReimport();
+        }
+
+        private static Texture2D BuildTransparentGrenadeTexture(Texture2D sourceTexture)
+        {
+            var width = sourceTexture.width;
+            var height = sourceTexture.height;
+            var sourcePixels = sourceTexture.GetPixels32();
+            var maskedBackground = FindEdgeConnectedWhiteBackground(sourcePixels, width, height);
+            var transparentPixels = new Color32[sourcePixels.Length];
+
+            for (var i = 0; i < sourcePixels.Length; i++)
+            {
+                var pixel = sourcePixels[i];
+                if (maskedBackground[i])
+                {
+                    pixel.a = 0;
+                }
+
+                transparentPixels[i] = pixel;
+            }
+
+            var bounds = FindOpaqueBounds(transparentPixels, width, height);
+            if (!bounds.HasValue)
+            {
+                throw new FileNotFoundException("Could not isolate opaque grenade pixels from RiflemanFragGrenadeSource.png.");
+            }
+
+            var paddedBounds = bounds.Value;
+            paddedBounds.xMin = Mathf.Max(0, paddedBounds.xMin - 4);
+            paddedBounds.yMin = Mathf.Max(0, paddedBounds.yMin - 4);
+            paddedBounds.xMax = Mathf.Min(width, paddedBounds.xMax + 4);
+            paddedBounds.yMax = Mathf.Min(height, paddedBounds.yMax + 4);
+
+            var result = new Texture2D(paddedBounds.width, paddedBounds.height, TextureFormat.RGBA32, false)
+            {
+                filterMode = FilterMode.Point,
+                wrapMode = TextureWrapMode.Clamp,
+            };
+
+            var croppedPixels = new Color32[paddedBounds.width * paddedBounds.height];
+            for (var y = 0; y < paddedBounds.height; y++)
+            {
+                var sourceY = paddedBounds.yMin + y;
+                for (var x = 0; x < paddedBounds.width; x++)
+                {
+                    var sourceX = paddedBounds.xMin + x;
+                    croppedPixels[(y * paddedBounds.width) + x] = transparentPixels[(sourceY * width) + sourceX];
+                }
+            }
+
+            result.SetPixels32(croppedPixels);
+            result.Apply();
+            return result;
+        }
+
+        private static bool[] FindEdgeConnectedWhiteBackground(Color32[] pixels, int width, int height)
+        {
+            var visited = new bool[pixels.Length];
+            var queue = new Queue<int>();
+
+            void TryEnqueue(int x, int y)
+            {
+                if (x < 0 || x >= width || y < 0 || y >= height)
+                {
+                    return;
+                }
+
+                var index = (y * width) + x;
+                if (visited[index] || !IsWhiteBackgroundPixel(pixels[index]))
+                {
+                    return;
+                }
+
+                visited[index] = true;
+                queue.Enqueue(index);
+            }
+
+            for (var x = 0; x < width; x++)
+            {
+                TryEnqueue(x, 0);
+                TryEnqueue(x, height - 1);
+            }
+
+            for (var y = 0; y < height; y++)
+            {
+                TryEnqueue(0, y);
+                TryEnqueue(width - 1, y);
+            }
+
+            while (queue.Count > 0)
+            {
+                var index = queue.Dequeue();
+                var x = index % width;
+                var y = index / width;
+                TryEnqueue(x - 1, y);
+                TryEnqueue(x + 1, y);
+                TryEnqueue(x, y - 1);
+                TryEnqueue(x, y + 1);
+            }
+
+            return visited;
+        }
+
+        private static RectInt? FindOpaqueBounds(Color32[] pixels, int width, int height)
+        {
+            var minX = width;
+            var minY = height;
+            var maxX = -1;
+            var maxY = -1;
+
+            for (var y = 0; y < height; y++)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    var pixel = pixels[(y * width) + x];
+                    if (pixel.a <= MinimumVisibleAlpha)
+                    {
+                        continue;
+                    }
+
+                    minX = Mathf.Min(minX, x);
+                    minY = Mathf.Min(minY, y);
+                    maxX = Mathf.Max(maxX, x);
+                    maxY = Mathf.Max(maxY, y);
+                }
+            }
+
+            return maxX < minX || maxY < minY
+                ? null
+                : new RectInt(minX, minY, (maxX - minX) + 1, (maxY - minY) + 1);
+        }
+
+        private static bool IsWhiteBackgroundPixel(Color32 pixel)
+        {
+            return pixel.a > MinimumVisibleAlpha
+                && pixel.r >= WhiteBackgroundThreshold
+                && pixel.g >= WhiteBackgroundThreshold
+                && pixel.b >= WhiteBackgroundThreshold;
         }
 
         private static void TuneBurstParticleSystems(GameObject root, float maxDurationSeconds, float minSimulationSpeed)
@@ -252,6 +488,33 @@ namespace Fight.Editor
             }
 
             return latest;
+        }
+
+        private static System.DateTime GetOldestTimestampUtc(params string[] assetPaths)
+        {
+            var oldest = System.DateTime.MaxValue;
+            for (var i = 0; i < assetPaths.Length; i++)
+            {
+                var assetPath = assetPaths[i];
+                if (string.IsNullOrWhiteSpace(assetPath))
+                {
+                    continue;
+                }
+
+                var absolutePath = GetAbsoluteProjectPath(assetPath);
+                if (!File.Exists(absolutePath))
+                {
+                    return System.DateTime.MinValue;
+                }
+
+                var timestamp = File.GetLastWriteTimeUtc(absolutePath);
+                if (timestamp < oldest)
+                {
+                    oldest = timestamp;
+                }
+            }
+
+            return oldest == System.DateTime.MaxValue ? System.DateTime.MinValue : oldest;
         }
     }
 }
