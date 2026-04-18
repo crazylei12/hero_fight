@@ -42,6 +42,12 @@ namespace Fight.Battle
                 return false;
             }
 
+            if (ShouldEndSequenceBeforeExecution(actor, sequence))
+            {
+                actor.ClearCombatActionSequence();
+                return false;
+            }
+
             if (!sequence.IsReady)
             {
                 return true;
@@ -133,6 +139,11 @@ namespace Fight.Battle
             if (context == null || actor?.Definition?.basicAttack == null)
             {
                 return null;
+            }
+
+            if (TryResolveForcedBasicAttackTarget(actor, out var forcedTarget))
+            {
+                return forcedTarget;
             }
 
             var preferredTargetIsValid = IsValidBasicAttackTarget(actor, sequence.PreferredTarget);
@@ -233,6 +244,44 @@ namespace Fight.Battle
             return sequence.PayloadType == CombatActionSequencePayloadType.SourceSkill
                 ? actor.CanCastSkills
                 : actor.CanAttack;
+        }
+
+        private static bool ShouldEndSequenceBeforeExecution(RuntimeHero actor, RuntimeCombatActionSequence sequence)
+        {
+            if (actor == null || sequence == null)
+            {
+                return true;
+            }
+
+            if (sequence.PayloadType == CombatActionSequencePayloadType.SourceSkill)
+            {
+                return !actor.CanCastSkills;
+            }
+
+            return actor.TryGetForcedEnemyTarget(out var forcedTarget)
+                && !IsValidBasicAttackTarget(actor, forcedTarget);
+        }
+
+        private static bool TryResolveForcedBasicAttackTarget(RuntimeHero actor, out RuntimeHero forcedTarget)
+        {
+            forcedTarget = null;
+            if (actor == null)
+            {
+                return false;
+            }
+
+            if (!actor.TryGetForcedEnemyTarget(out var resolvedForcedTarget))
+            {
+                return false;
+            }
+
+            if (!IsValidBasicAttackTarget(actor, resolvedForcedTarget))
+            {
+                return false;
+            }
+
+            forcedTarget = resolvedForcedTarget;
+            return true;
         }
     }
 }
