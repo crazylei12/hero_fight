@@ -40,9 +40,9 @@ namespace Fight.Heroes
 
         public bool RefreshDurationOnReapply { get; }
 
-        public RuntimeHero Source { get; }
+        public RuntimeHero Source { get; private set; }
 
-        public SkillData SourceSkill { get; }
+        public SkillData SourceSkill { get; private set; }
 
         public void Tick(float deltaTime)
         {
@@ -69,7 +69,7 @@ namespace Fight.Heroes
             return result;
         }
 
-        public void Refresh(StatusEffectData data, bool refreshMagnitude = true)
+        public void Refresh(StatusEffectData data, RuntimeHero source, SkillData sourceSkill, bool refreshMagnitude = true)
         {
             var previousTickIntervalSeconds = TickIntervalSeconds;
             var previousTimeUntilNextTickSeconds = TimeUntilNextTickSeconds;
@@ -81,6 +81,8 @@ namespace Fight.Heroes
 
             ActiveSkillCooldownCapSeconds = Mathf.Max(0f, data.activeSkillCooldownCapSeconds);
             TickIntervalSeconds = Mathf.Max(0.1f, data.tickIntervalSeconds);
+            Source = source;
+            SourceSkill = sourceSkill;
 
             if (!Definition.IsPeriodic)
             {
@@ -100,6 +102,12 @@ namespace Fight.Heroes
                 previousTickIntervalSeconds);
             var normalizedProgress = elapsedTickProgressSeconds / previousTickIntervalSeconds;
             TimeUntilNextTickSeconds = Mathf.Max(0.0001f, TickIntervalSeconds * (1f - Mathf.Clamp01(normalizedProgress)));
+        }
+
+        public void ExpireImmediately()
+        {
+            RemainingDurationSeconds = 0f;
+            TimeUntilNextTickSeconds = 0f;
         }
 
         public float ConsumeMagnitude(float amount)

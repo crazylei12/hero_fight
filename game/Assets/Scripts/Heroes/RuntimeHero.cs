@@ -114,6 +114,8 @@ namespace Fight.Heroes
 
         public bool HasHardControl => StatusEffectSystem.HasHardControl(this);
 
+        public bool IsTaunted => StatusEffectSystem.TryGetForcedEnemyTarget(this, out _);
+
         public bool IsUnderForcedMovement => activeForcedMovement != null;
 
         public bool HasRecentForcedMovementInterrupt => forcedMovementInterruptTicksRemaining > 0;
@@ -256,9 +258,30 @@ namespace Fight.Heroes
                 return 0f;
             }
 
-            amount -= StatusEffectSystem.ConsumeShield(this, amount);
-            StatusEffectSystem.RemoveExpiredStatuses(this, onExpiredStatus);
+            amount -= ConsumeShield(amount, onExpiredStatus);
             if (amount <= 0f)
+            {
+                return 0f;
+            }
+
+            return ApplyHealthLoss(amount);
+        }
+
+        public float ConsumeShield(float amount, Action<RuntimeStatusEffect> onExpiredStatus = null)
+        {
+            if (amount <= 0f || IsDead || !CanReceiveDamage)
+            {
+                return 0f;
+            }
+
+            var absorbedAmount = StatusEffectSystem.ConsumeShield(this, amount);
+            StatusEffectSystem.RemoveExpiredStatuses(this, onExpiredStatus);
+            return absorbedAmount;
+        }
+
+        public float ApplyHealthLoss(float amount)
+        {
+            if (amount <= 0f || IsDead || !CanReceiveDamage)
             {
                 return 0f;
             }
@@ -287,6 +310,10 @@ namespace Fight.Heroes
             if (HasHardControl)
             {
                 ClearCombatActionState();
+            }
+            else if (TryGetForcedEnemyTarget(out var forcedTarget))
+            {
+                InterruptCombatActionForForcedTarget(forcedTarget);
             }
 
             if (activeCombatActionSequence != null)
@@ -517,6 +544,11 @@ namespace Fight.Heroes
             return StatusEffectSystem.HasStatus(this, effectType);
         }
 
+        public bool TryGetForcedEnemyTarget(out RuntimeHero forcedTarget)
+        {
+            return StatusEffectSystem.TryGetForcedEnemyTarget(this, out forcedTarget);
+        }
+
         public bool ApplyStatusEffect(StatusEffectData data, RuntimeHero source = null, SkillData sourceSkill = null)
         {
             var applied = StatusEffectSystem.TryApplyStatus(this, data, source, sourceSkill);
@@ -589,6 +621,26 @@ namespace Fight.Heroes
             pendingCombatAction = null;
             pendingActionTriggerRemainingSeconds = 0f;
             actionLockRemainingSeconds = 0f;
+        }
+
+        private void InterruptCombatActionForForcedTarget(RuntimeHero forcedTarget)
+        {
+            if (forcedTarget == null || pendingCombatAction == null)
+            {
+                return;
+            }
+
+            if (pendingCombatAction.ActionType == CombatActionType.SkillCast)
+            {
+                ClearCombatActionState();
+                return;
+            }
+
+            if (pendingCombatAction.ActionType == CombatActionType.BasicAttack
+                && pendingCombatAction.Target != forcedTarget)
+            {
+                ClearCombatActionState();
+            }
         }
 
         private void StartCombatAction(PendingCombatAction action, float windupSeconds, float recoverySeconds)

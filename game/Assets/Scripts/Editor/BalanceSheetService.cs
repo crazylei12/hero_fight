@@ -247,7 +247,7 @@ namespace Fight.Editor
                 {
                     columns.Add(new CsvColumn($"effect{effectIndex}Status{statusIndex}Label", $"效果{effectIndex}-状态{statusIndex}说明", "只读说明列，帮助识别这个状态是什么。"));
                     columns.Add(new CsvColumn($"effect{effectIndex}Status{statusIndex}DurationSeconds", $"效果{effectIndex}-状态{statusIndex}持续时间", "状态持续时间。"));
-                    columns.Add(new CsvColumn($"effect{effectIndex}Status{statusIndex}Magnitude", $"效果{effectIndex}-状态{statusIndex}强度", "状态强度；百分比类通常是小数，护盾是原始值。"));
+                    columns.Add(new CsvColumn($"effect{effectIndex}Status{statusIndex}Magnitude", $"效果{effectIndex}-状态{statusIndex}强度", "状态强度；百分比类通常是小数，护盾是原始值，分担伤害用 0~1 比例。"));
                     columns.Add(new CsvColumn($"effect{effectIndex}Status{statusIndex}TickIntervalSeconds", $"效果{effectIndex}-状态{statusIndex}跳动间隔", "DOT/HOT 等周期状态的跳动间隔。"));
                     columns.Add(new CsvColumn($"effect{effectIndex}Status{statusIndex}MaxStacks", $"效果{effectIndex}-状态{statusIndex}最大层数", "状态最大叠层数。"));
                 }
@@ -994,6 +994,7 @@ namespace Fight.Editor
                     StatusEffectType.Untargetable => "不可选中",
                     StatusEffectType.DamageOverTime => "持续伤害",
                     StatusEffectType.Shield => "护盾",
+                    StatusEffectType.DamageShare => "分担伤害",
                     _ => value.ToString(),
                 },
                 _ => value.ToString(),

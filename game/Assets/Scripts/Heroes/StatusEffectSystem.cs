@@ -1,16 +1,28 @@
 using System;
+using System.Collections.Generic;
 using Fight.Data;
 using UnityEngine;
 
 namespace Fight.Heroes
 {
+    public readonly struct DamageShareTransfer
+    {
+        public DamageShareTransfer(RuntimeHero receiver, float damageAmount)
+        {
+            Receiver = receiver;
+            DamageAmount = damageAmount;
+        }
+
+        public RuntimeHero Receiver { get; }
+
+        public float DamageAmount { get; }
+    }
+
     public static class StatusEffectSystem
     {
         public static bool HasHardControl(RuntimeHero hero)
         {
-            return HasBehaviorFlag(hero, StatusBehaviorFlags.BlocksMovement)
-                || HasBehaviorFlag(hero, StatusBehaviorFlags.BlocksBasicAttacks)
-                || HasBehaviorFlag(hero, StatusBehaviorFlags.BlocksSkillCasts);
+            return HasBehaviorFlag(hero, StatusBehaviorFlags.HardControl);
         }
 
         public static bool HasBehaviorFlag(RuntimeHero hero, StatusBehaviorFlags flag)
@@ -23,10 +35,42 @@ namespace Fight.Heroes
             var statuses = hero.MutableStatusEffects;
             for (var i = 0; i < statuses.Count; i++)
             {
-                if ((statuses[i].Definition.BehaviorFlags & flag) != 0)
+                var status = statuses[i];
+                if (status == null || !IsBehaviorActive(hero, status))
+                {
+                    continue;
+                }
+
+                if ((status.Definition.BehaviorFlags & flag) != 0)
                 {
                     return true;
                 }
+            }
+
+            return false;
+        }
+
+        public static bool TryGetForcedEnemyTarget(RuntimeHero hero, out RuntimeHero forcedTarget)
+        {
+            forcedTarget = null;
+            if (hero == null)
+            {
+                return false;
+            }
+
+            var statuses = hero.MutableStatusEffects;
+            for (var i = 0; i < statuses.Count; i++)
+            {
+                var status = statuses[i];
+                if (status == null
+                    || !status.Definition.ForcesEnemyTarget
+                    || !IsValidForcedTargetSource(hero, status))
+                {
+                    continue;
+                }
+
+                forcedTarget = status.Source;
+                return true;
             }
 
             return false;
@@ -121,6 +165,83 @@ namespace Fight.Heroes
             return shieldAmount;
         }
 
+        public static void GetDamageShareTransfers(RuntimeHero hero, float damageAmount, List<DamageShareTransfer> results)
+        {
+            results?.Clear();
+            if (hero == null || results == null || damageAmount <= 0f)
+            {
+                return;
+            }
+
+            var statuses = hero.MutableStatusEffects;
+            var totalRequestedShareRatio = 0f;
+            List<RuntimeHero> candidateReceivers = null;
+            List<float> candidateRatios = null;
+
+            for (var i = 0; i < statuses.Count; i++)
+            {
+                var status = statuses[i];
+                if (status == null || status.EffectType != StatusEffectType.DamageShare)
+                {
+                    continue;
+                }
+
+                var receiver = status.Source;
+                if (!IsValidDamageShareReceiver(hero, receiver))
+                {
+                    continue;
+                }
+
+                var shareRatio = Mathf.Max(0f, status.Magnitude);
+                if (shareRatio <= Mathf.Epsilon)
+                {
+                    continue;
+                }
+
+                candidateReceivers ??= new List<RuntimeHero>();
+                candidateRatios ??= new List<float>();
+                candidateReceivers.Add(receiver);
+                candidateRatios.Add(shareRatio);
+                totalRequestedShareRatio += shareRatio;
+            }
+
+            if (candidateReceivers == null || totalRequestedShareRatio <= Mathf.Epsilon)
+            {
+                return;
+            }
+
+            var totalSharedDamage = damageAmount * Mathf.Clamp01(totalRequestedShareRatio);
+            for (var i = 0; i < candidateReceivers.Count; i++)
+            {
+                var receiver = candidateReceivers[i];
+                var shareDamage = totalSharedDamage * (candidateRatios[i] / totalRequestedShareRatio);
+                if (shareDamage <= Mathf.Epsilon)
+                {
+                    continue;
+                }
+
+                var merged = false;
+                for (var existingIndex = 0; existingIndex < results.Count; existingIndex++)
+                {
+                    if (results[existingIndex].Receiver != receiver)
+                    {
+                        continue;
+                    }
+
+                    results[existingIndex] = new DamageShareTransfer(
+                        receiver,
+                        results[existingIndex].DamageAmount + shareDamage);
+                    merged = true;
+                    break;
+                }
+
+                if (!merged)
+                {
+                    results.Add(new DamageShareTransfer(receiver, shareDamage));
+                }
+            }
+        }
+
         public static bool TryApplyStatus(RuntimeHero hero, StatusEffectData data, RuntimeHero source = null, SkillData sourceSkill = null)
         {
             if (hero == null || data == null || data.effectType == StatusEffectType.None)
@@ -152,7 +273,7 @@ namespace Fight.Heroes
             {
                 if (data.refreshDurationOnReapply && refreshTarget != null)
                 {
-                    refreshTarget.Refresh(data, ShouldRefreshMagnitudeOnReapply(data.effectType));
+                    refreshTarget.Refresh(data, source, sourceSkill, ShouldRefreshMagnitudeOnReapply(data.effectType));
                     return true;
                 }
 
@@ -184,7 +305,14 @@ namespace Fight.Heroes
                     continue;
                 }
 
-                status.Tick(deltaTime);
+                if (ShouldExpireFromSourceLoss(hero, status))
+                {
+                    status.ExpireImmediately();
+                }
+                else
+                {
+                    status.Tick(deltaTime);
+                }
 
                 var pendingTickCount = status.ConsumePendingTickCount();
                 for (var tickIndex = 0; tickIndex < pendingTickCount; tickIndex++)
@@ -301,12 +429,57 @@ namespace Fight.Heroes
 
         private static bool UsesSourceScopedStackGroups(StatusEffectDefinition definition)
         {
-            return definition.IsStatModifier || definition.IsPeriodic;
+            return definition.IsStatModifier
+                || definition.IsPeriodic
+                || definition.EffectType == StatusEffectType.DamageShare;
+        }
+
+        private static bool IsBehaviorActive(RuntimeHero hero, RuntimeStatusEffect status)
+        {
+            if (hero == null || status == null)
+            {
+                return false;
+            }
+
+            if (status.Definition.ForcesEnemyTarget)
+            {
+                return IsValidForcedTargetSource(hero, status);
+            }
+
+            return true;
+        }
+
+        private static bool ShouldExpireFromSourceLoss(RuntimeHero hero, RuntimeStatusEffect status)
+        {
+            return status != null
+                && status.Definition.ForcesEnemyTarget
+                && !IsValidForcedTargetSource(hero, status);
+        }
+
+        private static bool IsValidForcedTargetSource(RuntimeHero hero, RuntimeStatusEffect status)
+        {
+            if (hero == null || status?.Source == null)
+            {
+                return false;
+            }
+
+            return !status.Source.IsDead
+                && status.Source.Side != hero.Side
+                && status.Source.CanBeDirectTargeted;
         }
 
         private static bool ShouldRefreshMagnitudeOnReapply(StatusEffectType effectType)
         {
             return effectType == StatusEffectType.Shield;
+        }
+
+        private static bool IsValidDamageShareReceiver(RuntimeHero protectedHero, RuntimeHero receiver)
+        {
+            return protectedHero != null
+                && receiver != null
+                && receiver != protectedHero
+                && !receiver.IsDead
+                && receiver.Side == protectedHero.Side;
         }
 
         private static bool Approximately(float left, float right)

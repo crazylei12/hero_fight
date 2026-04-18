@@ -16,6 +16,7 @@ namespace Fight.Battle
         Skill = 2,
         SkillAreaPulse = 3,
         StatusEffect = 4,
+        DamageShare = 5,
     }
 
     public sealed class BattleStartedEvent : IBattleEvent

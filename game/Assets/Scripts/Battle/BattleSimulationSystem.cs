@@ -154,6 +154,12 @@ namespace Fight.Battle
                 return false;
             }
 
+            if (hero.IsTaunted)
+            {
+                hero.StopThreatRetreat();
+                return false;
+            }
+
             if (!BattleAiDirector.ShouldRetreatFromRecentThreat(hero, currentTarget, context.Clock.ElapsedTimeSeconds, out var threat))
             {
                 hero.StopThreatRetreat();
@@ -186,6 +192,11 @@ namespace Fight.Battle
             if (context == null || hero?.Definition == null)
             {
                 return null;
+            }
+
+            if (hero.TryGetForcedEnemyTarget(out var forcedTarget))
+            {
+                return forcedTarget;
             }
 
             return hero.Definition.basicAttack.targetType switch
@@ -377,35 +388,17 @@ namespace Fight.Battle
 
         private static void ResolveDamageOverTime(BattleContext context, RuntimeHero target, RuntimeStatusEffect status, BattleManager battleManager)
         {
-            var actualDamage = target.ApplyDamage(
+            var actualDamage = BattleDamageSystem.ApplyResolvedDamage(
+                context,
+                battleManager,
+                status.Source,
+                target,
                 status.Magnitude,
-                expiredStatus => PublishStatusRemovedEvent(context, target, expiredStatus));
+                DamageSourceKind.StatusEffect,
+                status.SourceSkill);
             if (actualDamage <= 0f)
             {
                 return;
-            }
-
-            status.Source?.RecordDamage(actualDamage);
-            context.EventBus.Publish(new DamageAppliedEvent(
-                status.Source,
-                target,
-                actualDamage,
-                DamageSourceKind.StatusEffect,
-                status.SourceSkill,
-                target.CurrentHealth));
-
-            if (target.IsDead || target.CurrentHealth <= 0f)
-            {
-                target.MarkDead(
-                    context.Input.respawnDelaySeconds,
-                    expiredStatus => PublishStatusRemovedEvent(context, target, expiredStatus));
-                status.Source?.MarkKill();
-                context.EventBus.Publish(new UnitDiedEvent(target, status.Source));
-
-                if (status.Source != null)
-                {
-                    battleManager.RegisterKill(status.Source.Side);
-                }
             }
         }
 
@@ -419,14 +412,5 @@ namespace Fight.Battle
             context.EventBus.Publish(new StatusRemovedEvent(status.Source, target, status.EffectType, status.SourceSkill));
         }
 
-        private static void RecordIncomingThreat(BattleContext context, RuntimeHero target, RuntimeHero source)
-        {
-            if (context?.Clock == null || target == null || source == null)
-            {
-                return;
-            }
-
-            target.RecordThreat(source, context.Clock.ElapsedTimeSeconds);
-        }
     }
 }
