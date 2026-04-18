@@ -5,6 +5,7 @@ using System.IO;
 using Fight.Battle;
 using Fight.Data;
 using Fight.Heroes;
+using Fight.UI.Presentation.Statuses;
 using Fight.UI.Presentation.Skills;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -22,6 +23,7 @@ namespace Fight.UI
         private const string KnockUpStatusBurstVfxResourcesPath = "Stage01Demo/VFX/Statuses/KnockUpStatusBurst";
         private const string KnockbackStatusLoopVfxResourcesPath = "Stage01Demo/VFX/Statuses/KnockbackStatusLoop";
         private const string AttackPowerDownStatusLoopVfxResourcesPath = "Stage01Demo/VFX/Statuses/AttackPowerDownStatusLoop";
+        private const string DefenseDownStatusLoopVfxResourcesPath = "Stage01Demo/VFX/Statuses/DefenseDownStatusLoop";
         private const string HealReceivedImpactVfxResourcesPath = "Stage01Demo/VFX/Shared/HealReceivedImpact";
         private const string DashChargeTrailVfxResourcesPath = "Stage01Demo/VFX/Shared/DashChargeTrail";
         private const float CorpseVisibleSeconds = 1f;
@@ -54,6 +56,12 @@ namespace Fight.UI
             alignToDirection: true);
         private static readonly StatusEffectVfxConfig AttackPowerDownStatusVfxConfig = new StatusEffectVfxConfig(
             AttackPowerDownStatusLoopVfxResourcesPath,
+            new Vector3(0f, 0.64f, 0f),
+            Vector3.one,
+            Vector3.zero,
+            176);
+        private static readonly StatusEffectVfxConfig DefenseDownStatusVfxConfig = new StatusEffectVfxConfig(
+            DefenseDownStatusLoopVfxResourcesPath,
             new Vector3(0f, 0.64f, 0f),
             Vector3.one,
             Vector3.zero,
@@ -190,6 +198,7 @@ namespace Fight.UI
         {
             public GameObject Root;
             public SortingGroup SortingGroup;
+            public OrbitingStatusIconVfx OrbitController;
             public Renderer[] Renderers;
             public ParticleSystem[] ParticleSystems;
             public Vector3 BaseLocalPosition;
@@ -818,6 +827,7 @@ namespace Fight.UI
             }
 
             List<StatusEffectType> activeEffectTypes = null;
+            List<StatusEffectViewState> activeOrbitStatusViews = null;
             var activeStatuses = hero.ActiveStatusEffects;
             for (var i = 0; i < activeStatuses.Count; i++)
             {
@@ -839,6 +849,15 @@ namespace Fight.UI
                 }
 
                 ApplyStatusEffectView(statusView, config, heroSortingOrder);
+                if (statusView.OrbitController != null)
+                {
+                    activeOrbitStatusViews ??= new List<StatusEffectViewState>();
+                    if (!activeOrbitStatusViews.Contains(statusView))
+                    {
+                        activeOrbitStatusViews.Add(statusView);
+                    }
+                }
+
                 activeEffectTypes ??= new List<StatusEffectType>();
                 if (!activeEffectTypes.Contains(status.EffectType))
                 {
@@ -858,17 +877,17 @@ namespace Fight.UI
                 staleEffects.Add(pair.Key);
             }
 
-            if (staleEffects == null)
+            if (staleEffects != null)
             {
-                return;
+                for (var i = 0; i < staleEffects.Count; i++)
+                {
+                    var effectType = staleEffects[i];
+                    DestroyStatusEffectView(view.StatusEffectViews[effectType]);
+                    view.StatusEffectViews.Remove(effectType);
+                }
             }
 
-            for (var i = 0; i < staleEffects.Count; i++)
-            {
-                var effectType = staleEffects[i];
-                DestroyStatusEffectView(view.StatusEffectViews[effectType]);
-                view.StatusEffectViews.Remove(effectType);
-            }
+            ApplyOrbitingStatusEffectLayout(activeOrbitStatusViews);
         }
 
         private void SyncForcedMovementStatusVfx(RuntimeHero hero, HeroViewState view, int heroSortingOrder)
@@ -927,6 +946,7 @@ namespace Fight.UI
             {
                 Root = instance,
                 SortingGroup = instance.GetComponent<SortingGroup>(),
+                OrbitController = instance.GetComponent<OrbitingStatusIconVfx>(),
                 Renderers = instance.GetComponentsInChildren<Renderer>(true),
                 ParticleSystems = instance.GetComponentsInChildren<ParticleSystem>(true),
                 BaseLocalPosition = instance.transform.localPosition,
@@ -966,13 +986,36 @@ namespace Fight.UI
                 viewState.BaseLocalScale.z * config.LocalScale.z);
 
             var sortingOrder = heroSortingOrder + config.SortingOrderOffset;
-            if (viewState.SortingGroup != null)
+            if (viewState.OrbitController != null)
+            {
+                viewState.OrbitController.SetBaseSortingOrder(sortingOrder);
+            }
+            else if (viewState.SortingGroup != null)
             {
                 viewState.SortingGroup.sortingOrder = sortingOrder;
             }
             else
             {
                 SetRendererSorting(viewState.Renderers, sortingOrder);
+            }
+        }
+
+        private static void ApplyOrbitingStatusEffectLayout(List<StatusEffectViewState> orbitViews)
+        {
+            if (orbitViews == null || orbitViews.Count == 0)
+            {
+                return;
+            }
+
+            for (var i = 0; i < orbitViews.Count; i++)
+            {
+                var orbitView = orbitViews[i];
+                if (orbitView?.OrbitController == null)
+                {
+                    continue;
+                }
+
+                orbitView.OrbitController.SetOrbitLayout(i, orbitViews.Count);
             }
         }
 
@@ -1022,6 +1065,17 @@ namespace Fight.UI
                 if (GetCombinedStatusMagnitude(hero, StatusEffectType.AttackPowerModifier) < -Mathf.Epsilon)
                 {
                     config = AttackPowerDownStatusVfxConfig;
+                    return true;
+                }
+
+                return false;
+            }
+
+            if (status.EffectType == StatusEffectType.DefenseModifier)
+            {
+                if (GetCombinedStatusMagnitude(hero, StatusEffectType.DefenseModifier) < -Mathf.Epsilon)
+                {
+                    config = DefenseDownStatusVfxConfig;
                     return true;
                 }
 
