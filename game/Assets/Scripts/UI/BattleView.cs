@@ -1693,6 +1693,7 @@ namespace Fight.UI
                 || forcedMovementAppliedEvent.Target == null
                 || forcedMovementAppliedEvent.SourceSkill.skillType != SkillType.Dash
                 || forcedMovementAppliedEvent.DurationSeconds > InstantBlinkDurationThreshold
+                || HasAirborneArc(forcedMovementAppliedEvent)
                 || !string.Equals(
                     forcedMovementAppliedEvent.Source.RuntimeId,
                     forcedMovementAppliedEvent.Target.RuntimeId,
@@ -1713,6 +1714,7 @@ namespace Fight.UI
                 || forcedMovementAppliedEvent.Target == null
                 || forcedMovementAppliedEvent.SourceSkill.skillType != SkillType.Dash
                 || forcedMovementAppliedEvent.DurationSeconds <= InstantBlinkDurationThreshold
+                || HasAirborneArc(forcedMovementAppliedEvent)
                 || !string.Equals(
                     forcedMovementAppliedEvent.Source.RuntimeId,
                     forcedMovementAppliedEvent.Target.RuntimeId,
@@ -1724,6 +1726,13 @@ namespace Fight.UI
             var offset = forcedMovementAppliedEvent.Destination - forcedMovementAppliedEvent.StartPosition;
             offset.y = 0f;
             return offset.sqrMagnitude >= DashChargeMinDistance * DashChargeMinDistance;
+        }
+
+        private static bool HasAirborneArc(ForcedMovementAppliedEvent forcedMovementAppliedEvent)
+        {
+            return forcedMovementAppliedEvent != null
+                && forcedMovementAppliedEvent.DurationSeconds > InstantBlinkDurationThreshold
+                && forcedMovementAppliedEvent.PeakHeight > MinAirborneEffectHeight;
         }
 
         private void PlayBlinkPhaseVfx(ForcedMovementAppliedEvent forcedMovementAppliedEvent)

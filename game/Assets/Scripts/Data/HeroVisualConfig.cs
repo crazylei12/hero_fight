@@ -9,6 +9,7 @@ namespace Fight.Data
         public Sprite portrait;
         public GameObject battlePrefab;
         public RuntimeAnimatorController animatorController;
+        public bool battlePrefabFacesLeftByDefault;
         public GameObject projectilePrefab;
         public bool projectileAlignToMovement;
         public Vector3 projectileEulerAngles;

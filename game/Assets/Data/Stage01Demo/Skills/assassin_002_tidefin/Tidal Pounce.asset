@@ -27,15 +27,15 @@ MonoBehaviour:
     targetMode: 0
     powerMultiplier: 1
     radiusOverride: 0
-    durationSeconds: 0
+    durationSeconds: 0.28
     tickIntervalSeconds: 1
     followCaster: 0
     persistentAreaPulseEffectType: 0
     persistentAreaTargetType: 0
     forcedMovementDirection: 0
     forcedMovementDistance: 0
-    forcedMovementDurationSeconds: 0
-    forcedMovementPeakHeight: 0
+    forcedMovementDurationSeconds: 0.28
+    forcedMovementPeakHeight: 0.85
     statusEffects: []
   - effectType: 2
     targetMode: 0
