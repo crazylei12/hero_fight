@@ -18,7 +18,7 @@ MonoBehaviour:
   slotType: 1
   skillType: 3
   targetType: 8
-  castRange: 40
+  castRange: 56
   areaRadius: 0
   cooldownSeconds: 0
   minTargetsToCast: 1

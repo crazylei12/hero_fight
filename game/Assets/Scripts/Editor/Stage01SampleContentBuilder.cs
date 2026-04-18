@@ -582,7 +582,7 @@ namespace Fight.Editor
                 SkillSlotType.ActiveSkill,
                 SkillType.Dash,
                 SkillTargetType.BackmostEnemy,
-                40f,
+                Stage01ArenaSpec.FullMapTargetingRangeWorldUnits,
                 0f,
                 0f,
                 6f,
@@ -596,7 +596,7 @@ namespace Fight.Editor
 
             skill.skillType = SkillType.Dash;
             skill.targetType = SkillTargetType.BackmostEnemy;
-            skill.castRange = 40f;
+            skill.castRange = Stage01ArenaSpec.FullMapTargetingRangeWorldUnits;
             skill.areaRadius = 0f;
             skill.cooldownSeconds = 6f;
             skill.minTargetsToCast = 1;
@@ -738,7 +738,7 @@ namespace Fight.Editor
                 SkillSlotType.Ultimate,
                 SkillType.Buff,
                 SkillTargetType.BackmostEnemy,
-                40f,
+                Stage01ArenaSpec.FullMapTargetingRangeWorldUnits,
                 0f,
                 0f,
                 0f,
@@ -755,7 +755,7 @@ namespace Fight.Editor
             // while the actual status payload lands on the caster.
             skill.skillType = SkillType.Buff;
             skill.targetType = SkillTargetType.BackmostEnemy;
-            skill.castRange = 40f;
+            skill.castRange = Stage01ArenaSpec.FullMapTargetingRangeWorldUnits;
             skill.areaRadius = 0f;
             skill.minTargetsToCast = 1;
             skill.allowsSelfCast = false;
@@ -1675,7 +1675,7 @@ namespace Fight.Editor
 
             skill.skillType = SkillType.SingleTargetDamage;
             skill.targetType = SkillTargetType.LowestHealthEnemy;
-            skill.castRange = 40f;
+            skill.castRange = Stage01ArenaSpec.FullMapTargetingRangeWorldUnits;
             skill.areaRadius = 0f;
             skill.minTargetsToCast = 1;
             skill.allowsSelfCast = false;
@@ -1689,7 +1689,7 @@ namespace Fight.Editor
             skill.actionSequence.intervalSeconds = 0.25f;
             skill.actionSequence.windupSeconds = 0f;
             skill.actionSequence.recoverySeconds = 0f;
-            skill.actionSequence.temporaryBasicAttackRangeOverride = 40f;
+            skill.actionSequence.temporaryBasicAttackRangeOverride = Stage01ArenaSpec.FullMapTargetingRangeWorldUnits;
             skill.actionSequence.temporarySkillCastRangeOverride = 0f;
             skill.actionSequence.targetRefreshMode = CombatActionSequenceTargetRefreshMode.RefreshOnInvalid;
             skill.actionSequence.interruptFlags =

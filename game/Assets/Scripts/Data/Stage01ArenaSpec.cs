@@ -5,30 +5,33 @@ namespace Fight.Data
     public static class Stage01ArenaSpec
     {
         public const string ArenaId = "arena_stage01_flat";
-        public const float WidthWorldUnits = 32f;
-        public const float HeightWorldUnits = 18f;
+        public const float ArenaScaleMultiplier = 1.5f;
+        public const float WidthWorldUnits = 32f * ArenaScaleMultiplier;
+        public const float HeightWorldUnits = 18f * ArenaScaleMultiplier;
         public const float HalfWidthWorldUnits = WidthWorldUnits * 0.5f;
         public const float HalfHeightWorldUnits = HeightWorldUnits * 0.5f;
         public const float UnitMinimumSeparationWorldUnits = 1f;
         public const float CameraOrthographicSize = HeightWorldUnits * 0.5f;
         public const float ImportedSpritePixelsPerUnit = 100f;
-        public const float SpawnSideInsetWorldUnits = 6f;
-        public const float SpawnTopInsetWorldUnits = 3f;
-        public const float FrontlineSpawnMinDistanceFromCenterWorldUnits = 8.2f;
-        public const float FrontlineSpawnMaxDistanceFromCenterWorldUnits = 9.6f;
-        public const float BacklineSpawnMinDistanceFromCenterWorldUnits = 10.4f;
-        public const float BacklineSpawnMaxDistanceFromCenterWorldUnits = 11.8f;
-        public const float SpawnVerticalJitterWorldUnits = 0.45f;
-        public const float FloorWidthWorldUnits = 30f;
-        public const float FloorHeightWorldUnits = 16f;
-        public const float SkyWidthWorldUnits = WidthWorldUnits + 10f;
-        public const float SkyHeightWorldUnits = HeightWorldUnits + 8f;
-        public const float BackdropShadeWidthWorldUnits = WidthWorldUnits + 0.5f;
-        public const float BackdropShadeHeightWorldUnits = HeightWorldUnits + 0.4f;
-        public const float DustWidthWorldUnits = 22f;
-        public const float DustHeightWorldUnits = 12f;
-        public const float RingWidthWorldUnits = 24f;
-        public const float RingHeightWorldUnits = 12.6f;
+        public const float SpawnSideInsetWorldUnits = 6f * ArenaScaleMultiplier;
+        public const float SpawnTopInsetWorldUnits = 3f * ArenaScaleMultiplier;
+        public const float FrontlineSpawnMinDistanceFromCenterWorldUnits = 8.2f * ArenaScaleMultiplier;
+        public const float FrontlineSpawnMaxDistanceFromCenterWorldUnits = 9.6f * ArenaScaleMultiplier;
+        public const float BacklineSpawnMinDistanceFromCenterWorldUnits = 10.4f * ArenaScaleMultiplier;
+        public const float BacklineSpawnMaxDistanceFromCenterWorldUnits = 11.8f * ArenaScaleMultiplier;
+        public const float SpawnVerticalJitterWorldUnits = 0.45f * ArenaScaleMultiplier;
+        public const float FloorWidthWorldUnits = 30f * ArenaScaleMultiplier;
+        public const float FloorHeightWorldUnits = 16f * ArenaScaleMultiplier;
+        public const float SkyWidthWorldUnits = WidthWorldUnits + (10f * ArenaScaleMultiplier);
+        public const float SkyHeightWorldUnits = HeightWorldUnits + (8f * ArenaScaleMultiplier);
+        public const float BackdropShadeWidthWorldUnits = WidthWorldUnits + (0.5f * ArenaScaleMultiplier);
+        public const float BackdropShadeHeightWorldUnits = HeightWorldUnits + (0.4f * ArenaScaleMultiplier);
+        public const float DustWidthWorldUnits = 22f * ArenaScaleMultiplier;
+        public const float DustHeightWorldUnits = 12f * ArenaScaleMultiplier;
+        public const float RingWidthWorldUnits = 24f * ArenaScaleMultiplier;
+        public const float RingHeightWorldUnits = 12.6f * ArenaScaleMultiplier;
+        public static readonly float FullMapTargetingRangeWorldUnits = Mathf.Ceil(
+            Mathf.Sqrt((WidthWorldUnits * WidthWorldUnits) + (HeightWorldUnits * HeightWorldUnits)));
 
         public static Vector3 ClampPosition(Vector3 position)
         {
