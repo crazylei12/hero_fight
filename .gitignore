@@ -95,6 +95,13 @@ Thumbs.db
 !/game/Assets/HeroEditor4D/heroes/FIREMAGE.prefab
 !/game/Assets/HeroEditor4D/heroes/FIREMAGE.prefab.meta
 
+!/game/Assets/FantasyMonsters/
+!/game/Assets/FantasyMonsters/Common/
+!/game/Assets/FantasyMonsters/Common/Scripts/
+!/game/Assets/FantasyMonsters/Common/Scripts/EditorScripts/
+!/game/Assets/FantasyMonsters/Common/Scripts/EditorScripts/CustomGrid.cs
+!/game/Assets/FantasyMonsters/Common/Scripts/EditorScripts/CustomGrid.cs.meta
+
 # Keep repository-owned docs and config
 !/docs/
 !/docs/**
