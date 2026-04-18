@@ -18,7 +18,7 @@ MonoBehaviour:
   slotType: 1
   skillType: 0
   targetType: 2
-  castRange: 40
+  castRange: 56
   areaRadius: 0
   cooldownSeconds: 0
   minTargetsToCast: 1
@@ -47,7 +47,7 @@ MonoBehaviour:
     intervalSeconds: 0.25
     windupSeconds: 0
     recoverySeconds: 0
-    temporaryBasicAttackRangeOverride: 40
+    temporaryBasicAttackRangeOverride: 56
     temporarySkillCastRangeOverride: 0
     targetRefreshMode: 1
     interruptFlags: 3
