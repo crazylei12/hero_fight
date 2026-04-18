@@ -191,6 +191,7 @@ namespace Fight.Battle
             return hero.Definition.basicAttack.targetType switch
             {
                 BasicAttackTargetType.LowestHealthAlly => BattleAiDirector.SelectPreferredAllyTarget(context.Heroes, hero, 999f, allowHealthyFallback: true),
+                BasicAttackTargetType.PreferredEnemy => BattleAiDirector.SelectPreferredEnemyTarget(context.Heroes, hero, 999f),
                 _ => BattleAiDirector.SelectNearestEnemyTarget(context.Heroes, hero, 999f),
             };
         }

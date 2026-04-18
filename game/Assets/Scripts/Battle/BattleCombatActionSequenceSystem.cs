@@ -154,7 +154,8 @@ namespace Fight.Battle
                     actor,
                     actor.AttackRange,
                     allowHealthyFallback: true),
-                _ => BattleAiDirector.SelectPreferredEnemyTarget(context.Heroes, actor, actor.AttackRange),
+                BasicAttackTargetType.PreferredEnemy => BattleAiDirector.SelectPreferredEnemyTarget(context.Heroes, actor, actor.AttackRange),
+                _ => BattleAiDirector.SelectNearestEnemyTarget(context.Heroes, actor, actor.AttackRange),
             };
 
             return IsValidBasicAttackTarget(actor, selected)
@@ -172,6 +173,7 @@ namespace Fight.Battle
             var targetMatches = actor.Definition.basicAttack.targetType switch
             {
                 BasicAttackTargetType.LowestHealthAlly => target.Side == actor.Side,
+                BasicAttackTargetType.PreferredEnemy => target.Side != actor.Side,
                 _ => target.Side != actor.Side,
             };
             if (!targetMatches)

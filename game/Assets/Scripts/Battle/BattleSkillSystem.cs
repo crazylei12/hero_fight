@@ -1565,11 +1565,6 @@ namespace Fight.Battle
                     continue;
                 }
 
-                if (candidate != caster && !candidate.CanBeDirectTargeted)
-                {
-                    continue;
-                }
-
                 if (Vector3.Distance(candidate.CurrentPosition, center) <= effectiveRadius)
                 {
                     results.Add(candidate);
@@ -1598,7 +1593,7 @@ namespace Fight.Battle
             for (var i = 0; i < context.Heroes.Count; i++)
             {
                 var candidate = context.Heroes[i];
-                if (candidate == null || candidate.IsDead || candidate.Side == caster.Side || !candidate.CanBeDirectTargeted)
+                if (candidate == null || candidate.IsDead || candidate.Side == caster.Side)
                 {
                     continue;
                 }

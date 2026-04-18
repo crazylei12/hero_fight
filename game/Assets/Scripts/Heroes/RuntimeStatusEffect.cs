@@ -69,12 +69,16 @@ namespace Fight.Heroes
             return result;
         }
 
-        public void Refresh(StatusEffectData data)
+        public void Refresh(StatusEffectData data, bool refreshMagnitude = true)
         {
             var previousTickIntervalSeconds = TickIntervalSeconds;
             var previousTimeUntilNextTickSeconds = TimeUntilNextTickSeconds;
             RemainingDurationSeconds = data.durationSeconds;
-            Magnitude = data.magnitude;
+            if (refreshMagnitude)
+            {
+                Magnitude = data.magnitude;
+            }
+
             ActiveSkillCooldownCapSeconds = Mathf.Max(0f, data.activeSkillCooldownCapSeconds);
             TickIntervalSeconds = Mathf.Max(0.1f, data.tickIntervalSeconds);
 

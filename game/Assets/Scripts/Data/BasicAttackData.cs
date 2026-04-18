@@ -14,6 +14,7 @@ namespace Fight.Data
     {
         NearestEnemy = 0,
         LowestHealthAlly = 1,
+        PreferredEnemy = 2,
     }
 
     [Serializable]
