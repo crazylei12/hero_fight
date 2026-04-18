@@ -157,6 +157,7 @@ namespace Fight.Battle
 
                 attacker?.RecordHealing(actualHeal);
                 context.EventBus.Publish(new HealAppliedEvent(attacker, target, actualHeal, null, target.CurrentHealth));
+                ApplyOnHitStatuses(context, attacker, target);
                 return;
             }
 
@@ -165,6 +166,7 @@ namespace Fight.Battle
                 status => PublishStatusRemovedEvent(context, target, status));
             if (actualDamage <= 0f)
             {
+                ApplyOnHitStatuses(context, attacker, target);
                 return;
             }
 
@@ -190,7 +192,11 @@ namespace Fight.Battle
                 {
                     battleManager.RegisterKill(attacker.Side);
                 }
+
+                return;
             }
+
+            ApplyOnHitStatuses(context, attacker, target);
         }
 
         private static bool CanApplyEffectToTarget(RuntimeHero target, BasicAttackEffectType effectType)
@@ -236,6 +242,26 @@ namespace Fight.Battle
             }
 
             context.EventBus.Publish(new StatusRemovedEvent(status.Source, target, status.EffectType, status.SourceSkill));
+        }
+
+        private static void ApplyOnHitStatuses(BattleContext context, RuntimeHero attacker, RuntimeHero target)
+        {
+            var onHitStatusEffects = attacker?.Definition?.basicAttack?.onHitStatusEffects;
+            if (context?.EventBus == null || target == null || target.IsDead || onHitStatusEffects == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < onHitStatusEffects.Count; i++)
+            {
+                var status = onHitStatusEffects[i];
+                if (status == null || !target.ApplyStatusEffect(status, attacker, sourceSkill: null))
+                {
+                    continue;
+                }
+
+                context.EventBus.Publish(new StatusAppliedEvent(attacker, target, status.effectType, status.durationSeconds, status.magnitude, null));
+            }
         }
     }
 }

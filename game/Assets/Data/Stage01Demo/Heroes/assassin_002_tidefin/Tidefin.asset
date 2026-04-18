@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 65b49e23d4a4cda45a9a11e1d7bacd97, type: 3}
+  m_Name: Tidefin
+  m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
+  heroId: assassin_002_tidefin
+  displayName: Tidefin
+  heroClass: 2
+  tags: 000000000500000006000000
+  baseStats:
+    maxHealth: 320
+    attackPower: 44
+    defense: 12
+    attackSpeed: 1.1111112
+    moveSpeed: 5
+    criticalChance: 0.12
+    criticalDamageMultiplier: 1.6
+    attackRange: 1.3
+  basicAttack:
+    damageMultiplier: 1
+    attackInterval: 0.9
+    rangeOverride: 1.3
+    usesProjectile: 0
+    projectileSpeed: 0
+    effectType: 0
+    targetType: 0
+    onHitStatusEffects:
+    - effectType: 2
+      durationSeconds: 3
+      magnitude: -0.05
+      activeSkillCooldownCapSeconds: 0
+      tickIntervalSeconds: 1
+      maxStacks: 5
+      refreshDurationOnReapply: 1
+  activeSkill: {fileID: 11400000, guid: db5c4822f30b4b06a81f8ce9d838c424, type: 2}
+  ultimateSkill: {fileID: 11400000, guid: ebfdcf0c326c4a6184da4501f664017e, type: 2}
+  aiTemplateId: assassin_default
+  usesSpecialLogic: 0
+  specialLogicNotes:
+  visualConfig:
+    portrait: {fileID: 0}
+    battlePrefab: {fileID: 6942281271074320862, guid: 56818cfb00350d64b80b18f0e2d27211, type: 3}
+    animatorController: {fileID: 9100000, guid: c0fbc9a82051e94429aa17cc4b2f48e5, type: 2}
+    projectilePrefab: {fileID: 0}
+    projectileAlignToMovement: 0
+    projectileEulerAngles: {x: 0, y: 0, z: 0}
+    castVfxPrefab: {fileID: 0}
+    hitVfxPrefab: {fileID: 0}
+    castSfx: {fileID: 0}
+  debugNotes: Stage-01 demo hero for Assassin. Tidefin validates shared basic-attack
+    on-hit debuffs and high-output target suppression.

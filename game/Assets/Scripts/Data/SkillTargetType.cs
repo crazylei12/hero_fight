@@ -11,5 +11,6 @@ namespace Fight.Data
         AllEnemies = 6,
         AllAllies = 7,
         BackmostEnemy = 8,
+        HighestDamageEnemyInRange = 9,
     }
 }

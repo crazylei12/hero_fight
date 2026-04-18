@@ -146,6 +146,21 @@ namespace Fight.Editor
                 overwriteExistingContent,
                 HeroTag.Melee, HeroTag.Dive, HeroTag.Burst);
 
+            var tidefinActive = CreateTidefinActiveSkill(overwriteExistingContent);
+            var tidefinUltimateSkill = CreateTidefinUltimateSkill(overwriteExistingContent, out _);
+
+            var tidefin = CreateHero(
+                "assassin_002_tidefin",
+                "Tidefin",
+                HeroClass.Assassin,
+                320f, 44f, 12f, 1f / 0.90f, 5f, 0.12f, 1.6f, 1.3f,
+                tidefinActive,
+                tidefinUltimateSkill,
+                overwriteExistingContent,
+                out var tidefinHeroExisted,
+                HeroTag.Melee, HeroTag.Dive, HeroTag.Control);
+            ConfigureTidefinBasicAttack(tidefin, overwriteExistingContent, tidefinHeroExisted);
+
             var tankActive = CreateStunSkill("skill_tank_active_shieldbash", "Shield Bash", SkillSlotType.ActiveSkill, 1.8f, 0f, 0.8f, 8f, 1f, overwriteExistingContent);
             var tankUltimateSkill = CreateBuffSkill("skill_tank_ultimate_ironoath", "Iron Oath", SkillSlotType.Ultimate, SkillTargetType.AllAllies, 6f, 6f, 1f, 0f, StatusEffectType.DefenseModifier, 8f, 2f, overwriteExistingContent, out var tankUltimateExisted);
 
@@ -188,7 +203,7 @@ namespace Fight.Editor
                 out var marksmanHeroExisted,
                 HeroTag.Ranged, HeroTag.SustainedDamage);
             ConfigureLongshotBasicAttack(marksman, overwriteExistingContent, marksmanHeroExisted);
-            CreateHeroCatalog(warrior, mage, frostmage, assassin, tank, support, marksman);
+            CreateHeroCatalog(warrior, mage, frostmage, assassin, tidefin, tank, support, marksman);
 
             var battleInput = CreateBattleInput(
                 "Stage01DemoBattleInput",
@@ -371,6 +386,8 @@ namespace Fight.Editor
             hero.basicAttack.projectileSpeed = hero.basicAttack.usesProjectile ? 14f : 0f;
             hero.basicAttack.effectType = BasicAttackEffectType.Damage;
             hero.basicAttack.targetType = BasicAttackTargetType.NearestEnemy;
+            EnsureBasicAttackStatusList(hero.basicAttack);
+            hero.basicAttack.onHitStatusEffects.Clear();
 
             hero.activeSkill = activeSkill;
             hero.ultimateSkill = ultimateSkill;
@@ -407,6 +424,7 @@ namespace Fight.Editor
             var prefabPath = heroId switch
             {
                 "assassin_001_shadowstep" => AssassinPrefabPath,
+                "assassin_002_tidefin" => AssassinPrefabPath,
                 "mage_001_firemage" => FireMagePrefabPath,
                 "mage_002_frostmage" => FrostMagePrefabPath,
                 "marksman_001_longshot" => MarksmanPrefabPath,
@@ -562,6 +580,50 @@ namespace Fight.Editor
             return skill;
         }
 
+        private static SkillData CreateTidefinActiveSkill(bool overwriteExistingContent)
+        {
+            var skill = CreateSkill(
+                "skill_tidefin_active_tidalpounce",
+                "Tidal Pounce",
+                SkillSlotType.ActiveSkill,
+                SkillType.Dash,
+                SkillTargetType.HighestDamageEnemyInRange,
+                4f,
+                0f,
+                0f,
+                5.5f,
+                1,
+                overwriteExistingContent,
+                out var existedBefore);
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.skillType = SkillType.Dash;
+            skill.targetType = SkillTargetType.HighestDamageEnemyInRange;
+            skill.castRange = 4f;
+            skill.areaRadius = 0f;
+            skill.cooldownSeconds = 5.5f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+            AddRepositionEffect(skill);
+            var statusEffect = AddApplyStatusEffectsEffect(skill);
+            statusEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.DefenseModifier,
+                durationSeconds = 5f,
+                magnitude = -0.2f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+            skill.description = "Stage-01 demo skill: Tidal Pounce";
+            ResetUltimateDecision(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
         private static SkillData CreateLongshotUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
         {
             var skill = CreateSkill(
@@ -634,6 +696,71 @@ namespace Fight.Editor
             skill.description = "Stage-01 demo skill: Smoke Veil";
             ResetActionSequence(skill);
             ResetUltimateDecision(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateTidefinUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
+        {
+            var skill = CreateSkill(
+                "skill_tidefin_ultimate_ruintide",
+                "Ruin Tide",
+                SkillSlotType.Ultimate,
+                SkillType.Buff,
+                SkillTargetType.Self,
+                0f,
+                4f,
+                0f,
+                0f,
+                1,
+                overwriteExistingContent,
+                out existedBefore);
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.skillType = SkillType.Buff;
+            skill.targetType = SkillTargetType.Self;
+            skill.castRange = 0f;
+            skill.areaRadius = 4f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = true;
+            skill.effects.Clear();
+            var effect = AddApplyStatusEffectsEffect(skill);
+            effect.targetMode = SkillEffectTargetMode.EnemiesInRadiusAroundCaster;
+            effect.radiusOverride = skill.areaRadius;
+            effect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.AttackPowerModifier,
+                durationSeconds = 5f,
+                magnitude = -0.2f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+            effect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.DefenseModifier,
+                durationSeconds = 5f,
+                magnitude = -0.2f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
+            skill.description = "Stage-01 demo skill: Ruin Tide";
+            ResetUltimateDecision(skill);
+            skill.ultimateDecision.targetingType = UltimateTargetingType.Self;
+            skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;
+            skill.ultimateDecision.primaryCondition.searchRadius = skill.areaRadius;
+            skill.ultimateDecision.primaryCondition.requiredUnitCount = 2;
+            skill.ultimateDecision.secondaryCondition.conditionType = UltimateConditionType.EnemyLowHealthInRange;
+            skill.ultimateDecision.secondaryCondition.searchRadius = skill.areaRadius;
+            skill.ultimateDecision.secondaryCondition.requiredUnitCount = 1;
+            skill.ultimateDecision.secondaryCondition.healthPercentThreshold = 0.5f;
+            skill.ultimateDecision.combineMode = UltimateConditionCombineMode.AnyPass;
+            skill.ultimateDecision.fallback.fallbackType = UltimateFallbackType.LowerPrimaryThreshold;
+            skill.ultimateDecision.fallback.triggerAfterSeconds = 40f;
+            skill.ultimateDecision.fallback.overrideRequiredUnitCount = 1;
             EditorUtility.SetDirty(skill);
             return skill;
         }
@@ -1044,6 +1171,34 @@ namespace Fight.Editor
             hero.basicAttack.targetType = BasicAttackTargetType.LowestHealthAlly;
             hero.basicAttack.usesProjectile = true;
             hero.basicAttack.projectileSpeed = 14f;
+            EditorUtility.SetDirty(hero);
+        }
+
+        private static void ConfigureTidefinBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (hero == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return;
+            }
+
+            hero.basicAttack.damageMultiplier = 1f;
+            hero.basicAttack.attackInterval = 0.90f;
+            hero.basicAttack.rangeOverride = 1.3f;
+            hero.basicAttack.usesProjectile = false;
+            hero.basicAttack.projectileSpeed = 0f;
+            hero.basicAttack.effectType = BasicAttackEffectType.Damage;
+            hero.basicAttack.targetType = BasicAttackTargetType.NearestEnemy;
+            EnsureBasicAttackStatusList(hero.basicAttack);
+            hero.basicAttack.onHitStatusEffects.Clear();
+            hero.basicAttack.onHitStatusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.AttackPowerModifier,
+                durationSeconds = 3f,
+                magnitude = -0.05f,
+                maxStacks = 5,
+                refreshDurationOnReapply = true,
+            });
+            hero.debugNotes = "Stage-01 demo hero for Assassin. Tidefin validates shared basic-attack on-hit debuffs and high-output target suppression.";
             EditorUtility.SetDirty(hero);
         }
 
@@ -1604,6 +1759,14 @@ namespace Fight.Editor
             return skill;
         }
 
+        private static void EnsureBasicAttackStatusList(BasicAttackData basicAttack)
+        {
+            if (basicAttack != null && basicAttack.onHitStatusEffects == null)
+            {
+                basicAttack.onHitStatusEffects = new System.Collections.Generic.List<StatusEffectData>();
+            }
+        }
+
         private static BattleInputConfig CreateBattleInput(
             string assetName,
             bool includeAssassinOnRedTeam,
@@ -1739,6 +1902,8 @@ namespace Fight.Editor
             {
                 "skill_frostmage_active_frostburst" => "mage_002_frostmage",
                 "skill_frostmage_ultimate_blizzard" => "mage_002_frostmage",
+                "skill_tidefin_active_tidalpounce" => "assassin_002_tidefin",
+                "skill_tidefin_ultimate_ruintide" => "assassin_002_tidefin",
                 _ => null,
             };
         }
