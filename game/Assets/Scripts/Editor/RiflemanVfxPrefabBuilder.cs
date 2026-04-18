@@ -214,7 +214,6 @@ namespace Fight.Editor
             bullet.transform.localScale = new Vector3(
                 RiflemanBasicAttackScale * RiflemanBasicAttackLengthMultiplier,
                 RiflemanBasicAttackScale * RiflemanBasicAttackWidthMultiplier,
-                RiflemanBasicAttackScale,
                 RiflemanBasicAttackScale);
 
             var renderer = bullet.AddComponent<SpriteRenderer>();
