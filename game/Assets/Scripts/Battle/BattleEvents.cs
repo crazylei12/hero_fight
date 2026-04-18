@@ -208,7 +208,8 @@ namespace Fight.Battle
             StatusEffectType effectType,
             float durationSeconds,
             float magnitude,
-            SkillData sourceSkill = null)
+            SkillData sourceSkill = null,
+            RuntimeHero appliedBy = null)
         {
             Source = source;
             Target = target;
@@ -216,9 +217,12 @@ namespace Fight.Battle
             DurationSeconds = durationSeconds;
             Magnitude = magnitude;
             SourceSkill = sourceSkill;
+            AppliedBy = appliedBy ?? source;
         }
 
         public RuntimeHero Source { get; }
+
+        public RuntimeHero AppliedBy { get; }
 
         public RuntimeHero Target { get; }
 
@@ -237,15 +241,19 @@ namespace Fight.Battle
             RuntimeHero source,
             RuntimeHero target,
             StatusEffectType effectType,
-            SkillData sourceSkill = null)
+            SkillData sourceSkill = null,
+            RuntimeHero appliedBy = null)
         {
             Source = source;
             Target = target;
             EffectType = effectType;
             SourceSkill = sourceSkill;
+            AppliedBy = appliedBy ?? source;
         }
 
         public RuntimeHero Source { get; }
+
+        public RuntimeHero AppliedBy { get; }
 
         public RuntimeHero Target { get; }
 

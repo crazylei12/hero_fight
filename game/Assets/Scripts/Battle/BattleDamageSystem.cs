@@ -161,7 +161,12 @@ namespace Fight.Battle
                 return;
             }
 
-            context.EventBus.Publish(new StatusRemovedEvent(status.Source, target, status.EffectType, status.SourceSkill));
+            context.EventBus.Publish(new StatusRemovedEvent(
+                status.Source,
+                target,
+                status.EffectType,
+                status.SourceSkill,
+                status.AppliedBy));
         }
 
         private static void RecordIncomingThreat(BattleContext context, RuntimeHero target, RuntimeHero source)

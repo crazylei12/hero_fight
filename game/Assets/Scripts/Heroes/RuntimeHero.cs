@@ -551,7 +551,23 @@ namespace Fight.Heroes
 
         public bool ApplyStatusEffect(StatusEffectData data, RuntimeHero source = null, SkillData sourceSkill = null)
         {
-            var applied = StatusEffectSystem.TryApplyStatus(this, data, source, sourceSkill);
+            var applied = ApplyStatusEffect(data, source, sourceSkill, source, out _);
+            if (applied)
+            {
+                ClampActiveSkillCooldownToStatusCap();
+            }
+
+            return applied;
+        }
+
+        public bool ApplyStatusEffect(
+            StatusEffectData data,
+            RuntimeHero source,
+            SkillData sourceSkill,
+            RuntimeHero appliedBy,
+            out RuntimeStatusEffect appliedStatus)
+        {
+            var applied = StatusEffectSystem.TryApplyStatus(this, data, source, sourceSkill, appliedBy, out appliedStatus);
             if (applied)
             {
                 ClampActiveSkillCooldownToStatusCap();

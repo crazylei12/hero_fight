@@ -213,12 +213,19 @@ namespace Fight.Battle
             for (var i = 0; i < onHitStatusEffects.Count; i++)
             {
                 var status = onHitStatusEffects[i];
-                if (status == null || !target.ApplyStatusEffect(status, attacker, sourceSkill: null))
+                if (status == null || !target.ApplyStatusEffect(status, attacker, null, attacker, out var appliedStatus))
                 {
                     continue;
                 }
 
-                context.EventBus.Publish(new StatusAppliedEvent(attacker, target, status.effectType, status.durationSeconds, status.magnitude, null));
+                context.EventBus.Publish(new StatusAppliedEvent(
+                    appliedStatus?.Source ?? attacker,
+                    target,
+                    status.effectType,
+                    status.durationSeconds,
+                    status.magnitude,
+                    null,
+                    appliedStatus?.AppliedBy ?? attacker));
             }
         }
     }

@@ -1431,12 +1431,19 @@ namespace Fight.Battle
             for (var i = 0; i < effect.statusEffects.Count; i++)
             {
                 var status = effect.statusEffects[i];
-                if (!target.ApplyStatusEffect(status, caster, sourceSkill))
+                if (!target.ApplyStatusEffect(status, caster, sourceSkill, caster, out var appliedStatus))
                 {
                     continue;
                 }
 
-                context.EventBus.Publish(new StatusAppliedEvent(caster, target, status.effectType, status.durationSeconds, status.magnitude, sourceSkill));
+                context.EventBus.Publish(new StatusAppliedEvent(
+                    appliedStatus?.Source ?? caster,
+                    target,
+                    status.effectType,
+                    status.durationSeconds,
+                    status.magnitude,
+                    sourceSkill,
+                    appliedStatus?.AppliedBy ?? caster));
             }
         }
 
