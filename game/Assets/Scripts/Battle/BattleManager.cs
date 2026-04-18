@@ -79,12 +79,13 @@ namespace Fight.Battle
                 return;
             }
 
-            var runtimeHeroes = BattleBootstrapper.CreateRuntimeHeroes(inputConfig);
+            var randomService = new BattleRandomService();
+            var runtimeHeroes = BattleBootstrapper.CreateRuntimeHeroes(inputConfig, randomService);
             context = new BattleContext(
                 inputConfig,
                 new BattleClock(inputConfig.regulationDurationSeconds),
                 new BattleScoreSystem(),
-                new BattleRandomService(),
+                randomService,
                 new BattleEventBus(),
                 runtimeHeroes);
 
