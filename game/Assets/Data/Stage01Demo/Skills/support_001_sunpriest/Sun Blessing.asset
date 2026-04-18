@@ -18,15 +18,15 @@ MonoBehaviour:
   slotType: 1
   skillType: 6
   targetType: 4
-  castRange: 6
-  areaRadius: 6
+  castRange: 9
+  areaRadius: 7.5
   cooldownSeconds: 0
   minTargetsToCast: 2
   effects:
   - effectType: 4
     targetMode: 0
     powerMultiplier: 0.65
-    radiusOverride: 6
+    radiusOverride: 7.5
     durationSeconds: 5
     tickIntervalSeconds: 1
     followCaster: 0
@@ -61,7 +61,7 @@ MonoBehaviour:
     targetingType: 3
     primaryCondition:
       conditionType: 4
-      searchRadius: 5
+      searchRadius: 9
       requiredUnitCount: 1
       healthPercentThreshold: 0.55
       durationSeconds: 0
@@ -69,7 +69,7 @@ MonoBehaviour:
       requireTargetInCastRange: 1
     secondaryCondition:
       conditionType: 2
-      searchRadius: 5
+      searchRadius: 7.5
       requiredUnitCount: 2
       healthPercentThreshold: 1
       durationSeconds: 0

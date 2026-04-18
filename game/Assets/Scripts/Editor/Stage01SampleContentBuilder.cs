@@ -52,6 +52,11 @@ namespace Fight.Editor
         private const string SunpriestProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/SunpriestBasicAttackProjectile.prefab";
         private const string SunpriestUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/SunpriestSunBlessingField.prefab";
 
+        private static float ScaleRangedHeroDistance(float value)
+        {
+            return value * Stage01ArenaSpec.ArenaScaleMultiplier;
+        }
+
         [MenuItem(OpenMainMenuMenuPath)]
         public static void OpenMainMenuScene()
         {
@@ -113,13 +118,13 @@ namespace Fight.Editor
                 overwriteExistingContent,
                 HeroTag.Melee, HeroTag.Dive, HeroTag.Control);
 
-            var mageUltimateSkill = CreateSkill("skill_mage_ultimate_meteor", "Meteor Fall", SkillSlotType.Ultimate, SkillType.AreaDamage, SkillTargetType.Self, 0f, 6f, 0.55f, 0f, 3, overwriteExistingContent, out var mageUltimateExisted);
+            var mageUltimateSkill = CreateSkill("skill_mage_ultimate_meteor", "Meteor Fall", SkillSlotType.Ultimate, SkillType.AreaDamage, SkillTargetType.Self, 0f, ScaleRangedHeroDistance(6f), 0.55f, 0f, 3, overwriteExistingContent, out var mageUltimateExisted);
 
             var mage = CreateHero(
                 "mage_001_firemage",
                 "FIREMAGE",
                 HeroClass.Mage,
-                300f, 48f, 10f, 0.8f, 3.8f, 0.08f, 1.5f, 5.8f,
+                300f, 48f, 10f, 0.8f, 3.8f, 0.08f, 1.5f, ScaleRangedHeroDistance(5.8f),
                 CreateMageActiveBurstSkill(overwriteExistingContent),
                 ConfigureMageUltimate(mageUltimateSkill, overwriteExistingContent, mageUltimateExisted),
                 overwriteExistingContent,
@@ -131,7 +136,7 @@ namespace Fight.Editor
                 "mage_002_frostmage",
                 "Frostmage",
                 HeroClass.Mage,
-                310f, 42f, 10f, 1f / 1.30f, 3.7f, 0.08f, 1.5f, 5.8f,
+                310f, 42f, 10f, 1f / 1.30f, 3.7f, 0.08f, 1.5f, ScaleRangedHeroDistance(5.8f),
                 CreateFrostmageActiveSkill(overwriteExistingContent),
                 ConfigureFrostmageUltimate(frostmageUltimateSkill, overwriteExistingContent, frostmageUltimateExisted),
                 overwriteExistingContent,
@@ -187,7 +192,7 @@ namespace Fight.Editor
                 "support_001_sunpriest",
                 "Sunpriest",
                 HeroClass.Support,
-                320f, 22f, 12f, 0.9f, 4.0f, 0.05f, 1.5f, 5.2f,
+                320f, 22f, 12f, 0.9f, 4.0f, 0.05f, 1.5f, ScaleRangedHeroDistance(5.2f),
                 supportActive,
                 ConfigureSupportUltimate(supportUltimateSkill, overwriteExistingContent, supportUltimateExisted),
                 overwriteExistingContent,
@@ -202,7 +207,7 @@ namespace Fight.Editor
                 "marksman_001_longshot",
                 "Longshot",
                 HeroClass.Marksman,
-                310f, 34f, 12f, 1f / 0.74f, 4.1f, 0.22f, 1.9f, 6f,
+                310f, 34f, 12f, 1f / 0.74f, 4.1f, 0.22f, 1.9f, ScaleRangedHeroDistance(6f),
                 marksmanActive,
                 ConfigureLongshotUltimate(marksmanUltimateSkill, overwriteExistingContent, marksmanUltimateExisted),
                 overwriteExistingContent,
@@ -217,7 +222,7 @@ namespace Fight.Editor
                 "marksman_002_rifleman",
                 "Rifleman",
                 HeroClass.Marksman,
-                280f, 40f, 6f, 1f / 1.43f, 3.2f, 0.18f, 1.75f, 6.2f,
+                280f, 40f, 6f, 1f / 1.43f, 3.2f, 0.18f, 1.75f, ScaleRangedHeroDistance(6.2f),
                 riflemanActive,
                 ConfigureRiflemanUltimate(riflemanUltimateSkill, overwriteExistingContent, riflemanUltimateExisted),
                 overwriteExistingContent,
@@ -554,7 +559,7 @@ namespace Fight.Editor
                 SkillSlotType.ActiveSkill,
                 SkillType.SingleTargetDamage,
                 SkillTargetType.NearestEnemy,
-                6f,
+                ScaleRangedHeroDistance(6f),
                 0f,
                 1.7f,
                 6f,
@@ -618,7 +623,7 @@ namespace Fight.Editor
                 SkillSlotType.ActiveSkill,
                 SkillType.SingleTargetDamage,
                 SkillTargetType.NearestEnemy,
-                6.2f,
+                ScaleRangedHeroDistance(6.2f),
                 0f,
                 0.55f,
                 5f,
@@ -632,7 +637,7 @@ namespace Fight.Editor
 
             skill.skillType = SkillType.SingleTargetDamage;
             skill.targetType = SkillTargetType.NearestEnemy;
-            skill.castRange = 6.2f;
+            skill.castRange = ScaleRangedHeroDistance(6.2f);
             skill.areaRadius = 0f;
             skill.cooldownSeconds = 5f;
             skill.minTargetsToCast = 1;
@@ -711,7 +716,7 @@ namespace Fight.Editor
                 SkillSlotType.Ultimate,
                 SkillType.SingleTargetDamage,
                 SkillTargetType.LowestHealthEnemy,
-                40f,
+                Stage01ArenaSpec.FullMapTargetingRangeWorldUnits,
                 0f,
                 0f,
                 0f,
@@ -787,8 +792,8 @@ namespace Fight.Editor
                 SkillSlotType.Ultimate,
                 SkillType.AreaDamage,
                 SkillTargetType.DensestEnemyArea,
-                7f,
-                4f,
+                ScaleRangedHeroDistance(7f),
+                ScaleRangedHeroDistance(4f),
                 4f,
                 0f,
                 1,
@@ -801,8 +806,8 @@ namespace Fight.Editor
 
             skill.skillType = SkillType.AreaDamage;
             skill.targetType = SkillTargetType.DensestEnemyArea;
-            skill.castRange = 7f;
-            skill.areaRadius = 4f;
+            skill.castRange = ScaleRangedHeroDistance(7f);
+            skill.areaRadius = ScaleRangedHeroDistance(4f);
             skill.minTargetsToCast = 1;
             skill.allowsSelfCast = false;
             skill.effects.Clear();
@@ -886,8 +891,8 @@ namespace Fight.Editor
                 SkillSlotType.ActiveSkill,
                 SkillType.AreaDamage,
                 SkillTargetType.DensestEnemyArea,
-                6f,
-                2f,
+                ScaleRangedHeroDistance(6f),
+                ScaleRangedHeroDistance(2f),
                 1.2f,
                 6f,
                 1,
@@ -902,11 +907,12 @@ namespace Fight.Editor
             skill.effects.Clear();
             skill.targetType = SkillTargetType.DensestEnemyArea;
             skill.allowsSelfCast = false;
-            skill.areaRadius = 2f;
+            skill.castRange = ScaleRangedHeroDistance(6f);
+            skill.areaRadius = ScaleRangedHeroDistance(2f);
             skill.persistentAreaVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(MageActiveAreaVfxPrefabPath);
             skill.persistentAreaVfxScaleMultiplier = 1f;
             skill.skillAreaPresentationType = SkillAreaPresentationType.None;
-            AddPersistentAreaEffect(skill, PersistentAreaPulseEffectType.DirectDamage, PersistentAreaTargetType.Enemies, 1.2f, 2f, 0.4f, 1f, false);
+            AddPersistentAreaEffect(skill, PersistentAreaPulseEffectType.DirectDamage, PersistentAreaTargetType.Enemies, 1.2f, skill.areaRadius, 0.4f, 1f, false);
             ResetUltimateDecision(skill);
             EditorUtility.SetDirty(skill);
             return skill;
@@ -920,8 +926,8 @@ namespace Fight.Editor
                 SkillSlotType.ActiveSkill,
                 SkillType.AreaDamage,
                 SkillTargetType.DensestEnemyArea,
-                6.2f,
-                2f,
+                ScaleRangedHeroDistance(6.2f),
+                ScaleRangedHeroDistance(2f),
                 0.9f,
                 6.5f,
                 1,
@@ -936,8 +942,8 @@ namespace Fight.Editor
             skill.effects.Clear();
             skill.skillType = SkillType.AreaDamage;
             skill.targetType = SkillTargetType.DensestEnemyArea;
-            skill.castRange = 6.2f;
-            skill.areaRadius = 2f;
+            skill.castRange = ScaleRangedHeroDistance(6.2f);
+            skill.areaRadius = ScaleRangedHeroDistance(2f);
             skill.cooldownSeconds = 6.5f;
             skill.minTargetsToCast = 1;
             skill.allowsSelfCast = false;
@@ -971,8 +977,8 @@ namespace Fight.Editor
                 SkillSlotType.Ultimate,
                 SkillType.AreaDamage,
                 SkillTargetType.DensestEnemyArea,
-                7f,
-                5.5f,
+                ScaleRangedHeroDistance(7f),
+                ScaleRangedHeroDistance(5.5f),
                 0.35f,
                 0f,
                 1,
@@ -987,8 +993,8 @@ namespace Fight.Editor
             skill.effects.Clear();
             skill.skillType = SkillType.AreaDamage;
             skill.targetType = SkillTargetType.DensestEnemyArea;
-            skill.castRange = 7f;
-            skill.areaRadius = 5.5f;
+            skill.castRange = ScaleRangedHeroDistance(7f);
+            skill.areaRadius = ScaleRangedHeroDistance(5.5f);
             skill.minTargetsToCast = 1;
             skill.allowsSelfCast = false;
             skill.persistentAreaVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(FrostMageUltimateAreaVfxPrefabPath);
@@ -1328,7 +1334,7 @@ namespace Fight.Editor
 
             hero.basicAttack.damageMultiplier = 1f;
             hero.basicAttack.attackInterval = 0.74f;
-            hero.basicAttack.rangeOverride = 6f;
+            hero.basicAttack.rangeOverride = ScaleRangedHeroDistance(6f);
             hero.basicAttack.usesProjectile = true;
             hero.basicAttack.projectileSpeed = 16f;
             hero.basicAttack.effectType = BasicAttackEffectType.Damage;
@@ -1346,7 +1352,7 @@ namespace Fight.Editor
 
             hero.basicAttack.damageMultiplier = 1.15f;
             hero.basicAttack.attackInterval = 1.43f;
-            hero.basicAttack.rangeOverride = 6.2f;
+            hero.basicAttack.rangeOverride = ScaleRangedHeroDistance(6.2f);
             hero.basicAttack.usesProjectile = true;
             hero.basicAttack.projectileSpeed = 18f;
             hero.basicAttack.effectType = BasicAttackEffectType.Damage;
@@ -1363,7 +1369,7 @@ namespace Fight.Editor
                 SkillSlotType.ActiveSkill,
                 SkillType.SingleTargetHeal,
                 SkillTargetType.LowestHealthAlly,
-                6f,
+                ScaleRangedHeroDistance(6f),
                 0f,
                 1.35f,
                 7f,
@@ -1404,8 +1410,8 @@ namespace Fight.Editor
                 SkillSlotType.Ultimate,
                 SkillType.AreaHeal,
                 SkillTargetType.LowestHealthAlly,
-                6f,
-                5f,
+                ScaleRangedHeroDistance(6f),
+                ScaleRangedHeroDistance(5f),
                 0.65f,
                 0f,
                 2,
@@ -1419,8 +1425,8 @@ namespace Fight.Editor
 
             skill.effects.Clear();
             skill.targetType = SkillTargetType.LowestHealthAlly;
-            skill.castRange = 6f;
-            skill.areaRadius = 5f;
+            skill.castRange = ScaleRangedHeroDistance(6f);
+            skill.areaRadius = ScaleRangedHeroDistance(5f);
             skill.allowsSelfCast = false;
             skill.persistentAreaVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(SunpriestUltimateAreaVfxPrefabPath);
             skill.persistentAreaVfxScaleMultiplier = 1f;
@@ -1538,7 +1544,7 @@ namespace Fight.Editor
             skill.targetType = SkillTargetType.Self;
             skill.castRange = 0f;
             skill.allowsSelfCast = true;
-            skill.areaRadius = 6f;
+            skill.areaRadius = ScaleRangedHeroDistance(6f);
             skill.persistentAreaVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(MageUltimateAreaVfxPrefabPath);
             skill.persistentAreaVfxScaleMultiplier = 1f;
             skill.persistentAreaVfxEulerAngles = Vector3.zero;
@@ -1702,7 +1708,7 @@ namespace Fight.Editor
             skill.ultimateDecision.primaryCondition.requiredUnitCount = 1;
             skill.ultimateDecision.primaryCondition.healthPercentThreshold = 0.65f;
             skill.ultimateDecision.secondaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;
-            skill.ultimateDecision.secondaryCondition.searchRadius = 6f;
+            skill.ultimateDecision.secondaryCondition.searchRadius = ScaleRangedHeroDistance(6f);
             skill.ultimateDecision.secondaryCondition.requiredUnitCount = 2;
             skill.ultimateDecision.combineMode = UltimateConditionCombineMode.AnyPass;
             skill.ultimateDecision.fallback.fallbackType = UltimateFallbackType.LowerPrimaryThreshold;
@@ -1721,8 +1727,8 @@ namespace Fight.Editor
 
             skill.skillType = SkillType.AreaDamage;
             skill.targetType = SkillTargetType.DensestEnemyArea;
-            skill.castRange = 7f;
-            skill.areaRadius = 4f;
+            skill.castRange = ScaleRangedHeroDistance(7f);
+            skill.areaRadius = ScaleRangedHeroDistance(4f);
             skill.minTargetsToCast = 1;
             skill.allowsSelfCast = false;
             skill.castProjectileVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(RiflemanUltimateProjectileVfxPrefabPath);
