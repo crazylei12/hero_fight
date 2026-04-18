@@ -38,6 +38,7 @@ namespace Fight.Editor
         private const int WhiteBackgroundThreshold = 242;
         private const byte MinimumVisibleAlpha = 8;
         private static bool autoBuildScheduled;
+        private const float RiflemanBasicAttackWidthMultiplier = 3f;
 
         [InitializeOnLoadMethod]
         private static void ScheduleAutoBuildIfNeeded()
@@ -200,7 +201,10 @@ namespace Fight.Editor
             var bullet = new GameObject("BulletCore");
             bullet.transform.SetParent(root.transform, false);
             bullet.transform.localPosition = new Vector3(0.04f, 0f, 0f);
-            bullet.transform.localScale = Vector3.one * RiflemanBasicAttackScale;
+            bullet.transform.localScale = new Vector3(
+                RiflemanBasicAttackScale * RiflemanBasicAttackWidthMultiplier,
+                RiflemanBasicAttackScale,
+                RiflemanBasicAttackScale);
 
             var renderer = bullet.AddComponent<SpriteRenderer>();
             renderer.sprite = riflemanBulletSprite;
