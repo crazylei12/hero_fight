@@ -17,7 +17,7 @@ MonoBehaviour:
   description: 'Stage-01 demo skill: Smoke Veil'
   slotType: 1
   skillType: 3
-  targetType: 8
+  targetType: 1
   castRange: 56
   areaRadius: 0
   cooldownSeconds: 0
