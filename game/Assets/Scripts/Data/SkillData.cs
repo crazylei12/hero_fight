@@ -30,6 +30,7 @@ namespace Fight.Data
         public CombatActionSequenceData actionSequence = new CombatActionSequenceData();
 
         [Header("Presentation")]
+        public GameObject targetIndicatorVfxPrefab;
         public GameObject castProjectileVfxPrefab;
         public GameObject persistentAreaVfxPrefab;
         [Min(0.1f)] public float persistentAreaVfxScaleMultiplier = 1f;

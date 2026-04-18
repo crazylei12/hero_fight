@@ -20,11 +20,14 @@ namespace Fight.Editor
         private const string RiflemanBasicAttackProjectilePrefabPath = ProjectilePrefabsFolder + "/RiflemanBasicAttackProjectile.prefab";
         private const string FragGrenadeProjectilePrefabPath = ProjectilePrefabsFolder + "/RiflemanFragGrenadeProjectile.prefab";
         private const string FragGrenadeBurstPrefabPath = SkillPrefabsFolder + "/RiflemanFragGrenadeBurst.prefab";
+        private const string BurstFireTargetIndicatorPrefabPath = SkillPrefabsFolder + "/RiflemanBurstFireTargetReticle.prefab";
         private const string RiflemanBasicAttackSpritePath = GeneratedArtFolder + "/RiflemanBasicAttackBullet.png";
         private const string FragGrenadeSourceTexturePath = SourceArtFolder + "/RiflemanFragGrenadeSource.png";
         private const string FragGrenadeSpritePath = GeneratedArtFolder + "/RiflemanFragGrenadeSprite.png";
         private const string SoftCircleSpritePath = GeneratedArtFolder + "/vfx_soft_circle.png";
+        private const string WhiteSquareSpritePath = GeneratedArtFolder + "/vfx_white_square.png";
         private const string RiflemanHeroAssetPath = "Assets/Data/Stage01Demo/Heroes/marksman_002_rifleman/Rifleman.asset";
+        private const string BurstFireSkillAssetPath = "Assets/Data/Stage01Demo/Skills/marksman_002_rifleman/Burst Fire.asset";
         private const string FragGrenadeSkillAssetPath = "Assets/Data/Stage01Demo/Skills/marksman_002_rifleman/Frag Grenade.asset";
         private const string RiflemanBasicAttackSourceFileName = "ChatGPT Image 2026年4月18日 19_52_36.png";
 
@@ -35,10 +38,10 @@ namespace Fight.Editor
         private const float FragGrenadeBurstDurationExtensionSeconds = 0.5f;
         private const float RiflemanBasicAttackPixelsPerUnit = 1024f;
         private const float RiflemanBasicAttackScale = 0.24f;
+        private const float RiflemanBasicAttackWidthMultiplier = 3f;
         private const int WhiteBackgroundThreshold = 242;
         private const byte MinimumVisibleAlpha = 8;
         private static bool autoBuildScheduled;
-        private const float RiflemanBasicAttackWidthMultiplier = 3f;
 
         [InitializeOnLoadMethod]
         private static void ScheduleAutoBuildIfNeeded()
@@ -62,9 +65,11 @@ namespace Fight.Editor
             EnsureFolder(SkillPrefabsFolder);
 
             var softCircleSprite = EnsureSoftCircleSprite();
+            var whiteSquareSprite = EnsureWhiteSquareSprite();
             var riflemanBulletSprite = EnsureRiflemanBasicAttackSprite();
             var grenadeSprite = EnsureFragGrenadeSprite();
             BuildRiflemanBasicAttackProjectilePrefab(riflemanBulletSprite, softCircleSprite);
+            BuildBurstFireTargetIndicatorPrefab(softCircleSprite, whiteSquareSprite);
             BuildFragGrenadeProjectilePrefab(grenadeSprite);
             BuildFragGrenadeBurstPrefab();
             SyncStage01DemoAssets();
@@ -102,7 +107,9 @@ namespace Fight.Editor
         private static bool AllOutputAssetsExist()
         {
             return AssetDatabase.LoadAssetAtPath<Sprite>(SoftCircleSpritePath) != null
+                && AssetDatabase.LoadAssetAtPath<Sprite>(WhiteSquareSpritePath) != null
                 && AssetDatabase.LoadAssetAtPath<GameObject>(RiflemanBasicAttackProjectilePrefabPath) != null
+                && AssetDatabase.LoadAssetAtPath<GameObject>(BurstFireTargetIndicatorPrefabPath) != null
                 && AssetDatabase.LoadAssetAtPath<Sprite>(RiflemanBasicAttackSpritePath) != null
                 && AssetDatabase.LoadAssetAtPath<GameObject>(FragGrenadeProjectilePrefabPath) != null
                 && AssetDatabase.LoadAssetAtPath<GameObject>(FragGrenadeBurstPrefabPath) != null
@@ -131,8 +138,10 @@ namespace Fight.Editor
             return latestInputTimestamp
                 > GetOldestTimestampUtc(
                     RiflemanBasicAttackProjectilePrefabPath,
+                    BurstFireTargetIndicatorPrefabPath,
                     RiflemanBasicAttackSpritePath,
                     SoftCircleSpritePath,
+                    WhiteSquareSpritePath,
                     FragGrenadeProjectilePrefabPath,
                     FragGrenadeBurstPrefabPath,
                     FragGrenadeSpritePath);
@@ -150,6 +159,14 @@ namespace Fight.Editor
                 riflemanHero.visualConfig.projectileEulerAngles = Vector3.zero;
                 riflemanHero.visualConfig.hitVfxPrefab = null;
                 EditorUtility.SetDirty(riflemanHero);
+            }
+
+            var burstFireTargetIndicatorPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(BurstFireTargetIndicatorPrefabPath);
+            var burstFireSkill = AssetDatabase.LoadAssetAtPath<SkillData>(BurstFireSkillAssetPath);
+            if (burstFireSkill != null)
+            {
+                burstFireSkill.targetIndicatorVfxPrefab = burstFireTargetIndicatorPrefab;
+                EditorUtility.SetDirty(burstFireSkill);
             }
 
             var fragGrenadeProjectilePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(FragGrenadeProjectilePrefabPath);
@@ -211,6 +228,91 @@ namespace Fight.Editor
             renderer.sortingOrder = 10;
 
             SavePrefab(root, RiflemanBasicAttackProjectilePrefabPath);
+        }
+
+        private static void BuildBurstFireTargetIndicatorPrefab(Sprite softCircleSprite, Sprite whiteSquareSprite)
+        {
+            var root = new GameObject("RiflemanBurstFireTargetReticle");
+            root.AddComponent<SortingGroup>();
+
+            CreateSprite(
+                root.transform,
+                "BackGlow",
+                softCircleSprite,
+                new Color(1f, 0.24f, 0.24f, 0.12f),
+                2,
+                new Vector3(0f, 0.95f, 0f),
+                Vector3.one * 0.62f);
+            CreateSprite(
+                root.transform,
+                "OuterRing",
+                softCircleSprite,
+                new Color(1f, 0.42f, 0.42f, 0.18f),
+                4,
+                new Vector3(0f, 0.95f, 0f),
+                Vector3.one * 0.46f);
+            CreateSprite(
+                root.transform,
+                "CenterDot",
+                softCircleSprite,
+                new Color(1f, 0.92f, 0.92f, 0.62f),
+                10,
+                new Vector3(0f, 0.95f, 0f),
+                new Vector3(0.08f, 0.08f, 1f));
+            CreateSprite(
+                root.transform,
+                "TopBracket",
+                whiteSquareSprite,
+                new Color(1f, 0.2f, 0.2f, 0.82f),
+                8,
+                new Vector3(0f, 1.17f, 0f),
+                new Vector3(0.08f, 0.2f, 1f));
+            CreateSprite(
+                root.transform,
+                "BottomBracket",
+                whiteSquareSprite,
+                new Color(1f, 0.2f, 0.2f, 0.82f),
+                8,
+                new Vector3(0f, 0.73f, 0f),
+                new Vector3(0.08f, 0.2f, 1f));
+            CreateSprite(
+                root.transform,
+                "LeftBracket",
+                whiteSquareSprite,
+                new Color(1f, 0.2f, 0.2f, 0.82f),
+                8,
+                new Vector3(-0.22f, 0.95f, 0f),
+                new Vector3(0.2f, 0.08f, 1f));
+            CreateSprite(
+                root.transform,
+                "RightBracket",
+                whiteSquareSprite,
+                new Color(1f, 0.2f, 0.2f, 0.82f),
+                8,
+                new Vector3(0.22f, 0.95f, 0f),
+                new Vector3(0.2f, 0.08f, 1f));
+
+            var slashLeft = CreateSprite(
+                root.transform,
+                "SlashLeft",
+                whiteSquareSprite,
+                new Color(1f, 0.36f, 0.36f, 0.64f),
+                7,
+                new Vector3(-0.1f, 1.05f, 0f),
+                new Vector3(0.18f, 0.03f, 1f));
+            slashLeft.transform.localRotation = Quaternion.Euler(0f, 0f, 36f);
+
+            var slashRight = CreateSprite(
+                root.transform,
+                "SlashRight",
+                whiteSquareSprite,
+                new Color(1f, 0.36f, 0.36f, 0.64f),
+                7,
+                new Vector3(0.1f, 0.85f, 0f),
+                new Vector3(0.18f, 0.03f, 1f));
+            slashRight.transform.localRotation = Quaternion.Euler(0f, 0f, 36f);
+
+            SavePrefab(root, BurstFireTargetIndicatorPrefabPath);
         }
 
         private static void BuildFragGrenadeProjectilePrefab(Sprite grenadeSprite)
@@ -496,6 +598,40 @@ namespace Fight.Editor
             return LoadRequiredAsset<Sprite>(SoftCircleSpritePath);
         }
 
+        private static Sprite EnsureWhiteSquareSprite()
+        {
+            if (File.Exists(GetAbsoluteProjectPath(WhiteSquareSpritePath)))
+            {
+                return LoadRequiredAsset<Sprite>(WhiteSquareSpritePath);
+            }
+
+            var texture = BuildSolidTexture(16, Color.white);
+            try
+            {
+                File.WriteAllBytes(GetAbsoluteProjectPath(WhiteSquareSpritePath), texture.EncodeToPNG());
+            }
+            finally
+            {
+                Object.DestroyImmediate(texture);
+            }
+
+            AssetDatabase.ImportAsset(WhiteSquareSpritePath, ImportAssetOptions.ForceSynchronousImport);
+            if (AssetImporter.GetAtPath(WhiteSquareSpritePath) is TextureImporter importer)
+            {
+                importer.textureType = TextureImporterType.Sprite;
+                importer.spriteImportMode = SpriteImportMode.Single;
+                importer.alphaIsTransparency = true;
+                importer.mipmapEnabled = false;
+                importer.wrapMode = TextureWrapMode.Clamp;
+                importer.filterMode = FilterMode.Bilinear;
+                importer.textureCompression = TextureImporterCompression.Uncompressed;
+                importer.spritePixelsPerUnit = 64f;
+                importer.SaveAndReimport();
+            }
+
+            return LoadRequiredAsset<Sprite>(WhiteSquareSpritePath);
+        }
+
         private static bool[] FindEdgeConnectedWhiteBackground(Color32[] pixels, int width, int height)
         {
             var visited = new bool[pixels.Length];
@@ -604,6 +740,25 @@ namespace Fight.Editor
                         : 0f;
                     pixels[(y * size) + x] = new Color(1f, 1f, 1f, alpha);
                 }
+            }
+
+            texture.SetPixels(pixels);
+            texture.Apply();
+            return texture;
+        }
+
+        private static Texture2D BuildSolidTexture(int size, Color color)
+        {
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false)
+            {
+                filterMode = FilterMode.Bilinear,
+                wrapMode = TextureWrapMode.Clamp,
+            };
+
+            var pixels = new Color[size * size];
+            for (var i = 0; i < pixels.Length; i++)
+            {
+                pixels[i] = color;
             }
 
             texture.SetPixels(pixels);
