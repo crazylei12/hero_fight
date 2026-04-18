@@ -31,7 +31,7 @@ namespace Fight.Editor
         private const string AssassinPrefabPath = "Assets/Prefabs/Heroes/assassin_001_shadowstep/Shadowstep.prefab";
         private const string TidefinPrefabPath = "Assets/FantasyMonsters/Monsters/Insects/PurpleScarab/PurpleScarab.prefab";
         private const string MarksmanPrefabPath = "Assets/Prefabs/Heroes/marksman_001_longshot/Longshot.prefab";
-        private const string RiflemanPrefabPath = MarksmanPrefabPath;
+        private const string RiflemanPrefabPath = "Assets/Prefabs/Heroes/marksman_002_rifleman/Rifleman.prefab";
         private const string SupportPrefabPath = "Assets/Prefabs/Heroes/support_001_sunpriest/Sunpriest.prefab";
         private const string WarriorPrefabPath = "Assets/Prefabs/Heroes/warrior_001_skybreaker/Skybreaker.prefab";
         private const string FireMagePrefabPath = "Assets/HeroEditor4D/heroes/FIREMAGE.prefab";
