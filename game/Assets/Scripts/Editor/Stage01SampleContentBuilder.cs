@@ -46,6 +46,7 @@ namespace Fight.Editor
         private const string FrostMageActiveAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FrostMageFrostBurst.prefab";
         private const string FrostMageUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FrostMageBlizzardField.prefab";
         private const string MageUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FireMageMeteorField.prefab";
+        private const string RiflemanActiveTargetIndicatorVfxPrefabPath = "Assets/Prefabs/VFX/Skills/RiflemanBurstFireTargetReticle.prefab";
         private const string RiflemanUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/RiflemanFragGrenadeBurst.prefab";
         private const string RiflemanUltimateProjectileVfxPrefabPath = "Assets/Prefabs/VFX/Projectiles/RiflemanFragGrenadeProjectile.prefab";
         private const string SunpriestProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/SunpriestBasicAttackProjectile.prefab";
@@ -652,6 +653,7 @@ namespace Fight.Editor
             skill.actionSequence.targetRefreshMode = CombatActionSequenceTargetRefreshMode.KeepCurrentTarget;
             skill.actionSequence.interruptFlags =
                 CombatActionSequenceInterruptFlags.HardControl | CombatActionSequenceInterruptFlags.ForcedMovement;
+            skill.targetIndicatorVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(RiflemanActiveTargetIndicatorVfxPrefabPath);
             skill.description = "Stage-01 demo skill: Burst Fire";
             EditorUtility.SetDirty(skill);
             return skill;

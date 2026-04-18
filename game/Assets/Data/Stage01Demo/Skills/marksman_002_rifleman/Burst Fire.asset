@@ -51,6 +51,8 @@ MonoBehaviour:
     temporarySkillCastRangeOverride: 0
     targetRefreshMode: 0
     interruptFlags: 3
+  targetIndicatorVfxPrefab: {fileID: 2281550044131402137, guid: 7de6090c7baf6ff47a8208560b8d3e46, type: 3}
+  castProjectileVfxPrefab: {fileID: 0}
   persistentAreaVfxPrefab: {fileID: 0}
   persistentAreaVfxScaleMultiplier: 1
   persistentAreaVfxEulerAngles: {x: 0, y: 0, z: 0}

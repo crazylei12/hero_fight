@@ -40,6 +40,7 @@ namespace Fight.UI
         private const float DashChargeMinLifetimeSeconds = 0.18f;
         private const int HealEventVfxSortOrderOffset = 190;
         private const int DashChargeSortOrderOffset = -6;
+        private const int SkillTargetIndicatorSortOrderOffset = 214;
         private const int ThrownProjectileSortOrderOffset = -4;
         private const string HealImpactTransientKey = "heal_received";
         private const string DashChargeTransientKey = "dash_charge";
@@ -1675,6 +1676,14 @@ namespace Fight.UI
                 PlayHealImpactVfx(healAppliedEvent);
             }
 
+            if (battleEvent is SkillCastEvent skillCastEvent
+                && skillCastEvent.PrimaryTarget != null
+                && skillCastEvent.Skill != null
+                && skillCastEvent.Skill.targetIndicatorVfxPrefab != null)
+            {
+                PlaySkillTargetIndicatorVfx(skillCastEvent);
+            }
+
             foreach (var driver in heroAnimationDrivers.Values)
             {
                 if (driver != null)
@@ -1781,6 +1790,72 @@ namespace Fight.UI
             }
 
             SpawnTransientHeroVfx(targetView, healImpactPrefab, Vector3.zero, HealEventVfxSortOrderOffset, HealImpactTransientKey);
+        }
+
+        private void PlaySkillTargetIndicatorVfx(SkillCastEvent skillCastEvent)
+        {
+            if (skillCastEvent?.PrimaryTarget == null
+                || skillCastEvent.Skill == null
+                || skillCastEvent.Skill.targetIndicatorVfxPrefab == null)
+            {
+                return;
+            }
+
+            if (!heroViews.TryGetValue(skillCastEvent.PrimaryTarget.RuntimeId, out var targetView))
+            {
+                targetView = CreateHeroView(skillCastEvent.PrimaryTarget);
+                heroViews[skillCastEvent.PrimaryTarget.RuntimeId] = targetView;
+            }
+
+            if (skillCastEvent.PrimaryTarget.IsDead || ShouldHideCorpse(targetView))
+            {
+                return;
+            }
+
+            var uniqueKey = GetSkillTargetIndicatorTransientKey(skillCastEvent.Caster, skillCastEvent.Skill);
+            var expiresAtSeconds = GetElapsedTimeSeconds() + GetSkillTargetIndicatorLifetime(skillCastEvent.Skill);
+            RemoveTransientVfxWithKeyFromAllHeroes(uniqueKey, targetView);
+            if (TryRefreshTransientVfx(targetView, uniqueKey, expiresAtSeconds))
+            {
+                return;
+            }
+
+            SpawnTransientHeroVfx(
+                targetView,
+                skillCastEvent.Skill.targetIndicatorVfxPrefab,
+                Vector3.zero,
+                SkillTargetIndicatorSortOrderOffset,
+                uniqueKey,
+                lifetimeOverrideSeconds: expiresAtSeconds - GetElapsedTimeSeconds());
+        }
+
+        private static string GetSkillTargetIndicatorTransientKey(RuntimeHero caster, SkillData skill)
+        {
+            var casterId = caster != null ? caster.RuntimeId : "unknown";
+            var skillId = skill != null && !string.IsNullOrWhiteSpace(skill.skillId)
+                ? skill.skillId
+                : "skill";
+            return $"target_indicator_{casterId}_{skillId}";
+        }
+
+        private static float GetSkillTargetIndicatorLifetime(SkillData skill)
+        {
+            if (skill?.actionSequence == null || !skill.actionSequence.enabled)
+            {
+                return CombatActionTiming.DefaultWindupSeconds
+                    + CombatActionTiming.DefaultRecoverySeconds
+                    + 0.12f;
+            }
+
+            var sequence = skill.actionSequence;
+            var sequenceDurationSeconds = sequence.repeatMode == CombatActionSequenceRepeatMode.FixedDuration
+                ? Mathf.Max(0.01f, sequence.durationSeconds)
+                : Mathf.Max(0.01f, sequence.repeatCount * Mathf.Max(0f, sequence.intervalSeconds));
+
+            return CombatActionTiming.DefaultWindupSeconds
+                + CombatActionTiming.DefaultRecoverySeconds
+                + sequenceDurationSeconds
+                + 0.12f;
         }
 
         private static GameObject GetSharedHealImpactPrefab()
@@ -2169,6 +2244,48 @@ namespace Fight.UI
                 DestroyTransientVfx(transient);
                 heroView.TransientVfx.RemoveAt(i);
             }
+        }
+
+        private void RemoveTransientVfxWithKeyFromAllHeroes(string uniqueKey, HeroViewState excludedHeroView = null)
+        {
+            if (string.IsNullOrWhiteSpace(uniqueKey))
+            {
+                return;
+            }
+
+            foreach (var pair in heroViews)
+            {
+                if (pair.Value == null || pair.Value == excludedHeroView)
+                {
+                    continue;
+                }
+
+                RemoveTransientVfxWithKey(pair.Value, uniqueKey);
+            }
+        }
+
+        private static bool TryRefreshTransientVfx(HeroViewState heroView, string uniqueKey, float expiresAtSeconds)
+        {
+            if (heroView?.TransientVfx == null || string.IsNullOrWhiteSpace(uniqueKey))
+            {
+                return false;
+            }
+
+            for (var i = heroView.TransientVfx.Count - 1; i >= 0; i--)
+            {
+                var transient = heroView.TransientVfx[i];
+                if (transient == null
+                    || !string.Equals(transient.UniqueKey, uniqueKey, StringComparison.Ordinal)
+                    || transient.Root == null)
+                {
+                    continue;
+                }
+
+                transient.ExpiresAtSeconds = Mathf.Max(transient.ExpiresAtSeconds, expiresAtSeconds);
+                return true;
+            }
+
+            return false;
         }
 
         private void SyncTransientVfx(RuntimeHero hero, HeroViewState heroView, int heroSortingOrder)
