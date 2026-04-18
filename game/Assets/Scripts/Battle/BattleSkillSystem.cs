@@ -15,6 +15,7 @@ namespace Fight.Battle
         private const float UltimateExtraUnitReleaseChance = 0.15f;
         private const float UltimateFirstFallbackBonus = 0.2f;
         private const float UltimateSecondFallbackBonus = 0.5f;
+        private const float UltimateSecondaryPriorityBonus = 0.25f;
 
         public static bool TryCastSkill(BattleContext context, RuntimeHero caster, BattleManager battleManager)
         {
@@ -219,7 +220,7 @@ namespace Fight.Battle
                 case SkillTargetType.AllEnemies:
                     return FindFirstGlobalTeamTarget(context.Heroes, caster, skill, includeAllies: false);
                 case SkillTargetType.NearestEnemy:
-                    return FindNearest(context.Heroes, caster, includeAllies: false, effectiveCastRange);
+                    return SelectCurrentOrNearestEnemyTarget(context, caster, skill, effectiveCastRange);
                 case SkillTargetType.LowestHealthEnemy:
                     return FindLowestHealth(context.Heroes, caster, skill, includeAllies: false, effectiveCastRange);
                 case SkillTargetType.LowestHealthAlly:
@@ -288,7 +289,7 @@ namespace Fight.Battle
                 SkillTargetType.Self => caster,
                 SkillTargetType.AllAllies => FindFirstGlobalTeamTarget(context.Heroes, caster, skill, includeAllies: true),
                 SkillTargetType.AllEnemies => FindFirstGlobalTeamTarget(context.Heroes, caster, skill, includeAllies: false),
-                SkillTargetType.NearestEnemy => FindNearest(context.Heroes, caster, includeAllies: false, effectiveCastRange),
+                SkillTargetType.NearestEnemy => SelectCurrentOrNearestEnemyTarget(context, caster, skill, effectiveCastRange),
                 SkillTargetType.LowestHealthEnemy => FindLowestHealth(context.Heroes, caster, skill, includeAllies: false, effectiveCastRange),
                 SkillTargetType.LowestHealthAlly => FindLowestHealth(context.Heroes, caster, skill, includeAllies: true, effectiveCastRange),
                 SkillTargetType.HighestDamageEnemyInRange => BattleAiDirector.SelectHighestDamageEnemyTarget(context.Heroes, caster, effectiveCastRange),
@@ -296,6 +297,28 @@ namespace Fight.Battle
                 SkillTargetType.BackmostEnemy => BattleAiDirector.SelectBackmostEnemyTarget(context.Heroes, caster, effectiveCastRange),
                 _ => null,
             };
+        }
+
+        private static RuntimeHero SelectCurrentOrNearestEnemyTarget(
+            BattleContext context,
+            RuntimeHero caster,
+            SkillData skill,
+            float effectiveCastRange)
+        {
+            if (context == null || caster == null || skill == null)
+            {
+                return null;
+            }
+
+            var currentTarget = caster.CurrentTarget;
+            if (currentTarget != null
+                && IsValidTargetForSkill(skill, caster, currentTarget)
+                && IsPrimaryTargetStillValidForCastRange(skill, caster, currentTarget, effectiveCastRange))
+            {
+                return currentTarget;
+            }
+
+            return BattleAiDirector.SelectNearestEnemyTarget(context.Heroes, caster, effectiveCastRange);
         }
 
         private static List<RuntimeHero> CollectTargets(BattleContext context, RuntimeHero caster, SkillData skill, RuntimeHero primaryTarget)
@@ -644,6 +667,18 @@ namespace Fight.Battle
                 case UltimateConditionType.TargetIsHighValue:
                     chance += 0.1f;
                     break;
+            }
+
+            var secondaryCondition = decision?.secondaryCondition;
+            if (decision != null
+                && decision.combineMode == UltimateConditionCombineMode.PrimaryOnly
+                && secondaryCondition != null
+                && secondaryCondition.conditionType != UltimateConditionType.None
+                && EvaluateUltimateCondition(context, caster, skill, primaryTarget, secondaryCondition, null, null))
+            {
+                // Stage-01 uses PrimaryOnly + secondaryCondition to express
+                // "the main cast gate is unchanged, but this opportunity is more attractive".
+                chance += UltimateSecondaryPriorityBonus;
             }
 
             return Mathf.Clamp01(chance);
