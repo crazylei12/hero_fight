@@ -559,14 +559,35 @@
   - 项目内运行时 prefab：`game/Assets/Resources/Stage01Demo/VFX/Statuses/AttackPowerDownStatusLoop.prefab`
   - 图标素材来源：`game/Assets/Art/VFX/StatusIcons/AttackDebuffEffect.png`
   - 接入方式：`BattleView` 对 `StatusEffectType.AttackPowerModifier` 先合并当前英雄身上的总修正值；只有合并后仍为负数时，才创建这套“图标绕英雄躯干前后环绕”的减攻状态特效
+- `攻击力上升`
+  - 项目内工程 prefab：`game/Assets/Prefabs/VFX/Shared/AttackPowerUpStatusLoop.prefab`
+  - 项目内运行时 prefab：`game/Assets/Resources/Stage01Demo/VFX/Statuses/AttackPowerUpStatusLoop.prefab`
+  - 图标素材来源：`game/Assets/Art/VFX/StatusIcons/AttackBuffEffect.png`
+  - 接入方式：`BattleView` 对 `StatusEffectType.AttackPowerModifier` 先合并当前英雄身上的总修正值；只有合并后仍为正数时，才创建这套“图标绕英雄躯干前后环绕”的加攻状态特效
 - `防御力下降`
   - 项目内工程 prefab：`game/Assets/Prefabs/VFX/Shared/DefenseDownStatusLoop.prefab`
   - 项目内运行时 prefab：`game/Assets/Resources/Stage01Demo/VFX/Statuses/DefenseDownStatusLoop.prefab`
   - 图标素材来源：`game/Assets/Art/VFX/StatusIcons/DefenceDebuffEffect.png`
   - 接入方式：`BattleView` 对 `StatusEffectType.DefenseModifier` 先合并当前英雄身上的总修正值；只有合并后仍为负数时，才创建这套“图标绕英雄躯干前后环绕”的减防状态特效
+- `防御力上升`
+  - 项目内工程 prefab：`game/Assets/Prefabs/VFX/Shared/DefenseUpStatusLoop.prefab`
+  - 项目内运行时 prefab：`game/Assets/Resources/Stage01Demo/VFX/Statuses/DefenseUpStatusLoop.prefab`
+  - 图标素材来源：`game/Assets/Art/VFX/StatusIcons/DefenceBuffEffect.png`
+  - 接入方式：`BattleView` 对 `StatusEffectType.DefenseModifier` 先合并当前英雄身上的总修正值；只有合并后仍为正数时，才创建这套“图标绕英雄躯干前后环绕”的加防状态特效
+- `攻速上升 / 下降`
+  - 项目内工程 prefab：`game/Assets/Prefabs/VFX/Shared/AttackSpeedUpStatusLoop.prefab`、`game/Assets/Prefabs/VFX/Shared/AttackSpeedDownStatusLoop.prefab`
+  - 项目内运行时 prefab：`game/Assets/Resources/Stage01Demo/VFX/Statuses/AttackSpeedUpStatusLoop.prefab`、`game/Assets/Resources/Stage01Demo/VFX/Statuses/AttackSpeedDownStatusLoop.prefab`
+  - 图标素材来源：`game/Assets/Art/VFX/StatusIcons/AttackSpeedBuffEffect.png`、`game/Assets/Art/VFX/StatusIcons/AttackSpeedDebuffEffect.png`
+  - 接入方式：`BattleView` 对 `StatusEffectType.AttackSpeedModifier` 先合并当前英雄身上的总修正值；按正负方向自动在加攻速 / 减攻速图标之间切换
+- `移速上升 / 下降`
+  - 项目内工程 prefab：`game/Assets/Prefabs/VFX/Shared/MoveSpeedUpStatusLoop.prefab`、`game/Assets/Prefabs/VFX/Shared/MoveSpeedDownStatusLoop.prefab`
+  - 项目内运行时 prefab：`game/Assets/Resources/Stage01Demo/VFX/Statuses/MoveSpeedUpStatusLoop.prefab`、`game/Assets/Resources/Stage01Demo/VFX/Statuses/MoveSpeedDownStatusLoop.prefab`
+  - 图标素材来源：`game/Assets/Art/VFX/StatusIcons/MoveSpeedBuffEffect.png`、`game/Assets/Art/VFX/StatusIcons/MoveSpeedDebuffEffect.png`
+  - 接入方式：`BattleView` 对 `StatusEffectType.MoveSpeedModifier` 先合并当前英雄身上的总修正值；按正负方向自动在加移速 / 减移速图标之间切换
 - 属性增减类图标状态的当前共用规则：
   - 这类图标优先共用同一条“绕躯干前后环绕”的身体轨道，而不是每个图标各自独立在平面上转圈
   - 同一英雄同时存在多个这类图标状态时，由 `BattleView` 按当前激活数量自动分配轨道相位，让它们沿同一圈轨道错位分布并一起旋转
+  - 同一个 `StatusEffectType` 如果合并后的总修正值在正负之间翻转，表现层应同步重建并切换到对应的 buff / debuff prefab，不要继续沿用旧图标
   - 轨道半径、前后缩放、后半圈透明度等参数优先收敛在统一脚本里，不要为每个属性效果各写一套独立旋转逻辑
 
 ## 强制位移 / 击退表现的当前规则
