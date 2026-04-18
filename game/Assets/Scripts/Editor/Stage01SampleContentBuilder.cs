@@ -31,6 +31,7 @@ namespace Fight.Editor
         private const string AssassinPrefabPath = "Assets/Prefabs/Heroes/assassin_001_shadowstep/Shadowstep.prefab";
         private const string TidefinPrefabPath = "Assets/FantasyMonsters/Monsters/Insects/PurpleScarab/PurpleScarab.prefab";
         private const string MarksmanPrefabPath = "Assets/Prefabs/Heroes/marksman_001_longshot/Longshot.prefab";
+        private const string RiflemanPrefabPath = MarksmanPrefabPath;
         private const string SupportPrefabPath = "Assets/Prefabs/Heroes/support_001_sunpriest/Sunpriest.prefab";
         private const string WarriorPrefabPath = "Assets/Prefabs/Heroes/warrior_001_skybreaker/Skybreaker.prefab";
         private const string FireMagePrefabPath = "Assets/HeroEditor4D/heroes/FIREMAGE.prefab";
@@ -204,7 +205,23 @@ namespace Fight.Editor
                 out var marksmanHeroExisted,
                 HeroTag.Ranged, HeroTag.SustainedDamage);
             ConfigureLongshotBasicAttack(marksman, overwriteExistingContent, marksmanHeroExisted);
-            CreateHeroCatalog(warrior, mage, frostmage, assassin, tidefin, tank, support, marksman);
+
+            var riflemanActive = CreateRiflemanActiveSkill(overwriteExistingContent);
+            var riflemanUltimateSkill = CreateRiflemanUltimateSkill(overwriteExistingContent, out var riflemanUltimateExisted);
+
+            var rifleman = CreateHero(
+                "marksman_002_rifleman",
+                "Rifleman",
+                HeroClass.Marksman,
+                280f, 40f, 6f, 1f / 1.43f, 3.2f, 0.18f, 1.75f, 6.2f,
+                riflemanActive,
+                ConfigureRiflemanUltimate(riflemanUltimateSkill, overwriteExistingContent, riflemanUltimateExisted),
+                overwriteExistingContent,
+                out var riflemanHeroExisted,
+                HeroTag.Ranged, HeroTag.SustainedDamage, HeroTag.AreaDamage);
+            ConfigureRiflemanBasicAttack(rifleman, overwriteExistingContent, riflemanHeroExisted);
+
+            CreateHeroCatalog(warrior, mage, frostmage, assassin, tidefin, tank, support, marksman, rifleman);
 
             var battleInput = CreateBattleInput(
                 "Stage01DemoBattleInput",
@@ -411,6 +428,7 @@ namespace Fight.Editor
                 "mage_001_firemage" => AssetDatabase.LoadAssetAtPath<GameObject>(FireMageProjectilePrefabPath),
                 "mage_002_frostmage" => AssetDatabase.LoadAssetAtPath<GameObject>(FrostMageProjectilePrefabPath),
                 "marksman_001_longshot" => AssetDatabase.LoadAssetAtPath<GameObject>(LongshotProjectilePrefabPath),
+                "marksman_002_rifleman" => AssetDatabase.LoadAssetAtPath<GameObject>(LongshotProjectilePrefabPath),
                 "support_001_sunpriest" => AssetDatabase.LoadAssetAtPath<GameObject>(SunpriestProjectilePrefabPath),
                 _ => null,
             };
@@ -418,6 +436,7 @@ namespace Fight.Editor
                 heroId == "mage_001_firemage"
                 || heroId == "mage_002_frostmage"
                 || heroId == "marksman_001_longshot"
+                || heroId == "marksman_002_rifleman"
                 || heroId == "support_001_sunpriest";
             hero.visualConfig.projectileEulerAngles = Vector3.zero;
             hero.visualConfig.hitVfxPrefab = null;
@@ -434,6 +453,7 @@ namespace Fight.Editor
                 "mage_001_firemage" => FireMagePrefabPath,
                 "mage_002_frostmage" => FrostMagePrefabPath,
                 "marksman_001_longshot" => MarksmanPrefabPath,
+                "marksman_002_rifleman" => RiflemanPrefabPath,
                 _ => heroClass switch
                 {
                     HeroClass.Support => SupportPrefabPath,
@@ -586,6 +606,54 @@ namespace Fight.Editor
             return skill;
         }
 
+        private static SkillData CreateRiflemanActiveSkill(bool overwriteExistingContent)
+        {
+            var skill = CreateSkill(
+                "skill_rifleman_active_burstfire",
+                "Burst Fire",
+                SkillSlotType.ActiveSkill,
+                SkillType.SingleTargetDamage,
+                SkillTargetType.NearestEnemy,
+                6.2f,
+                0f,
+                0.55f,
+                5f,
+                1,
+                overwriteExistingContent,
+                out var existedBefore);
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.skillType = SkillType.SingleTargetDamage;
+            skill.targetType = SkillTargetType.NearestEnemy;
+            skill.castRange = 6.2f;
+            skill.areaRadius = 0f;
+            skill.cooldownSeconds = 5f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+            AddDamageEffect(skill, 0.55f);
+            ResetActionSequence(skill);
+            skill.actionSequence.enabled = true;
+            skill.actionSequence.payloadType = CombatActionSequencePayloadType.SourceSkill;
+            skill.actionSequence.repeatMode = CombatActionSequenceRepeatMode.FixedCount;
+            skill.actionSequence.repeatCount = 3;
+            skill.actionSequence.durationSeconds = 0.54f;
+            skill.actionSequence.intervalSeconds = 0.18f;
+            skill.actionSequence.windupSeconds = 0f;
+            skill.actionSequence.recoverySeconds = 0f;
+            skill.actionSequence.temporaryBasicAttackRangeOverride = 0f;
+            skill.actionSequence.temporarySkillCastRangeOverride = 0f;
+            skill.actionSequence.targetRefreshMode = CombatActionSequenceTargetRefreshMode.KeepCurrentTarget;
+            skill.actionSequence.interruptFlags =
+                CombatActionSequenceInterruptFlags.HardControl | CombatActionSequenceInterruptFlags.ForcedMovement;
+            skill.description = "Stage-01 demo skill: Burst Fire";
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
         private static SkillData CreateTidefinActiveSkill(bool overwriteExistingContent)
         {
             var skill = CreateSkill(
@@ -702,6 +770,40 @@ namespace Fight.Editor
             skill.description = "Stage-01 demo skill: Smoke Veil";
             ResetActionSequence(skill);
             ResetUltimateDecision(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateRiflemanUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
+        {
+            var skill = CreateSkill(
+                "skill_rifleman_ultimate_fraggrenade",
+                "Frag Grenade",
+                SkillSlotType.Ultimate,
+                SkillType.AreaDamage,
+                SkillTargetType.DensestEnemyArea,
+                7f,
+                2.8f,
+                2.4f,
+                0f,
+                1,
+                overwriteExistingContent,
+                out existedBefore);
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.skillType = SkillType.AreaDamage;
+            skill.targetType = SkillTargetType.DensestEnemyArea;
+            skill.castRange = 7f;
+            skill.areaRadius = 2.8f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+            AddPersistentAreaEffect(skill, PersistentAreaPulseEffectType.DirectDamage, PersistentAreaTargetType.Enemies, 2.4f, skill.areaRadius, 0.45f, 0.45f, false);
+            skill.description = "Stage-01 demo skill: Frag Grenade";
+            ResetActionSequence(skill);
             EditorUtility.SetDirty(skill);
             return skill;
         }
@@ -1227,6 +1329,24 @@ namespace Fight.Editor
             EditorUtility.SetDirty(hero);
         }
 
+        private static void ConfigureRiflemanBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (hero == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return;
+            }
+
+            hero.basicAttack.damageMultiplier = 1.15f;
+            hero.basicAttack.attackInterval = 1.43f;
+            hero.basicAttack.rangeOverride = 6.2f;
+            hero.basicAttack.usesProjectile = true;
+            hero.basicAttack.projectileSpeed = 18f;
+            hero.basicAttack.effectType = BasicAttackEffectType.Damage;
+            hero.basicAttack.targetType = BasicAttackTargetType.NearestEnemy;
+            hero.debugNotes = "Stage-01 demo hero for Marksman. Rifleman validates heavy single-shot pacing plus burst-fire sequence and delayed grenade payoff.";
+            EditorUtility.SetDirty(hero);
+        }
+
         private static SkillData CreateSupportActiveSkill(bool overwriteExistingContent)
         {
             var skill = CreateSkill(
@@ -1584,6 +1704,31 @@ namespace Fight.Editor
             return skill;
         }
 
+        private static SkillData ConfigureRiflemanUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.skillType = SkillType.AreaDamage;
+            skill.targetType = SkillTargetType.DensestEnemyArea;
+            skill.castRange = 7f;
+            skill.areaRadius = 2.8f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+
+            ResetUltimateDecision(skill);
+            skill.ultimateDecision.targetingType = UltimateTargetingType.EnemyDensestPosition;
+            skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;
+            skill.ultimateDecision.primaryCondition.searchRadius = skill.areaRadius;
+            skill.ultimateDecision.primaryCondition.requiredUnitCount = 3;
+            skill.ultimateDecision.combineMode = UltimateConditionCombineMode.PrimaryOnly;
+            ApplyCountFallback(skill, 40f, 2, 52f, 1);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
         private static void ApplyCountFallback(SkillData skill, float firstTriggerSeconds, int firstRequiredUnitCount, float secondTriggerSeconds, int secondRequiredUnitCount)
         {
             skill.ultimateDecision.fallback.fallbackType = UltimateFallbackType.LowerPrimaryThreshold;
@@ -1911,6 +2056,8 @@ namespace Fight.Editor
                 "skill_frostmage_ultimate_blizzard" => "mage_002_frostmage",
                 "skill_tidefin_active_tidalpounce" => "assassin_002_tidefin",
                 "skill_tidefin_ultimate_ruintide" => "assassin_002_tidefin",
+                "skill_rifleman_active_burstfire" => "marksman_002_rifleman",
+                "skill_rifleman_ultimate_fraggrenade" => "marksman_002_rifleman",
                 _ => null,
             };
         }

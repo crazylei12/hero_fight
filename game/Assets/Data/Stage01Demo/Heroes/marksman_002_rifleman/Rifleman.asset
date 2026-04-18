@@ -1,0 +1,54 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 65b49e23d4a4cda45a9a11e1d7bacd97, type: 3}
+  m_Name: Rifleman
+  m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
+  heroId: marksman_002_rifleman
+  displayName: Rifleman
+  heroClass: 5
+  tags: 010000000300000007000000
+  baseStats:
+    maxHealth: 280
+    attackPower: 40
+    defense: 6
+    attackSpeed: 0.6993007
+    moveSpeed: 3.2
+    criticalChance: 0.18
+    criticalDamageMultiplier: 1.75
+    attackRange: 6.2
+  basicAttack:
+    damageMultiplier: 1.15
+    attackInterval: 1.43
+    rangeOverride: 6.2
+    usesProjectile: 1
+    projectileSpeed: 18
+    effectType: 0
+    targetType: 0
+    onHitStatusEffects: []
+  activeSkill: {fileID: 11400000, guid: 0f3ea0aeb4a84cafb80f76df475bc8d3, type: 2}
+  ultimateSkill: {fileID: 11400000, guid: a3cb6f9d9ef7423d8ff44c4d0ab12f25, type: 2}
+  aiTemplateId: marksman_default
+  usesSpecialLogic: 0
+  specialLogicNotes: 
+  visualConfig:
+    portrait: {fileID: 0}
+    battlePrefab: {fileID: 8669988449511686758, guid: 1a3474b7995f94845a06d8ad860d17c8, type: 3}
+    animatorController: {fileID: 9100000, guid: c0fbc9a82051e94429aa17cc4b2f48e5, type: 2}
+    battlePrefabFacesLeftByDefault: 0
+    projectilePrefab: {fileID: 1000000000000000001, guid: 0b6d4f0aa0184954b8c50b3ee9bd5075, type: 3}
+    projectileAlignToMovement: 1
+    projectileEulerAngles: {x: 0, y: 0, z: 0}
+    castVfxPrefab: {fileID: 0}
+    hitVfxPrefab: {fileID: 0}
+    castSfx: {fileID: 0}
+  debugNotes: Stage-01 demo hero for Marksman. Rifleman validates heavy single-shot
+    pacing plus burst-fire sequence and delayed grenade payoff.
