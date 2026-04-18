@@ -45,6 +45,7 @@ namespace Fight.Editor
         private const string FrostMageActiveAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FrostMageFrostBurst.prefab";
         private const string FrostMageUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FrostMageBlizzardField.prefab";
         private const string MageUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FireMageMeteorField.prefab";
+        private const string RiflemanUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/RiflemanFragGrenadeBurst.prefab";
         private const string SunpriestProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/SunpriestBasicAttackProjectile.prefab";
         private const string SunpriestUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/SunpriestSunBlessingField.prefab";
 
@@ -1720,6 +1721,10 @@ namespace Fight.Editor
             skill.areaRadius = 4f;
             skill.minTargetsToCast = 1;
             skill.allowsSelfCast = false;
+            skill.persistentAreaVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(RiflemanUltimateAreaVfxPrefabPath);
+            skill.persistentAreaVfxScaleMultiplier = 1f;
+            skill.persistentAreaVfxEulerAngles = Vector3.zero;
+            skill.skillAreaPresentationType = SkillAreaPresentationType.None;
 
             ResetUltimateDecision(skill);
             skill.ultimateDecision.targetingType = UltimateTargetingType.EnemyDensestPosition;
