@@ -9,18 +9,15 @@ namespace Fight.Editor
     public static class RiflemanVfxPrefabBuilder
     {
         private const string BuildMenuPath = "Fight/Stage 01/Build Rifleman VFX Prefabs";
-        private const string GeneratedArtFolder = "Assets/Art/VFX/Generated";
         private const string PrefabsRootFolder = "Assets/Prefabs/VFX";
         private const string SkillPrefabsFolder = PrefabsRootFolder + "/Skills";
         private const string BuilderScriptAssetPath = "Assets/Scripts/Editor/RiflemanVfxPrefabBuilder.cs";
-        private const string SoftCircleSpritePath = GeneratedArtFolder + "/vfx_soft_circle.png";
 
         private const string FragGrenadePrefabPath = SkillPrefabsFolder + "/RiflemanFragGrenadeBurst.prefab";
         private const string FragGrenadeSkillAssetPath = "Assets/Data/Stage01Demo/Skills/marksman_002_rifleman/Frag Grenade.asset";
 
-        private const string BurstRingsSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Burst/Burst_rings.prefab";
-        private const string BurstSharpSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Burst/Burst_sharp.prefab";
-        private const string FireExplosionEarthSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Fire/Fire_explosion_earth.prefab";
+        private const string CrackDustSourcePrefabPath = "Assets/Game VFX -Explosion & Crack/Prefabs/FX_Crack_Dust.prefab";
+        private const string RealisticExplosionSourcePrefabPath = "Assets/Game VFX -Explosion & Crack/Prefabs/FX_RealisticEXP_S02.prefab";
 
         private static bool autoBuildScheduled;
 
@@ -39,12 +36,10 @@ namespace Fight.Editor
         [MenuItem(BuildMenuPath)]
         public static void BuildRiflemanVfxPrefabs()
         {
-            EnsureFolder(GeneratedArtFolder);
             EnsureFolder(PrefabsRootFolder);
             EnsureFolder(SkillPrefabsFolder);
 
-            var softCircleSprite = EnsureSoftCircleSprite();
-            BuildFragGrenadeBurstPrefab(softCircleSprite);
+            BuildFragGrenadeBurstPrefab();
             SyncStage01DemoAssets();
 
             AssetDatabase.SaveAssets();
@@ -89,7 +84,10 @@ namespace Fight.Editor
                 return true;
             }
 
-            return GetLatestTimestampUtc(BuilderScriptAssetPath, SoftCircleSpritePath)
+            return GetLatestTimestampUtc(
+                    BuilderScriptAssetPath,
+                    CrackDustSourcePrefabPath,
+                    RealisticExplosionSourcePrefabPath)
                 > GetLatestTimestampUtc(FragGrenadePrefabPath);
         }
 
@@ -109,64 +107,25 @@ namespace Fight.Editor
             EditorUtility.SetDirty(fragGrenadeSkill);
         }
 
-        private static void BuildFragGrenadeBurstPrefab(Sprite softCircleSprite)
+        private static void BuildFragGrenadeBurstPrefab()
         {
-            var burstRingsPrefab = LoadRequiredAsset<GameObject>(BurstRingsSourcePrefabPath);
-            var burstSharpPrefab = LoadRequiredAsset<GameObject>(BurstSharpSourcePrefabPath);
-            var fireExplosionEarthPrefab = LoadRequiredAsset<GameObject>(FireExplosionEarthSourcePrefabPath);
+            var crackDustPrefab = LoadRequiredAsset<GameObject>(CrackDustSourcePrefabPath);
+            var realisticExplosionPrefab = LoadRequiredAsset<GameObject>(RealisticExplosionSourcePrefabPath);
 
             var root = new GameObject("RiflemanFragGrenadeBurst");
             root.AddComponent<SortingGroup>();
 
-            CreateSprite(
-                root.transform,
-                "BlastShadow",
-                softCircleSprite,
-                new Color(0.11f, 0.09f, 0.08f, 0.16f),
-                -4,
-                Vector3.zero,
-                new Vector3(1.04f, 0.96f, 1f));
-            CreateSprite(
-                root.transform,
-                "ScorchTint",
-                softCircleSprite,
-                new Color(0.34f, 0.17f, 0.08f, 0.12f),
-                -3,
-                Vector3.zero,
-                new Vector3(0.92f, 0.86f, 1f));
-            CreateSprite(
-                root.transform,
-                "ShockwaveTint",
-                softCircleSprite,
-                new Color(1f, 0.47f, 0.14f, 0.12f),
-                -2,
-                Vector3.zero,
-                new Vector3(0.74f, 0.68f, 1f));
-            CreateSprite(
-                root.transform,
-                "HeatCore",
-                softCircleSprite,
-                new Color(1f, 0.88f, 0.56f, 0.14f),
-                -1,
-                Vector3.zero,
-                new Vector3(0.34f, 0.30f, 1f));
+            // Keep the final skill reference project-owned while swapping source-pack pieces freely.
+            var crackDust = InstantiateNestedPrefab(crackDustPrefab, root.transform, "CrackDust");
+            crackDust.transform.localScale = Vector3.one * 0.16f;
+            crackDust.transform.localPosition = new Vector3(0f, 0.01f, 0f);
+            TuneBurstParticleSystems(crackDust, 0.55f, 1.2f);
+            OffsetRendererOrders(crackDust, 8);
 
-            var outerRing = InstantiateNestedPrefab(burstRingsPrefab, root.transform, "OuterRing");
-            outerRing.transform.localScale = Vector3.one * 0.22f;
-            outerRing.transform.localPosition = new Vector3(0f, 0.01f, 0f);
-            TuneBurstParticleSystems(outerRing, 0.45f, 1.35f);
-            OffsetRendererOrders(outerRing, 8);
-
-            var fragmentBurst = InstantiateNestedPrefab(burstSharpPrefab, root.transform, "FragmentBurst");
-            fragmentBurst.transform.localScale = Vector3.one * 0.18f;
-            fragmentBurst.transform.localPosition = new Vector3(0f, 0.01f, 0f);
-            TuneBurstParticleSystems(fragmentBurst, 0.45f, 1.45f);
-            OffsetRendererOrders(fragmentBurst, 10);
-
-            var centerExplosion = InstantiateNestedPrefab(fireExplosionEarthPrefab, root.transform, "CenterExplosion");
-            centerExplosion.transform.localScale = Vector3.one * 0.18f;
+            var centerExplosion = InstantiateNestedPrefab(realisticExplosionPrefab, root.transform, "CenterExplosion");
+            centerExplosion.transform.localScale = Vector3.one * 0.12f;
             centerExplosion.transform.localPosition = new Vector3(0f, 0.03f, 0f);
-            TuneBurstParticleSystems(centerExplosion, 0.45f, 1.4f);
+            TuneBurstParticleSystems(centerExplosion, 0.55f, 1.3f);
             OffsetRendererOrders(centerExplosion, 12);
 
             SavePrefab(root, FragGrenadePrefabPath);
@@ -194,60 +153,6 @@ namespace Fight.Editor
                 main.duration = Mathf.Min(main.duration, maxDurationSeconds);
                 main.simulationSpeed = Mathf.Max(main.simulationSpeed, minSimulationSpeed);
             }
-        }
-
-        private static Sprite EnsureSoftCircleSprite()
-        {
-            if (!File.Exists(GetAbsoluteProjectPath(SoftCircleSpritePath)))
-            {
-                var texture = BuildSoftCircleTexture(128);
-                File.WriteAllBytes(GetAbsoluteProjectPath(SoftCircleSpritePath), texture.EncodeToPNG());
-                Object.DestroyImmediate(texture);
-                AssetDatabase.ImportAsset(SoftCircleSpritePath, ImportAssetOptions.ForceSynchronousImport);
-
-                if (AssetImporter.GetAtPath(SoftCircleSpritePath) is TextureImporter importer)
-                {
-                    importer.textureType = TextureImporterType.Sprite;
-                    importer.spriteImportMode = SpriteImportMode.Single;
-                    importer.alphaIsTransparency = true;
-                    importer.mipmapEnabled = false;
-                    importer.wrapMode = TextureWrapMode.Clamp;
-                    importer.filterMode = FilterMode.Bilinear;
-                    importer.SaveAndReimport();
-                }
-            }
-
-            return LoadRequiredAsset<Sprite>(SoftCircleSpritePath);
-        }
-
-        private static Texture2D BuildSoftCircleTexture(int size)
-        {
-            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false)
-            {
-                filterMode = FilterMode.Bilinear,
-                wrapMode = TextureWrapMode.Clamp,
-            };
-
-            var pixels = new Color[size * size];
-            var center = (size - 1) * 0.5f;
-            var radius = size * 0.5f;
-            for (var y = 0; y < size; y++)
-            {
-                for (var x = 0; x < size; x++)
-                {
-                    var dx = x - center;
-                    var dy = y - center;
-                    var distance = Mathf.Sqrt((dx * dx) + (dy * dy));
-                    var alpha = distance <= radius
-                        ? 1f - Mathf.Clamp01((distance - (radius * 0.62f)) / Mathf.Max(1f, radius * 0.38f))
-                        : 0f;
-                    pixels[(y * size) + x] = new Color(1f, 1f, 1f, alpha);
-                }
-            }
-
-            texture.SetPixels(pixels);
-            texture.Apply();
-            return texture;
         }
 
         private static GameObject InstantiateNestedPrefab(GameObject sourcePrefab, Transform parent, string name)
@@ -281,27 +186,6 @@ namespace Fight.Editor
             {
                 renderers[i].sortingOrder = baseOrder + (renderers[i].sortingOrder - minOrder);
             }
-        }
-
-        private static SpriteRenderer CreateSprite(
-            Transform parent,
-            string name,
-            Sprite sprite,
-            Color color,
-            int sortingOrder,
-            Vector3 localPosition,
-            Vector3 localScale)
-        {
-            var go = new GameObject(name);
-            go.transform.SetParent(parent, false);
-            go.transform.localPosition = localPosition;
-            go.transform.localScale = localScale;
-
-            var renderer = go.AddComponent<SpriteRenderer>();
-            renderer.sprite = sprite;
-            renderer.color = color;
-            renderer.sortingOrder = sortingOrder;
-            return renderer;
         }
 
         private static T LoadRequiredAsset<T>(string assetPath) where T : Object
