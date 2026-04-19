@@ -39,6 +39,7 @@ namespace Fight.Editor
         private const string MarksmanPrefabPath = "Assets/Prefabs/Heroes/marksman_001_longshot/Longshot.prefab";
         private const string RiflemanPrefabPath = "Assets/Prefabs/Heroes/marksman_002_rifleman/Rifleman.prefab";
         private const string SupportPrefabPath = "Assets/Prefabs/Heroes/support_001_sunpriest/Sunpriest.prefab";
+        private const string WindchimePrefabPath = "Assets/Prefabs/Heroes/support_002_windchime/Windchime.prefab";
         private const string WarriorPrefabPath = "Assets/Prefabs/Heroes/warrior_001_skybreaker/Skybreaker.prefab";
         private const string FireMagePrefabPath = "Assets/HeroEditor4D/heroes/FIREMAGE.prefab";
         private const string FrostMagePrefabPath = "Assets/Prefabs/Heroes/mage_002_frostmage/Frostmage.prefab";
@@ -265,6 +266,7 @@ namespace Fight.Editor
                 HeroTag.Ranged, HeroTag.Control, HeroTag.Buff);
             ConfigureWindchimeBasicAttack(windchime, overwriteExistingContent, windchimeHeroExisted);
             EnsureHeroSkillReferences(windchime, windchimeActive, windchimeUltimateSkill);
+            EnsureHeroBattlePrefabReference(windchime, LoadBattlePrefab("support_002_windchime", HeroClass.Support));
 
             var marksmanActive = CreateLongshotActiveSkill(overwriteExistingContent);
             var marksmanUltimateSkill = CreateLongshotUltimateSkill(overwriteExistingContent, out var marksmanUltimateExisted);
@@ -395,10 +397,12 @@ namespace Fight.Editor
             var windchimeHero = AssetDatabase.LoadAssetAtPath<HeroDefinition>(WindchimeHeroAssetPath);
             var windchimeActiveSkill = AssetDatabase.LoadAssetAtPath<SkillData>(WindchimeActiveSkillAssetPath);
             var windchimeUltimateSkill = AssetDatabase.LoadAssetAtPath<SkillData>(WindchimeUltimateSkillAssetPath);
+            var windchimeBattlePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(WindchimePrefabPath);
             var catalogContainsBladesman = CatalogContainsHero(heroCatalog, "warrior_002_bladesman");
             var catalogContainsWindchime = CatalogContainsHero(heroCatalog, "support_002_windchime");
             var bladesmanReferencesValid = HeroHasExpectedSkillReferences(bladesmanHero, bladesmanActiveSkill, bladesmanUltimateSkill);
             var windchimeReferencesValid = HeroHasExpectedSkillReferences(windchimeHero, windchimeActiveSkill, windchimeUltimateSkill);
+            var windchimeBattlePrefabValid = HeroHasExpectedBattlePrefab(windchimeHero, windchimeBattlePrefab);
 
             return !hasMainMenuScene
                 || !hasHeroSelectScene
@@ -416,7 +420,8 @@ namespace Fight.Editor
                 || !catalogContainsBladesman
                 || !catalogContainsWindchime
                 || !bladesmanReferencesValid
-                || !windchimeReferencesValid;
+                || !windchimeReferencesValid
+                || !windchimeBattlePrefabValid;
         }
 
         private static bool CatalogContainsHero(HeroCatalogData catalog, string heroId)
@@ -461,6 +466,31 @@ namespace Fight.Editor
 
             hero.activeSkill = activeSkill;
             hero.ultimateSkill = ultimateSkill;
+            EditorUtility.SetDirty(hero);
+        }
+
+        private static bool HeroHasExpectedBattlePrefab(HeroDefinition hero, GameObject expectedBattlePrefab)
+        {
+            return hero != null
+                && expectedBattlePrefab != null
+                && hero.visualConfig != null
+                && hero.visualConfig.battlePrefab == expectedBattlePrefab;
+        }
+
+        private static void EnsureHeroBattlePrefabReference(HeroDefinition hero, GameObject battlePrefab)
+        {
+            if (hero == null || battlePrefab == null)
+            {
+                return;
+            }
+
+            hero.visualConfig ??= new HeroVisualConfig();
+            if (hero.visualConfig.battlePrefab == battlePrefab)
+            {
+                return;
+            }
+
+            hero.visualConfig.battlePrefab = battlePrefab;
             EditorUtility.SetDirty(hero);
         }
 
@@ -622,6 +652,7 @@ namespace Fight.Editor
                 "mage_002_frostmage" => FrostMagePrefabPath,
                 "marksman_001_longshot" => MarksmanPrefabPath,
                 "marksman_002_rifleman" => RiflemanPrefabPath,
+                "support_002_windchime" => WindchimePrefabPath,
                 "tank_002_shieldwarden" => ShieldwardenPrefabPath,
                 _ => heroClass switch
                 {
