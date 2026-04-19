@@ -107,6 +107,7 @@ namespace Fight.UI
             UpdateTopBar(context);
             UpdateSidebar(blueSidebar, blueHeroes, TeamSide.Blue, blueColor);
             UpdateSidebar(redSidebar, redHeroes, TeamSide.Red, redColor);
+            UpdateNameplates(context);
             UpdateEndBanner();
         }
 
