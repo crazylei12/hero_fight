@@ -49,6 +49,33 @@ namespace Fight.Battle
             return FindNearestEnemyByHeroClass(heroes, actor, maxRange, preferredHeroClass);
         }
 
+        public static RuntimeHero SelectLowestHealthRangedAllyTarget(
+            IReadOnlyList<RuntimeHero> heroes,
+            RuntimeHero actor,
+            float maxRange,
+            bool allowHealthyFallback = false)
+        {
+            return FindLowestHealthRangedAlly(heroes, actor, maxRange, allowHealthyFallback);
+        }
+
+        public static RuntimeHero SelectThreatenedRangedAllyTarget(
+            IReadOnlyList<RuntimeHero> heroes,
+            RuntimeHero actor,
+            float maxRange,
+            float threatRadius,
+            int requiredThreatCount = 1)
+        {
+            return FindThreatenedRangedAlly(heroes, actor, maxRange, threatRadius, requiredThreatCount);
+        }
+
+        public static RuntimeHero SelectThreateningEnemyNearRangedAllyTarget(
+            IReadOnlyList<RuntimeHero> heroes,
+            RuntimeHero actor,
+            float threatRadius)
+        {
+            return FindThreateningEnemyNearRangedAlly(heroes, actor, threatRadius);
+        }
+
         public static RuntimeHero SelectPreferredAllyTarget(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange, bool allowHealthyFallback = false)
         {
             return FindLowestHealthAlly(heroes, actor, maxRange, allowHealthyFallback);
@@ -297,6 +324,151 @@ namespace Fight.Battle
             return bestInjured ?? (allowHealthyFallback ? nearestHealthyAlly ?? selfTarget : null);
         }
 
+        private static RuntimeHero FindLowestHealthRangedAlly(
+            IReadOnlyList<RuntimeHero> heroes,
+            RuntimeHero actor,
+            float maxRange,
+            bool allowHealthyFallback)
+        {
+            RuntimeHero bestInjured = null;
+            var lowestInjuredHealth = float.MaxValue;
+            var lowestInjuredRatio = float.MaxValue;
+            var bestInjuredDistance = float.MaxValue;
+            RuntimeHero nearestHealthyAlly = null;
+            var nearestHealthyDistance = float.MaxValue;
+
+            for (var i = 0; i < heroes.Count; i++)
+            {
+                var candidate = heroes[i];
+                if (!IsValidRangedAllyCandidate(candidate, actor, maxRange))
+                {
+                    continue;
+                }
+
+                var distance = Vector3.Distance(actor.CurrentPosition, candidate.CurrentPosition);
+                var ratio = candidate.MaxHealth > 0f ? candidate.CurrentHealth / candidate.MaxHealth : 1f;
+                var isInjured = ratio < 1f - Mathf.Epsilon;
+
+                if (isInjured && IsBetterInjuredAllyCandidate(candidate.CurrentHealth, ratio, distance, lowestInjuredHealth, lowestInjuredRatio, bestInjuredDistance))
+                {
+                    lowestInjuredHealth = candidate.CurrentHealth;
+                    lowestInjuredRatio = ratio;
+                    bestInjuredDistance = distance;
+                    bestInjured = candidate;
+                }
+
+                if (!allowHealthyFallback || isInjured || distance >= nearestHealthyDistance)
+                {
+                    continue;
+                }
+
+                nearestHealthyDistance = distance;
+                nearestHealthyAlly = candidate;
+            }
+
+            return bestInjured ?? nearestHealthyAlly;
+        }
+
+        private static RuntimeHero FindThreatenedRangedAlly(
+            IReadOnlyList<RuntimeHero> heroes,
+            RuntimeHero actor,
+            float maxRange,
+            float threatRadius,
+            int requiredThreatCount)
+        {
+            RuntimeHero best = null;
+            var bestThreatCount = 0;
+            var bestHealthRatio = float.MaxValue;
+            var bestCurrentHealth = float.MaxValue;
+            var bestDistance = float.MaxValue;
+
+            for (var i = 0; i < heroes.Count; i++)
+            {
+                var candidate = heroes[i];
+                if (!IsValidRangedAllyCandidate(candidate, actor, maxRange))
+                {
+                    continue;
+                }
+
+                var threatCount = CountThreateningEnemiesNearHero(heroes, candidate, threatRadius);
+                if (threatCount < Mathf.Max(1, requiredThreatCount))
+                {
+                    continue;
+                }
+
+                var healthRatio = candidate.MaxHealth > 0f ? candidate.CurrentHealth / candidate.MaxHealth : 1f;
+                var distance = Vector3.Distance(actor.CurrentPosition, candidate.CurrentPosition);
+                if (!IsBetterThreatenedRangedAllyCandidate(
+                        threatCount,
+                        candidate.CurrentHealth,
+                        healthRatio,
+                        distance,
+                        bestThreatCount,
+                        bestCurrentHealth,
+                        bestHealthRatio,
+                        bestDistance))
+                {
+                    continue;
+                }
+
+                bestThreatCount = threatCount;
+                bestCurrentHealth = candidate.CurrentHealth;
+                bestHealthRatio = healthRatio;
+                bestDistance = distance;
+                best = candidate;
+            }
+
+            return best;
+        }
+
+        private static RuntimeHero FindThreateningEnemyNearRangedAlly(
+            IReadOnlyList<RuntimeHero> heroes,
+            RuntimeHero actor,
+            float threatRadius)
+        {
+            RuntimeHero bestEnemy = null;
+            var bestThreatDistance = float.MaxValue;
+            var lowestEnemyHealth = float.MaxValue;
+            var nearestActorDistance = float.MaxValue;
+
+            for (var i = 0; i < heroes.Count; i++)
+            {
+                var enemy = heroes[i];
+                if (enemy == null
+                    || enemy.IsDead
+                    || enemy.Side == actor.Side
+                    || !enemy.CanBeDirectTargeted
+                    || !IsBacklineThreatCandidate(enemy))
+                {
+                    continue;
+                }
+
+                if (!TryGetNearestThreatenedRangedAllyDistance(heroes, actor, enemy, threatRadius, out var threatenedDistance))
+                {
+                    continue;
+                }
+
+                var actorDistance = Vector3.Distance(actor.CurrentPosition, enemy.CurrentPosition);
+                if (!IsBetterThreateningEnemyCandidate(
+                        threatenedDistance,
+                        enemy.CurrentHealth,
+                        actorDistance,
+                        bestThreatDistance,
+                        lowestEnemyHealth,
+                        nearestActorDistance))
+                {
+                    continue;
+                }
+
+                bestThreatDistance = threatenedDistance;
+                lowestEnemyHealth = enemy.CurrentHealth;
+                nearestActorDistance = actorDistance;
+                bestEnemy = enemy;
+            }
+
+            return bestEnemy;
+        }
+
         private static bool IsBetterInjuredAllyCandidate(
             float currentHealth,
             float healthRatio,
@@ -366,6 +538,43 @@ namespace Fight.Battle
             }
 
             return best;
+        }
+
+        private static bool TryGetNearestThreatenedRangedAllyDistance(
+            IReadOnlyList<RuntimeHero> heroes,
+            RuntimeHero actor,
+            RuntimeHero enemy,
+            float threatRadius,
+            out float threatenedDistance)
+        {
+            threatenedDistance = float.MaxValue;
+            if (heroes == null || actor == null || enemy == null)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < heroes.Count; i++)
+            {
+                var ally = heroes[i];
+                if (ally == null
+                    || ally.IsDead
+                    || ally.Side != actor.Side
+                    || !ally.CanBeDirectTargeted
+                    || !IsRangedHero(ally))
+                {
+                    continue;
+                }
+
+                var distance = Vector3.Distance(enemy.CurrentPosition, ally.CurrentPosition);
+                if (distance > threatRadius || distance >= threatenedDistance)
+                {
+                    continue;
+                }
+
+                threatenedDistance = distance;
+            }
+
+            return threatenedDistance < float.MaxValue;
         }
 
         private static RuntimeHero FindBackmostEnemy(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange)
@@ -519,6 +728,156 @@ namespace Fight.Battle
             }
 
             return best;
+        }
+
+        private static int CountThreateningEnemiesNearHero(IReadOnlyList<RuntimeHero> heroes, RuntimeHero protectedHero, float threatRadius)
+        {
+            if (heroes == null || protectedHero == null)
+            {
+                return 0;
+            }
+
+            var count = 0;
+            for (var i = 0; i < heroes.Count; i++)
+            {
+                var enemy = heroes[i];
+                if (enemy == null
+                    || enemy.IsDead
+                    || enemy.Side == protectedHero.Side
+                    || !IsBacklineThreatCandidate(enemy))
+                {
+                    continue;
+                }
+
+                if (Vector3.Distance(enemy.CurrentPosition, protectedHero.CurrentPosition) <= threatRadius)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        private static bool IsValidRangedAllyCandidate(RuntimeHero candidate, RuntimeHero actor, float maxRange)
+        {
+            if (candidate == null
+                || actor == null
+                || candidate.IsDead
+                || candidate.Side != actor.Side
+                || !candidate.CanBeDirectTargeted
+                || !IsRangedHero(candidate))
+            {
+                return false;
+            }
+
+            return Vector3.Distance(actor.CurrentPosition, candidate.CurrentPosition) <= maxRange;
+        }
+
+        private static bool IsRangedHero(RuntimeHero hero)
+        {
+            if (hero?.Definition == null)
+            {
+                return false;
+            }
+
+            var tags = hero.Definition.tags;
+            if (tags != null && tags.Contains(HeroTag.Ranged))
+            {
+                return true;
+            }
+
+            return hero.Definition.basicAttack != null && hero.Definition.basicAttack.usesProjectile;
+        }
+
+        private static bool IsBacklineThreatCandidate(RuntimeHero hero)
+        {
+            if (hero?.Definition == null)
+            {
+                return false;
+            }
+
+            var tags = hero.Definition.tags;
+            if (tags != null && tags.Contains(HeroTag.Melee))
+            {
+                return true;
+            }
+
+            return hero.Definition.heroClass == HeroClass.Assassin
+                || hero.Definition.heroClass == HeroClass.Tank;
+        }
+
+        private static bool IsBetterThreatenedRangedAllyCandidate(
+            int threatCount,
+            float currentHealth,
+            float healthRatio,
+            float distance,
+            int bestThreatCount,
+            float bestCurrentHealth,
+            float bestHealthRatio,
+            float bestDistance)
+        {
+            if (threatCount > bestThreatCount)
+            {
+                return true;
+            }
+
+            if (threatCount != bestThreatCount)
+            {
+                return false;
+            }
+
+            if (currentHealth < bestCurrentHealth - Mathf.Epsilon)
+            {
+                return true;
+            }
+
+            if (Mathf.Abs(currentHealth - bestCurrentHealth) > Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            if (healthRatio < bestHealthRatio - Mathf.Epsilon)
+            {
+                return true;
+            }
+
+            if (Mathf.Abs(healthRatio - bestHealthRatio) > Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            return distance < bestDistance;
+        }
+
+        private static bool IsBetterThreateningEnemyCandidate(
+            float threatDistance,
+            float currentHealth,
+            float actorDistance,
+            float bestThreatDistance,
+            float bestCurrentHealth,
+            float bestActorDistance)
+        {
+            if (threatDistance < bestThreatDistance - Mathf.Epsilon)
+            {
+                return true;
+            }
+
+            if (Mathf.Abs(threatDistance - bestThreatDistance) > Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            if (currentHealth < bestCurrentHealth - Mathf.Epsilon)
+            {
+                return true;
+            }
+
+            if (Mathf.Abs(currentHealth - bestCurrentHealth) > Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            return actorDistance < bestActorDistance;
         }
     }
 }

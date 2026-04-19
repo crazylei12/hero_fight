@@ -24,6 +24,7 @@ namespace Fight.Battle
                 TickHero(context, context.Heroes[i], deltaTime, battleManager);
             }
 
+            BattleReactiveGuardSystem.Tick(context, deltaTime);
             BattleSkillSystem.TickDelayedSkillEffects(context, deltaTime, battleManager);
             ResolveHeroMinimumSeparation(context);
         }
@@ -203,6 +204,13 @@ namespace Fight.Battle
             {
                 BasicAttackTargetType.LowestHealthAlly => BattleAiDirector.SelectPreferredAllyTarget(context.Heroes, hero, 999f, allowHealthyFallback: true),
                 BasicAttackTargetType.PreferredEnemy => BattleAiDirector.SelectPreferredEnemyTarget(context.Heroes, hero, 999f),
+                BasicAttackTargetType.ThreateningEnemyNearRangedAlly => BattleAiDirector.SelectThreateningEnemyNearRangedAllyTarget(
+                        context.Heroes,
+                        hero,
+                        hero.Definition.basicAttack.targetPrioritySearchRadius > Mathf.Epsilon
+                            ? hero.Definition.basicAttack.targetPrioritySearchRadius
+                            : hero.AttackRange)
+                    ?? BattleAiDirector.SelectNearestEnemyTarget(context.Heroes, hero, 999f),
                 _ => BattleAiDirector.SelectNearestEnemyTarget(context.Heroes, hero, 999f),
             };
         }

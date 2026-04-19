@@ -294,6 +294,31 @@ namespace Fight.Battle
                     return FindLowestHealth(context.Heroes, caster, skill, includeAllies: false, effectiveCastRange);
                 case SkillTargetType.LowestHealthAlly:
                     return FindLowestHealth(context.Heroes, caster, skill, includeAllies: true, effectiveCastRange);
+                case SkillTargetType.LowestHealthRangedAlly:
+                    return BattleAiDirector.SelectLowestHealthRangedAllyTarget(context.Heroes, caster, effectiveCastRange, allowHealthyFallback: false);
+                case SkillTargetType.ThreatenedRangedAlly:
+                    var threatenedAlly = BattleAiDirector.SelectThreatenedRangedAllyTarget(
+                        context.Heroes,
+                        caster,
+                        effectiveCastRange,
+                        GetPrioritySearchRadius(skill),
+                        GetPriorityRequiredUnitCount(skill));
+                    if (threatenedAlly != null || !allowFallbackForPriorityTarget)
+                    {
+                        return threatenedAlly;
+                    }
+
+                    return skill.fallbackTargetType == SkillTargetType.None
+                        ? null
+                        : SelectPrimaryTargetByType(
+                            context,
+                            caster,
+                            skill,
+                            skill.fallbackTargetType,
+                            effectiveCastRange,
+                            allowFallbackForPriorityTarget: false);
+                case SkillTargetType.ThreatenedRangedAllyOrEnemyDensestAnchor:
+                    return SelectThreatenedRangedAllyOrEnemyAnchor(context, caster, skill, effectiveCastRange);
                 case SkillTargetType.HighestDamageEnemyInRange:
                     return BattleAiDirector.SelectHighestDamageEnemyTarget(context.Heroes, caster, effectiveCastRange);
                 case SkillTargetType.DensestEnemyArea:
@@ -544,10 +569,17 @@ namespace Fight.Battle
                 case SkillTargetType.Self:
                     return candidate == caster;
                 case SkillTargetType.LowestHealthAlly:
+                case SkillTargetType.LowestHealthRangedAlly:
+                case SkillTargetType.ThreatenedRangedAlly:
                 case SkillTargetType.AllAllies:
-                    return candidate.Side == caster.Side;
+                    return candidate.Side == caster.Side
+                        && (skill.targetType != SkillTargetType.LowestHealthRangedAlly
+                            && skill.targetType != SkillTargetType.ThreatenedRangedAlly
+                            || IsRangedAlly(candidate, caster));
                 case SkillTargetType.AllEnemies:
                     return candidate.Side != caster.Side;
+                case SkillTargetType.ThreatenedRangedAllyOrEnemyDensestAnchor:
+                    return true;
                 case SkillTargetType.PriorityEnemyHeroClass:
                     return candidate.Side != caster.Side;
             }
@@ -626,6 +658,16 @@ namespace Fight.Battle
             switch (condition.conditionType)
             {
                 case UltimateConditionType.EnemyCountInRange:
+                    if (ShouldUseThreatenedRangedAnchorCount(skill, caster, primaryTarget))
+                    {
+                        return CountUnitsInRange(
+                                   context,
+                                   caster,
+                                   primaryTarget,
+                                   GetPrioritySearchRadius(skill),
+                                   countAllies: false) >= GetPriorityRequiredUnitCount(skill);
+                    }
+
                     return CountUnitsInRange(context, caster, primaryTarget, searchRadius, countAllies: false) >= requiredUnitCount;
                 case UltimateConditionType.AllyCountInRange:
                     return CountUnitsInRange(context, caster, primaryTarget, searchRadius, countAllies: true) >= requiredUnitCount;
@@ -754,7 +796,9 @@ namespace Fight.Battle
 
             return condition.conditionType switch
             {
-                UltimateConditionType.EnemyCountInRange => CountUnitsInRange(context, caster, primaryTarget, searchRadius, countAllies: false),
+                UltimateConditionType.EnemyCountInRange => ShouldUseThreatenedRangedAnchorCount(skill, caster, primaryTarget)
+                    ? CountUnitsInRange(context, caster, primaryTarget, GetPrioritySearchRadius(skill), countAllies: false)
+                    : CountUnitsInRange(context, caster, primaryTarget, searchRadius, countAllies: false),
                 UltimateConditionType.AllyCountInRange => CountUnitsInRange(context, caster, primaryTarget, searchRadius, countAllies: true),
                 UltimateConditionType.EnemyLowHealthInRange => CountLowHealthUnitsInRange(context, caster, primaryTarget, searchRadius, includeAllies: false, healthThreshold),
                 UltimateConditionType.AllyLowHealthInRange => CountLowHealthUnitsInRange(context, caster, primaryTarget, searchRadius, includeAllies: true, healthThreshold),
@@ -782,6 +826,16 @@ namespace Fight.Battle
             }
 
             return 0;
+        }
+
+        private static bool ShouldUseThreatenedRangedAnchorCount(SkillData skill, RuntimeHero caster, RuntimeHero primaryTarget)
+        {
+            return skill != null
+                && caster != null
+                && primaryTarget != null
+                && skill.targetType == SkillTargetType.ThreatenedRangedAllyOrEnemyDensestAnchor
+                && primaryTarget.Side == caster.Side
+                && IsRangedAlly(primaryTarget, caster);
         }
 
         private static float GetEffectiveSearchRadius(SkillData skill, UltimateConditionData condition)
@@ -1186,6 +1240,8 @@ namespace Fight.Battle
                 }
             }
 
+            TryRegisterReactiveGuard(context, caster, skill, primaryTarget);
+
             if (allowActionSequenceTrigger)
             {
                 BattleCombatActionSequenceSystem.TryStartSequence(caster, skill, primaryTarget);
@@ -1308,6 +1364,14 @@ namespace Fight.Battle
                     return CollectUnitsInRadius(context, caster, caster.CurrentPosition, GetEffectRadius(skill, effect), includeAllies: false);
                 case SkillEffectTargetMode.AlliesInRadiusAroundCaster:
                     return CollectUnitsInRadius(context, caster, caster.CurrentPosition, GetEffectRadius(skill, effect), includeAllies: true);
+                case SkillEffectTargetMode.EnemiesInRadiusAroundPrimaryTarget:
+                    return primaryTarget != null
+                        ? CollectUnitsInRadius(context, caster, primaryTarget.CurrentPosition, GetEffectRadius(skill, effect), includeAllies: false)
+                        : new List<RuntimeHero>();
+                case SkillEffectTargetMode.AlliesInRadiusAroundPrimaryTarget:
+                    return primaryTarget != null
+                        ? CollectUnitsInRadius(context, caster, primaryTarget.CurrentPosition, GetEffectRadius(skill, effect), includeAllies: true)
+                        : new List<RuntimeHero>();
                 case SkillEffectTargetMode.DashPathEnemies:
                     return CollectDashPathTargets(context, caster, skill, effect, resolutionState);
                 case SkillEffectTargetMode.SkillTargets:
@@ -1787,6 +1851,31 @@ namespace Fight.Battle
                 : BattleAiDirector.SelectPreferredEnemyTarget(heroes, caster, maxRange);
         }
 
+        private static RuntimeHero SelectThreatenedRangedAllyOrEnemyAnchor(
+            BattleContext context,
+            RuntimeHero caster,
+            SkillData skill,
+            float effectiveCastRange)
+        {
+            if (context == null || caster == null || skill == null)
+            {
+                return null;
+            }
+
+            var threatenedAlly = BattleAiDirector.SelectThreatenedRangedAllyTarget(
+                context.Heroes,
+                caster,
+                effectiveCastRange,
+                GetPrioritySearchRadius(skill),
+                GetPriorityRequiredUnitCount(skill));
+            if (threatenedAlly != null)
+            {
+                return threatenedAlly;
+            }
+
+            return FindDensestEnemyAnchor(context.Heroes, caster, effectiveCastRange, skill.areaRadius);
+        }
+
         private static bool IsGlobalTeamTargeting(SkillTargetType targetType)
         {
             return targetType == SkillTargetType.AllAllies || targetType == SkillTargetType.AllEnemies;
@@ -1908,6 +1997,7 @@ namespace Fight.Battle
 
             if (skill.targetType == SkillTargetType.Self
                 || skill.targetType == SkillTargetType.LowestHealthAlly
+                || skill.targetType == SkillTargetType.LowestHealthRangedAlly
                 || skill.targetType == SkillTargetType.AllAllies)
             {
                 return true;
@@ -1942,6 +2032,16 @@ namespace Fight.Battle
             }
 
             return effectiveRange;
+        }
+
+        private static float GetPrioritySearchRadius(SkillData skill)
+        {
+            return skill != null ? Mathf.Max(0f, skill.targetPrioritySearchRadius) : 0f;
+        }
+
+        private static int GetPriorityRequiredUnitCount(SkillData skill)
+        {
+            return skill != null ? Mathf.Max(1, skill.targetPriorityRequiredUnitCount) : 1;
         }
 
         private static float GetSequenceCastRange(SkillData skill, float castRangeOverride)
@@ -2042,6 +2142,38 @@ namespace Fight.Battle
             }
 
             return distance < bestDistance;
+        }
+
+        private static bool IsRangedAlly(RuntimeHero candidate, RuntimeHero caster)
+        {
+            if (candidate == null || caster == null || candidate.Side != caster.Side || candidate.Definition == null)
+            {
+                return false;
+            }
+
+            var tags = candidate.Definition.tags;
+            if (tags != null && tags.Contains(HeroTag.Ranged))
+            {
+                return true;
+            }
+
+            return candidate.Definition.basicAttack != null && candidate.Definition.basicAttack.usesProjectile;
+        }
+
+        private static void TryRegisterReactiveGuard(BattleContext context, RuntimeHero caster, SkillData skill, RuntimeHero primaryTarget)
+        {
+            if (context == null
+                || caster == null
+                || skill?.reactiveGuard == null
+                || !skill.reactiveGuard.enabled
+                || primaryTarget == null
+                || primaryTarget.IsDead
+                || primaryTarget.Side != caster.Side)
+            {
+                return;
+            }
+
+            BattleReactiveGuardSystem.RegisterReactiveGuard(context, caster, primaryTarget, skill, skill.reactiveGuard);
         }
 
         private static RuntimeHero FindDensestEnemyAnchor(IReadOnlyList<RuntimeHero> heroes, RuntimeHero caster, float maxRange, float radius)

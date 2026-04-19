@@ -28,6 +28,9 @@ namespace Fight.Editor
         private const string ResultScenePath = ScenesFolder + "/Result.unity";
         private const string DefaultBattleInputAssetPath = ResourcesDemoFolder + "/Stage01DemoBattleInput.asset";
         private const string DefaultHeroCatalogAssetPath = ResourcesDemoFolder + "/Stage01HeroCatalog.asset";
+        private const string WindchimeHeroAssetPath = HeroesRootFolder + "/support_002_windchime/Windchime.asset";
+        private const string WindchimeActiveSkillAssetPath = SkillsRootFolder + "/support_002_windchime/Echo Canopy.asset";
+        private const string WindchimeUltimateSkillAssetPath = SkillsRootFolder + "/support_002_windchime/Stillwind Domain.asset";
         private const string AssassinPrefabPath = "Assets/Prefabs/Heroes/assassin_001_shadowstep/Shadowstep.prefab";
         private const string TidefinPrefabPath = "Assets/FantasyMonsters/Monsters/Insects/PurpleScarab/PurpleScarab.prefab";
         private const string MarksmanPrefabPath = "Assets/Prefabs/Heroes/marksman_001_longshot/Longshot.prefab";
@@ -51,6 +54,7 @@ namespace Fight.Editor
         private const string RiflemanUltimateProjectileVfxPrefabPath = "Assets/Prefabs/VFX/Projectiles/RiflemanFragGrenadeProjectile.prefab";
         private const string SunpriestProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/SunpriestBasicAttackProjectile.prefab";
         private const string SunpriestUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/SunpriestSunBlessingField.prefab";
+        private static bool autoEnsureScheduled;
 
         private static float ScaleRangedHeroDistance(float value)
         {
@@ -94,6 +98,18 @@ namespace Fight.Editor
                     "Demo content regenerated from defaults and existing tuning was overwritten.",
                     "OK");
             }
+        }
+
+        [InitializeOnLoadMethod]
+        private static void ScheduleAutoEnsureDemoContentIfNeeded()
+        {
+            if (Application.isBatchMode || autoEnsureScheduled)
+            {
+                return;
+            }
+
+            autoEnsureScheduled = true;
+            EditorApplication.delayCall += TryAutoEnsureDemoContentIfNeeded;
         }
 
         public static void GenerateDemoContent()
@@ -215,6 +231,21 @@ namespace Fight.Editor
                 HeroTag.Ranged, HeroTag.Heal, HeroTag.Buff);
             ConfigureSupportBasicAttack(support, overwriteExistingContent, supportHeroExisted);
 
+            var windchimeActive = CreateWindchimeActiveSkill(overwriteExistingContent);
+            var windchimeUltimateSkill = CreateWindchimeUltimateSkill(overwriteExistingContent, out var windchimeUltimateExisted);
+
+            var windchime = CreateHero(
+                "support_002_windchime",
+                "Windchime",
+                HeroClass.Support,
+                305f, 24f, 11f, 1f / 1.05f, 4.1f, 0.06f, 1.5f, ScaleRangedHeroDistance(5.6f),
+                windchimeActive,
+                ConfigureWindchimeUltimate(windchimeUltimateSkill, overwriteExistingContent, windchimeUltimateExisted),
+                overwriteExistingContent,
+                out var windchimeHeroExisted,
+                HeroTag.Ranged, HeroTag.Control, HeroTag.Buff);
+            ConfigureWindchimeBasicAttack(windchime, overwriteExistingContent, windchimeHeroExisted);
+
             var marksmanActive = CreateLongshotActiveSkill(overwriteExistingContent);
             var marksmanUltimateSkill = CreateLongshotUltimateSkill(overwriteExistingContent, out var marksmanUltimateExisted);
 
@@ -245,7 +276,7 @@ namespace Fight.Editor
                 HeroTag.Ranged, HeroTag.SustainedDamage, HeroTag.AreaDamage);
             ConfigureRiflemanBasicAttack(rifleman, overwriteExistingContent, riflemanHeroExisted);
 
-            CreateHeroCatalog(warrior, mage, frostmage, assassin, tidefin, tank, shieldwarden, support, marksman, rifleman);
+            CreateHeroCatalog(warrior, mage, frostmage, assassin, tidefin, tank, shieldwarden, support, windchime, marksman, rifleman);
 
             var battleInput = CreateBattleInput(
                 "Stage01DemoBattleInput",
@@ -299,7 +330,37 @@ namespace Fight.Editor
             EditorApplication.Exit(0);
         }
 
+        private static void TryAutoEnsureDemoContentIfNeeded()
+        {
+            autoEnsureScheduled = false;
+            if (EditorApplication.isCompiling || EditorApplication.isUpdating)
+            {
+                ScheduleAutoEnsureDemoContentIfNeeded();
+                return;
+            }
+
+            if (!NeedsDemoContentSync())
+            {
+                return;
+            }
+
+            GenerateDemoContent();
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            Debug.Log("Stage-01 demo content synchronized.");
+        }
+
         private static void EnsureDemoContent()
+        {
+            if (!NeedsDemoContentSync())
+            {
+                return;
+            }
+
+            GenerateDemoContent();
+        }
+
+        private static bool NeedsDemoContentSync()
         {
             var hasMainMenuScene = AssetDatabase.LoadAssetAtPath<SceneAsset>(MainMenuScenePath) != null;
             var hasHeroSelectScene = AssetDatabase.LoadAssetAtPath<SceneAsset>(HeroSelectScenePath) != null;
@@ -307,20 +368,42 @@ namespace Fight.Editor
             var hasResultScene = AssetDatabase.LoadAssetAtPath<SceneAsset>(ResultScenePath) != null;
             var hasBasicAttackOnlyScene = AssetDatabase.LoadAssetAtPath<SceneAsset>(BasicAttackOnlyBattleScenePath) != null;
             var hasDefaultBattleInput = AssetDatabase.LoadAssetAtPath<BattleInputConfig>(DefaultBattleInputAssetPath) != null;
-            var hasHeroCatalog = AssetDatabase.LoadAssetAtPath<HeroCatalogData>(DefaultHeroCatalogAssetPath) != null;
+            var heroCatalog = AssetDatabase.LoadAssetAtPath<HeroCatalogData>(DefaultHeroCatalogAssetPath);
+            var hasWindchimeHero = AssetDatabase.LoadAssetAtPath<HeroDefinition>(WindchimeHeroAssetPath) != null;
+            var hasWindchimeActiveSkill = AssetDatabase.LoadAssetAtPath<SkillData>(WindchimeActiveSkillAssetPath) != null;
+            var hasWindchimeUltimateSkill = AssetDatabase.LoadAssetAtPath<SkillData>(WindchimeUltimateSkillAssetPath) != null;
+            var catalogContainsWindchime = CatalogContainsHero(heroCatalog, "support_002_windchime");
 
-            if (hasMainMenuScene &&
-                hasHeroSelectScene &&
-                hasBattleScene &&
-                hasResultScene &&
-                hasBasicAttackOnlyScene &&
-                hasDefaultBattleInput &&
-                hasHeroCatalog)
+            return !hasMainMenuScene
+                || !hasHeroSelectScene
+                || !hasBattleScene
+                || !hasResultScene
+                || !hasBasicAttackOnlyScene
+                || !hasDefaultBattleInput
+                || heroCatalog == null
+                || !hasWindchimeHero
+                || !hasWindchimeActiveSkill
+                || !hasWindchimeUltimateSkill
+                || !catalogContainsWindchime;
+        }
+
+        private static bool CatalogContainsHero(HeroCatalogData catalog, string heroId)
+        {
+            if (catalog?.heroes == null || string.IsNullOrWhiteSpace(heroId))
             {
-                return;
+                return false;
             }
 
-            GenerateDemoContent();
+            for (var i = 0; i < catalog.heroes.Count; i++)
+            {
+                var hero = catalog.heroes[i];
+                if (hero != null && hero.heroId == heroId)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static void EnsureFolders()
@@ -1320,6 +1403,35 @@ namespace Fight.Editor
             EditorUtility.SetDirty(hero);
         }
 
+        private static void ConfigureWindchimeBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (hero == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return;
+            }
+
+            hero.basicAttack.damageMultiplier = 1f;
+            hero.basicAttack.attackInterval = 1.05f;
+            hero.basicAttack.rangeOverride = ScaleRangedHeroDistance(5.6f);
+            hero.basicAttack.usesProjectile = true;
+            hero.basicAttack.projectileSpeed = 14f;
+            hero.basicAttack.effectType = BasicAttackEffectType.Damage;
+            hero.basicAttack.targetType = BasicAttackTargetType.ThreateningEnemyNearRangedAlly;
+            hero.basicAttack.targetPrioritySearchRadius = ScaleRangedHeroDistance(3f);
+            EnsureBasicAttackStatusList(hero.basicAttack);
+            hero.basicAttack.onHitStatusEffects.Clear();
+            hero.basicAttack.onHitStatusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.AttackPowerModifier,
+                durationSeconds = 3f,
+                magnitude = -0.06f,
+                maxStacks = 3,
+                refreshDurationOnReapply = true,
+            });
+            hero.debugNotes = "Stage-01 demo hero for Support. Windchime validates reactive backline protection, threatened-ranged target selection, and anti-dive area denial.";
+            EditorUtility.SetDirty(hero);
+        }
+
         private static void ConfigureTidefinBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
         {
             if (hero == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
@@ -1525,6 +1637,29 @@ namespace Fight.Editor
                 CombatActionSequenceInterruptFlags.HardControl | CombatActionSequenceInterruptFlags.ForcedMovement;
         }
 
+        private static void ResetReactiveGuard(SkillData skill)
+        {
+            if (skill == null)
+            {
+                return;
+            }
+
+            if (skill.reactiveGuard == null)
+            {
+                skill.reactiveGuard = new ReactiveGuardData();
+            }
+
+            skill.reactiveGuard.enabled = false;
+            skill.reactiveGuard.durationSeconds = 0f;
+            skill.reactiveGuard.triggerRadius = 0f;
+            skill.reactiveGuard.effectRadius = 0f;
+            skill.reactiveGuard.maxTriggerCount = 1;
+            skill.reactiveGuard.forcedMovementDistance = 0f;
+            skill.reactiveGuard.forcedMovementDurationSeconds = 0f;
+            skill.reactiveGuard.forcedMovementPeakHeight = 0f;
+            skill.reactiveGuard.onTriggerStatusEffects.Clear();
+        }
+
         private static void ResetUltimateCondition(UltimateConditionData condition)
         {
             condition.conditionType = UltimateConditionType.None;
@@ -1696,6 +1831,26 @@ namespace Fight.Editor
             return skill;
         }
 
+        private static SkillData ConfigureWindchimeUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            ResetUltimateDecision(skill);
+            skill.ultimateDecision.targetingType = UltimateTargetingType.UseSkillTargetType;
+            skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;
+            skill.ultimateDecision.primaryCondition.searchRadius = skill.areaRadius;
+            skill.ultimateDecision.primaryCondition.requiredUnitCount = 3;
+            skill.ultimateDecision.combineMode = UltimateConditionCombineMode.PrimaryOnly;
+            skill.ultimateDecision.fallback.fallbackType = UltimateFallbackType.LowerPrimaryThreshold;
+            skill.ultimateDecision.fallback.triggerAfterSeconds = 45f;
+            skill.ultimateDecision.fallback.overrideRequiredUnitCount = 2;
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
         private static SkillData ConfigureLongshotUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
         {
             if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
@@ -1738,6 +1893,163 @@ namespace Fight.Editor
             skill.ultimateDecision.fallback.fallbackType = UltimateFallbackType.LowerPrimaryThreshold;
             skill.ultimateDecision.fallback.triggerAfterSeconds = 40f;
             skill.ultimateDecision.fallback.overrideHealthPercentThreshold = 1f;
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateWindchimeUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
+        {
+            var skill = CreateSkill(
+                "skill_windchime_ultimate_stillwinddomain",
+                "Stillwind Domain",
+                SkillSlotType.Ultimate,
+                SkillType.Buff,
+                SkillTargetType.ThreatenedRangedAllyOrEnemyDensestAnchor,
+                ScaleRangedHeroDistance(7f),
+                ScaleRangedHeroDistance(4.3333335f),
+                0f,
+                0f,
+                1,
+                overwriteExistingContent,
+                out existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.description = "Stage-01 demo skill: anti-engage field that knocks enemies up, shields allies, and pulses attack-power and move-speed debuffs.";
+            skill.targetType = SkillTargetType.ThreatenedRangedAllyOrEnemyDensestAnchor;
+            skill.fallbackTargetType = SkillTargetType.DensestEnemyArea;
+            skill.targetPrioritySearchRadius = ScaleRangedHeroDistance(3f);
+            skill.targetPriorityRequiredUnitCount = 2;
+            skill.castRange = ScaleRangedHeroDistance(7f);
+            skill.areaRadius = ScaleRangedHeroDistance(4.3333335f);
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+            skill.persistentAreaVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(SunpriestUltimateAreaVfxPrefabPath);
+            skill.persistentAreaVfxScaleMultiplier = 1f;
+            skill.persistentAreaVfxEulerAngles = Vector3.zero;
+            skill.skillAreaPresentationType = SkillAreaPresentationType.None;
+
+            var enemyKnockUp = AddApplyStatusEffectsEffect(skill);
+            enemyKnockUp.targetMode = SkillEffectTargetMode.EnemiesInRadiusAroundPrimaryTarget;
+            enemyKnockUp.radiusOverride = skill.areaRadius;
+            enemyKnockUp.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.KnockUp,
+                durationSeconds = 0.75f,
+                magnitude = 1f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
+            var allyShield = AddApplyStatusEffectsEffect(skill);
+            allyShield.targetMode = SkillEffectTargetMode.AlliesInRadiusAroundPrimaryTarget;
+            allyShield.radiusOverride = skill.areaRadius;
+            allyShield.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.Shield,
+                durationSeconds = 4f,
+                magnitude = 70f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
+            var areaEffect = AddPersistentAreaEffect(skill, PersistentAreaPulseEffectType.None, PersistentAreaTargetType.Enemies, 0f, skill.areaRadius, 5f, 1f, false);
+            areaEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.MoveSpeedModifier,
+                durationSeconds = 1.2f,
+                magnitude = -0.3f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+            areaEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.AttackPowerModifier,
+                durationSeconds = 1.2f,
+                magnitude = -0.2f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
+            ResetUltimateDecision(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateWindchimeActiveSkill(bool overwriteExistingContent)
+        {
+            var skill = CreateSkill(
+                "skill_windchime_active_echocanopy",
+                "Echo Canopy",
+                SkillSlotType.ActiveSkill,
+                SkillType.Buff,
+                SkillTargetType.ThreatenedRangedAlly,
+                ScaleRangedHeroDistance(6.133333f),
+                0f,
+                0f,
+                8f,
+                1,
+                overwriteExistingContent,
+                out var existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.description = "Stage-01 demo skill: single-target anti-dive protection with a one-shot reactive knock-up and knockback.";
+            skill.targetType = SkillTargetType.ThreatenedRangedAlly;
+            skill.fallbackTargetType = SkillTargetType.LowestHealthRangedAlly;
+            skill.targetPrioritySearchRadius = ScaleRangedHeroDistance(2.333333f);
+            skill.targetPriorityRequiredUnitCount = 1;
+            skill.castRange = ScaleRangedHeroDistance(6.133333f);
+            skill.areaRadius = 0f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+
+            var shieldEffect = AddApplyStatusEffectsEffect(skill);
+            shieldEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.Shield,
+                durationSeconds = 3f,
+                magnitude = 55f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
+            var moveSpeedEffect = AddApplyStatusEffectsEffect(skill);
+            moveSpeedEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.MoveSpeedModifier,
+                durationSeconds = 2.5f,
+                magnitude = 0.35f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
+            ResetReactiveGuard(skill);
+            skill.reactiveGuard.enabled = true;
+            skill.reactiveGuard.durationSeconds = 3f;
+            skill.reactiveGuard.triggerRadius = 2.4f;
+            skill.reactiveGuard.effectRadius = 2.4f;
+            skill.reactiveGuard.maxTriggerCount = 1;
+            skill.reactiveGuard.forcedMovementDistance = 1.8f;
+            skill.reactiveGuard.forcedMovementDurationSeconds = 0.25f;
+            skill.reactiveGuard.forcedMovementPeakHeight = 0.7f;
+            skill.reactiveGuard.onTriggerStatusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.KnockUp,
+                durationSeconds = 0.6f,
+                magnitude = 1f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
             EditorUtility.SetDirty(skill);
             return skill;
         }
@@ -2271,6 +2583,8 @@ namespace Fight.Editor
                 "skill_tidefin_ultimate_ruintide" => "assassin_002_tidefin",
                 "skill_shieldwarden_active_wardenscall" => "tank_002_shieldwarden",
                 "skill_shieldwarden_ultimate_lastbastion" => "tank_002_shieldwarden",
+                "skill_windchime_active_echocanopy" => "support_002_windchime",
+                "skill_windchime_ultimate_stillwinddomain" => "support_002_windchime",
                 "skill_rifleman_active_burstfire" => "marksman_002_rifleman",
                 "skill_rifleman_ultimate_fraggrenade" => "marksman_002_rifleman",
                 _ => null,

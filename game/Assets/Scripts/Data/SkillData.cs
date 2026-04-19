@@ -17,6 +17,8 @@ namespace Fight.Data
         public SkillTargetType targetType = SkillTargetType.NearestEnemy;
         public HeroClass preferredEnemyHeroClass = HeroClass.Assassin;
         public SkillTargetType fallbackTargetType = SkillTargetType.NearestEnemy;
+        [Min(0f)] public float targetPrioritySearchRadius = 0f;
+        [Min(1)] public int targetPriorityRequiredUnitCount = 1;
 
         [Header("Numbers")]
         [Min(0.1f)] public float castRange = 4f;
@@ -27,6 +29,7 @@ namespace Fight.Data
         [Header("Effects")]
         public List<SkillEffectData> effects = new List<SkillEffectData>();
         public bool allowsSelfCast;
+        public ReactiveGuardData reactiveGuard = new ReactiveGuardData();
 
         [Header("Action Sequence")]
         public CombatActionSequenceData actionSequence = new CombatActionSequenceData();

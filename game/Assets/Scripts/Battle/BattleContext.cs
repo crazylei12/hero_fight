@@ -103,6 +103,7 @@ namespace Fight.Battle
             Projectiles = new List<RuntimeBasicAttackProjectile>();
             SkillAreas = new List<RuntimeSkillArea>();
             DelayedSkillEffects = new List<RuntimeDelayedSkillEffect>();
+            ReactiveGuards = new List<RuntimeReactiveGuard>();
         }
 
         public BattleInputConfig Input { get; }
@@ -122,6 +123,8 @@ namespace Fight.Battle
         public List<RuntimeSkillArea> SkillAreas { get; }
 
         public List<RuntimeDelayedSkillEffect> DelayedSkillEffects { get; }
+
+        public List<RuntimeReactiveGuard> ReactiveGuards { get; }
 
         public void RecordUltimateCast(TeamSide side)
         {

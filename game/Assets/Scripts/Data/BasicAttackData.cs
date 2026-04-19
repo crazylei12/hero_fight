@@ -15,6 +15,7 @@ namespace Fight.Data
         NearestEnemy = 0,
         LowestHealthAlly = 1,
         PreferredEnemy = 2,
+        ThreateningEnemyNearRangedAlly = 3,
     }
 
     [Serializable]
@@ -28,6 +29,7 @@ namespace Fight.Data
         [Min(0f)] public float projectileSpeed = 0f;
         public BasicAttackEffectType effectType = BasicAttackEffectType.Damage;
         public BasicAttackTargetType targetType = BasicAttackTargetType.NearestEnemy;
+        [Min(0f)] public float targetPrioritySearchRadius = 0f;
         public List<StatusEffectData> onHitStatusEffects = new List<StatusEffectData>();
     }
 }
