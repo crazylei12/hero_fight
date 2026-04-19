@@ -964,7 +964,7 @@ namespace Fight.UI
                 return;
             }
 
-            if (!HasOutgoingDamageShare(hero))
+            if (!TryGetOutgoingDamageShareRadius(hero, out var damageShareRadius))
             {
                 if (view.DamageShareSourceView != null)
                 {
@@ -999,10 +999,12 @@ namespace Fight.UI
             }
 
             ApplyStatusEffectView(view.DamageShareSourceView, config, heroSortingOrder);
+            ApplyDamageShareSourceScale(view.DamageShareSourceView, damageShareRadius);
         }
 
-        private bool HasOutgoingDamageShare(RuntimeHero sourceHero)
+        private bool TryGetOutgoingDamageShareRadius(RuntimeHero sourceHero, out float radius)
         {
+            radius = 0f;
             if (sourceHero == null)
             {
                 return false;
@@ -1035,11 +1037,70 @@ namespace Fight.UI
                         continue;
                     }
 
-                    return true;
+                    radius = Mathf.Max(radius, ResolveDamageShareDisplayRadius(status));
                 }
             }
 
-            return false;
+            return radius > 0f;
+        }
+
+        private static float ResolveDamageShareDisplayRadius(RuntimeStatusEffect status)
+        {
+            if (status?.SourceSkill == null || status.SourceSkill.effects == null)
+            {
+                return 0f;
+            }
+
+            var resolvedRadius = 0f;
+            var effects = status.SourceSkill.effects;
+            for (var effectIndex = 0; effectIndex < effects.Count; effectIndex++)
+            {
+                var effect = effects[effectIndex];
+                if (effect == null || effect.statusEffects == null || effect.statusEffects.Count == 0)
+                {
+                    continue;
+                }
+
+                var appliesDamageShare = false;
+                for (var statusIndex = 0; statusIndex < effect.statusEffects.Count; statusIndex++)
+                {
+                    var effectStatus = effect.statusEffects[statusIndex];
+                    if (effectStatus != null && effectStatus.effectType == StatusEffectType.DamageShare)
+                    {
+                        appliesDamageShare = true;
+                        break;
+                    }
+                }
+
+                if (!appliesDamageShare)
+                {
+                    continue;
+                }
+
+                var effectRadius = effect.radiusOverride > 0f
+                    ? effect.radiusOverride
+                    : status.SourceSkill.areaRadius;
+                if (effectRadius > resolvedRadius)
+                {
+                    resolvedRadius = effectRadius;
+                }
+            }
+
+            return resolvedRadius;
+        }
+
+        private static void ApplyDamageShareSourceScale(StatusEffectViewState viewState, float radius)
+        {
+            if (viewState?.Root == null || radius <= 0f)
+            {
+                return;
+            }
+
+            var statusTransform = viewState.Root.transform;
+            statusTransform.localScale = new Vector3(
+                statusTransform.localScale.x * radius,
+                statusTransform.localScale.y * radius,
+                statusTransform.localScale.z);
         }
 
         private void SyncForcedMovementStatusVfx(RuntimeHero hero, HeroViewState view, int heroSortingOrder)
