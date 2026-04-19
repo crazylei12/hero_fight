@@ -240,17 +240,16 @@ def slanted_panel(size: tuple[int, int] = (1920, 260)) -> Image.Image:
 
 
 def make_logo(text: str, accent: tuple[int, int, int, int], accent_fill: tuple[int, int, int, int]) -> Image.Image:
-    image = Image.new("RGBA", (116, 116), (0, 0, 0, 0))
+    image = Image.new("RGBA", (82, 82), (0, 0, 0, 0))
     shadow = Image.new("RGBA", image.size, (0, 0, 0, 0))
     shadow_draw = ImageDraw.Draw(shadow)
-    shadow_draw.rounded_rectangle((8, 12, 108, 108), radius=24, fill=(0, 0, 0, 110))
-    image.alpha_composite(shadow.filter(ImageFilter.GaussianBlur(6)))
+    shadow_draw.ellipse((8, 10, 74, 76), fill=(0, 0, 0, 120))
+    image.alpha_composite(shadow.filter(ImageFilter.GaussianBlur(5)))
 
     draw = ImageDraw.Draw(image)
-    draw.rounded_rectangle((10, 8, 106, 104), radius=22, fill=(18, 22, 30, 240), outline=accent, width=3)
-    draw.rounded_rectangle((18, 16, 98, 96), radius=18, fill=(34, 40, 54, 230), outline=(255, 255, 255, 22), width=2)
-    draw.ellipse((32, 30, 84, 82), fill=accent_fill)
-    centered_text(draw, (18, 16, 98, 96), text, FONT_LOGO, TEXT_MAIN, stroke_width=2, stroke_fill=(0, 0, 0, 200))
+    draw.ellipse((7, 7, 75, 75), fill=(24, 30, 42, 238), outline=accent, width=3)
+    draw.ellipse((14, 14, 68, 68), fill=accent_fill, outline=(255, 255, 255, 30), width=2)
+    centered_text(draw, (14, 12, 68, 66), text, FONT_LOGO, TEXT_MAIN, stroke_width=2, stroke_fill=(0, 0, 0, 200))
     return image
 
 
@@ -301,7 +300,7 @@ def make_background(size: tuple[int, int] = (1920, 560)) -> Image.Image:
     return image
 
 
-def generate(prefix: str = "top_scoreboard_mockup_v2") -> tuple[Path, Path]:
+def generate(prefix: str = "top_scoreboard_mockup_v3") -> tuple[Path, Path]:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
     ribbon_blue = Image.open(LAYERLAB / "Label-Title/Title_Ribbon_03_Blue.png").convert("RGBA")
@@ -345,13 +344,13 @@ def generate(prefix: str = "top_scoreboard_mockup_v2") -> tuple[Path, Path]:
 
     left_logo = make_logo("SS", BLUE, (88, 173, 255, 220))
     right_logo = make_logo("鸡", RED, (255, 138, 138, 220))
-    canvas.alpha_composite(left_logo, (left_logo_x, info_y))
-    canvas.alpha_composite(right_logo, (right_logo_x, info_y))
+    canvas.alpha_composite(left_logo, (left_logo_x + 10, info_y + 10))
+    canvas.alpha_composite(right_logo, (right_logo_x + 10, info_y + 10))
 
     centered_text(panel_draw, (160, 16, 650, 88), "Strange Seals", FONT_TEAM, TEXT_MAIN)
     centered_text(panel_draw, (1270, 16, 1760, 88), "鸡腿大大", FONT_TEAM, TEXT_MAIN)
 
-    panel_draw.text((770, 92), "4", font=FONT_KILL, fill=BLUE_SOFT, stroke_width=3, stroke_fill=(6, 10, 18, 220))
+    panel_draw.text((782, 92), "4", font=FONT_KILL, fill=BLUE_SOFT, stroke_width=3, stroke_fill=(6, 10, 18, 220))
     panel_draw.text((1128, 92), "3", font=FONT_KILL, fill=RED_SOFT, stroke_width=3, stroke_fill=(6, 10, 18, 220))
 
     centered_text(panel_draw, (800, 56, 1120, 84), "常规时间", FONT_PHASE, (236, 210, 170, 255), stroke_width=1, stroke_fill=(30, 20, 12, 180))
@@ -359,16 +358,13 @@ def generate(prefix: str = "top_scoreboard_mockup_v2") -> tuple[Path, Path]:
     centered_text(panel_draw, (904, 168, 1018, 194), "VS", FONT_PHASE, (245, 223, 179, 255), stroke_width=2, stroke_fill=(30, 20, 12, 180))
 
     for index in range(3):
-        x = 726 + index * 28
+        x = 684 + index * 28
         fill = BLUE if index < 2 else (70, 78, 92, 255)
         panel_draw.ellipse((x, 170, x + 18, 188), fill=fill, outline=(255, 255, 255, 26), width=2)
     for index in range(3):
         x = 1178 + index * 28
         fill = RED if index < 1 else (70, 78, 92, 255)
         panel_draw.ellipse((x, 170, x + 18, 188), fill=fill, outline=(255, 255, 255, 26), width=2)
-
-    panel_draw.text((78, 206), "队徽位", font=FONT_SMALL, fill=(141, 168, 210, 230), stroke_width=1, stroke_fill=(0, 0, 0, 150))
-    panel_draw.text((1778, 206), "队徽位", font=FONT_SMALL, fill=(220, 148, 148, 230), stroke_width=1, stroke_fill=(0, 0, 0, 150))
 
     scoreboard_path = OUT_DIR / f"{prefix}.png"
     canvas.save(scoreboard_path)
@@ -381,8 +377,8 @@ def generate(prefix: str = "top_scoreboard_mockup_v2") -> tuple[Path, Path]:
     preview.alpha_composite(canvas, (0, 12))
 
     preview_draw = ImageDraw.Draw(preview)
-    preview_draw.text((134, 304), "预览图：顶部计分板素材 v2", font=get_font(24), fill=(255, 237, 212, 180), stroke_width=1, stroke_fill=(0, 0, 0, 150))
-    preview_draw.text((134, 336), "已删小局文字，并统一队徽位 / 黑框 / 中轴的高度和对齐", font=get_font(18), fill=(233, 235, 242, 150), stroke_width=1, stroke_fill=(0, 0, 0, 150))
+    preview_draw.text((134, 304), "预览图：顶部计分板素材 v3", font=get_font(24), fill=(255, 237, 212, 180), stroke_width=1, stroke_fill=(0, 0, 0, 150))
+    preview_draw.text((134, 336), "收掉双层队徽框，并把蓝方击杀数与圆点彻底错开", font=get_font(18), fill=(233, 235, 242, 150), stroke_width=1, stroke_fill=(0, 0, 0, 150))
 
     preview_path = OUT_DIR / f"{prefix}_preview.png"
     preview.save(preview_path)
