@@ -16,6 +16,8 @@ namespace Fight.Battle
         private const float UltimateFirstFallbackBonus = 0.2f;
         private const float UltimateSecondFallbackBonus = 0.5f;
         private const float UltimateSecondaryPriorityBonus = 0.25f;
+        private const float UltimateAllySuppressionWindowSeconds = 1.2f;
+        private const float UltimateAllySuppressionChanceMultiplier = 0.25f;
 
         public static bool TryCastSkill(BattleContext context, RuntimeHero caster, BattleManager battleManager)
         {
@@ -616,6 +618,7 @@ namespace Fight.Battle
         private static bool RollUltimateCastChance(BattleContext context, RuntimeHero caster, SkillData skill, RuntimeHero primaryTarget)
         {
             var chance = GetUltimateCastChance(context, caster, skill, primaryTarget);
+            chance = ApplyAllyUltimateSuppression(context, caster, chance);
             ScheduleNextUltimateAttempt(context, caster);
             return context?.RandomService == null || context.RandomService.NextFloat() <= chance;
         }
@@ -623,6 +626,7 @@ namespace Fight.Battle
         private static bool RollLegacyUltimateCastChance(BattleContext context, RuntimeHero caster, SkillData skill, List<RuntimeHero> affectedTargets)
         {
             var chance = Mathf.Clamp01(UltimateBaseReleaseChance + Mathf.Max(0, affectedTargets.Count - Mathf.Max(1, skill.minTargetsToCast)) * UltimateExtraUnitReleaseChance);
+            chance = ApplyAllyUltimateSuppression(context, caster, chance);
             ScheduleNextUltimateAttempt(context, caster);
             return context?.RandomService == null || context.RandomService.NextFloat() <= chance;
         }
@@ -682,6 +686,28 @@ namespace Fight.Battle
             }
 
             return Mathf.Clamp01(chance);
+        }
+
+        private static float ApplyAllyUltimateSuppression(BattleContext context, RuntimeHero caster, float chance)
+        {
+            if (context?.Clock == null || caster == null || caster.Side == TeamSide.None)
+            {
+                return Mathf.Clamp01(chance);
+            }
+
+            var lastAllyUltimateCastTimeSeconds = context.GetLastUltimateCastTimeSeconds(caster.Side);
+            if (float.IsNegativeInfinity(lastAllyUltimateCastTimeSeconds))
+            {
+                return Mathf.Clamp01(chance);
+            }
+
+            var timeSinceLastAllyUltimateSeconds = Mathf.Max(0f, context.Clock.ElapsedTimeSeconds - lastAllyUltimateCastTimeSeconds);
+            if (timeSinceLastAllyUltimateSeconds > UltimateAllySuppressionWindowSeconds)
+            {
+                return Mathf.Clamp01(chance);
+            }
+
+            return Mathf.Clamp01(chance * UltimateAllySuppressionChanceMultiplier);
         }
 
         private static int GetConditionUnitCount(
@@ -1039,6 +1065,13 @@ namespace Fight.Battle
                 consumeCooldown,
                 suppressActionSequenceTrigger,
                 isActionSequenceStep);
+
+            // Mark the team's latest committed ultimate so allied ult rolls can stagger.
+            if (consumeCooldown && skill.slotType == SkillSlotType.Ultimate)
+            {
+                context.RecordUltimateCast(caster.Side);
+            }
+
             context.EventBus.Publish(new SkillCastEvent(
                 caster,
                 skill,

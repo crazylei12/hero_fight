@@ -89,6 +89,9 @@ namespace Fight.Battle
 
     public class BattleContext
     {
+        private float lastBlueUltimateCastTimeSeconds = float.NegativeInfinity;
+        private float lastRedUltimateCastTimeSeconds = float.NegativeInfinity;
+
         public BattleContext(BattleInputConfig input, BattleClock clock, BattleScoreSystem scoreSystem, BattleRandomService randomService, BattleEventBus eventBus, List<RuntimeHero> heroes)
         {
             Input = input;
@@ -119,5 +122,29 @@ namespace Fight.Battle
         public List<RuntimeSkillArea> SkillAreas { get; }
 
         public List<RuntimeDelayedSkillEffect> DelayedSkillEffects { get; }
+
+        public void RecordUltimateCast(TeamSide side)
+        {
+            var castTimeSeconds = Clock != null ? Mathf.Max(0f, Clock.ElapsedTimeSeconds) : 0f;
+            switch (side)
+            {
+                case TeamSide.Blue:
+                    lastBlueUltimateCastTimeSeconds = castTimeSeconds;
+                    break;
+                case TeamSide.Red:
+                    lastRedUltimateCastTimeSeconds = castTimeSeconds;
+                    break;
+            }
+        }
+
+        public float GetLastUltimateCastTimeSeconds(TeamSide side)
+        {
+            return side switch
+            {
+                TeamSide.Blue => lastBlueUltimateCastTimeSeconds,
+                TeamSide.Red => lastRedUltimateCastTimeSeconds,
+                _ => float.NegativeInfinity,
+            };
+        }
     }
 }
