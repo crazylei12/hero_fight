@@ -300,7 +300,7 @@ def make_background(size: tuple[int, int] = (1920, 560)) -> Image.Image:
     return image
 
 
-def generate(prefix: str = "top_scoreboard_mockup_v4") -> tuple[Path, Path]:
+def generate(prefix: str = "top_scoreboard_mockup_v5") -> tuple[Path, Path]:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
     ribbon_blue = Image.open(LAYERLAB / "Label-Title/Title_Ribbon_03_Blue.png").convert("RGBA")
@@ -350,19 +350,24 @@ def generate(prefix: str = "top_scoreboard_mockup_v4") -> tuple[Path, Path]:
     centered_text(panel_draw, (160, 16, 650, 88), "Strange Seals", FONT_TEAM, TEXT_MAIN)
     centered_text(panel_draw, (1270, 16, 1760, 88), "鸡腿大大", FONT_TEAM, TEXT_MAIN)
 
-    panel_draw.text((782, 92), "4", font=FONT_KILL, fill=BLUE_SOFT, stroke_width=3, stroke_fill=(6, 10, 18, 220))
-    panel_draw.text((1128, 92), "3", font=FONT_KILL, fill=RED_SOFT, stroke_width=3, stroke_fill=(6, 10, 18, 220))
-
     centered_text(panel_draw, (800, 56, 1120, 84), "常规时间", FONT_PHASE, (236, 210, 170, 255), stroke_width=1, stroke_fill=(30, 20, 12, 180))
     centered_text(panel_draw, (790, 82, 1130, 140), "00:58", FONT_TIMER, TEXT_MAIN)
     centered_text(panel_draw, (904, 168, 1018, 194), "VS", FONT_PHASE, (245, 223, 179, 255), stroke_width=2, stroke_fill=(30, 20, 12, 180))
 
     center_axis_x = 960
+    score_box_width = 84
+    score_gap_from_axis = 102
+    left_score_box = (center_axis_x - score_gap_from_axis - score_box_width, 86, center_axis_x - score_gap_from_axis, 166)
+    right_score_box = (center_axis_x + score_gap_from_axis, 86, center_axis_x + score_gap_from_axis + score_box_width, 166)
+    centered_text(panel_draw, left_score_box, "4", FONT_KILL, BLUE_SOFT, stroke_width=3, stroke_fill=(6, 10, 18, 220))
+    centered_text(panel_draw, right_score_box, "3", FONT_KILL, RED_SOFT, stroke_width=3, stroke_fill=(6, 10, 18, 220))
+
     dot_size = 18
     dot_spacing = 28
-    right_dot_start_x = 1178
+    dot_gap_to_score = 20
     dot_group_width = dot_size + dot_spacing * 2
-    left_dot_start_x = center_axis_x * 2 - (right_dot_start_x + dot_group_width)
+    left_dot_start_x = left_score_box[0] - dot_gap_to_score - dot_group_width
+    right_dot_start_x = right_score_box[2] + dot_gap_to_score
 
     for index in range(3):
         x = left_dot_start_x + index * dot_spacing
@@ -384,8 +389,8 @@ def generate(prefix: str = "top_scoreboard_mockup_v4") -> tuple[Path, Path]:
     preview.alpha_composite(canvas, (0, 12))
 
     preview_draw = ImageDraw.Draw(preview)
-    preview_draw.text((134, 304), "预览图：顶部计分板素材 v4", font=get_font(24), fill=(255, 237, 212, 180), stroke_width=1, stroke_fill=(0, 0, 0, 150))
-    preview_draw.text((134, 336), "两侧小圆点按中轴严格对称，继续保留已修好的队徽与击杀区", font=get_font(18), fill=(233, 235, 242, 150), stroke_width=1, stroke_fill=(0, 0, 0, 150))
+    preview_draw.text((134, 304), "预览图：顶部计分板素材 v5", font=get_font(24), fill=(255, 237, 212, 180), stroke_width=1, stroke_fill=(0, 0, 0, 150))
+    preview_draw.text((134, 336), "分数与圆点都按中轴镜像盒布局重排，解决两侧离 VS 距离不一致", font=get_font(18), fill=(233, 235, 242, 150), stroke_width=1, stroke_fill=(0, 0, 0, 150))
 
     preview_path = OUT_DIR / f"{prefix}_preview.png"
     preview.save(preview_path)
