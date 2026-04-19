@@ -27,7 +27,6 @@ namespace Fight.UI
         private static readonly Color BlueColor = new Color32(88, 173, 255, 255);
         private static readonly Color RedColor = new Color32(255, 126, 126, 255);
         private static readonly Color MainTextColor = new Color32(244, 246, 250, 255);
-        private static readonly Color MutedTextColor = new Color32(199, 205, 216, 235);
         private static readonly Color PhaseColor = new Color32(236, 210, 170, 255);
         private static readonly Color DotInactiveColor = new Color32(110, 116, 130, 235);
         private static readonly Color DotOutlineColor = new Color32(255, 255, 255, 170);
@@ -38,7 +37,6 @@ namespace Fight.UI
         private Texture2D runtimeBaseTexture;
         private Texture2D dotTexture;
         private GUIStyle titleStyle;
-        private GUIStyle subtitleStyle;
         private GUIStyle scoreStyle;
         private GUIStyle timerStyle;
         private GUIStyle phaseStyle;
@@ -140,17 +138,6 @@ namespace Fight.UI
             DrawShadowedLabel(ScaleRect(hudRect, 1244f, 66f, 420f, 44f), GetTeamLabel(TeamSide.Red), titleStyle, MainTextColor);
 
             DrawShadowedLabel(
-                ScaleRect(hudRect, 252f, 110f, 344f, 18f),
-                $"存活 {CountAliveHeroes(context, TeamSide.Blue)}/{BattleInputConfig.DefaultTeamSize}",
-                subtitleStyle,
-                MutedTextColor);
-            DrawShadowedLabel(
-                ScaleRect(hudRect, 1280f, 110f, 344f, 18f),
-                $"存活 {CountAliveHeroes(context, TeamSide.Red)}/{BattleInputConfig.DefaultTeamSize}",
-                subtitleStyle,
-                MutedTextColor);
-
-            DrawShadowedLabel(
                 ScaleRect(hudRect, 780f, 2f, 320f, 28f),
                 context.Clock.IsOvertime ? "加时赛" : "常规时间",
                 phaseStyle,
@@ -250,7 +237,6 @@ namespace Fight.UI
 
             lastStyleScale = scale;
             titleStyle = BuildStyle(38, scale, TextAnchor.MiddleCenter, FontStyle.Bold);
-            subtitleStyle = BuildStyle(16, scale, TextAnchor.MiddleCenter, FontStyle.Normal);
             scoreStyle = BuildStyle(86, scale, TextAnchor.MiddleCenter, FontStyle.Bold);
             timerStyle = BuildStyle(48, scale, TextAnchor.MiddleCenter, FontStyle.Bold);
             phaseStyle = BuildStyle(22, scale, TextAnchor.MiddleCenter, FontStyle.Bold);
@@ -291,26 +277,6 @@ namespace Fight.UI
         private string GetTeamLabel(TeamSide side)
         {
             return side == TeamSide.Red ? redTeamLabel : blueTeamLabel;
-        }
-
-        private static int CountAliveHeroes(BattleContext context, TeamSide side)
-        {
-            if (context?.Heroes == null)
-            {
-                return 0;
-            }
-
-            var aliveCount = 0;
-            for (var i = 0; i < context.Heroes.Count; i++)
-            {
-                var hero = context.Heroes[i];
-                if (hero != null && hero.Side == side && !hero.IsDead)
-                {
-                    aliveCount++;
-                }
-            }
-
-            return aliveCount;
         }
 
         private static string FormatClockText(BattleContext context)
