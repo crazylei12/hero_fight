@@ -19,6 +19,7 @@ namespace Fight.Editor
         private const string EchoCanopyBurstPrefabPath = SkillPrefabsFolder + "/WindchimeEchoCanopyBurst.prefab";
         private const string StillwindDomainPrefabPath = SkillPrefabsFolder + "/WindchimeStillwindDomainField.prefab";
         private const string WindchimeActiveSkillAssetPath = "Assets/Data/Stage01Demo/Skills/support_002_windchime/Echo Canopy.asset";
+        private const string WindchimeUltimateSkillAssetPath = "Assets/Data/Stage01Demo/Skills/support_002_windchime/Stillwind Domain.asset";
         private const string ShieldWindSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Shields/Shield_wind.prefab";
         private const string HitWindSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Range_attack/Hit_wind.prefab";
         private const string AreaGenericBlueSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Area_generic/Area_generic_blue.prefab";
@@ -346,34 +347,51 @@ namespace Fight.Editor
         {
             var echoCanopyGuardPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(EchoCanopyGuardPrefabPath);
             var echoCanopyBurstPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(EchoCanopyBurstPrefabPath);
+            var stillwindDomainPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(StillwindDomainPrefabPath);
             var echoCanopySkill = AssetDatabase.LoadAssetAtPath<SkillData>(WindchimeActiveSkillAssetPath);
-            if (echoCanopySkill == null || echoCanopyGuardPrefab == null || echoCanopyBurstPrefab == null)
+            if (echoCanopySkill != null && echoCanopyGuardPrefab != null && echoCanopyBurstPrefab != null)
+            {
+                echoCanopySkill.reactiveGuard ??= new ReactiveGuardData();
+                if (echoCanopySkill.reactiveGuard.guardLoopVfxPrefab != echoCanopyGuardPrefab
+                    || echoCanopySkill.reactiveGuard.guardLoopVfxLocalOffset != ReactiveGuardLocalOffset
+                    || echoCanopySkill.reactiveGuard.guardLoopVfxLocalScale != Vector3.one
+                    || echoCanopySkill.reactiveGuard.guardLoopVfxEulerAngles != Vector3.zero
+                    || echoCanopySkill.reactiveGuard.triggerVfxPrefab != echoCanopyBurstPrefab
+                    || echoCanopySkill.reactiveGuard.triggerVfxLocalOffset != ReactiveGuardLocalOffset
+                    || echoCanopySkill.reactiveGuard.triggerVfxLocalScale != Vector3.one
+                    || echoCanopySkill.reactiveGuard.triggerVfxEulerAngles != Vector3.zero)
+                {
+                    echoCanopySkill.reactiveGuard.guardLoopVfxPrefab = echoCanopyGuardPrefab;
+                    echoCanopySkill.reactiveGuard.guardLoopVfxLocalOffset = ReactiveGuardLocalOffset;
+                    echoCanopySkill.reactiveGuard.guardLoopVfxLocalScale = Vector3.one;
+                    echoCanopySkill.reactiveGuard.guardLoopVfxEulerAngles = Vector3.zero;
+                    echoCanopySkill.reactiveGuard.triggerVfxPrefab = echoCanopyBurstPrefab;
+                    echoCanopySkill.reactiveGuard.triggerVfxLocalOffset = ReactiveGuardLocalOffset;
+                    echoCanopySkill.reactiveGuard.triggerVfxLocalScale = Vector3.one;
+                    echoCanopySkill.reactiveGuard.triggerVfxEulerAngles = Vector3.zero;
+                    EditorUtility.SetDirty(echoCanopySkill);
+                }
+            }
+
+            var stillwindDomainSkill = AssetDatabase.LoadAssetAtPath<SkillData>(WindchimeUltimateSkillAssetPath);
+            if (stillwindDomainSkill == null || stillwindDomainPrefab == null)
             {
                 return;
             }
 
-            echoCanopySkill.reactiveGuard ??= new ReactiveGuardData();
-            if (echoCanopySkill.reactiveGuard.guardLoopVfxPrefab == echoCanopyGuardPrefab
-                && echoCanopySkill.reactiveGuard.guardLoopVfxLocalOffset == ReactiveGuardLocalOffset
-                && echoCanopySkill.reactiveGuard.guardLoopVfxLocalScale == Vector3.one
-                && echoCanopySkill.reactiveGuard.guardLoopVfxEulerAngles == Vector3.zero
-                && echoCanopySkill.reactiveGuard.triggerVfxPrefab == echoCanopyBurstPrefab
-                && echoCanopySkill.reactiveGuard.triggerVfxLocalOffset == ReactiveGuardLocalOffset
-                && echoCanopySkill.reactiveGuard.triggerVfxLocalScale == Vector3.one
-                && echoCanopySkill.reactiveGuard.triggerVfxEulerAngles == Vector3.zero)
+            if (stillwindDomainSkill.persistentAreaVfxPrefab == stillwindDomainPrefab
+                && stillwindDomainSkill.persistentAreaVfxScaleMultiplier == 1f
+                && stillwindDomainSkill.persistentAreaVfxEulerAngles == Vector3.zero
+                && stillwindDomainSkill.skillAreaPresentationType == SkillAreaPresentationType.None)
             {
                 return;
             }
 
-            echoCanopySkill.reactiveGuard.guardLoopVfxPrefab = echoCanopyGuardPrefab;
-            echoCanopySkill.reactiveGuard.guardLoopVfxLocalOffset = ReactiveGuardLocalOffset;
-            echoCanopySkill.reactiveGuard.guardLoopVfxLocalScale = Vector3.one;
-            echoCanopySkill.reactiveGuard.guardLoopVfxEulerAngles = Vector3.zero;
-            echoCanopySkill.reactiveGuard.triggerVfxPrefab = echoCanopyBurstPrefab;
-            echoCanopySkill.reactiveGuard.triggerVfxLocalOffset = ReactiveGuardLocalOffset;
-            echoCanopySkill.reactiveGuard.triggerVfxLocalScale = Vector3.one;
-            echoCanopySkill.reactiveGuard.triggerVfxEulerAngles = Vector3.zero;
-            EditorUtility.SetDirty(echoCanopySkill);
+            stillwindDomainSkill.persistentAreaVfxPrefab = stillwindDomainPrefab;
+            stillwindDomainSkill.persistentAreaVfxScaleMultiplier = 1f;
+            stillwindDomainSkill.persistentAreaVfxEulerAngles = Vector3.zero;
+            stillwindDomainSkill.skillAreaPresentationType = SkillAreaPresentationType.None;
+            EditorUtility.SetDirty(stillwindDomainSkill);
         }
 
         private static void ConfigureParticleSystems(GameObject root, bool loop, bool prewarm)

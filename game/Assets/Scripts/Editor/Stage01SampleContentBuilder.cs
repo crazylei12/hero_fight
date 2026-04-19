@@ -62,6 +62,7 @@ namespace Fight.Editor
         private const string RiflemanUltimateProjectileVfxPrefabPath = "Assets/Prefabs/VFX/Projectiles/RiflemanFragGrenadeProjectile.prefab";
         private const string SunpriestProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/SunpriestBasicAttackProjectile.prefab";
         private const string SunpriestUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/SunpriestSunBlessingField.prefab";
+        private const string WindchimeUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/WindchimeStillwindDomainField.prefab";
         private static bool autoEnsureScheduled;
 
         private static float ScaleRangedHeroDistance(float value)
@@ -2222,7 +2223,7 @@ namespace Fight.Editor
             skill.minTargetsToCast = 1;
             skill.allowsSelfCast = false;
             skill.effects.Clear();
-            skill.persistentAreaVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(SunpriestUltimateAreaVfxPrefabPath);
+            skill.persistentAreaVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(WindchimeUltimateAreaVfxPrefabPath);
             skill.persistentAreaVfxScaleMultiplier = 1f;
             skill.persistentAreaVfxEulerAngles = Vector3.zero;
             skill.skillAreaPresentationType = SkillAreaPresentationType.None;
