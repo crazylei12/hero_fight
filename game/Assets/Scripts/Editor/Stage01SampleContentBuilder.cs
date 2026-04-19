@@ -430,6 +430,7 @@ namespace Fight.Editor
             hero.basicAttack.targetType = heroClass == HeroClass.Assassin
                 ? BasicAttackTargetType.PreferredEnemy
                 : BasicAttackTargetType.NearestEnemy;
+            hero.basicAttack.targetPrioritySearchRadius = 0f;
             EnsureBasicAttackStatusList(hero.basicAttack);
             hero.basicAttack.onHitStatusEffects.Clear();
 
@@ -454,6 +455,7 @@ namespace Fight.Editor
                 "marksman_001_longshot" => AssetDatabase.LoadAssetAtPath<GameObject>(LongshotProjectilePrefabPath),
                 "marksman_002_rifleman" => AssetDatabase.LoadAssetAtPath<GameObject>(RiflemanProjectilePrefabPath),
                 "support_001_sunpriest" => AssetDatabase.LoadAssetAtPath<GameObject>(SunpriestProjectilePrefabPath),
+                "support_002_windchime" => AssetDatabase.LoadAssetAtPath<GameObject>(SunpriestProjectilePrefabPath),
                 _ => null,
             };
             hero.visualConfig.projectileAlignToMovement =
@@ -461,7 +463,8 @@ namespace Fight.Editor
                 || heroId == "mage_002_frostmage"
                 || heroId == "marksman_001_longshot"
                 || heroId == "marksman_002_rifleman"
-                || heroId == "support_001_sunpriest";
+                || heroId == "support_001_sunpriest"
+                || heroId == "support_002_windchime";
             hero.visualConfig.projectileEulerAngles = Vector3.zero;
             hero.visualConfig.hitVfxPrefab = null;
             EditorUtility.SetDirty(hero);
@@ -551,12 +554,15 @@ namespace Fight.Editor
             skill.targetType = targetType;
             skill.preferredEnemyHeroClass = HeroClass.Assassin;
             skill.fallbackTargetType = SkillTargetType.NearestEnemy;
+            skill.targetPrioritySearchRadius = 0f;
+            skill.targetPriorityRequiredUnitCount = 1;
             skill.castRange = castRange;
             skill.areaRadius = areaRadius;
             skill.cooldownSeconds = slotType == SkillSlotType.Ultimate ? 0f : cooldownSeconds;
             skill.minTargetsToCast = minTargetsToCast;
             skill.effects.Clear();
             skill.allowsSelfCast = targetType == SkillTargetType.Self || targetType == SkillTargetType.AllAllies;
+            ResetReactiveGuard(skill);
             ResetActionSequence(skill);
             skill.persistentAreaVfxEulerAngles = Vector3.zero;
             skill.skillAreaPresentationType = SkillAreaPresentationType.None;
@@ -1798,34 +1804,7 @@ namespace Fight.Editor
                 return skill;
             }
 
-            skill.skillType = SkillType.Taunt;
-            skill.targetType = SkillTargetType.AllEnemies;
-            skill.castRange = 0f;
-            skill.areaRadius = 0f;
-            skill.minTargetsToCast = 1;
-            skill.allowsSelfCast = false;
-            skill.effects.Clear();
-
-            var tauntEffect = AddApplyStatusEffectsEffect(skill);
-            tauntEffect.statusEffects.Add(new StatusEffectData
-            {
-                effectType = StatusEffectType.Taunt,
-                durationSeconds = 3f,
-                magnitude = 1f,
-                maxStacks = 1,
-                refreshDurationOnReapply = true,
-            });
-
-            var selfBuffEffect = AddApplyStatusEffectsEffect(skill);
-            selfBuffEffect.targetMode = SkillEffectTargetMode.Caster;
-            selfBuffEffect.statusEffects.Add(new StatusEffectData
-            {
-                effectType = StatusEffectType.DefenseModifier,
-                durationSeconds = 4f,
-                magnitude = 2.5f,
-                maxStacks = 1,
-                refreshDurationOnReapply = true,
-            });
+            ApplyShieldwardenUltimateBaseConfiguration(skill);
 
             EditorUtility.SetDirty(skill);
             return skill;
@@ -1838,34 +1817,7 @@ namespace Fight.Editor
                 return skill;
             }
 
-            skill.skillType = SkillType.Taunt;
-            skill.targetType = SkillTargetType.AllEnemies;
-            skill.castRange = 0f;
-            skill.areaRadius = 0f;
-            skill.minTargetsToCast = 1;
-            skill.allowsSelfCast = false;
-            skill.effects.Clear();
-
-            var tauntEffect = AddApplyStatusEffectsEffect(skill);
-            tauntEffect.statusEffects.Add(new StatusEffectData
-            {
-                effectType = StatusEffectType.Taunt,
-                durationSeconds = 3f,
-                magnitude = 1f,
-                maxStacks = 1,
-                refreshDurationOnReapply = true,
-            });
-
-            var selfBuffEffect = AddApplyStatusEffectsEffect(skill);
-            selfBuffEffect.targetMode = SkillEffectTargetMode.Caster;
-            selfBuffEffect.statusEffects.Add(new StatusEffectData
-            {
-                effectType = StatusEffectType.DefenseModifier,
-                durationSeconds = 4f,
-                magnitude = 2.5f,
-                maxStacks = 1,
-                refreshDurationOnReapply = true,
-            });
+            ApplyShieldwardenUltimateBaseConfiguration(skill);
 
             ResetUltimateDecision(skill);
             skill.ultimateDecision.targetingType = UltimateTargetingType.Self;
@@ -1882,6 +1834,38 @@ namespace Fight.Editor
             skill.ultimateDecision.fallback.overrideRequiredUnitCount = 2;
             EditorUtility.SetDirty(skill);
             return skill;
+        }
+
+        private static void ApplyShieldwardenUltimateBaseConfiguration(SkillData skill)
+        {
+            skill.skillType = SkillType.Taunt;
+            skill.targetType = SkillTargetType.AllEnemies;
+            skill.castRange = 0f;
+            skill.areaRadius = 0f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+
+            var tauntEffect = AddApplyStatusEffectsEffect(skill);
+            tauntEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.Taunt,
+                durationSeconds = 3f,
+                magnitude = 1f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
+            var selfBuffEffect = AddApplyStatusEffectsEffect(skill);
+            selfBuffEffect.targetMode = SkillEffectTargetMode.Caster;
+            selfBuffEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.DefenseModifier,
+                durationSeconds = 4f,
+                magnitude = 2.5f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
         }
 
         private static SkillData ConfigureRiflemanUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
