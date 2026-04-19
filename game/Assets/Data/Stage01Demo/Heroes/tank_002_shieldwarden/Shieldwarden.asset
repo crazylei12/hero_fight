@@ -41,7 +41,7 @@ MonoBehaviour:
   specialLogicNotes: 
   visualConfig:
     portrait: {fileID: 0}
-    battlePrefab: {fileID: 8201802764806222458, guid: def196cdcafa40847b8ac793bb99dc63, type: 3}
+    battlePrefab: {fileID: 392277954102595269, guid: 36202056fd953e847b0a501d889fecaf, type: 3}
     animatorController: {fileID: 9100000, guid: c0fbc9a82051e94429aa17cc4b2f48e5, type: 2}
     battlePrefabFacesLeftByDefault: 0
     projectilePrefab: {fileID: 0}
