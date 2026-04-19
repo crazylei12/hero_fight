@@ -2277,8 +2277,10 @@ namespace Fight.UI
                 return;
             }
 
+            var skill = forcedMovementAppliedEvent.SourceSkill;
             var dashChargePrefab = GetSharedDashChargePrefab();
-            if (dashChargePrefab == null)
+            var customDashPrefab = skill != null ? skill.dashTravelVfxPrefab : null;
+            if (dashChargePrefab == null && customDashPrefab == null)
             {
                 return;
             }
@@ -2292,12 +2294,43 @@ namespace Fight.UI
                 return;
             }
 
-            var angle = Mathf.Atan2(direction2D.y, direction2D.x) * Mathf.Rad2Deg;
+            var normalizedDirection = direction2D.normalized;
+            var angle = Mathf.Atan2(normalizedDirection.y, normalizedDirection.x) * Mathf.Rad2Deg;
             var distance = horizontalOffset.magnitude;
             var scaleMultiplier = Mathf.Clamp(0.92f + (distance * 0.15f), 0.92f, 1.35f);
             var lifetimeSeconds = Mathf.Max(
                 DashChargeMinLifetimeSeconds,
                 forcedMovementAppliedEvent.DurationSeconds + DashChargeLifetimePaddingSeconds);
+
+            if (customDashPrefab != null)
+            {
+                // Keep the wave attached to the dashing hero so the leading edge reads as part of the charge.
+                var localOffset = skill.dashTravelVfxLocalOffset
+                    + new Vector3(normalizedDirection.x, normalizedDirection.y, 0f) * skill.dashTravelVfxForwardOffset;
+                var localScale = skill.dashTravelVfxScaleMultiplier;
+                var dashPathWidth = GetDashPathWidth(skill);
+                if (dashPathWidth > 0f)
+                {
+                    localScale = Vector3.Scale(
+                        localScale,
+                        new Vector3(
+                            dashPathWidth * Mathf.Max(0.01f, skill.dashTravelVfxPathWidthScaleMultiplier),
+                            1f,
+                            1f));
+                }
+
+                SpawnTransientHeroVfx(
+                    heroView,
+                    customDashPrefab,
+                    localOffset,
+                    DashChargeSortOrderOffset,
+                    DashChargeTransientKey,
+                    Quaternion.Euler(skill.dashTravelVfxEulerAngles + new Vector3(0f, 0f, angle - 90f)),
+                    localScale,
+                    lifetimeSeconds);
+                return;
+            }
+
             SpawnTransientHeroVfx(
                 heroView,
                 dashChargePrefab,
@@ -2307,6 +2340,32 @@ namespace Fight.UI
                 Quaternion.Euler(0f, 0f, angle),
                 new Vector3(scaleMultiplier, scaleMultiplier, 1f),
                 lifetimeSeconds);
+        }
+
+        private static float GetDashPathWidth(SkillData skill)
+        {
+            if (skill?.effects == null)
+            {
+                return 0f;
+            }
+
+            var maxRadius = 0f;
+            for (var i = 0; i < skill.effects.Count; i++)
+            {
+                var effect = skill.effects[i];
+                if (effect == null || effect.targetMode != SkillEffectTargetMode.DashPathEnemies)
+                {
+                    continue;
+                }
+
+                var radius = effect.radiusOverride > 0f ? effect.radiusOverride : skill.areaRadius;
+                if (radius > maxRadius)
+                {
+                    maxRadius = radius;
+                }
+            }
+
+            return maxRadius * 2f;
         }
 
         private void SpawnBlinkGhostSnapshot(HeroViewState sourceView, Vector3 worldPosition, string ghostName, float startAlpha)
@@ -2398,7 +2457,7 @@ namespace Fight.UI
             instance.transform.localPosition += localOffset;
             if (localRotation.HasValue)
             {
-                instance.transform.localRotation = localRotation.Value;
+                instance.transform.localRotation = localRotation.Value * instance.transform.localRotation;
             }
 
             if (localScaleMultiplier.HasValue)

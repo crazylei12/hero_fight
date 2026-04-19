@@ -42,6 +42,12 @@ namespace Fight.Data
         public Vector3 castImpactVfxScaleMultiplier = Vector3.one;
         public bool castImpactVfxAlignToTargetDirection;
         public GameObject castProjectileVfxPrefab;
+        public GameObject dashTravelVfxPrefab;
+        public Vector3 dashTravelVfxLocalOffset = Vector3.zero;
+        [Min(0f)] public float dashTravelVfxForwardOffset = 0f;
+        public Vector3 dashTravelVfxEulerAngles = Vector3.zero;
+        public Vector3 dashTravelVfxScaleMultiplier = Vector3.one;
+        [Min(0f)] public float dashTravelVfxPathWidthScaleMultiplier = 1f;
         public GameObject persistentAreaVfxPrefab;
         [Min(0.1f)] public float persistentAreaVfxScaleMultiplier = 1f;
         public Vector3 persistentAreaVfxEulerAngles = Vector3.zero;
