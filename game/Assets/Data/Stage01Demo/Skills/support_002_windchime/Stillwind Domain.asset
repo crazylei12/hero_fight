@@ -124,7 +124,7 @@ MonoBehaviour:
     interruptFlags: 3
   targetIndicatorVfxPrefab: {fileID: 0}
   castProjectileVfxPrefab: {fileID: 0}
-  persistentAreaVfxPrefab: {fileID: 5702795226921381977, guid: 9cd669134ce2ba243a4ebeb4e8647a3d, type: 3}
+  persistentAreaVfxPrefab: {fileID: 1887119152077934518, guid: 7a110d0a4f3e4c5c8e2a89c122d5e0b1, type: 3}
   persistentAreaVfxScaleMultiplier: 1
   persistentAreaVfxEulerAngles: {x: 0, y: 0, z: 0}
   skillAreaPresentationType: 0
