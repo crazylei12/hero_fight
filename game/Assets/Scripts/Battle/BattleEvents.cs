@@ -297,6 +297,25 @@ namespace Fight.Battle
         public SkillData SourceSkill { get; }
     }
 
+    public sealed class ReactiveGuardTriggeredEvent : IBattleEvent
+    {
+        public ReactiveGuardTriggeredEvent(RuntimeHero caster, RuntimeHero protectedHero, SkillData sourceSkill, int affectedTargetCount)
+        {
+            Caster = caster;
+            ProtectedHero = protectedHero;
+            SourceSkill = sourceSkill;
+            AffectedTargetCount = affectedTargetCount;
+        }
+
+        public RuntimeHero Caster { get; }
+
+        public RuntimeHero ProtectedHero { get; }
+
+        public SkillData SourceSkill { get; }
+
+        public int AffectedTargetCount { get; }
+    }
+
     public sealed class UnitDiedEvent : IBattleEvent
     {
         public UnitDiedEvent(RuntimeHero victim, RuntimeHero killer)

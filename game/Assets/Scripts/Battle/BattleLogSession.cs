@@ -78,6 +78,9 @@ namespace Fight.Battle
                 case ForcedMovementAppliedEvent forcedMovementApplied:
                     AddLog(FormatForcedMovementLog(forcedMovementApplied));
                     break;
+                case ReactiveGuardTriggeredEvent reactiveGuardTriggered:
+                    AddLog(FormatReactiveGuardLog(reactiveGuardTriggered));
+                    break;
                 case UnitDiedEvent died:
                     AddLog($"{FormatHeroLabel(died.Victim)} was killed by {FormatHeroLabel(died.Killer)}.");
                     break;
@@ -170,6 +173,14 @@ namespace Fight.Battle
             var sourceName = FormatHeroLabel(forcedMovementApplied.Source, "Unknown");
             var skillName = forcedMovementApplied.SourceSkill != null ? forcedMovementApplied.SourceSkill.displayName : "Unknown Effect";
             return $"{sourceName} displaced {FormatHeroLabel(forcedMovementApplied.Target)} via {skillName} from ({forcedMovementApplied.StartPosition.x:0.0}, {forcedMovementApplied.StartPosition.z:0.0}) to ({forcedMovementApplied.Destination.x:0.0}, {forcedMovementApplied.Destination.z:0.0}), duration {forcedMovementApplied.DurationSeconds:0.00}s, peak height {forcedMovementApplied.PeakHeight:0.##}.";
+        }
+
+        private static string FormatReactiveGuardLog(ReactiveGuardTriggeredEvent reactiveGuardTriggered)
+        {
+            var casterName = FormatHeroLabel(reactiveGuardTriggered.Caster, "Unknown");
+            var protectedName = FormatHeroLabel(reactiveGuardTriggered.ProtectedHero, "none");
+            var skillName = reactiveGuardTriggered.SourceSkill != null ? reactiveGuardTriggered.SourceSkill.displayName : "Reactive Guard";
+            return $"{casterName}'s {skillName} triggered around {protectedName}, affecting {reactiveGuardTriggered.AffectedTargetCount} enemy target(s).";
         }
 
         private void AppendBlueWarriorSpotlight(StringBuilder builder)

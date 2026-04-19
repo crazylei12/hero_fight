@@ -13,5 +13,8 @@ namespace Fight.Data
         BackmostEnemy = 8,
         HighestDamageEnemyInRange = 9,
         PriorityEnemyHeroClass = 10,
+        LowestHealthRangedAlly = 11,
+        ThreatenedRangedAlly = 12,
+        ThreatenedRangedAllyOrEnemyDensestAnchor = 13,
     }
 }
