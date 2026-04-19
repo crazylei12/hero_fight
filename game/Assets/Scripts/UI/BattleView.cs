@@ -60,7 +60,7 @@ namespace Fight.UI
             { StatusEffectType.Stun, new StatusEffectVfxConfig(StunStatusLoopVfxResourcesPath, new Vector3(0f, 1.1f, 0f), Vector3.one * 0.85f, Vector3.zero, 180) },
             { StatusEffectType.KnockUp, new StatusEffectVfxConfig(KnockUpStatusBurstVfxResourcesPath, new Vector3(0f, 0.74f, 0f), Vector3.one * 0.9f, Vector3.zero, 165) },
             { StatusEffectType.Taunt, new StatusEffectVfxConfig(TauntStatusLoopVfxResourcesPath, new Vector3(0f, 1.2f, 0f), Vector3.one * 0.92f, Vector3.zero, 186) },
-            { StatusEffectType.DamageShare, new StatusEffectVfxConfig(DamageShareStatusLoopVfxResourcesPath, new Vector3(0f, -0.08f, 0f), Vector3.one, Vector3.zero, -4) },
+            { StatusEffectType.DamageShare, new StatusEffectVfxConfig(DamageShareStatusLoopVfxResourcesPath, Vector3.zero, Vector3.one, Vector3.zero, -4) },
         };
         private static readonly StatusEffectVfxConfig KnockbackStatusVfxConfig = new StatusEffectVfxConfig(
             KnockbackStatusLoopVfxResourcesPath,
@@ -172,6 +172,7 @@ namespace Fight.UI
             public SpriteRenderer ImpactPulse;
             public SpriteRenderer DirectionalTrail;
             public Transform FootUiRoot;
+            public Transform GroundStatusEffectRoot;
             public Transform StatusEffectRoot;
             public SpriteRenderer HealthBack;
             public SpriteRenderer HealthFill;
@@ -446,6 +447,9 @@ namespace Fight.UI
             view.AirborneRingBaseScale = view.AirborneRing.transform.localScale;
             view.ImpactPulse = MakeSprite("ImpactPulse", view.Root.transform, circleSprite, new Color(1f, 1f, 1f, 0f), -7, new Vector3(0f, -0.18f, 0f), new Vector3(0.72f, 0.34f, 1f) * heroMarkerScale);
             view.ImpactPulseBaseScale = view.ImpactPulse.transform.localScale;
+            view.GroundStatusEffectRoot = new GameObject("GroundStatusVfx").transform;
+            view.GroundStatusEffectRoot.SetParent(view.Root.transform, false);
+            view.GroundStatusEffectRoot.localPosition = new Vector3(0f, -0.18f, 0f);
             view.VisualRoot = new GameObject("Visual").transform;
             view.VisualRoot.SetParent(view.Root.transform, false);
             view.StatusEffectRoot = new GameObject("StatusVfx").transform;
@@ -959,7 +963,7 @@ namespace Fight.UI
 
         private void SyncDamageShareSourceVfx(RuntimeHero hero, HeroViewState view, int heroSortingOrder)
         {
-            if (hero == null || view == null || view.StatusEffectRoot == null)
+            if (hero == null || view == null || view.GroundStatusEffectRoot == null)
             {
                 return;
             }
@@ -982,7 +986,7 @@ namespace Fight.UI
 
             if (view.DamageShareSourceView == null)
             {
-                view.DamageShareSourceView = CreateStatusEffectView("DamageShareSource", view, config);
+                view.DamageShareSourceView = CreateStatusEffectView("DamageShareSource", view.GroundStatusEffectRoot, config);
                 if (view.DamageShareSourceView == null)
                 {
                     return;
@@ -991,7 +995,7 @@ namespace Fight.UI
             else if (!string.Equals(view.DamageShareSourceView.LoadedPrefabResourcesPath, config.LoopPrefabResourcesPath, StringComparison.Ordinal))
             {
                 DestroyStatusEffectView(view.DamageShareSourceView);
-                view.DamageShareSourceView = CreateStatusEffectView("DamageShareSource", view, config);
+                view.DamageShareSourceView = CreateStatusEffectView("DamageShareSource", view.GroundStatusEffectRoot, config);
                 if (view.DamageShareSourceView == null)
                 {
                     return;
@@ -1208,12 +1212,17 @@ namespace Fight.UI
 
         private StatusEffectViewState CreateStatusEffectView(StatusEffectType effectType, HeroViewState view, StatusEffectVfxConfig config)
         {
-            return CreateStatusEffectView(effectType.ToString(), view, config);
+            return CreateStatusEffectView(effectType.ToString(), view?.StatusEffectRoot, config);
         }
 
         private StatusEffectViewState CreateStatusEffectView(string effectName, HeroViewState view, StatusEffectVfxConfig config)
         {
-            if (view?.StatusEffectRoot == null || config == null)
+            return CreateStatusEffectView(effectName, view?.StatusEffectRoot, config);
+        }
+
+        private StatusEffectViewState CreateStatusEffectView(string effectName, Transform parent, StatusEffectVfxConfig config)
+        {
+            if (parent == null || config == null)
             {
                 return null;
             }
@@ -1225,7 +1234,7 @@ namespace Fight.UI
                 return null;
             }
 
-            var instance = Instantiate(prefab, view.StatusEffectRoot);
+            var instance = Instantiate(prefab, parent);
             instance.name = $"{effectName}_StatusVfx";
             RemovePrefabPhysics(instance);
 
