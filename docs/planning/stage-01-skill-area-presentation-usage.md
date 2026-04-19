@@ -521,7 +521,15 @@
   - 来源技能是 `Dash`
   - 位移对象是施法者自己
   - 位移时长明显大于 `0`
-- 表现层会在位移开始时给施法者挂上一段共享 follow-trail prefab，并按冲锋方向旋转
+- 默认情况下，表现层会在位移开始时给施法者挂上一段共享 follow-trail prefab，并按冲锋方向旋转
+- 如果某个 dash 技能需要“人物前方顶着一段剑气 / 波锋一起前冲”的读图方式，可直接在 `SkillData` 上配置：
+  - `dashTravelVfxPrefab`
+  - `dashTravelVfxLocalOffset`
+  - `dashTravelVfxForwardOffset`
+  - `dashTravelVfxEulerAngles`
+  - `dashTravelVfxScaleMultiplier`
+  - `dashTravelVfxPathWidthScaleMultiplier`
+- 当 `dashTravelVfxPrefab` 存在时，`BattleView` 当前会把这套 prefab 跟随挂到施法者身上，沿 dash 方向旋转，并按技能 `DashPathEnemies` 的逻辑路径宽度去放大横向宽度
 - 这条 prefab 只表达“正在冲锋”，不反向修改落点、时序、伤害或路径命中
 - 项目工程源 prefab 当前整理在：`game/Assets/Prefabs/VFX/Shared/DashChargeTrail.prefab`
 - 运行时统一加载路径当前为：`game/Assets/Resources/Stage01Demo/VFX/Shared/DashChargeTrail.prefab`
@@ -529,6 +537,7 @@
 对后续 AI 的要求：
 
 - 以后再做“短冲锋切入”“滑步贴脸”“带过程时间的 dash”时，优先复用这条共享 `DashChargeTrail` 路径
+- 如果想要的是“顶在角色前方一起飞的波锋 / 剑气”，优先走 `SkillData.dashTravelVfxPrefab` 这条共享 dash-follow 通路，不要单独再写英雄私有表现脚本
 - 如果是 `零时长` 的瞬移切位，继续走共享角色残影 + 淡入逻辑，不要和冲锋拖尾混着播
 - 不要在单个英雄脚本里额外手写“冲锋时挂一个 trail”的专用表现逻辑
 

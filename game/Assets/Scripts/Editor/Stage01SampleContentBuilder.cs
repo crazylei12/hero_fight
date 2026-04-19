@@ -56,6 +56,7 @@ namespace Fight.Editor
         private const string FrostMageUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FrostMageBlizzardField.prefab";
         private const string MageUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FireMageMeteorField.prefab";
         private const string BladesmanActiveImpactVfxPrefabPath = "Assets/Prefabs/VFX/Skills/BladesmanRendingSlash.prefab";
+        private const string BladesmanUltimateDashVfxPrefabPath = "Assets/Prefabs/VFX/Skills/BladesmanFlyingSwallowWave.prefab";
         private const string RiflemanActiveTargetIndicatorVfxPrefabPath = "Assets/Prefabs/VFX/Skills/RiflemanBurstFireTargetReticle.prefab";
         private const string RiflemanUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/RiflemanFragGrenadeBurst.prefab";
         private const string RiflemanUltimateProjectileVfxPrefabPath = "Assets/Prefabs/VFX/Projectiles/RiflemanFragGrenadeProjectile.prefab";
@@ -1527,6 +1528,12 @@ namespace Fight.Editor
             pathDamageEffect.radiusOverride = 4f;
 
             skill.description = "Stage-01 demo skill: lock a straight dash line and damage every enemy cut through once.";
+            skill.dashTravelVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(BladesmanUltimateDashVfxPrefabPath);
+            skill.dashTravelVfxLocalOffset = Vector3.zero;
+            skill.dashTravelVfxForwardOffset = 0.9f;
+            skill.dashTravelVfxEulerAngles = new Vector3(0f, 0f, 180f);
+            skill.dashTravelVfxScaleMultiplier = Vector3.one;
+            skill.dashTravelVfxPathWidthScaleMultiplier = 0.18f;
 
             ResetUltimateDecision(skill);
             skill.ultimateDecision.targetingType = UltimateTargetingType.CurrentTarget;
@@ -2769,6 +2776,7 @@ namespace Fight.Editor
             EditorUtility.SetDirty(skill);
             return skill;
         }
+
         private static void EnsureBasicAttackStatusList(BasicAttackData basicAttack)
         {
             if (basicAttack != null && basicAttack.onHitStatusEffects == null)
