@@ -210,28 +210,28 @@ namespace Fight.Editor
 
             CreateSprite(
                 root.transform,
-                "ProtectionField",
+                "ProtectionBorder",
                 softCircleSprite,
-                new Color(0.82f, 0.68f, 0.42f, 0.22f),
+                new Color(0.96f, 0.82f, 0.26f, 0.42f),
                 0,
                 Vector3.zero,
-                new Vector3(1.62f, 1.02f, 1f));
+                new Vector3(1.74f, 1.1f, 1f));
+            CreateSprite(
+                root.transform,
+                "ProtectionField",
+                softCircleSprite,
+                new Color(0.48f, 0.38f, 0.2f, 0.34f),
+                1,
+                new Vector3(0f, 0.01f, 0f),
+                new Vector3(1.56f, 0.98f, 1f));
             CreateSprite(
                 root.transform,
                 "ProtectionCore",
                 softCircleSprite,
-                new Color(0.95f, 0.82f, 0.54f, 0.11f),
-                1,
-                new Vector3(0f, 0.01f, 0f),
-                new Vector3(1.22f, 0.78f, 1f));
-            CreateSprite(
-                root.transform,
-                "ProtectionHighlight",
-                softCircleSprite,
-                new Color(1f, 0.92f, 0.68f, 0.04f),
+                new Color(0.66f, 0.52f, 0.3f, 0.08f),
                 2,
-                new Vector3(0f, 0.02f, 0f),
-                new Vector3(0.58f, 0.38f, 1f));
+                new Vector3(0f, 0.01f, 0f),
+                new Vector3(0.92f, 0.58f, 1f));
 
             return root;
         }
