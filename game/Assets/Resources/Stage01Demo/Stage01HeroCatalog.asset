@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroCatalogData
   heroes:
   - {fileID: 11400000, guid: 7cbd68688bebd1b43bc4bf957492bcae, type: 2}
+  - {fileID: 11400000, guid: 9de1a01e571c7a24eae96571f06aaacb, type: 2}
   - {fileID: 11400000, guid: 5c88f39b9ef5e8e44bb8b6ee15514b0a, type: 2}
   - {fileID: 11400000, guid: b9486c517b38c634b808c23b8938e971, type: 2}
   - {fileID: 11400000, guid: 748511f68e49c024ea386b2f7fb2a65c, type: 2}
