@@ -2251,7 +2251,7 @@ namespace Fight.UI
             }
 
             RemovePrefabPhysics(instance);
-            ConfigureTransientParticleSystems(instance);
+            ConfigureTransientParticleSystems(instance, forceOneShotEmission: true);
 
             var sortingGroup = instance.GetComponent<SortingGroup>();
             if (sortingGroup != null)
@@ -2273,7 +2273,7 @@ namespace Fight.UI
                 yield break;
             }
 
-            yield return new WaitForSeconds(lifetimeSeconds);
+            yield return new WaitForSecondsRealtime(lifetimeSeconds);
             if (instance != null)
             {
                 Destroy(instance);
@@ -2470,7 +2470,7 @@ namespace Fight.UI
             }
         }
 
-        private static void ConfigureTransientParticleSystems(GameObject instance)
+        private static void ConfigureTransientParticleSystems(GameObject instance, bool forceOneShotEmission = false)
         {
             if (instance == null)
             {
@@ -2489,6 +2489,11 @@ namespace Fight.UI
                 var main = particleSystem.main;
                 main.simulationSpace = ParticleSystemSimulationSpace.Local;
                 main.scalingMode = ParticleSystemScalingMode.Hierarchy;
+                if (forceOneShotEmission)
+                {
+                    main.loop = false;
+                }
+
                 particleSystem.Clear(true);
                 particleSystem.Play(true);
             }
