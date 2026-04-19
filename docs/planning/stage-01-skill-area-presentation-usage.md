@@ -554,6 +554,11 @@
   - 项目内运行时 prefab：`game/Assets/Resources/Stage01Demo/VFX/Statuses/KnockUpStatusBurst.prefab`
   - 素材来源：`Assets/Lana Studio/Casual RPG VFX/Prefabs/Burst/Burst_rings.prefab`
   - 接入方式：`BattleView` 通过统一状态 VFX 映射在击飞开始时创建 one-shot 爆圈，并随状态生命周期自动清理
+- `嘲讽`
+  - 项目内工程 prefab：`game/Assets/Prefabs/VFX/Shared/TauntStatusLoop.prefab`
+  - 项目内运行时 prefab：`game/Assets/Resources/Stage01Demo/VFX/Statuses/TauntStatusLoop.prefab`
+  - 图标素材来源：`game/Assets/Art/VFX/StatusIcons/TauntEffect.png`
+  - 接入方式：`BattleView` 对 `StatusEffectType.Taunt` 直接创建这套“头顶浮动 taunt 图标”状态特效，让被嘲讽单位在顶视角里能快速读出“当前被强制转火”
 - `攻击力下降`
   - 项目内工程 prefab：`game/Assets/Prefabs/VFX/Shared/AttackPowerDownStatusLoop.prefab`
   - 项目内运行时 prefab：`game/Assets/Resources/Stage01Demo/VFX/Statuses/AttackPowerDownStatusLoop.prefab`
