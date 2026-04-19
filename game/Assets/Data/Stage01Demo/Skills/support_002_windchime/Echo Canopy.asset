@@ -15,7 +15,7 @@ MonoBehaviour:
   skillId: skill_windchime_active_echocanopy
   displayName: Echo Canopy
   description: 'Stage-01 demo skill: single-target anti-dive protection with a one-shot
-    reactive knock-up and knockback.'
+    reactive knock-up, knockback, and per-knock-up healing.'
   slotType: 0
   skillType: 3
   targetType: 12
@@ -80,6 +80,7 @@ MonoBehaviour:
     forcedMovementDistance: 1.8
     forcedMovementDurationSeconds: 0.25
     forcedMovementPeakHeight: 0.7
+    healProtectedHeroPerSuccessfulKnockUp: 15
     onTriggerStatusEffects:
     - effectType: 11
       durationSeconds: 0.6

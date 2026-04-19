@@ -117,8 +117,9 @@ namespace Fight.Battle
 
             var effectRadius = guard.EffectRadius > Mathf.Epsilon ? guard.EffectRadius : guard.TriggerRadius;
             var affectedTargets = CollectEnemyTargets(context, guard.ProtectedHero, Mathf.Max(0f, effectRadius));
-            ApplyTriggerStatuses(context, guard, affectedTargets);
+            var successfulKnockUpTargetCount = ApplyTriggerStatuses(context, guard, affectedTargets);
             ApplyTriggerForcedMovement(context, guard, affectedTargets);
+            ApplyTriggerHealing(context, guard, successfulKnockUpTargetCount);
             context.EventBus?.Publish(new ReactiveGuardTriggeredEvent(
                 guard.Caster,
                 guard.ProtectedHero,
@@ -152,13 +153,14 @@ namespace Fight.Battle
             return results;
         }
 
-        private static void ApplyTriggerStatuses(BattleContext context, RuntimeReactiveGuard guard, List<RuntimeHero> affectedTargets)
+        private static int ApplyTriggerStatuses(BattleContext context, RuntimeReactiveGuard guard, List<RuntimeHero> affectedTargets)
         {
             if (guard?.OnTriggerStatusEffects == null || affectedTargets == null)
             {
-                return;
+                return 0;
             }
 
+            HashSet<string> successfulKnockUpTargetIds = null;
             for (var targetIndex = 0; targetIndex < affectedTargets.Count; targetIndex++)
             {
                 var target = affectedTargets[targetIndex];
@@ -179,8 +181,16 @@ namespace Fight.Battle
                         status.magnitude,
                         guard.SourceSkill,
                         appliedStatus?.AppliedBy ?? guard.ProtectedHero));
+
+                    if (status.effectType == StatusEffectType.KnockUp && !string.IsNullOrEmpty(target.RuntimeId))
+                    {
+                        successfulKnockUpTargetIds ??= new HashSet<string>();
+                        successfulKnockUpTargetIds.Add(target.RuntimeId);
+                    }
                 }
             }
+
+            return successfulKnockUpTargetIds?.Count ?? 0;
         }
 
         private static void ApplyTriggerForcedMovement(BattleContext context, RuntimeReactiveGuard guard, List<RuntimeHero> affectedTargets)
@@ -219,6 +229,31 @@ namespace Fight.Battle
                     guard.ForcedMovementPeakHeight,
                     guard.SourceSkill));
             }
+        }
+
+        private static void ApplyTriggerHealing(BattleContext context, RuntimeReactiveGuard guard, int successfulKnockUpTargetCount)
+        {
+            if (guard == null
+                || guard.ProtectedHero == null
+                || successfulKnockUpTargetCount <= 0
+                || guard.HealProtectedHeroPerSuccessfulKnockUp <= Mathf.Epsilon)
+            {
+                return;
+            }
+
+            var actualHeal = guard.ProtectedHero.ApplyHealing(successfulKnockUpTargetCount * guard.HealProtectedHeroPerSuccessfulKnockUp);
+            if (actualHeal <= 0f)
+            {
+                return;
+            }
+
+            guard.Caster?.RecordHealing(actualHeal);
+            context.EventBus?.Publish(new HealAppliedEvent(
+                guard.Caster,
+                guard.ProtectedHero,
+                actualHeal,
+                guard.SourceSkill,
+                guard.ProtectedHero.CurrentHealth));
         }
     }
 }

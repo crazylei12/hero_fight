@@ -15,6 +15,7 @@ namespace Fight.Data
         [Min(0f)] public float forcedMovementDistance = 0f;
         [Min(0f)] public float forcedMovementDurationSeconds = 0f;
         [Min(0f)] public float forcedMovementPeakHeight = 0f;
+        [Min(0f)] public float healProtectedHeroPerSuccessfulKnockUp = 0f;
         public List<StatusEffectData> onTriggerStatusEffects = new List<StatusEffectData>();
 
         [Header("Presentation")]

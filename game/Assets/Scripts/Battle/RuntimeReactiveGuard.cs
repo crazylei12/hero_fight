@@ -17,6 +17,7 @@ namespace Fight.Battle
             ForcedMovementDistance = Mathf.Max(0f, data != null ? data.forcedMovementDistance : 0f);
             ForcedMovementDurationSeconds = Mathf.Max(0f, data != null ? data.forcedMovementDurationSeconds : 0f);
             ForcedMovementPeakHeight = Mathf.Max(0f, data != null ? data.forcedMovementPeakHeight : 0f);
+            HealProtectedHeroPerSuccessfulKnockUp = Mathf.Max(0f, data != null ? data.healProtectedHeroPerSuccessfulKnockUp : 0f);
             TriggersRemaining = Mathf.Max(1, data != null ? data.maxTriggerCount : 1);
             OnTriggerStatusEffects = data?.onTriggerStatusEffects;
         }
@@ -38,6 +39,8 @@ namespace Fight.Battle
         public float ForcedMovementDurationSeconds { get; }
 
         public float ForcedMovementPeakHeight { get; }
+
+        public float HealProtectedHeroPerSuccessfulKnockUp { get; }
 
         public int TriggersRemaining { get; private set; }
 
