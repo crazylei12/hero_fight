@@ -20,7 +20,7 @@ namespace Fight.Editor
         private const string WindchimeActiveSkillAssetPath = "Assets/Data/Stage01Demo/Skills/support_002_windchime/Echo Canopy.asset";
         private const string ShieldWindSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Shields/Shield_wind.prefab";
         private const string HitWindSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Range_attack/Hit_wind.prefab";
-        private const float EchoCanopyGuardSourceScale = 0.18f;
+        private const float EchoCanopyGuardSourceScale = 0.54f;
         private const float EchoCanopyBurstSourceScale = 0.28f;
         private static readonly Quaternion TopDownRotation = Quaternion.Euler(90f, 0f, 0f);
         private static readonly Vector3 ReactiveGuardLocalOffset = new Vector3(0f, 0.58f, 0f);
