@@ -89,11 +89,11 @@ MonoBehaviour:
       maxStacks: 1
       refreshDurationOnReapply: 1
     guardLoopVfxPrefab: {fileID: 9100000000000000001, guid: 3d7fd98e412943cc8e724f39e6dd7e94, type: 3}
-    guardLoopVfxLocalOffset: {x: 0, y: 0.7, z: 0}
+    guardLoopVfxLocalOffset: {x: 0, y: 0.58, z: 0}
     guardLoopVfxLocalScale: {x: 1, y: 1, z: 1}
     guardLoopVfxEulerAngles: {x: 0, y: 0, z: 0}
     triggerVfxPrefab: {fileID: 9200000000000000001, guid: bcf55d6c9f55419e9dd3f9d0af4ac7d2, type: 3}
-    triggerVfxLocalOffset: {x: 0, y: 0.7, z: 0}
+    triggerVfxLocalOffset: {x: 0, y: 0.58, z: 0}
     triggerVfxLocalScale: {x: 1, y: 1, z: 1}
     triggerVfxEulerAngles: {x: 0, y: 0, z: 0}
   actionSequence:
