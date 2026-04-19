@@ -1531,7 +1531,7 @@ namespace Fight.Editor
             skill.dashTravelVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(BladesmanUltimateDashVfxPrefabPath);
             skill.dashTravelVfxLocalOffset = Vector3.zero;
             skill.dashTravelVfxForwardOffset = 0.9f;
-            skill.dashTravelVfxEulerAngles = new Vector3(0f, 0f, 180f);
+            skill.dashTravelVfxEulerAngles = Vector3.zero;
             skill.dashTravelVfxScaleMultiplier = Vector3.one;
             skill.dashTravelVfxPathWidthScaleMultiplier = 0.18f;
 
