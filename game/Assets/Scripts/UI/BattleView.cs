@@ -196,6 +196,7 @@ namespace Fight.UI
             public float HitFlashUntilSeconds = -1f;
             public float BlinkRevealStartedAtSeconds = -1f;
             public StatusEffectViewState ForcedMovementStatusView;
+            public StatusEffectViewState DamageShareSourceView;
             public readonly Dictionary<StatusEffectType, StatusEffectViewState> StatusEffectViews = new Dictionary<StatusEffectType, StatusEffectViewState>();
             public readonly Dictionary<string, StatusEffectViewState> ReactiveGuardViews = new Dictionary<string, StatusEffectViewState>();
             public readonly List<TransientHeroVfxState> TransientVfx = new List<TransientHeroVfxState>();
@@ -421,6 +422,7 @@ namespace Fight.UI
             UpdatePrefabHitFlash(hero, view);
             SyncForcedMovementStatusVfx(hero, view, heroSortingOrder);
             SyncStatusEffects(hero, view, heroSortingOrder);
+            SyncDamageShareSourceVfx(hero, view, heroSortingOrder);
             SyncReactiveGuardVfx(hero, view, heroSortingOrder);
             SyncTransientVfx(hero, view, heroSortingOrder);
 
@@ -880,6 +882,11 @@ namespace Fight.UI
             for (var i = 0; i < activeStatuses.Count; i++)
             {
                 var status = activeStatuses[i];
+                if (status?.EffectType == StatusEffectType.DamageShare)
+                {
+                    continue;
+                }
+
                 if (status == null || !TryResolveStatusEffectVfxConfig(hero, status, out var config))
                 {
                     continue;
@@ -948,6 +955,91 @@ namespace Fight.UI
             }
 
             ApplyOrbitingStatusEffectLayout(activeOrbitStatusViews);
+        }
+
+        private void SyncDamageShareSourceVfx(RuntimeHero hero, HeroViewState view, int heroSortingOrder)
+        {
+            if (hero == null || view == null || view.StatusEffectRoot == null)
+            {
+                return;
+            }
+
+            if (!HasOutgoingDamageShare(hero))
+            {
+                if (view.DamageShareSourceView != null)
+                {
+                    DestroyStatusEffectView(view.DamageShareSourceView);
+                    view.DamageShareSourceView = null;
+                }
+
+                return;
+            }
+
+            if (!TryGetStatusEffectVfxConfig(StatusEffectType.DamageShare, out var config))
+            {
+                return;
+            }
+
+            if (view.DamageShareSourceView == null)
+            {
+                view.DamageShareSourceView = CreateStatusEffectView("DamageShareSource", view, config);
+                if (view.DamageShareSourceView == null)
+                {
+                    return;
+                }
+            }
+            else if (!string.Equals(view.DamageShareSourceView.LoadedPrefabResourcesPath, config.LoopPrefabResourcesPath, StringComparison.Ordinal))
+            {
+                DestroyStatusEffectView(view.DamageShareSourceView);
+                view.DamageShareSourceView = CreateStatusEffectView("DamageShareSource", view, config);
+                if (view.DamageShareSourceView == null)
+                {
+                    return;
+                }
+            }
+
+            ApplyStatusEffectView(view.DamageShareSourceView, config, heroSortingOrder);
+        }
+
+        private bool HasOutgoingDamageShare(RuntimeHero sourceHero)
+        {
+            if (sourceHero == null)
+            {
+                return false;
+            }
+
+            var context = battleManager != null ? battleManager.Context : null;
+            var heroes = context?.Heroes;
+            if (heroes == null)
+            {
+                return false;
+            }
+
+            for (var heroIndex = 0; heroIndex < heroes.Count; heroIndex++)
+            {
+                var candidate = heroes[heroIndex];
+                if (candidate == null)
+                {
+                    continue;
+                }
+
+                var activeStatuses = candidate.ActiveStatusEffects;
+                for (var statusIndex = 0; statusIndex < activeStatuses.Count; statusIndex++)
+                {
+                    var status = activeStatuses[statusIndex];
+                    if (status == null
+                        || status.EffectType != StatusEffectType.DamageShare
+                        || status.Source == null
+                        || !string.Equals(status.Source.RuntimeId, sourceHero.RuntimeId, StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void SyncForcedMovementStatusVfx(RuntimeHero hero, HeroViewState view, int heroSortingOrder)
@@ -1884,12 +1976,21 @@ namespace Fight.UI
                 SpawnThrownProjectileImpact(skillAreaPulseEvent.Area);
             }
 
-            if (battleEvent is StatusAppliedEvent statusAppliedEvent
-                && statusAppliedEvent.Target != null
-                && heroViews.TryGetValue(statusAppliedEvent.Target.RuntimeId, out var heroViewState)
-                && heroViewState.StatusEffectViews.TryGetValue(statusAppliedEvent.EffectType, out var statusEffectView))
+            if (battleEvent is StatusAppliedEvent statusAppliedEvent)
             {
-                RestartStatusEffectView(statusEffectView);
+                if (statusAppliedEvent.EffectType == StatusEffectType.DamageShare
+                    && statusAppliedEvent.Source != null
+                    && heroViews.TryGetValue(statusAppliedEvent.Source.RuntimeId, out var damageShareSourceView)
+                    && damageShareSourceView.DamageShareSourceView != null)
+                {
+                    RestartStatusEffectView(damageShareSourceView.DamageShareSourceView);
+                }
+                else if (statusAppliedEvent.Target != null
+                    && heroViews.TryGetValue(statusAppliedEvent.Target.RuntimeId, out var heroViewState)
+                    && heroViewState.StatusEffectViews.TryGetValue(statusAppliedEvent.EffectType, out var statusEffectView))
+                {
+                    RestartStatusEffectView(statusEffectView);
+                }
             }
 
             if (battleEvent is HealAppliedEvent healAppliedEvent
