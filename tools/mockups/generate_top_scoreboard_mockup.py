@@ -300,7 +300,7 @@ def make_background(size: tuple[int, int] = (1920, 560)) -> Image.Image:
     return image
 
 
-def generate(prefix: str = "top_scoreboard_mockup_v3") -> tuple[Path, Path]:
+def generate(prefix: str = "top_scoreboard_mockup_v4") -> tuple[Path, Path]:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
     ribbon_blue = Image.open(LAYERLAB / "Label-Title/Title_Ribbon_03_Blue.png").convert("RGBA")
@@ -357,14 +357,21 @@ def generate(prefix: str = "top_scoreboard_mockup_v3") -> tuple[Path, Path]:
     centered_text(panel_draw, (790, 82, 1130, 140), "00:58", FONT_TIMER, TEXT_MAIN)
     centered_text(panel_draw, (904, 168, 1018, 194), "VS", FONT_PHASE, (245, 223, 179, 255), stroke_width=2, stroke_fill=(30, 20, 12, 180))
 
+    center_axis_x = 960
+    dot_size = 18
+    dot_spacing = 28
+    right_dot_start_x = 1178
+    dot_group_width = dot_size + dot_spacing * 2
+    left_dot_start_x = center_axis_x * 2 - (right_dot_start_x + dot_group_width)
+
     for index in range(3):
-        x = 684 + index * 28
+        x = left_dot_start_x + index * dot_spacing
         fill = BLUE if index < 2 else (70, 78, 92, 255)
-        panel_draw.ellipse((x, 170, x + 18, 188), fill=fill, outline=(255, 255, 255, 26), width=2)
+        panel_draw.ellipse((x, 170, x + dot_size, 188), fill=fill, outline=(255, 255, 255, 26), width=2)
     for index in range(3):
-        x = 1178 + index * 28
+        x = right_dot_start_x + index * dot_spacing
         fill = RED if index < 1 else (70, 78, 92, 255)
-        panel_draw.ellipse((x, 170, x + 18, 188), fill=fill, outline=(255, 255, 255, 26), width=2)
+        panel_draw.ellipse((x, 170, x + dot_size, 188), fill=fill, outline=(255, 255, 255, 26), width=2)
 
     scoreboard_path = OUT_DIR / f"{prefix}.png"
     canvas.save(scoreboard_path)
@@ -377,8 +384,8 @@ def generate(prefix: str = "top_scoreboard_mockup_v3") -> tuple[Path, Path]:
     preview.alpha_composite(canvas, (0, 12))
 
     preview_draw = ImageDraw.Draw(preview)
-    preview_draw.text((134, 304), "预览图：顶部计分板素材 v3", font=get_font(24), fill=(255, 237, 212, 180), stroke_width=1, stroke_fill=(0, 0, 0, 150))
-    preview_draw.text((134, 336), "收掉双层队徽框，并把蓝方击杀数与圆点彻底错开", font=get_font(18), fill=(233, 235, 242, 150), stroke_width=1, stroke_fill=(0, 0, 0, 150))
+    preview_draw.text((134, 304), "预览图：顶部计分板素材 v4", font=get_font(24), fill=(255, 237, 212, 180), stroke_width=1, stroke_fill=(0, 0, 0, 150))
+    preview_draw.text((134, 336), "两侧小圆点按中轴严格对称，继续保留已修好的队徽与击杀区", font=get_font(18), fill=(233, 235, 242, 150), stroke_width=1, stroke_fill=(0, 0, 0, 150))
 
     preview_path = OUT_DIR / f"{prefix}_preview.png"
     preview.save(preview_path)
