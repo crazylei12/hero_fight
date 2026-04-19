@@ -88,6 +88,11 @@ MonoBehaviour:
     targetRefreshMode: 1
     interruptFlags: 3
   targetIndicatorVfxPrefab: {fileID: 0}
+  castImpactVfxPrefab: {fileID: 1645009922904612, guid: ef7964ddca584110bcb16a75aab5483e, type: 3}
+  castImpactVfxLocalOffset: {x: 0, y: 0.12, z: 0}
+  castImpactVfxEulerAngles: {x: 0, y: 0, z: -90}
+  castImpactVfxScaleMultiplier: {x: 0.18, y: 0.18, z: 1}
+  castImpactVfxAlignToTargetDirection: 1
   castProjectileVfxPrefab: {fileID: 0}
   persistentAreaVfxPrefab: {fileID: 0}
   persistentAreaVfxScaleMultiplier: 1
