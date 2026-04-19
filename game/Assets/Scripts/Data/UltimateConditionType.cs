@@ -11,5 +11,6 @@ namespace Fight.Data
         TargetIsHighValue = 6,
         InCombatDuration = 7,
         EnemyHeroClassInRange = 8,
+        EnemyCountInDashPath = 9,
     }
 }

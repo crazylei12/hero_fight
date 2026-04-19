@@ -675,6 +675,8 @@ namespace Fight.Battle
                     return CountLowHealthUnitsInRange(context, caster, primaryTarget, searchRadius, includeAllies: false, healthThreshold) >= requiredUnitCount;
                 case UltimateConditionType.AllyLowHealthInRange:
                     return CountLowHealthUnitsInRange(context, caster, primaryTarget, searchRadius, includeAllies: true, healthThreshold) >= requiredUnitCount;
+                case UltimateConditionType.EnemyCountInDashPath:
+                    return CountDashPathTargets(context, caster, skill, primaryTarget) >= requiredUnitCount;
                 case UltimateConditionType.SelfLowHealth:
                     return GetHealthRatio(caster) <= healthThreshold;
                 case UltimateConditionType.EnemyHeroClassInRange:
@@ -732,6 +734,7 @@ namespace Fight.Battle
                 case UltimateConditionType.EnemyLowHealthInRange:
                 case UltimateConditionType.AllyLowHealthInRange:
                 case UltimateConditionType.EnemyHeroClassInRange:
+                case UltimateConditionType.EnemyCountInDashPath:
                     var measuredCount = GetConditionUnitCount(context, caster, skill, primaryTarget, primaryCondition);
                     var requiredCount = GetEffectiveRequiredUnitCount(primaryCondition, decision?.fallback, context);
                     chance += Mathf.Max(0, measuredCount - requiredCount) * UltimateExtraUnitReleaseChance;
@@ -803,8 +806,53 @@ namespace Fight.Battle
                 UltimateConditionType.EnemyLowHealthInRange => CountLowHealthUnitsInRange(context, caster, primaryTarget, searchRadius, includeAllies: false, healthThreshold),
                 UltimateConditionType.AllyLowHealthInRange => CountLowHealthUnitsInRange(context, caster, primaryTarget, searchRadius, includeAllies: true, healthThreshold),
                 UltimateConditionType.EnemyHeroClassInRange => CountUnitsOfHeroClassInRange(context, caster, primaryTarget, searchRadius, condition.heroClassFilter),
+                UltimateConditionType.EnemyCountInDashPath => CountDashPathTargets(context, caster, skill, primaryTarget),
                 _ => 0,
             };
+        }
+
+        private static int CountDashPathTargets(
+            BattleContext context,
+            RuntimeHero caster,
+            SkillData skill,
+            RuntimeHero primaryTarget)
+        {
+            if (context == null
+                || caster == null
+                || primaryTarget == null
+                || primaryTarget.IsDead
+                || skill?.effects == null)
+            {
+                return 0;
+            }
+
+            var resolutionState = CreateSkillEffectResolutionState(skill, caster, primaryTarget);
+            if (!resolutionState.HasDashPath)
+            {
+                return 0;
+            }
+
+            var uniqueTargetIds = new HashSet<string>();
+            for (var i = 0; i < skill.effects.Count; i++)
+            {
+                var effect = skill.effects[i];
+                if (effect == null || effect.targetMode != SkillEffectTargetMode.DashPathEnemies)
+                {
+                    continue;
+                }
+
+                var dashTargets = CollectDashPathTargets(context, caster, skill, effect, resolutionState);
+                for (var j = 0; j < dashTargets.Count; j++)
+                {
+                    var target = dashTargets[j];
+                    if (target != null)
+                    {
+                        uniqueTargetIds.Add(target.RuntimeId);
+                    }
+                }
+            }
+
+            return uniqueTargetIds.Count;
         }
 
         private static int GetActiveFallbackStage(BattleContext context, UltimateFallbackData fallback)
@@ -1313,10 +1361,16 @@ namespace Fight.Battle
                 return new SkillEffectResolutionState(dashStartPosition, dashStartPosition, 0f, false);
             }
 
+            var dashDurationSeconds = Mathf.Max(
+                0f,
+                dashEffect.durationSeconds > Mathf.Epsilon
+                    ? dashEffect.durationSeconds
+                    : dashEffect.forcedMovementDurationSeconds);
+
             return new SkillEffectResolutionState(
                 dashStartPosition,
-                GetDashDestination(dashStartPosition, primaryTarget.CurrentPosition),
-                dashEffect.durationSeconds,
+                GetDashDestination(dashStartPosition, primaryTarget.CurrentPosition, dashEffect),
+                dashDurationSeconds,
                 true);
         }
 
@@ -2239,7 +2293,7 @@ namespace Fight.Battle
             var startPosition = caster.CurrentPosition;
             var destination = resolutionState.HasDashPath
                 ? resolutionState.DashDestination
-                : GetDashDestination(startPosition, target.CurrentPosition);
+                : GetDashDestination(startPosition, target.CurrentPosition, effect);
             var durationSeconds = effect != null
                 ? Mathf.Max(0f, effect.durationSeconds > Mathf.Epsilon ? effect.durationSeconds : effect.forcedMovementDurationSeconds)
                 : 0f;
@@ -2255,15 +2309,19 @@ namespace Fight.Battle
                 sourceSkill));
         }
 
-        private static Vector3 GetDashDestination(Vector3 casterPosition, Vector3 targetPosition)
+        private static Vector3 GetDashDestination(Vector3 casterPosition, Vector3 targetPosition, SkillEffectData effect)
         {
             var offset = targetPosition - casterPosition;
+            offset.y = 0f;
             if (offset.sqrMagnitude <= Mathf.Epsilon)
             {
                 return Stage01ArenaSpec.ClampPosition(targetPosition);
             }
 
-            var destination = targetPosition - offset.normalized * 0.8f;
+            var dashDistance = effect != null ? Mathf.Max(0f, effect.forcedMovementDistance) : 0f;
+            var destination = dashDistance > Mathf.Epsilon
+                ? casterPosition + offset.normalized * dashDistance
+                : targetPosition - offset.normalized * 0.8f;
             destination.y = 0f;
             return Stage01ArenaSpec.ClampPosition(destination);
         }

@@ -1,0 +1,117 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bea5ec4d01f80a948a332187ac325d06, type: 3}
+  m_Name: Flying Swallow Sever
+  m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
+  skillId: skill_bladesman_ultimate_flyingswallowsever
+  displayName: "\u98DE\u71D5\u65AD\u7A7A"
+  description: 'Stage-01 demo skill: lock a straight dash line and damage every enemy
+    cut through once.'
+  slotType: 1
+  skillType: 4
+  targetType: 1
+  preferredEnemyHeroClass: 2
+  fallbackTargetType: 1
+  targetPrioritySearchRadius: 0
+  targetPriorityRequiredUnitCount: 1
+  castRange: 6.5
+  areaRadius: 0
+  cooldownSeconds: 0
+  minTargetsToCast: 1
+  effects:
+  - effectType: 3
+    targetMode: 0
+    powerMultiplier: 1
+    radiusOverride: 0
+    durationSeconds: 0.22
+    tickIntervalSeconds: 1
+    followCaster: 0
+    persistentAreaPulseEffectType: 1
+    persistentAreaTargetType: 0
+    forcedMovementDirection: 0
+    forcedMovementDistance: 16
+    forcedMovementDurationSeconds: 0.22
+    forcedMovementPeakHeight: 0
+    statusEffects: []
+  - effectType: 0
+    targetMode: 5
+    powerMultiplier: 5
+    radiusOverride: 4
+    durationSeconds: 0
+    tickIntervalSeconds: 1
+    followCaster: 0
+    persistentAreaPulseEffectType: 1
+    persistentAreaTargetType: 0
+    forcedMovementDirection: 0
+    forcedMovementDistance: 0
+    forcedMovementDurationSeconds: 0
+    forcedMovementPeakHeight: 0
+    statusEffects: []
+  allowsSelfCast: 0
+  reactiveGuard:
+    enabled: 0
+    durationSeconds: 0
+    triggerRadius: 0
+    effectRadius: 0
+    maxTriggerCount: 1
+    forcedMovementDistance: 0
+    forcedMovementDurationSeconds: 0
+    forcedMovementPeakHeight: 0
+    onTriggerStatusEffects: []
+  actionSequence:
+    enabled: 0
+    payloadType: 0
+    repeatMode: 0
+    repeatCount: 1
+    durationSeconds: 1
+    intervalSeconds: 0.25
+    windupSeconds: 0
+    recoverySeconds: 0
+    temporaryBasicAttackRangeOverride: 0
+    temporarySkillCastRangeOverride: 0
+    targetRefreshMode: 1
+    interruptFlags: 3
+  targetIndicatorVfxPrefab: {fileID: 0}
+  castProjectileVfxPrefab: {fileID: 0}
+  persistentAreaVfxPrefab: {fileID: 0}
+  persistentAreaVfxScaleMultiplier: 1
+  persistentAreaVfxEulerAngles: {x: 0, y: 0, z: 0}
+  skillAreaPresentationType: 0
+  ultimateDecision:
+    targetingType: 1
+    primaryCondition:
+      conditionType: 9
+      searchRadius: 0
+      requiredUnitCount: 2
+      healthPercentThreshold: 1
+      durationSeconds: 0
+      highValueTargetType: 0
+      heroClassFilter: 2
+      requireTargetInCastRange: 1
+    secondaryCondition:
+      conditionType: 0
+      searchRadius: 0
+      requiredUnitCount: 1
+      healthPercentThreshold: 1
+      durationSeconds: 0
+      highValueTargetType: 0
+      heroClassFilter: 2
+      requireTargetInCastRange: 1
+    fallback:
+      fallbackType: 1
+      triggerAfterSeconds: 40
+      overrideRequiredUnitCount: 1
+      overrideHealthPercentThreshold: -1
+      secondaryTriggerAfterSeconds: 0
+      secondaryOverrideRequiredUnitCount: 0
+      secondaryOverrideHealthPercentThreshold: -1
+    combineMode: 0

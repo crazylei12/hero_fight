@@ -28,6 +28,9 @@ namespace Fight.Editor
         private const string ResultScenePath = ScenesFolder + "/Result.unity";
         private const string DefaultBattleInputAssetPath = ResourcesDemoFolder + "/Stage01DemoBattleInput.asset";
         private const string DefaultHeroCatalogAssetPath = ResourcesDemoFolder + "/Stage01HeroCatalog.asset";
+        private const string BladesmanHeroAssetPath = HeroesRootFolder + "/warrior_002_bladesman/Bladesman.asset";
+        private const string BladesmanActiveSkillAssetPath = SkillsRootFolder + "/warrior_002_bladesman/Rending Slash.asset";
+        private const string BladesmanUltimateSkillAssetPath = SkillsRootFolder + "/warrior_002_bladesman/Flying Swallow Sever.asset";
         private const string WindchimeHeroAssetPath = HeroesRootFolder + "/support_002_windchime/Windchime.asset";
         private const string WindchimeActiveSkillAssetPath = SkillsRootFolder + "/support_002_windchime/Echo Canopy.asset";
         private const string WindchimeUltimateSkillAssetPath = SkillsRootFolder + "/support_002_windchime/Stillwind Domain.asset";
@@ -134,6 +137,21 @@ namespace Fight.Editor
                 ConfigureSkybreakerUltimate(warriorUltimateSkill, overwriteExistingContent, warriorUltimateExisted),
                 overwriteExistingContent,
                 HeroTag.Melee, HeroTag.Dive, HeroTag.Control);
+
+            var bladesmanActive = CreateBladesmanActiveSkill(overwriteExistingContent);
+            var bladesmanUltimate = CreateBladesmanUltimateSkill(overwriteExistingContent, out _);
+            var bladesman = CreateHero(
+                "warrior_002_bladesman",
+                "Bladesman",
+                HeroClass.Warrior,
+                410f, 46f, 22f, 1f / 1.12f, 4.5f, 0.12f, 1.65f, 1.9f,
+                bladesmanActive,
+                bladesmanUltimate,
+                overwriteExistingContent,
+                out var bladesmanHeroExisted,
+                HeroTag.Melee, HeroTag.Dive, HeroTag.Burst);
+            ConfigureBladesmanBasicAttack(bladesman, overwriteExistingContent, bladesmanHeroExisted);
+            EnsureHeroSkillReferences(bladesman, bladesmanActive, bladesmanUltimate);
 
             var mageUltimateSkill = CreateSkill("skill_mage_ultimate_meteor", "Meteor Fall", SkillSlotType.Ultimate, SkillType.AreaDamage, SkillTargetType.Self, 0f, ScaleRangedHeroDistance(6f), 0.55f, 0f, 3, overwriteExistingContent, out var mageUltimateExisted);
 
@@ -278,7 +296,7 @@ namespace Fight.Editor
                 HeroTag.Ranged, HeroTag.SustainedDamage, HeroTag.AreaDamage);
             ConfigureRiflemanBasicAttack(rifleman, overwriteExistingContent, riflemanHeroExisted);
 
-            CreateHeroCatalog(warrior, mage, frostmage, assassin, tidefin, tank, shieldwarden, support, windchime, marksman, rifleman);
+            CreateHeroCatalog(warrior, bladesman, mage, frostmage, assassin, tidefin, tank, shieldwarden, support, windchime, marksman, rifleman);
 
             var battleInput = CreateBattleInput(
                 "Stage01DemoBattleInput",
@@ -371,10 +389,15 @@ namespace Fight.Editor
             var hasBasicAttackOnlyScene = AssetDatabase.LoadAssetAtPath<SceneAsset>(BasicAttackOnlyBattleScenePath) != null;
             var hasDefaultBattleInput = AssetDatabase.LoadAssetAtPath<BattleInputConfig>(DefaultBattleInputAssetPath) != null;
             var heroCatalog = AssetDatabase.LoadAssetAtPath<HeroCatalogData>(DefaultHeroCatalogAssetPath);
+            var bladesmanHero = AssetDatabase.LoadAssetAtPath<HeroDefinition>(BladesmanHeroAssetPath);
+            var bladesmanActiveSkill = AssetDatabase.LoadAssetAtPath<SkillData>(BladesmanActiveSkillAssetPath);
+            var bladesmanUltimateSkill = AssetDatabase.LoadAssetAtPath<SkillData>(BladesmanUltimateSkillAssetPath);
             var windchimeHero = AssetDatabase.LoadAssetAtPath<HeroDefinition>(WindchimeHeroAssetPath);
             var windchimeActiveSkill = AssetDatabase.LoadAssetAtPath<SkillData>(WindchimeActiveSkillAssetPath);
             var windchimeUltimateSkill = AssetDatabase.LoadAssetAtPath<SkillData>(WindchimeUltimateSkillAssetPath);
+            var catalogContainsBladesman = CatalogContainsHero(heroCatalog, "warrior_002_bladesman");
             var catalogContainsWindchime = CatalogContainsHero(heroCatalog, "support_002_windchime");
+            var bladesmanReferencesValid = HeroHasExpectedSkillReferences(bladesmanHero, bladesmanActiveSkill, bladesmanUltimateSkill);
             var windchimeReferencesValid = HeroHasExpectedSkillReferences(windchimeHero, windchimeActiveSkill, windchimeUltimateSkill);
 
             return !hasMainMenuScene
@@ -384,10 +407,15 @@ namespace Fight.Editor
                 || !hasBasicAttackOnlyScene
                 || !hasDefaultBattleInput
                 || heroCatalog == null
+                || bladesmanHero == null
+                || bladesmanActiveSkill == null
+                || bladesmanUltimateSkill == null
                 || windchimeHero == null
                 || windchimeActiveSkill == null
                 || windchimeUltimateSkill == null
+                || !catalogContainsBladesman
                 || !catalogContainsWindchime
+                || !bladesmanReferencesValid
                 || !windchimeReferencesValid;
         }
 
@@ -1305,6 +1333,100 @@ namespace Fight.Editor
             return skill;
         }
 
+        private static SkillData CreateBladesmanActiveSkill(bool overwriteExistingContent)
+        {
+            var skill = CreateSkill(
+                "skill_bladesman_active_rendingslash",
+                "裂甲斩",
+                SkillSlotType.ActiveSkill,
+                SkillType.SingleTargetDamage,
+                SkillTargetType.NearestEnemy,
+                2.4f,
+                0f,
+                1.35f,
+                6.5f,
+                1,
+                overwriteExistingContent,
+                out var existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.skillType = SkillType.SingleTargetDamage;
+            skill.targetType = SkillTargetType.NearestEnemy;
+            skill.castRange = 2.4f;
+            skill.areaRadius = 0f;
+            skill.cooldownSeconds = 6.5f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+
+            var defenseDownEffect = AddApplyStatusEffectsEffect(skill);
+            defenseDownEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.DefenseModifier,
+                durationSeconds = 4f,
+                magnitude = -0.25f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
+            AddDamageEffect(skill, 1.35f);
+            skill.description = "Stage-01 demo skill: apply defense down before dealing a heavy single-target strike.";
+            ResetUltimateDecision(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateBladesmanUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
+        {
+            var skill = CreateSkill(
+                "skill_bladesman_ultimate_flyingswallowsever",
+                "飞燕断空",
+                SkillSlotType.Ultimate,
+                SkillType.Dash,
+                SkillTargetType.NearestEnemy,
+                6.5f,
+                0f,
+                0f,
+                0f,
+                1,
+                overwriteExistingContent,
+                out existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.skillType = SkillType.Dash;
+            skill.targetType = SkillTargetType.NearestEnemy;
+            skill.castRange = 6.5f;
+            skill.areaRadius = 0f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+
+            AddRepositionEffect(skill, 0.22f, 0f, 16f);
+
+            var pathDamageEffect = AddDamageEffect(skill, 5f);
+            pathDamageEffect.targetMode = SkillEffectTargetMode.DashPathEnemies;
+            pathDamageEffect.radiusOverride = 4f;
+
+            skill.description = "Stage-01 demo skill: lock a straight dash line and damage every enemy cut through once.";
+
+            ResetUltimateDecision(skill);
+            skill.ultimateDecision.targetingType = UltimateTargetingType.CurrentTarget;
+            skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.EnemyCountInDashPath;
+            skill.ultimateDecision.primaryCondition.requiredUnitCount = 2;
+            skill.ultimateDecision.combineMode = UltimateConditionCombineMode.PrimaryOnly;
+            ApplyCountFallback(skill, 40f, 1, 0f, 0);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
         private static void AddDefaultEffectsForSkill(SkillData skill, float powerMultiplier)
         {
             switch (skill.skillType)
@@ -1381,7 +1503,8 @@ namespace Fight.Editor
         private static SkillEffectData AddRepositionEffect(
             SkillData skill,
             float durationSeconds = 0f,
-            float peakHeight = 0f)
+            float peakHeight = 0f,
+            float dashDistance = 0f)
         {
             var effect = new SkillEffectData
             {
@@ -1389,6 +1512,7 @@ namespace Fight.Editor
                 durationSeconds = durationSeconds,
                 forcedMovementDurationSeconds = durationSeconds,
                 forcedMovementPeakHeight = peakHeight,
+                forcedMovementDistance = dashDistance,
             };
             skill.effects.Add(effect);
             return effect;
@@ -1488,6 +1612,26 @@ namespace Fight.Editor
                 refreshDurationOnReapply = true,
             });
             hero.debugNotes = "Stage-01 demo hero for Assassin. Tidefin validates shared basic-attack on-hit debuffs and high-output target suppression.";
+            EditorUtility.SetDirty(hero);
+        }
+
+        private static void ConfigureBladesmanBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (hero == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return;
+            }
+
+            hero.basicAttack.damageMultiplier = 1.2f;
+            hero.basicAttack.attackInterval = 1.12f;
+            hero.basicAttack.rangeOverride = 1.9f;
+            hero.basicAttack.usesProjectile = false;
+            hero.basicAttack.projectileSpeed = 0f;
+            hero.basicAttack.effectType = BasicAttackEffectType.Damage;
+            hero.basicAttack.targetType = BasicAttackTargetType.NearestEnemy;
+            EnsureBasicAttackStatusList(hero.basicAttack);
+            hero.basicAttack.onHitStatusEffects.Clear();
+            hero.debugNotes = "Stage-01 demo hero for Warrior. Bladesman validates pre-damage defense shred and fixed-distance line-breaking dash damage.";
             EditorUtility.SetDirty(hero);
         }
 
@@ -2580,6 +2724,8 @@ namespace Fight.Editor
         {
             return skillId switch
             {
+                "skill_bladesman_active_rendingslash" => "Rending Slash",
+                "skill_bladesman_ultimate_flyingswallowsever" => "Flying Swallow Sever",
                 "skill_tank_ultimate_ironoath" => "Ground Lock",
                 _ => null,
             };
@@ -2608,6 +2754,8 @@ namespace Fight.Editor
         {
             return skillId switch
             {
+                "skill_bladesman_active_rendingslash" => "warrior_002_bladesman",
+                "skill_bladesman_ultimate_flyingswallowsever" => "warrior_002_bladesman",
                 "skill_frostmage_active_frostburst" => "mage_002_frostmage",
                 "skill_frostmage_ultimate_blizzard" => "mage_002_frostmage",
                 "skill_tidefin_active_tidalpounce" => "assassin_002_tidefin",
