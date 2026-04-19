@@ -300,7 +300,7 @@ def make_background(size: tuple[int, int] = (1920, 560)) -> Image.Image:
     return image
 
 
-def generate(prefix: str = "top_scoreboard_mockup_v5") -> tuple[Path, Path]:
+def generate(prefix: str = "top_scoreboard_mockup_v6") -> tuple[Path, Path]:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
     ribbon_blue = Image.open(LAYERLAB / "Label-Title/Title_Ribbon_03_Blue.png").convert("RGBA")
@@ -311,9 +311,6 @@ def generate(prefix: str = "top_scoreboard_mockup_v5") -> tuple[Path, Path]:
     scoreboard = slanted_panel()
     canvas = Image.new("RGBA", scoreboard.size, (0, 0, 0, 0))
     canvas.alpha_composite(scoreboard)
-
-    canvas.alpha_composite(fit(ribbon_blue, 620, 92), (82, 8))
-    canvas.alpha_composite(fit(ribbon_red, 620, 92), (1218, 8))
 
     ornament_dark = alpha_mask_to_color(center_orn, (28, 22, 20, 230))
     ornament_gold = alpha_mask_to_color(center_orn, (209, 145, 64, 110))
@@ -331,24 +328,25 @@ def generate(prefix: str = "top_scoreboard_mockup_v5") -> tuple[Path, Path]:
     logo_size = 102
     left_logo_x = 56
     right_logo_x = 1762
+
+    left_ribbon_x = 166
+    right_ribbon_x = 1194
+    ribbon_y = 118
+    ribbon_width = 560
+    ribbon_height = 84
+    canvas.alpha_composite(fit(ribbon_blue, ribbon_width, ribbon_height), (left_ribbon_x, ribbon_y))
+    canvas.alpha_composite(fit(ribbon_red, ribbon_width, ribbon_height), (right_ribbon_x, ribbon_y))
+
     panel_draw.rounded_rectangle((left_logo_x, info_y, left_logo_x + logo_size, info_y + info_height), radius=26, fill=(16, 20, 30, 240), outline=BLUE, width=2)
     panel_draw.rounded_rectangle((right_logo_x, info_y, right_logo_x + logo_size, info_y + info_height), radius=26, fill=(16, 20, 30, 240), outline=RED, width=2)
-
-    left_panel_x = 170
-    right_panel_x = 1180
-    panel_width = 555
-    panel_draw.rounded_rectangle((left_panel_x, info_y, left_panel_x + panel_width, info_y + info_height), radius=18, fill=(10, 14, 22, 235))
-    panel_draw.rounded_rectangle((right_panel_x, info_y, right_panel_x + panel_width, info_y + info_height), radius=18, fill=(10, 14, 22, 235))
-    panel_draw.line((278, info_y + 10, 278, info_y + info_height - 10), fill=(255, 255, 255, 42), width=2)
-    panel_draw.line((1702, info_y + 10, 1702, info_y + info_height - 10), fill=(255, 255, 255, 42), width=2)
 
     left_logo = make_logo("SS", BLUE, (88, 173, 255, 220))
     right_logo = make_logo("鸡", RED, (255, 138, 138, 220))
     canvas.alpha_composite(left_logo, (left_logo_x + 10, info_y + 10))
     canvas.alpha_composite(right_logo, (right_logo_x + 10, info_y + 10))
 
-    centered_text(panel_draw, (160, 16, 650, 88), "Strange Seals", FONT_TEAM, TEXT_MAIN)
-    centered_text(panel_draw, (1270, 16, 1760, 88), "鸡腿大大", FONT_TEAM, TEXT_MAIN)
+    centered_text(panel_draw, (left_ribbon_x + 70, ribbon_y + 2, left_ribbon_x + ribbon_width - 70, ribbon_y + ribbon_height - 6), "Strange Seals", FONT_TEAM, TEXT_MAIN)
+    centered_text(panel_draw, (right_ribbon_x + 70, ribbon_y + 2, right_ribbon_x + ribbon_width - 70, ribbon_y + ribbon_height - 6), "鸡腿大大", FONT_TEAM, TEXT_MAIN)
 
     centered_text(panel_draw, (800, 56, 1120, 84), "常规时间", FONT_PHASE, (236, 210, 170, 255), stroke_width=1, stroke_fill=(30, 20, 12, 180))
     centered_text(panel_draw, (790, 82, 1130, 140), "00:58", FONT_TIMER, TEXT_MAIN)
@@ -364,19 +362,21 @@ def generate(prefix: str = "top_scoreboard_mockup_v5") -> tuple[Path, Path]:
 
     dot_size = 18
     dot_spacing = 28
-    dot_gap_to_score = 20
     dot_group_width = dot_size + dot_spacing * 2
-    left_dot_start_x = left_score_box[0] - dot_gap_to_score - dot_group_width
-    right_dot_start_x = right_score_box[2] + dot_gap_to_score
+    left_score_center_x = (left_score_box[0] + left_score_box[2]) // 2
+    right_score_center_x = (right_score_box[0] + right_score_box[2]) // 2
+    left_dot_start_x = int(left_score_center_x - dot_group_width / 2)
+    right_dot_start_x = int(right_score_center_x - dot_group_width / 2)
+    dot_y = 170
 
     for index in range(3):
         x = left_dot_start_x + index * dot_spacing
         fill = BLUE if index < 2 else (70, 78, 92, 255)
-        panel_draw.ellipse((x, 170, x + dot_size, 188), fill=fill, outline=(255, 255, 255, 26), width=2)
+        panel_draw.ellipse((x, dot_y, x + dot_size, dot_y + dot_size), fill=fill, outline=(255, 255, 255, 26), width=2)
     for index in range(3):
         x = right_dot_start_x + index * dot_spacing
         fill = RED if index < 1 else (70, 78, 92, 255)
-        panel_draw.ellipse((x, 170, x + dot_size, 188), fill=fill, outline=(255, 255, 255, 26), width=2)
+        panel_draw.ellipse((x, dot_y, x + dot_size, dot_y + dot_size), fill=fill, outline=(255, 255, 255, 26), width=2)
 
     scoreboard_path = OUT_DIR / f"{prefix}.png"
     canvas.save(scoreboard_path)
@@ -389,8 +389,8 @@ def generate(prefix: str = "top_scoreboard_mockup_v5") -> tuple[Path, Path]:
     preview.alpha_composite(canvas, (0, 12))
 
     preview_draw = ImageDraw.Draw(preview)
-    preview_draw.text((134, 304), "预览图：顶部计分板素材 v5", font=get_font(24), fill=(255, 237, 212, 180), stroke_width=1, stroke_fill=(0, 0, 0, 150))
-    preview_draw.text((134, 336), "分数与圆点都按中轴镜像盒布局重排，解决两侧离 VS 距离不一致", font=get_font(18), fill=(233, 235, 242, 150), stroke_width=1, stroke_fill=(0, 0, 0, 150))
+    preview_draw.text((134, 304), "预览图：顶部计分板素材 v6", font=get_font(24), fill=(255, 237, 212, 180), stroke_width=1, stroke_fill=(0, 0, 0, 150))
+    preview_draw.text((134, 336), "删除左右黑条，队名缎带下移到信息区，圆点改到数字正下方", font=get_font(18), fill=(233, 235, 242, 150), stroke_width=1, stroke_fill=(0, 0, 0, 150))
 
     preview_path = OUT_DIR / f"{prefix}_preview.png"
     preview.save(preview_path)
