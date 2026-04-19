@@ -300,7 +300,7 @@ def make_background(size: tuple[int, int] = (1920, 560)) -> Image.Image:
     return image
 
 
-def generate(prefix: str = "top_scoreboard_mockup_v6") -> tuple[Path, Path]:
+def generate(prefix: str = "top_scoreboard_mockup_v7") -> tuple[Path, Path]:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
     ribbon_blue = Image.open(LAYERLAB / "Label-Title/Title_Ribbon_03_Blue.png").convert("RGBA")
@@ -367,7 +367,7 @@ def generate(prefix: str = "top_scoreboard_mockup_v6") -> tuple[Path, Path]:
     right_score_center_x = (right_score_box[0] + right_score_box[2]) // 2
     left_dot_start_x = int(left_score_center_x - dot_group_width / 2)
     right_dot_start_x = int(right_score_center_x - dot_group_width / 2)
-    dot_y = 170
+    dot_y = 184
 
     for index in range(3):
         x = left_dot_start_x + index * dot_spacing
@@ -389,8 +389,8 @@ def generate(prefix: str = "top_scoreboard_mockup_v6") -> tuple[Path, Path]:
     preview.alpha_composite(canvas, (0, 12))
 
     preview_draw = ImageDraw.Draw(preview)
-    preview_draw.text((134, 304), "预览图：顶部计分板素材 v6", font=get_font(24), fill=(255, 237, 212, 180), stroke_width=1, stroke_fill=(0, 0, 0, 150))
-    preview_draw.text((134, 336), "删除左右黑条，队名缎带下移到信息区，圆点改到数字正下方", font=get_font(18), fill=(233, 235, 242, 150), stroke_width=1, stroke_fill=(0, 0, 0, 150))
+    preview_draw.text((134, 304), "预览图：顶部计分板素材 v7", font=get_font(24), fill=(255, 237, 212, 180), stroke_width=1, stroke_fill=(0, 0, 0, 150))
+    preview_draw.text((134, 336), "保持对称与居中，只把比分圆点整体下沉一档，避免压住数字", font=get_font(18), fill=(233, 235, 242, 150), stroke_width=1, stroke_fill=(0, 0, 0, 150))
 
     preview_path = OUT_DIR / f"{prefix}_preview.png"
     preview.save(preview_path)
