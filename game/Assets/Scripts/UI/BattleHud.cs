@@ -134,8 +134,8 @@ namespace Fight.UI
 
             GUI.DrawTexture(hudRect, runtimeBaseTexture, ScaleMode.StretchToFill, true);
 
-            DrawShadowedLabel(ScaleRect(hudRect, 216f, 66f, 420f, 44f), GetTeamLabel(TeamSide.Blue), titleStyle, MainTextColor);
-            DrawShadowedLabel(ScaleRect(hudRect, 1244f, 66f, 420f, 44f), GetTeamLabel(TeamSide.Red), titleStyle, MainTextColor);
+            DrawShadowedLabel(ScaleRect(hudRect, 216f, 66f, 420f, 76f), GetTeamLabel(TeamSide.Blue), titleStyle, MainTextColor);
+            DrawShadowedLabel(ScaleRect(hudRect, 1244f, 66f, 420f, 76f), GetTeamLabel(TeamSide.Red), titleStyle, MainTextColor);
 
             DrawShadowedLabel(
                 ScaleRect(hudRect, 780f, 2f, 320f, 28f),
