@@ -9,6 +9,13 @@ namespace Fight.Battle
     {
         private const float FrontlineAttackRangeThreshold = 2.5f;
 
+        private enum SpawnDepthBand
+        {
+            TankFrontline = 0,
+            Midline = 1,
+            Backline = 2,
+        }
+
         private struct TeamHeroEntry
         {
             public TeamHeroEntry(HeroDefinition definition, int slotIndex)
@@ -80,23 +87,50 @@ namespace Fight.Battle
             var laneAnchors = BuildLaneAnchors(entries.Count);
             Shuffle(laneAnchors, randomService);
 
-            var frontlineIndices = new List<int>();
+            var tankFrontlineIndices = new List<int>();
+            var midlineIndices = new List<int>();
             var backlineIndices = new List<int>();
             for (var i = 0; i < entries.Count; i++)
             {
-                if (IsFrontlineHero(entries[i].Definition))
+                switch (GetSpawnDepthBand(entries[i].Definition))
                 {
-                    frontlineIndices.Add(i);
-                }
-                else
-                {
-                    backlineIndices.Add(i);
+                    case SpawnDepthBand.TankFrontline:
+                        tankFrontlineIndices.Add(i);
+                        break;
+                    case SpawnDepthBand.Backline:
+                        backlineIndices.Add(i);
+                        break;
+                    default:
+                        midlineIndices.Add(i);
+                        break;
                 }
             }
 
             var laneCursor = 0;
-            laneCursor = AssignSpawnPositions(spawnPositions, side, laneAnchors, laneCursor, frontlineIndices, true, randomService);
-            AssignSpawnPositions(spawnPositions, side, laneAnchors, laneCursor, backlineIndices, false, randomService);
+            laneCursor = AssignSpawnPositions(
+                spawnPositions,
+                side,
+                laneAnchors,
+                laneCursor,
+                tankFrontlineIndices,
+                SpawnDepthBand.TankFrontline,
+                randomService);
+            laneCursor = AssignSpawnPositions(
+                spawnPositions,
+                side,
+                laneAnchors,
+                laneCursor,
+                midlineIndices,
+                SpawnDepthBand.Midline,
+                randomService);
+            AssignSpawnPositions(
+                spawnPositions,
+                side,
+                laneAnchors,
+                laneCursor,
+                backlineIndices,
+                SpawnDepthBand.Backline,
+                randomService);
             return spawnPositions;
         }
 
@@ -106,10 +140,12 @@ namespace Fight.Battle
             float[] laneAnchors,
             int laneCursor,
             IReadOnlyList<int> entryIndices,
-            bool frontline,
+            SpawnDepthBand depthBand,
             BattleRandomService randomService)
         {
-            var maxVerticalExtent = Stage01ArenaSpec.HalfHeightWorldUnits - Stage01ArenaSpec.SpawnTopInsetWorldUnits;
+            var maxVerticalExtent = Mathf.Min(
+                Stage01ArenaSpec.HalfHeightWorldUnits - Stage01ArenaSpec.SpawnTopInsetWorldUnits,
+                Stage01ArenaSpec.SpawnCentralBandHalfHeightWorldUnits);
             var sideDirection = side == TeamSide.Blue ? -1f : 1f;
 
             for (var i = 0; i < entryIndices.Count; i++)
@@ -121,12 +157,8 @@ namespace Fight.Battle
                     Stage01ArenaSpec.SpawnVerticalJitterWorldUnits);
                 z = Mathf.Clamp(z, -maxVerticalExtent, maxVerticalExtent);
 
-                var minDistanceFromCenter = frontline
-                    ? Stage01ArenaSpec.FrontlineSpawnMinDistanceFromCenterWorldUnits
-                    : Stage01ArenaSpec.BacklineSpawnMinDistanceFromCenterWorldUnits;
-                var maxDistanceFromCenter = frontline
-                    ? Stage01ArenaSpec.FrontlineSpawnMaxDistanceFromCenterWorldUnits
-                    : Stage01ArenaSpec.BacklineSpawnMaxDistanceFromCenterWorldUnits;
+                var minDistanceFromCenter = GetSpawnMinDistanceFromCenter(depthBand);
+                var maxDistanceFromCenter = GetSpawnMaxDistanceFromCenter(depthBand);
                 var x = sideDirection * randomService.Range(minDistanceFromCenter, maxDistanceFromCenter);
 
                 spawnPositions[entryIndex] = Stage01ArenaSpec.ClampPosition(new Vector3(x, 0f, z));
@@ -147,6 +179,26 @@ namespace Fight.Battle
             return anchors;
         }
 
+        private static float GetSpawnMinDistanceFromCenter(SpawnDepthBand depthBand)
+        {
+            return depthBand switch
+            {
+                SpawnDepthBand.TankFrontline => Stage01ArenaSpec.TankSpawnMinDistanceFromCenterWorldUnits,
+                SpawnDepthBand.Backline => Stage01ArenaSpec.BacklineSpawnMinDistanceFromCenterWorldUnits,
+                _ => Stage01ArenaSpec.SkirmisherSpawnMinDistanceFromCenterWorldUnits,
+            };
+        }
+
+        private static float GetSpawnMaxDistanceFromCenter(SpawnDepthBand depthBand)
+        {
+            return depthBand switch
+            {
+                SpawnDepthBand.TankFrontline => Stage01ArenaSpec.TankSpawnMaxDistanceFromCenterWorldUnits,
+                SpawnDepthBand.Backline => Stage01ArenaSpec.BacklineSpawnMaxDistanceFromCenterWorldUnits,
+                _ => Stage01ArenaSpec.SkirmisherSpawnMaxDistanceFromCenterWorldUnits,
+            };
+        }
+
         private static void Shuffle(float[] values, BattleRandomService randomService)
         {
             if (values == null || values.Length <= 1 || randomService == null)
@@ -163,26 +215,43 @@ namespace Fight.Battle
             }
         }
 
-        private static bool IsFrontlineHero(HeroDefinition heroDefinition)
+        private static SpawnDepthBand GetSpawnDepthBand(HeroDefinition heroDefinition)
+        {
+            if (heroDefinition == null)
+            {
+                return SpawnDepthBand.Midline;
+            }
+
+            if (heroDefinition.heroClass == HeroClass.Tank)
+            {
+                return SpawnDepthBand.TankFrontline;
+            }
+
+            return IsBacklineHero(heroDefinition)
+                ? SpawnDepthBand.Backline
+                : SpawnDepthBand.Midline;
+        }
+
+        private static bool IsBacklineHero(HeroDefinition heroDefinition)
         {
             if (heroDefinition == null)
             {
                 return false;
             }
 
-            if (HasTag(heroDefinition, HeroTag.Melee))
+            if (HasTag(heroDefinition, HeroTag.Ranged))
             {
                 return true;
             }
 
-            if (HasTag(heroDefinition, HeroTag.Ranged))
+            if (HasTag(heroDefinition, HeroTag.Melee))
             {
                 return false;
             }
 
             if (heroDefinition.basicAttack != null && heroDefinition.basicAttack.usesProjectile)
             {
-                return false;
+                return true;
             }
 
             var attackRange = 0f;
@@ -195,7 +264,7 @@ namespace Fight.Battle
                 attackRange = heroDefinition.baseStats.attackRange;
             }
 
-            return attackRange <= FrontlineAttackRangeThreshold;
+            return attackRange > FrontlineAttackRangeThreshold;
         }
 
         private static bool HasTag(HeroDefinition heroDefinition, HeroTag tag)
