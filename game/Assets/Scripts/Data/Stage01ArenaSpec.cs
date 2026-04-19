@@ -15,10 +15,13 @@ namespace Fight.Data
         public const float ImportedSpritePixelsPerUnit = 100f;
         public const float SpawnSideInsetWorldUnits = 6f * ArenaScaleMultiplier;
         public const float SpawnTopInsetWorldUnits = 3f * ArenaScaleMultiplier;
-        public const float FrontlineSpawnMinDistanceFromCenterWorldUnits = 8.2f * ArenaScaleMultiplier;
-        public const float FrontlineSpawnMaxDistanceFromCenterWorldUnits = 9.6f * ArenaScaleMultiplier;
+        public const float TankSpawnMinDistanceFromCenterWorldUnits = 7f * ArenaScaleMultiplier;
+        public const float TankSpawnMaxDistanceFromCenterWorldUnits = 8f * ArenaScaleMultiplier;
+        public const float SkirmisherSpawnMinDistanceFromCenterWorldUnits = 8.6f * ArenaScaleMultiplier;
+        public const float SkirmisherSpawnMaxDistanceFromCenterWorldUnits = 9.6f * ArenaScaleMultiplier;
         public const float BacklineSpawnMinDistanceFromCenterWorldUnits = 10.4f * ArenaScaleMultiplier;
         public const float BacklineSpawnMaxDistanceFromCenterWorldUnits = 11.8f * ArenaScaleMultiplier;
+        public const float SpawnCentralBandHalfHeightWorldUnits = 3.5f * ArenaScaleMultiplier;
         public const float SpawnVerticalJitterWorldUnits = 0.45f * ArenaScaleMultiplier;
         public const float FloorWidthWorldUnits = 30f * ArenaScaleMultiplier;
         public const float FloorHeightWorldUnits = 16f * ArenaScaleMultiplier;
@@ -65,7 +68,9 @@ namespace Fight.Data
             }
 
             var clampedSlotIndex = Mathf.Clamp(slotIndex, 0, resolvedTeamSize - 1);
-            var verticalExtent = HalfHeightWorldUnits - SpawnTopInsetWorldUnits;
+            var verticalExtent = Mathf.Min(
+                HalfHeightWorldUnits - SpawnTopInsetWorldUnits,
+                SpawnCentralBandHalfHeightWorldUnits);
             var spacing = (verticalExtent * 2f) / (resolvedTeamSize - 1);
             return -verticalExtent + (clampedSlotIndex * spacing);
         }
