@@ -40,6 +40,7 @@ namespace Fight.Editor
         private const string FireMagePrefabPath = "Assets/HeroEditor4D/heroes/FIREMAGE.prefab";
         private const string FrostMagePrefabPath = "Assets/Prefabs/Heroes/mage_002_frostmage/Frostmage.prefab";
         private const string TankPrefabPath = "Assets/Prefabs/Heroes/tank_001_ironwall/Ironwall.prefab";
+        private const string ShieldwardenPrefabPath = "Assets/Prefabs/Heroes/tank_002_shieldwarden/Shieldwarden.prefab";
         private const string HeroEditorControllerPath = "Assets/HeroEditor4D/Common/Animation/Controller.controller";
         private const string FireMageProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/FireMageBasicAttackProjectile.prefab";
         private const string FrostMageProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/FrostMageBasicAttackProjectile.prefab";
@@ -564,6 +565,7 @@ namespace Fight.Editor
                 "mage_002_frostmage" => FrostMagePrefabPath,
                 "marksman_001_longshot" => MarksmanPrefabPath,
                 "marksman_002_rifleman" => RiflemanPrefabPath,
+                "tank_002_shieldwarden" => ShieldwardenPrefabPath,
                 _ => heroClass switch
                 {
                     HeroClass.Support => SupportPrefabPath,
