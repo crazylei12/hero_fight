@@ -33,6 +33,7 @@ MonoBehaviour:
     projectileSpeed: 14
     effectType: 1
     targetType: 1
+    targetPrioritySearchRadius: 0
     onHitStatusEffects: []
   activeSkill: {fileID: 11400000, guid: 5689b258967051b418e1abd08992e39b, type: 2}
   ultimateSkill: {fileID: 11400000, guid: 2e4635567638584459562248cd674a54, type: 2}

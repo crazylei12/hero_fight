@@ -33,6 +33,8 @@ MonoBehaviour:
     projectileSpeed: 0
     effectType: 0
     targetType: 0
+    targetPrioritySearchRadius: 0
+    onHitStatusEffects: []
   activeSkill: {fileID: 11400000, guid: 022eddc3b89a3fe4cb4b4bdcf101c47a, type: 2}
   ultimateSkill: {fileID: 11400000, guid: f8fdd7d0bf480e945ba46a4ed2ba398b, type: 2}
   aiTemplateId: assassin_default
@@ -42,6 +44,7 @@ MonoBehaviour:
     portrait: {fileID: 0}
     battlePrefab: {fileID: 6942281271074320862, guid: 56818cfb00350d64b80b18f0e2d27211, type: 3}
     animatorController: {fileID: 9100000, guid: c0fbc9a82051e94429aa17cc4b2f48e5, type: 2}
+    battlePrefabFacesLeftByDefault: 0
     projectilePrefab: {fileID: 0}
     projectileAlignToMovement: 0
     projectileEulerAngles: {x: 0, y: 0, z: 0}

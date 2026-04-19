@@ -20,7 +20,7 @@ MonoBehaviour:
   targetType: 1
   castRange: 56
   areaRadius: 0
-  cooldownSeconds: 6
+  cooldownSeconds: 4
   minTargetsToCast: 1
   effects:
   - effectType: 3
@@ -39,7 +39,7 @@ MonoBehaviour:
     statusEffects: []
   - effectType: 0
     targetMode: 0
-    powerMultiplier: 1.25
+    powerMultiplier: 3
     radiusOverride: 0
     durationSeconds: 0
     tickIntervalSeconds: 1
@@ -65,6 +65,8 @@ MonoBehaviour:
     temporarySkillCastRangeOverride: 0
     targetRefreshMode: 1
     interruptFlags: 3
+  targetIndicatorVfxPrefab: {fileID: 0}
+  castProjectileVfxPrefab: {fileID: 0}
   persistentAreaVfxPrefab: {fileID: 0}
   persistentAreaVfxScaleMultiplier: 1
   persistentAreaVfxEulerAngles: {x: 0, y: 0, z: 0}
