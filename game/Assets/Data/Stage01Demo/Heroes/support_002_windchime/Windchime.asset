@@ -46,10 +46,10 @@ MonoBehaviour:
   ultimateSkill: {fileID: 11400000, guid: 1272f820e75f2d046a22ca80d25bdff0, type: 2}
   aiTemplateId: support_default
   usesSpecialLogic: 0
-  specialLogicNotes: 
+  specialLogicNotes:
   visualConfig:
-    portrait: {fileID: 21300000, guid: b8c16cae4093021428774a0827624631, type: 3}
-    battlePrefab: {fileID: 3620924881796964255, guid: 5baa246449d341344b998e5b21529d4e, type: 3}
+    portrait: {fileID: 0}
+    battlePrefab: {fileID: 765985026118865306, guid: 5baa246449d341344b998e5b21529d4e, type: 3}
     animatorController: {fileID: 9100000, guid: c0fbc9a82051e94429aa17cc4b2f48e5, type: 2}
     battlePrefabFacesLeftByDefault: 0
     projectilePrefab: {fileID: 7348018767031583934, guid: 9c004cd2ef068d744ab440fe6bdadd6e, type: 3}

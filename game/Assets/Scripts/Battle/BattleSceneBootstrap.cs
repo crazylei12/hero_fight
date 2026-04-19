@@ -30,9 +30,9 @@ namespace Fight.Battle
                 battleManager = gameObject.AddComponent<BattleManager>();
             }
 
-            if (addBattleHud && GetComponent<BattleCanvasHud>() == null)
+            if (addBattleHud && GetComponent<BattleHud>() == null)
             {
-                gameObject.AddComponent<BattleCanvasHud>();
+                gameObject.AddComponent<BattleHud>();
             }
 
             if (addBattleView && GetComponent<BattleView>() == null)
