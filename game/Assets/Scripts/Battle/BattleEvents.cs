@@ -107,6 +107,93 @@ namespace Fight.Battle
         public int AffectedTargetCount { get; }
     }
 
+    public enum UltimateDecisionOutcome
+    {
+        InvalidPrimaryTarget = 0,
+        MissingPrimaryTarget = 1,
+        NoAffectedTargets = 2,
+        InsufficientAffectedTargets = 3,
+        DecisionConditionsFailed = 4,
+        LegacyOpportunityFailed = 5,
+        RollFailed = 6,
+        RollPassed = 7,
+    }
+
+    public sealed class UltimateDecisionEvaluatedEvent : IBattleEvent
+    {
+        public UltimateDecisionEvaluatedEvent(
+            RuntimeHero caster,
+            SkillData skill,
+            RuntimeHero primaryTarget,
+            bool usesTemplateDecision,
+            int affectedTargetCount,
+            int fallbackStage,
+            UltimateDecisionOutcome outcome,
+            string decisionSummary,
+            bool chanceEvaluated,
+            string chanceSummary,
+            float finalChance,
+            float suppressionMultiplier,
+            float timeSinceLastAllyUltimateSeconds,
+            bool rollEvaluated,
+            float rollValue,
+            bool rollPassed,
+            float nextDecisionCheckTimeSeconds)
+        {
+            Caster = caster;
+            Skill = skill;
+            PrimaryTarget = primaryTarget;
+            UsesTemplateDecision = usesTemplateDecision;
+            AffectedTargetCount = affectedTargetCount;
+            FallbackStage = fallbackStage;
+            Outcome = outcome;
+            DecisionSummary = decisionSummary ?? string.Empty;
+            ChanceEvaluated = chanceEvaluated;
+            ChanceSummary = chanceSummary ?? string.Empty;
+            FinalChance = finalChance;
+            SuppressionMultiplier = suppressionMultiplier;
+            TimeSinceLastAllyUltimateSeconds = timeSinceLastAllyUltimateSeconds;
+            RollEvaluated = rollEvaluated;
+            RollValue = rollValue;
+            RollPassed = rollPassed;
+            NextDecisionCheckTimeSeconds = nextDecisionCheckTimeSeconds;
+        }
+
+        public RuntimeHero Caster { get; }
+
+        public SkillData Skill { get; }
+
+        public RuntimeHero PrimaryTarget { get; }
+
+        public bool UsesTemplateDecision { get; }
+
+        public int AffectedTargetCount { get; }
+
+        public int FallbackStage { get; }
+
+        public UltimateDecisionOutcome Outcome { get; }
+
+        public string DecisionSummary { get; }
+
+        public bool ChanceEvaluated { get; }
+
+        public string ChanceSummary { get; }
+
+        public float FinalChance { get; }
+
+        public float SuppressionMultiplier { get; }
+
+        public float TimeSinceLastAllyUltimateSeconds { get; }
+
+        public bool RollEvaluated { get; }
+
+        public float RollValue { get; }
+
+        public bool RollPassed { get; }
+
+        public float NextDecisionCheckTimeSeconds { get; }
+    }
+
     public sealed class SkillAreaCreatedEvent : IBattleEvent
     {
         public SkillAreaCreatedEvent(RuntimeHero caster, SkillData skill, RuntimeSkillArea area)
