@@ -18,6 +18,7 @@ namespace Fight.UI
         private const int HeroSortBase = 1200;
         private const int SkillAreaCircleSortOrder = 360;
         private const int SkillAreaEffectSortOrder = 340;
+        private const int DamageShareGroundSortOrder = SkillAreaCircleSortOrder + 12;
         private const string ArenaRootName = "BattleArena2D";
         private const string StunStatusLoopVfxResourcesPath = "Stage01Demo/VFX/Statuses/StunStatusLoop";
         private const string KnockUpStatusBurstVfxResourcesPath = "Stage01Demo/VFX/Statuses/KnockUpStatusBurst";
@@ -117,6 +118,7 @@ namespace Fight.UI
         [SerializeField] private float directionalTrailFadeOutSeconds = 0.16f;
         [SerializeField] private float directionalTrailMinDistance = 0.15f;
         [SerializeField] private float directionalTrailMaxLength = 0.92f;
+        [SerializeField] private float damageShareGroundYOffset = -0.18f;
         [SerializeField] private float blinkGhostLifetimeSeconds = 0.18f;
         [SerializeField] private float blinkRevealDurationSeconds = 0.14f;
         [SerializeField] private float blinkRevealStartAlpha = 0.22f;
@@ -143,6 +145,7 @@ namespace Fight.UI
         private Transform heroRoot;
         private Transform projectileRoot;
         private Transform skillAreaRoot;
+        private Transform persistentGroundVfxRoot;
         private Transform transientWorldVfxRoot;
         private BattleEventBus subscribedEventBus;
 
@@ -172,7 +175,6 @@ namespace Fight.UI
             public SpriteRenderer ImpactPulse;
             public SpriteRenderer DirectionalTrail;
             public Transform FootUiRoot;
-            public Transform GroundStatusEffectRoot;
             public Transform StatusEffectRoot;
             public SpriteRenderer HealthBack;
             public SpriteRenderer HealthFill;
@@ -315,6 +317,8 @@ namespace Fight.UI
             projectileRoot.SetParent(transform, false);
             skillAreaRoot = new GameObject("BattleSkillAreaViews").transform;
             skillAreaRoot.SetParent(transform, false);
+            persistentGroundVfxRoot = new GameObject("BattlePersistentGroundVfx").transform;
+            persistentGroundVfxRoot.SetParent(transform, false);
             transientWorldVfxRoot = new GameObject("BattleTransientWorldVfx").transform;
             transientWorldVfxRoot.SetParent(transform, false);
 
@@ -423,7 +427,7 @@ namespace Fight.UI
             UpdatePrefabHitFlash(hero, view);
             SyncForcedMovementStatusVfx(hero, view, heroSortingOrder);
             SyncStatusEffects(hero, view, heroSortingOrder);
-            SyncDamageShareSourceVfx(hero, view, heroSortingOrder);
+            SyncDamageShareSourceVfx(hero, view);
             SyncReactiveGuardVfx(hero, view, heroSortingOrder);
             SyncTransientVfx(hero, view, heroSortingOrder);
 
@@ -447,9 +451,6 @@ namespace Fight.UI
             view.AirborneRingBaseScale = view.AirborneRing.transform.localScale;
             view.ImpactPulse = MakeSprite("ImpactPulse", view.Root.transform, circleSprite, new Color(1f, 1f, 1f, 0f), -7, new Vector3(0f, -0.18f, 0f), new Vector3(0.72f, 0.34f, 1f) * heroMarkerScale);
             view.ImpactPulseBaseScale = view.ImpactPulse.transform.localScale;
-            view.GroundStatusEffectRoot = new GameObject("GroundStatusVfx").transform;
-            view.GroundStatusEffectRoot.SetParent(view.Root.transform, false);
-            view.GroundStatusEffectRoot.localPosition = new Vector3(0f, -0.18f, 0f);
             view.VisualRoot = new GameObject("Visual").transform;
             view.VisualRoot.SetParent(view.Root.transform, false);
             view.StatusEffectRoot = new GameObject("StatusVfx").transform;
@@ -961,9 +962,9 @@ namespace Fight.UI
             ApplyOrbitingStatusEffectLayout(activeOrbitStatusViews);
         }
 
-        private void SyncDamageShareSourceVfx(RuntimeHero hero, HeroViewState view, int heroSortingOrder)
+        private void SyncDamageShareSourceVfx(RuntimeHero hero, HeroViewState view)
         {
-            if (hero == null || view == null || view.GroundStatusEffectRoot == null)
+            if (hero == null || view == null || persistentGroundVfxRoot == null)
             {
                 return;
             }
@@ -986,7 +987,7 @@ namespace Fight.UI
 
             if (view.DamageShareSourceView == null)
             {
-                view.DamageShareSourceView = CreateStatusEffectView("DamageShareSource", view.GroundStatusEffectRoot, config);
+                view.DamageShareSourceView = CreateStatusEffectView("DamageShareSource", persistentGroundVfxRoot, config);
                 if (view.DamageShareSourceView == null)
                 {
                     return;
@@ -995,14 +996,18 @@ namespace Fight.UI
             else if (!string.Equals(view.DamageShareSourceView.LoadedPrefabResourcesPath, config.LoopPrefabResourcesPath, StringComparison.Ordinal))
             {
                 DestroyStatusEffectView(view.DamageShareSourceView);
-                view.DamageShareSourceView = CreateStatusEffectView("DamageShareSource", view.GroundStatusEffectRoot, config);
+                view.DamageShareSourceView = CreateStatusEffectView("DamageShareSource", persistentGroundVfxRoot, config);
                 if (view.DamageShareSourceView == null)
                 {
                     return;
                 }
             }
 
-            ApplyStatusEffectView(view.DamageShareSourceView, config, heroSortingOrder);
+            ApplyWorldStatusEffectView(
+                view.DamageShareSourceView,
+                config,
+                GetDamageShareSourceWorldPosition(hero),
+                DamageShareGroundSortOrder);
             ApplyDamageShareSourceScale(view.DamageShareSourceView, damageShareRadius);
         }
 
@@ -1105,6 +1110,11 @@ namespace Fight.UI
                 statusTransform.localScale.x * radius,
                 statusTransform.localScale.y * radius,
                 statusTransform.localScale.z);
+        }
+
+        private Vector3 GetDamageShareSourceWorldPosition(RuntimeHero hero)
+        {
+            return Map(hero.CurrentPosition) + new Vector3(0f, damageShareGroundYOffset, 0f);
         }
 
         private void SyncForcedMovementStatusVfx(RuntimeHero hero, HeroViewState view, int heroSortingOrder)
@@ -1316,6 +1326,47 @@ namespace Fight.UI
                 viewState.BaseLocalScale.z * config.LocalScale.z);
 
             var sortingOrder = heroSortingOrder + config.SortingOrderOffset;
+            if (viewState.OrbitController != null)
+            {
+                viewState.OrbitController.SetBaseSortingOrder(sortingOrder);
+            }
+            else if (viewState.SortingGroup != null)
+            {
+                viewState.SortingGroup.sortingOrder = sortingOrder;
+            }
+            else
+            {
+                SetRendererSorting(viewState.Renderers, sortingOrder);
+            }
+        }
+
+        private static void ApplyWorldStatusEffectView(
+            StatusEffectViewState viewState,
+            StatusEffectVfxConfig config,
+            Vector3 worldPosition,
+            int sortingOrder,
+            Vector2 directionalHint = default)
+        {
+            if (viewState?.Root == null || config == null)
+            {
+                return;
+            }
+
+            var statusTransform = viewState.Root.transform;
+            statusTransform.position = worldPosition + viewState.BaseLocalPosition + config.LocalOffset;
+            var appliedRotation = Quaternion.Euler(config.LocalEulerAngles);
+            if (config.AlignToDirection && directionalHint.sqrMagnitude > Mathf.Epsilon)
+            {
+                var angle = Mathf.Atan2(directionalHint.y, directionalHint.x) * Mathf.Rad2Deg;
+                appliedRotation = Quaternion.Euler(0f, 0f, angle - 90f) * appliedRotation;
+            }
+
+            statusTransform.rotation = appliedRotation * viewState.BaseLocalRotation;
+            statusTransform.localScale = new Vector3(
+                viewState.BaseLocalScale.x * config.LocalScale.x,
+                viewState.BaseLocalScale.y * config.LocalScale.y,
+                viewState.BaseLocalScale.z * config.LocalScale.z);
+
             if (viewState.OrbitController != null)
             {
                 viewState.OrbitController.SetBaseSortingOrder(sortingOrder);
