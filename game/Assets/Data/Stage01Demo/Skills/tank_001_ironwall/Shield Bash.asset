@@ -24,7 +24,7 @@ MonoBehaviour:
   targetPriorityRequiredUnitCount: 1
   castRange: 4.5
   areaRadius: 0
-  cooldownSeconds: 8
+  cooldownSeconds: 4
   minTargetsToCast: 1
   effects:
   - effectType: 2
@@ -42,7 +42,7 @@ MonoBehaviour:
     forcedMovementPeakHeight: 0
     statusEffects:
     - effectType: 16
-      durationSeconds: 3.5
+      durationSeconds: 4
       magnitude: 0.35
       activeSkillCooldownCapSeconds: 0
       tickIntervalSeconds: 1

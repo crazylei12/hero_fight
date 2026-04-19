@@ -2756,7 +2756,7 @@ namespace Fight.Editor
             skill.targetPriorityRequiredUnitCount = 1;
             skill.castRange = 4.5f;
             skill.areaRadius = 0f;
-            skill.cooldownSeconds = 8f;
+            skill.cooldownSeconds = 4f;
             skill.minTargetsToCast = 1;
             skill.allowsSelfCast = false;
             skill.effects.Clear();
@@ -2767,7 +2767,7 @@ namespace Fight.Editor
             statusEffect.statusEffects.Add(new StatusEffectData
             {
                 effectType = StatusEffectType.DamageShare,
-                durationSeconds = 3.5f,
+                durationSeconds = 4f,
                 magnitude = 0.35f,
                 maxStacks = 1,
                 refreshDurationOnReapply = true,
