@@ -31,6 +31,7 @@ namespace Fight.UI
         private const string AttackSpeedDownStatusLoopVfxResourcesPath = "Stage01Demo/VFX/Statuses/AttackSpeedDownStatusLoop";
         private const string MoveSpeedUpStatusLoopVfxResourcesPath = "Stage01Demo/VFX/Statuses/MoveSpeedUpStatusLoop";
         private const string MoveSpeedDownStatusLoopVfxResourcesPath = "Stage01Demo/VFX/Statuses/MoveSpeedDownStatusLoop";
+        private const string DamageShareStatusLoopVfxResourcesPath = "Stage01Demo/VFX/Statuses/DamageShareStatusLoop";
         private const string HealReceivedImpactVfxResourcesPath = "Stage01Demo/VFX/Shared/HealReceivedImpact";
         private const string DashChargeTrailVfxResourcesPath = "Stage01Demo/VFX/Shared/DashChargeTrail";
         private const float CorpseVisibleSeconds = 1f;
@@ -59,6 +60,7 @@ namespace Fight.UI
             { StatusEffectType.Stun, new StatusEffectVfxConfig(StunStatusLoopVfxResourcesPath, new Vector3(0f, 1.1f, 0f), Vector3.one * 0.85f, Vector3.zero, 180) },
             { StatusEffectType.KnockUp, new StatusEffectVfxConfig(KnockUpStatusBurstVfxResourcesPath, new Vector3(0f, 0.74f, 0f), Vector3.one * 0.9f, Vector3.zero, 165) },
             { StatusEffectType.Taunt, new StatusEffectVfxConfig(TauntStatusLoopVfxResourcesPath, new Vector3(0f, 1.2f, 0f), Vector3.one * 0.92f, Vector3.zero, 186) },
+            { StatusEffectType.DamageShare, new StatusEffectVfxConfig(DamageShareStatusLoopVfxResourcesPath, new Vector3(0f, -0.08f, 0f), Vector3.one, Vector3.zero, -4) },
         };
         private static readonly StatusEffectVfxConfig KnockbackStatusVfxConfig = new StatusEffectVfxConfig(
             KnockbackStatusLoopVfxResourcesPath,

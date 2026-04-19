@@ -20,6 +20,8 @@ namespace Fight.Editor
         private const string KnockbackStatusResourcesPrefabPath = StatusResourcesFolder + "/KnockbackStatusLoop.prefab";
         private const string TauntStatusPrefabPath = SharedPrefabsFolder + "/TauntStatusLoop.prefab";
         private const string TauntStatusResourcesPrefabPath = StatusResourcesFolder + "/TauntStatusLoop.prefab";
+        private const string DamageShareStatusPrefabPath = SharedPrefabsFolder + "/DamageShareStatusLoop.prefab";
+        private const string DamageShareStatusResourcesPrefabPath = StatusResourcesFolder + "/DamageShareStatusLoop.prefab";
         private const string WindAuraSourcePrefabPath = "Assets/Hun0FX/FX/BuffnDebuff_vol1/FX_Buff_01_Wind.prefab";
         private static readonly Quaternion TopDownRotation = Quaternion.Euler(90f, 0f, 0f);
         private static bool autoBuildScheduled;
@@ -49,6 +51,7 @@ namespace Fight.Editor
             var tauntIconSprite = EnsureStatusIconSprite(TauntIconSpritePath, 512f);
             BuildKnockbackStatusPrefabs(softCircleSprite);
             BuildTauntStatusPrefabs(softCircleSprite, tauntIconSprite);
+            BuildDamageShareStatusPrefabs(softCircleSprite);
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -88,6 +91,12 @@ namespace Fight.Editor
         {
             SavePrefab(CreateTauntStatusRoot(softCircleSprite, tauntIconSprite), TauntStatusPrefabPath);
             SavePrefab(CreateTauntStatusRoot(softCircleSprite, tauntIconSprite), TauntStatusResourcesPrefabPath);
+        }
+
+        private static void BuildDamageShareStatusPrefabs(Sprite softCircleSprite)
+        {
+            SavePrefab(CreateDamageShareStatusRoot(softCircleSprite), DamageShareStatusPrefabPath);
+            SavePrefab(CreateDamageShareStatusRoot(softCircleSprite), DamageShareStatusResourcesPrefabPath);
         }
 
         private static GameObject CreateKnockbackStatusRoot(Sprite softCircleSprite)
@@ -190,6 +199,39 @@ namespace Fight.Editor
                 12,
                 new Vector3(0f, 0f, 0f),
                 new Vector3(0.27f, 0.27f, 1f));
+
+            return root;
+        }
+
+        private static GameObject CreateDamageShareStatusRoot(Sprite softCircleSprite)
+        {
+            var root = new GameObject("DamageShareStatusLoop");
+            root.AddComponent<SortingGroup>();
+
+            CreateSprite(
+                root.transform,
+                "ProtectionField",
+                softCircleSprite,
+                new Color(0.82f, 0.68f, 0.42f, 0.22f),
+                0,
+                Vector3.zero,
+                new Vector3(1.62f, 1.02f, 1f));
+            CreateSprite(
+                root.transform,
+                "ProtectionCore",
+                softCircleSprite,
+                new Color(0.95f, 0.82f, 0.54f, 0.11f),
+                1,
+                new Vector3(0f, 0.01f, 0f),
+                new Vector3(1.22f, 0.78f, 1f));
+            CreateSprite(
+                root.transform,
+                "ProtectionHighlight",
+                softCircleSprite,
+                new Color(1f, 0.92f, 0.68f, 0.04f),
+                2,
+                new Vector3(0f, 0.02f, 0f),
+                new Vector3(0.58f, 0.38f, 1f));
 
             return root;
         }
@@ -402,7 +444,9 @@ namespace Fight.Editor
                     KnockbackStatusPrefabPath,
                     KnockbackStatusResourcesPrefabPath,
                     TauntStatusPrefabPath,
-                    TauntStatusResourcesPrefabPath);
+                    TauntStatusResourcesPrefabPath,
+                    DamageShareStatusPrefabPath,
+                    DamageShareStatusResourcesPrefabPath);
         }
 
         private static bool AllOutputAssetsExist()
@@ -410,7 +454,9 @@ namespace Fight.Editor
             return AssetDatabase.LoadAssetAtPath<GameObject>(KnockbackStatusPrefabPath) != null
                 && AssetDatabase.LoadAssetAtPath<GameObject>(KnockbackStatusResourcesPrefabPath) != null
                 && AssetDatabase.LoadAssetAtPath<GameObject>(TauntStatusPrefabPath) != null
-                && AssetDatabase.LoadAssetAtPath<GameObject>(TauntStatusResourcesPrefabPath) != null;
+                && AssetDatabase.LoadAssetAtPath<GameObject>(TauntStatusResourcesPrefabPath) != null
+                && AssetDatabase.LoadAssetAtPath<GameObject>(DamageShareStatusPrefabPath) != null
+                && AssetDatabase.LoadAssetAtPath<GameObject>(DamageShareStatusResourcesPrefabPath) != null;
         }
 
         private static System.DateTime GetLatestTimestampUtc(params string[] assetPaths)
