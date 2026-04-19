@@ -16,5 +16,15 @@ namespace Fight.Data
         [Min(0f)] public float forcedMovementDurationSeconds = 0f;
         [Min(0f)] public float forcedMovementPeakHeight = 0f;
         public List<StatusEffectData> onTriggerStatusEffects = new List<StatusEffectData>();
+
+        [Header("Presentation")]
+        public GameObject guardLoopVfxPrefab;
+        public Vector3 guardLoopVfxLocalOffset = Vector3.zero;
+        public Vector3 guardLoopVfxLocalScale = Vector3.one;
+        public Vector3 guardLoopVfxEulerAngles = Vector3.zero;
+        public GameObject triggerVfxPrefab;
+        public Vector3 triggerVfxLocalOffset = Vector3.zero;
+        public Vector3 triggerVfxLocalScale = Vector3.one;
+        public Vector3 triggerVfxEulerAngles = Vector3.zero;
     }
 }

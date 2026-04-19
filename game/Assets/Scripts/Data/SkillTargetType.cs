@@ -16,5 +16,6 @@ namespace Fight.Data
         LowestHealthRangedAlly = 11,
         ThreatenedRangedAlly = 12,
         ThreatenedRangedAllyOrEnemyDensestAnchor = 13,
+        ThreatenedAlly = 14,
     }
 }

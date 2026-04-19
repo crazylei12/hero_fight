@@ -34,6 +34,7 @@ namespace Fight.Data
         DashPathEnemies = 5,
         EnemiesInRadiusAroundPrimaryTarget = 6,
         AlliesInRadiusAroundPrimaryTarget = 7,
+        OtherAlliesInRadiusAroundCaster = 8,
     }
 
     [Serializable]
