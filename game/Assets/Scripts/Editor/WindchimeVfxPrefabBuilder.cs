@@ -232,7 +232,6 @@ namespace Fight.Editor
             var softCircleSprite = EnsureSoftCircleSprite();
             var areaGenericBluePrefab = LoadRequiredAsset<GameObject>(AreaGenericBlueSourcePrefabPath);
             var areaGenericBlueOutbreakPrefab = LoadRequiredAsset<GameObject>(AreaGenericBlueOutbreakSourcePrefabPath);
-            var echoCanopyGuardPrefab = LoadRequiredAsset<GameObject>(EchoCanopyGuardPrefabPath);
 
             var root = new GameObject("WindchimeStillwindDomainField");
             root.AddComponent<SortingGroup>();
@@ -310,6 +309,26 @@ namespace Fight.Editor
                 new Vector3(0.18f, 0.38f, 1f));
             rightWake.transform.localRotation = Quaternion.Euler(0f, 0f, -18f);
 
+            var upperSweep = CreateSprite(
+                root.transform,
+                "UpperSweep",
+                softCircleSprite,
+                new Color(0.82f, 0.95f, 1f, 0.09f),
+                -6,
+                new Vector3(0f, 0.31f, 0f),
+                new Vector3(0.56f, 0.12f, 1f));
+            upperSweep.transform.localRotation = Quaternion.Euler(0f, 0f, 12f);
+
+            var lowerSweep = CreateSprite(
+                root.transform,
+                "LowerSweep",
+                softCircleSprite,
+                new Color(0.82f, 0.95f, 1f, 0.09f),
+                -6,
+                new Vector3(0f, -0.31f, 0f),
+                new Vector3(0.56f, 0.12f, 1f));
+            lowerSweep.transform.localRotation = Quaternion.Euler(0f, 0f, -12f);
+
             var stillwindArea = InstantiateNestedPrefab(areaGenericBluePrefab, root.transform, "StillwindArea");
             ConfigureAreaSourceInstance(stillwindArea, Vector3.zero, Vector3.one * StillwindDomainFieldScale);
             ConfigureParticleSystems(stillwindArea, loop: true, prewarm: true);
@@ -319,16 +338,6 @@ namespace Fight.Editor
             ConfigureAreaSourceInstance(stillwindPulse, Vector3.zero, Vector3.one * StillwindDomainPulseScale);
             ConfigureParticleSystems(stillwindPulse, loop: true, prewarm: true);
             OffsetRendererOrders(stillwindPulse, 8);
-
-            var outerFlow = InstantiateNestedPrefab(echoCanopyGuardPrefab, root.transform, "OuterFlow");
-            outerFlow.transform.localPosition = Vector3.zero;
-            outerFlow.transform.localScale = new Vector3(0.92f, 0.88f, 1f);
-            OffsetRendererOrders(outerFlow, 16);
-
-            var innerFlow = InstantiateNestedPrefab(echoCanopyGuardPrefab, root.transform, "InnerFlow");
-            innerFlow.transform.localPosition = new Vector3(0f, 0.01f, 0f);
-            innerFlow.transform.localScale = new Vector3(0.58f, 0.54f, 1f);
-            OffsetRendererOrders(innerFlow, 12);
 
             return root;
         }
