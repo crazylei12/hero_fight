@@ -133,7 +133,6 @@ namespace Fight.UI
             DrawTopScoreboard(context);
             DrawSidebar(TeamSide.Blue, blueHeroes, new Rect(12f, SidebarTopPadding, GetSidebarWidth(), GetSidebarHeight()), blueColor);
             DrawSidebar(TeamSide.Red, redHeroes, new Rect(Screen.width - GetSidebarWidth() - 12f, SidebarTopPadding, GetSidebarWidth(), GetSidebarHeight()), redColor);
-            DrawHeroNameplates(context);
 
             if (!string.IsNullOrEmpty(endBannerText))
             {
