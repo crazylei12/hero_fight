@@ -60,6 +60,9 @@ Thumbs.db
 !/game/Assets/Resources/Stage01Demo.meta
 !/game/Assets/Resources/Stage01Demo/
 !/game/Assets/Resources/Stage01Demo/**
+!/game/Assets/Resources/UI.meta
+!/game/Assets/Resources/UI/
+!/game/Assets/Resources/UI/**
 !/game/Assets/Resources/DOTweenSettings.asset
 !/game/Assets/Resources/DOTweenSettings.asset.meta
 
@@ -78,6 +81,9 @@ Thumbs.db
 !/game/Assets/Art/VFX/StatusIcons.meta
 !/game/Assets/Art/VFX/StatusIcons/
 !/game/Assets/Art/VFX/StatusIcons/**
+!/game/Assets/Art/Heroes.meta
+!/game/Assets/Art/Heroes/
+!/game/Assets/Art/Heroes/**
 
 !/game/Assets/Plugins.meta
 !/game/Assets/Plugins/

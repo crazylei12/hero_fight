@@ -20,7 +20,7 @@ MonoBehaviour:
     maxHealth: 320
     attackPower: 44
     defense: 12
-    attackSpeed: 1.1111112
+    attackSpeed: 1.111111
     moveSpeed: 5
     criticalChance: 0.12
     criticalDamageMultiplier: 1.6
@@ -33,6 +33,7 @@ MonoBehaviour:
     projectileSpeed: 0
     effectType: 0
     targetType: 2
+    targetPrioritySearchRadius: 0
     onHitStatusEffects:
     - effectType: 2
       durationSeconds: 3
@@ -45,9 +46,9 @@ MonoBehaviour:
   ultimateSkill: {fileID: 11400000, guid: ebfdcf0c326c4a6184da4501f664017e, type: 2}
   aiTemplateId: assassin_default
   usesSpecialLogic: 0
-  specialLogicNotes:
+  specialLogicNotes: 
   visualConfig:
-    portrait: {fileID: 0}
+    portrait: {fileID: 21300000, guid: 2f680ee784da8e741a54c6dce39296d8, type: 3}
     battlePrefab: {fileID: 5771025906570419322, guid: ac2e4c7f5e3d2b043b8d022b8bc6cc5a, type: 3}
     animatorController: {fileID: 0}
     battlePrefabFacesLeftByDefault: 1
