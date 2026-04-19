@@ -192,16 +192,16 @@ namespace Fight.Editor
                 softCircleSprite,
                 spec.OuterHaloColor,
                 -8,
-                new Vector3(0f, 0.02f, 0f),
-                new Vector3(0.38f, 0.24f, 1f));
+                new Vector3(0f, 0.06f, 0f),
+                new Vector3(1.14f, 0.72f, 1f));
             CreateSprite(
                 root.transform,
                 "DebuffHaloInner",
                 softCircleSprite,
                 spec.InnerHaloColor,
                 -6,
-                new Vector3(0f, 0.02f, 0f),
-                new Vector3(0.24f, 0.16f, 1f));
+                new Vector3(0f, 0.06f, 0f),
+                new Vector3(0.72f, 0.48f, 1f));
 
             var orbitAnchor = new GameObject(spec.OrbitAnchorName).transform;
             orbitAnchor.SetParent(root.transform, false);
@@ -214,15 +214,15 @@ namespace Fight.Editor
                 spec.OrbitGlowColor,
                 10,
                 Vector3.zero,
-                new Vector3(0.18f, 0.12f, 1f));
+                new Vector3(0.54f, 0.36f, 1f));
             CreateSprite(
                 orbitAnchor,
                 "IconShadow",
                 iconSprite,
                 new Color(0f, 0f, 0f, 0.45f),
                 11,
-                new Vector3(0.02f, -0.02f, 0f),
-                Vector3.one * 0.9f);
+                new Vector3(0.06f, -0.06f, 0f),
+                Vector3.one * 2.7f);
             CreateSprite(
                 orbitAnchor,
                 "Icon",
@@ -230,7 +230,7 @@ namespace Fight.Editor
                 Color.white,
                 14,
                 Vector3.zero,
-                Vector3.one * 0.9f);
+                Vector3.one * 2.7f);
 
             var orbitController = root.AddComponent<OrbitingStatusIconVfx>();
             orbitController.ConfigureBodyOrbit(
@@ -238,7 +238,7 @@ namespace Fight.Editor
                 orbitSpeedDegreesPerSecond: 108f,
                 keepAnchorUpright: true,
                 randomizeStartingAngle: false,
-                orbitRadius: new Vector2(0.45f, 0.165f),
+                orbitRadius: new Vector2(1.35f, 0.495f),
                 backScaleMultiplier: 0.72f,
                 backAlphaMultiplier: 0.24f,
                 backSortingOrderOffset: -158);
