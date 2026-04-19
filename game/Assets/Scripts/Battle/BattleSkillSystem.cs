@@ -19,6 +19,137 @@ namespace Fight.Battle
         private const float UltimateAllySuppressionWindowSeconds = 5f;
         private const float UltimateAllySuppressionChanceMultiplier = 0.25f;
 
+        private readonly struct UltimateConditionTrace
+        {
+            public UltimateConditionTrace(bool wasEvaluated, bool passed, string summary)
+            {
+                WasEvaluated = wasEvaluated;
+                Passed = passed;
+                Summary = summary ?? string.Empty;
+            }
+
+            public bool WasEvaluated { get; }
+
+            public bool Passed { get; }
+
+            public string Summary { get; }
+        }
+
+        private readonly struct UltimateDecisionTrace
+        {
+            public UltimateDecisionTrace(bool passed, int fallbackStage, string summary)
+            {
+                Passed = passed;
+                FallbackStage = fallbackStage;
+                Summary = summary ?? string.Empty;
+            }
+
+            public bool Passed { get; }
+
+            public int FallbackStage { get; }
+
+            public string Summary { get; }
+        }
+
+        private readonly struct UltimateSuppressionInfo
+        {
+            public UltimateSuppressionInfo(float multiplier, float timeSinceLastAllyUltimateSeconds)
+            {
+                Multiplier = multiplier;
+                TimeSinceLastAllyUltimateSeconds = timeSinceLastAllyUltimateSeconds;
+            }
+
+            public float Multiplier { get; }
+
+            public float TimeSinceLastAllyUltimateSeconds { get; }
+        }
+
+        private readonly struct UltimateChanceBreakdown
+        {
+            public UltimateChanceBreakdown(
+                bool chanceEvaluated,
+                float baseChance,
+                float fallbackBonus,
+                float extraUnitBonus,
+                float secondaryPriorityBonus,
+                float preSuppressionChance,
+                float suppressionMultiplier,
+                float finalChance,
+                float timeSinceLastAllyUltimateSeconds,
+                bool rollEvaluated,
+                float rollValue,
+                bool rollPassed)
+            {
+                ChanceEvaluated = chanceEvaluated;
+                BaseChance = baseChance;
+                FallbackBonus = fallbackBonus;
+                ExtraUnitBonus = extraUnitBonus;
+                SecondaryPriorityBonus = secondaryPriorityBonus;
+                PreSuppressionChance = preSuppressionChance;
+                SuppressionMultiplier = suppressionMultiplier;
+                FinalChance = finalChance;
+                TimeSinceLastAllyUltimateSeconds = timeSinceLastAllyUltimateSeconds;
+                RollEvaluated = rollEvaluated;
+                RollValue = rollValue;
+                RollPassed = rollPassed;
+            }
+
+            public static UltimateChanceBreakdown NotEvaluated => new UltimateChanceBreakdown(
+                chanceEvaluated: false,
+                baseChance: 0f,
+                fallbackBonus: 0f,
+                extraUnitBonus: 0f,
+                secondaryPriorityBonus: 0f,
+                preSuppressionChance: 0f,
+                suppressionMultiplier: 1f,
+                finalChance: 0f,
+                timeSinceLastAllyUltimateSeconds: -1f,
+                rollEvaluated: false,
+                rollValue: 0f,
+                rollPassed: false);
+
+            public bool ChanceEvaluated { get; }
+
+            public float BaseChance { get; }
+
+            public float FallbackBonus { get; }
+
+            public float ExtraUnitBonus { get; }
+
+            public float SecondaryPriorityBonus { get; }
+
+            public float PreSuppressionChance { get; }
+
+            public float SuppressionMultiplier { get; }
+
+            public float FinalChance { get; }
+
+            public float TimeSinceLastAllyUltimateSeconds { get; }
+
+            public bool RollEvaluated { get; }
+
+            public float RollValue { get; }
+
+            public bool RollPassed { get; }
+
+            public UltimateChanceBreakdown WithRoll(bool rollEvaluated, float rollValue, bool rollPassed)
+            {
+                return new UltimateChanceBreakdown(
+                    ChanceEvaluated,
+                    BaseChance,
+                    FallbackBonus,
+                    ExtraUnitBonus,
+                    SecondaryPriorityBonus,
+                    PreSuppressionChance,
+                    SuppressionMultiplier,
+                    FinalChance,
+                    TimeSinceLastAllyUltimateSeconds,
+                    rollEvaluated,
+                    rollValue,
+                    rollPassed);
+            }
+        }
+
         public static bool TryCastSkill(BattleContext context, RuntimeHero caster, BattleManager battleManager)
         {
             if (context == null || caster == null || battleManager == null || caster.IsDead)
@@ -62,18 +193,41 @@ namespace Fight.Battle
             }
 
             var usesTemplateDecision = UsesUltimateDecisionTemplate(skill);
+            var chanceBreakdown = UltimateChanceBreakdown.NotEvaluated;
             var primaryTarget = usesTemplateDecision
                 ? SelectUltimatePrimaryTarget(context, caster, skill)
                 : SelectPrimaryTarget(context, caster, skill);
             if (!IsPrimaryTargetStillValid(skill, caster, primaryTarget))
             {
                 ScheduleNextUltimateAttempt(context, caster);
+                PublishUltimateDecisionEvaluated(
+                    context,
+                    caster,
+                    skill,
+                    primaryTarget,
+                    0,
+                    usesTemplateDecision,
+                    0,
+                    UltimateDecisionOutcome.InvalidPrimaryTarget,
+                    $"primaryTarget={FormatUltimateTargetLabel(primaryTarget)} valid=false allowsMissing={AllowsMissingPrimaryTarget(skill)}",
+                    chanceBreakdown);
                 return false;
             }
 
             if (primaryTarget == null && !skill.allowsSelfCast && !AllowsMissingPrimaryTarget(skill))
             {
                 ScheduleNextUltimateAttempt(context, caster);
+                PublishUltimateDecisionEvaluated(
+                    context,
+                    caster,
+                    skill,
+                    primaryTarget,
+                    0,
+                    usesTemplateDecision,
+                    0,
+                    UltimateDecisionOutcome.MissingPrimaryTarget,
+                    "primaryTarget=none requiresDirectTarget=true",
+                    chanceBreakdown);
                 return false;
             }
 
@@ -83,36 +237,113 @@ namespace Fight.Battle
                 if (affectedTargets.Count <= 0)
                 {
                     ScheduleNextUltimateAttempt(context, caster);
+                    PublishUltimateDecisionEvaluated(
+                        context,
+                        caster,
+                        skill,
+                        primaryTarget,
+                        affectedTargets.Count,
+                        usesTemplateDecision,
+                        0,
+                        UltimateDecisionOutcome.NoAffectedTargets,
+                        "affectedTargets=0 templateGate=requiresAtLeastOne",
+                        chanceBreakdown);
                     return false;
                 }
             }
             else if (affectedTargets.Count < Mathf.Max(1, skill.minTargetsToCast))
             {
                 ScheduleNextUltimateAttempt(context, caster);
+                PublishUltimateDecisionEvaluated(
+                    context,
+                    caster,
+                    skill,
+                    primaryTarget,
+                    affectedTargets.Count,
+                    usesTemplateDecision,
+                    0,
+                    UltimateDecisionOutcome.InsufficientAffectedTargets,
+                    $"affectedTargets={affectedTargets.Count} minTargets={Mathf.Max(1, skill.minTargetsToCast)}",
+                    chanceBreakdown);
                 return false;
             }
 
             if (usesTemplateDecision)
             {
-                if (!EvaluateUltimateDecision(context, caster, skill, primaryTarget, affectedTargets))
+                var decisionTrace = EvaluateUltimateDecisionTrace(context, caster, skill, primaryTarget, affectedTargets);
+                if (!decisionTrace.Passed)
                 {
                     ScheduleNextUltimateAttempt(context, caster);
+                    PublishUltimateDecisionEvaluated(
+                        context,
+                        caster,
+                        skill,
+                        primaryTarget,
+                        affectedTargets.Count,
+                        usesTemplateDecision,
+                        decisionTrace.FallbackStage,
+                        UltimateDecisionOutcome.DecisionConditionsFailed,
+                        decisionTrace.Summary,
+                        chanceBreakdown);
                     return false;
                 }
 
-                if (!RollUltimateCastChance(context, caster, skill, primaryTarget))
+                chanceBreakdown = RollUltimateCastChance(context, caster, skill, primaryTarget);
+                PublishUltimateDecisionEvaluated(
+                    context,
+                    caster,
+                    skill,
+                    primaryTarget,
+                    affectedTargets.Count,
+                    usesTemplateDecision,
+                    decisionTrace.FallbackStage,
+                    chanceBreakdown.RollPassed ? UltimateDecisionOutcome.RollPassed : UltimateDecisionOutcome.RollFailed,
+                    decisionTrace.Summary,
+                    chanceBreakdown);
+
+                if (!chanceBreakdown.RollPassed)
                 {
                     return false;
                 }
             }
-            else if (!HasHighValueOpportunity(skill, affectedTargets))
+            else
             {
-                ScheduleNextUltimateAttempt(context, caster);
-                return false;
-            }
-            else if (!RollLegacyUltimateCastChance(context, caster, skill, affectedTargets))
-            {
-                return false;
+                var hasHighValueOpportunity = HasHighValueOpportunity(skill, affectedTargets);
+                var legacySummary = BuildLegacyUltimateDecisionSummary(skill, affectedTargets, hasHighValueOpportunity);
+                if (!hasHighValueOpportunity)
+                {
+                    ScheduleNextUltimateAttempt(context, caster);
+                    PublishUltimateDecisionEvaluated(
+                        context,
+                        caster,
+                        skill,
+                        primaryTarget,
+                        affectedTargets.Count,
+                        usesTemplateDecision,
+                        0,
+                        UltimateDecisionOutcome.LegacyOpportunityFailed,
+                        legacySummary,
+                        chanceBreakdown);
+                    return false;
+                }
+
+                chanceBreakdown = RollLegacyUltimateCastChance(context, caster, skill, affectedTargets);
+                PublishUltimateDecisionEvaluated(
+                    context,
+                    caster,
+                    skill,
+                    primaryTarget,
+                    affectedTargets.Count,
+                    usesTemplateDecision,
+                    0,
+                    chanceBreakdown.RollPassed ? UltimateDecisionOutcome.RollPassed : UltimateDecisionOutcome.RollFailed,
+                    legacySummary,
+                    chanceBreakdown);
+
+                if (!chanceBreakdown.RollPassed)
+                {
+                    return false;
+                }
             }
 
             BeginSkillCast(context, caster, skill, primaryTarget, affectedTargets, battleManager);
@@ -606,7 +837,7 @@ namespace Fight.Battle
             return affectedTargets.Count > 0;
         }
 
-        private static bool EvaluateUltimateDecision(
+        private static UltimateDecisionTrace EvaluateUltimateDecisionTrace(
             BattleContext context,
             RuntimeHero caster,
             SkillData skill,
@@ -614,27 +845,123 @@ namespace Fight.Battle
             List<RuntimeHero> affectedTargets)
         {
             var decision = skill?.ultimateDecision;
+            var fallbackStage = GetActiveFallbackStage(context, decision?.fallback);
             if (decision == null || decision.primaryCondition == null)
             {
-                return false;
+                return new UltimateDecisionTrace(false, fallbackStage, "templateDecision=missing-config");
             }
 
-            var primaryPass = EvaluateUltimateCondition(context, caster, skill, primaryTarget, decision.primaryCondition, decision.fallback, affectedTargets);
-            if (decision.combineMode == UltimateConditionCombineMode.PrimaryOnly || decision.secondaryCondition == null || decision.secondaryCondition.conditionType == UltimateConditionType.None)
+            var primaryTrace = EvaluateUltimateConditionTrace(
+                context,
+                caster,
+                skill,
+                primaryTarget,
+                decision.primaryCondition,
+                decision.fallback,
+                affectedTargets,
+                "primary");
+            var hasSecondaryCondition = decision.secondaryCondition != null
+                && decision.secondaryCondition.conditionType != UltimateConditionType.None;
+            var secondaryTrace = hasSecondaryCondition
+                ? EvaluateUltimateConditionTrace(context, caster, skill, primaryTarget, decision.secondaryCondition, null, affectedTargets, "secondary")
+                : new UltimateConditionTrace(false, true, "secondary=none");
+
+            var finalPass = primaryTrace.Passed;
+            if (decision.combineMode != UltimateConditionCombineMode.PrimaryOnly && hasSecondaryCondition)
             {
-                return primaryPass;
+                finalPass = decision.combineMode switch
+                {
+                    UltimateConditionCombineMode.AllMustPass => primaryTrace.Passed && secondaryTrace.Passed,
+                    UltimateConditionCombineMode.AnyPass => primaryTrace.Passed || secondaryTrace.Passed,
+                    _ => primaryTrace.Passed,
+                };
             }
 
-            // Stage-01 fallback thresholds are defined as "primary condition fallback".
-            // Secondary conditions stay stable so AnyPass/AllMustPass do not pick up hidden
-            // threshold changes when the primary condition relaxes later in the match.
-            var secondaryPass = EvaluateUltimateCondition(context, caster, skill, primaryTarget, decision.secondaryCondition, null, affectedTargets);
-            return decision.combineMode switch
+            var secondarySuffix = decision.combineMode == UltimateConditionCombineMode.PrimaryOnly && hasSecondaryCondition
+                ? " bonusOnly=true"
+                : string.Empty;
+            var summary = $"combine={decision.combineMode} fallbackStage={fallbackStage}; {primaryTrace.Summary}; {secondaryTrace.Summary}{secondarySuffix}; finalPass={finalPass}";
+            return new UltimateDecisionTrace(finalPass, fallbackStage, summary);
+        }
+
+        private static UltimateConditionTrace EvaluateUltimateConditionTrace(
+            BattleContext context,
+            RuntimeHero caster,
+            SkillData skill,
+            RuntimeHero primaryTarget,
+            UltimateConditionData condition,
+            UltimateFallbackData fallback,
+            List<RuntimeHero> affectedTargets,
+            string label)
+        {
+            if (condition == null || condition.conditionType == UltimateConditionType.None)
             {
-                UltimateConditionCombineMode.AllMustPass => primaryPass && secondaryPass,
-                UltimateConditionCombineMode.AnyPass => primaryPass || secondaryPass,
-                _ => primaryPass,
-            };
+                return new UltimateConditionTrace(false, true, $"{label}=none");
+            }
+
+            var pass = EvaluateUltimateCondition(context, caster, skill, primaryTarget, condition, fallback, affectedTargets);
+            var searchRadius = GetEffectiveSearchRadius(skill, condition);
+            var requiredUnitCount = GetEffectiveRequiredUnitCount(condition, fallback, context);
+            var healthThreshold = GetEffectiveHealthPercentThreshold(condition, fallback, context);
+            string summary;
+
+            switch (condition.conditionType)
+            {
+                case UltimateConditionType.EnemyCountInRange:
+                    if (ShouldUseThreatenedRangedAnchorCount(skill, caster, primaryTarget))
+                    {
+                        var priorityMeasuredCount = CountUnitsInRange(
+                            context,
+                            caster,
+                            primaryTarget,
+                            GetPrioritySearchRadius(skill),
+                            countAllies: false);
+                        summary = $"{label}={condition.conditionType} measured={priorityMeasuredCount} required={GetPriorityRequiredUnitCount(skill)} radius={GetPrioritySearchRadius(skill):0.##} anchor=threatened-ranged pass={pass}";
+                        break;
+                    }
+
+                    var enemyCount = CountUnitsInRange(context, caster, primaryTarget, searchRadius, countAllies: false);
+                    summary = $"{label}={condition.conditionType} measured={enemyCount} required={requiredUnitCount} radius={searchRadius:0.##} pass={pass}";
+                    break;
+                case UltimateConditionType.AllyCountInRange:
+                    var allyCount = CountUnitsInRange(context, caster, primaryTarget, searchRadius, countAllies: true);
+                    summary = $"{label}={condition.conditionType} measured={allyCount} required={requiredUnitCount} radius={searchRadius:0.##} pass={pass}";
+                    break;
+                case UltimateConditionType.EnemyLowHealthInRange:
+                    var lowHealthEnemyCount = CountLowHealthUnitsInRange(context, caster, primaryTarget, searchRadius, includeAllies: false, healthThreshold);
+                    summary = $"{label}={condition.conditionType} measured={lowHealthEnemyCount} required={requiredUnitCount} radius={searchRadius:0.##} threshold={healthThreshold:0.00} pass={pass}";
+                    break;
+                case UltimateConditionType.AllyLowHealthInRange:
+                    var lowHealthAllyCount = CountLowHealthUnitsInRange(context, caster, primaryTarget, searchRadius, includeAllies: true, healthThreshold);
+                    summary = $"{label}={condition.conditionType} measured={lowHealthAllyCount} required={requiredUnitCount} radius={searchRadius:0.##} threshold={healthThreshold:0.00} pass={pass}";
+                    break;
+                case UltimateConditionType.EnemyCountInDashPath:
+                    var dashPathTargetCount = CountDashPathTargets(context, caster, skill, primaryTarget);
+                    summary = $"{label}={condition.conditionType} measured={dashPathTargetCount} required={requiredUnitCount} pass={pass}";
+                    break;
+                case UltimateConditionType.SelfLowHealth:
+                    summary = $"{label}={condition.conditionType} currentHpRatio={GetHealthRatio(caster):0.00} threshold={healthThreshold:0.00} pass={pass}";
+                    break;
+                case UltimateConditionType.EnemyHeroClassInRange:
+                    var heroClassCount = CountUnitsOfHeroClassInRange(context, caster, primaryTarget, searchRadius, condition.heroClassFilter);
+                    summary = $"{label}={condition.conditionType} class={condition.heroClassFilter} measured={heroClassCount} required={requiredUnitCount} radius={searchRadius:0.##} pass={pass}";
+                    break;
+                case UltimateConditionType.TargetIsHighValue:
+                    var distanceToTarget = primaryTarget != null
+                        ? Vector3.Distance(caster.CurrentPosition, primaryTarget.CurrentPosition)
+                        : -1f;
+                    var distanceLabel = distanceToTarget >= 0f ? distanceToTarget.ToString("0.##") : "none";
+                    summary = $"{label}={condition.conditionType} type={condition.highValueTargetType} requireInRange={condition.requireTargetInCastRange} distance={distanceLabel} pass={pass}";
+                    break;
+                case UltimateConditionType.InCombatDuration:
+                    summary = $"{label}={condition.conditionType} engaged={caster.CombatEngagedSeconds:0.00} required={condition.durationSeconds:0.00} pass={pass}";
+                    break;
+                default:
+                    summary = $"{label}={condition.conditionType} affected={(affectedTargets != null ? affectedTargets.Count : 0)} pass={pass}";
+                    break;
+            }
+
+            return new UltimateConditionTrace(true, pass, summary);
         }
 
         private static bool EvaluateUltimateCondition(
@@ -690,41 +1017,55 @@ namespace Fight.Battle
             }
         }
 
-        private static bool RollUltimateCastChance(BattleContext context, RuntimeHero caster, SkillData skill, RuntimeHero primaryTarget)
+        private static UltimateChanceBreakdown RollUltimateCastChance(BattleContext context, RuntimeHero caster, SkillData skill, RuntimeHero primaryTarget)
         {
-            var chance = GetUltimateCastChance(context, caster, skill, primaryTarget);
-            chance = ApplyAllyUltimateSuppression(context, caster, chance);
+            var chanceBreakdown = GetUltimateCastChanceBreakdown(context, caster, skill, primaryTarget);
             ScheduleNextUltimateAttempt(context, caster);
-            return context?.RandomService == null || context.RandomService.NextFloat() <= chance;
+            return ResolveUltimateChanceRoll(context, chanceBreakdown);
         }
 
-        private static bool RollLegacyUltimateCastChance(BattleContext context, RuntimeHero caster, SkillData skill, List<RuntimeHero> affectedTargets)
+        private static UltimateChanceBreakdown RollLegacyUltimateCastChance(BattleContext context, RuntimeHero caster, SkillData skill, List<RuntimeHero> affectedTargets)
         {
-            var chance = Mathf.Clamp01(UltimateBaseReleaseChance + Mathf.Max(0, affectedTargets.Count - Mathf.Max(1, skill.minTargetsToCast)) * UltimateExtraUnitReleaseChance);
-            chance = ApplyAllyUltimateSuppression(context, caster, chance);
+            var minimumTargets = Mathf.Max(1, skill != null ? skill.minTargetsToCast : 1);
+            var extraUnitBonus = Mathf.Max(0, (affectedTargets != null ? affectedTargets.Count : 0) - minimumTargets) * UltimateExtraUnitReleaseChance;
+            var chanceBreakdown = CreateUltimateChanceBreakdown(
+                context,
+                caster,
+                UltimateBaseReleaseChance,
+                0f,
+                extraUnitBonus,
+                0f);
             ScheduleNextUltimateAttempt(context, caster);
-            return context?.RandomService == null || context.RandomService.NextFloat() <= chance;
+            return ResolveUltimateChanceRoll(context, chanceBreakdown);
         }
 
-        private static float GetUltimateCastChance(BattleContext context, RuntimeHero caster, SkillData skill, RuntimeHero primaryTarget)
+        private static UltimateChanceBreakdown GetUltimateCastChanceBreakdown(BattleContext context, RuntimeHero caster, SkillData skill, RuntimeHero primaryTarget)
         {
             var decision = skill?.ultimateDecision;
             var primaryCondition = decision?.primaryCondition;
             if (primaryCondition == null)
             {
-                return 1f;
+                return CreateUltimateChanceBreakdown(
+                    context,
+                    caster,
+                    baseChance: 1f,
+                    fallbackBonus: 0f,
+                    extraUnitBonus: 0f,
+                    secondaryPriorityBonus: 0f);
             }
 
-            var chance = UltimateBaseReleaseChance;
+            var fallbackBonus = 0f;
+            var extraUnitBonus = 0f;
+            var secondaryPriorityBonus = 0f;
             var fallbackStage = GetActiveFallbackStage(context, decision?.fallback);
             if (fallbackStage >= 1)
             {
-                chance += UltimateFirstFallbackBonus;
+                fallbackBonus += UltimateFirstFallbackBonus;
             }
 
             if (fallbackStage >= 2)
             {
-                chance += UltimateSecondFallbackBonus;
+                fallbackBonus += UltimateSecondFallbackBonus;
             }
 
             switch (primaryCondition.conditionType)
@@ -737,16 +1078,16 @@ namespace Fight.Battle
                 case UltimateConditionType.EnemyCountInDashPath:
                     var measuredCount = GetConditionUnitCount(context, caster, skill, primaryTarget, primaryCondition);
                     var requiredCount = GetEffectiveRequiredUnitCount(primaryCondition, decision?.fallback, context);
-                    chance += Mathf.Max(0, measuredCount - requiredCount) * UltimateExtraUnitReleaseChance;
+                    extraUnitBonus = Mathf.Max(0, measuredCount - requiredCount) * UltimateExtraUnitReleaseChance;
                     break;
                 case UltimateConditionType.SelfLowHealth:
-                    chance += Mathf.Clamp01((primaryCondition.healthPercentThreshold - GetHealthRatio(caster)) * 1.5f);
+                    extraUnitBonus = Mathf.Clamp01((primaryCondition.healthPercentThreshold - GetHealthRatio(caster)) * 1.5f);
                     break;
                 case UltimateConditionType.InCombatDuration:
-                    chance += Mathf.Clamp01((caster.CombatEngagedSeconds - primaryCondition.durationSeconds) * 0.1f);
+                    extraUnitBonus = Mathf.Clamp01((caster.CombatEngagedSeconds - primaryCondition.durationSeconds) * 0.1f);
                     break;
                 case UltimateConditionType.TargetIsHighValue:
-                    chance += 0.1f;
+                    extraUnitBonus = 0.1f;
                     break;
             }
 
@@ -759,32 +1100,172 @@ namespace Fight.Battle
             {
                 // Stage-01 uses PrimaryOnly + secondaryCondition to express
                 // "the main cast gate is unchanged, but this opportunity is more attractive".
-                chance += UltimateSecondaryPriorityBonus;
+                secondaryPriorityBonus = UltimateSecondaryPriorityBonus;
             }
 
-            return Mathf.Clamp01(chance);
+            return CreateUltimateChanceBreakdown(
+                context,
+                caster,
+                UltimateBaseReleaseChance,
+                fallbackBonus,
+                extraUnitBonus,
+                secondaryPriorityBonus);
         }
 
-        private static float ApplyAllyUltimateSuppression(BattleContext context, RuntimeHero caster, float chance)
+        private static UltimateChanceBreakdown CreateUltimateChanceBreakdown(
+            BattleContext context,
+            RuntimeHero caster,
+            float baseChance,
+            float fallbackBonus,
+            float extraUnitBonus,
+            float secondaryPriorityBonus)
+        {
+            var preSuppressionChance = Mathf.Clamp01(baseChance + fallbackBonus + extraUnitBonus + secondaryPriorityBonus);
+            var suppressionInfo = GetUltimateSuppressionInfo(context, caster);
+            var finalChance = Mathf.Clamp01(preSuppressionChance * suppressionInfo.Multiplier);
+            return new UltimateChanceBreakdown(
+                true,
+                baseChance,
+                fallbackBonus,
+                extraUnitBonus,
+                secondaryPriorityBonus,
+                preSuppressionChance,
+                suppressionInfo.Multiplier,
+                finalChance,
+                suppressionInfo.TimeSinceLastAllyUltimateSeconds,
+                false,
+                0f,
+                false);
+        }
+
+        private static UltimateChanceBreakdown ResolveUltimateChanceRoll(BattleContext context, UltimateChanceBreakdown chanceBreakdown)
+        {
+            if (!chanceBreakdown.ChanceEvaluated)
+            {
+                return chanceBreakdown;
+            }
+
+            if (context?.RandomService == null)
+            {
+                return chanceBreakdown.WithRoll(false, 0f, true);
+            }
+
+            var rollValue = context.RandomService.NextFloat();
+            return chanceBreakdown.WithRoll(
+                true,
+                rollValue,
+                rollValue <= chanceBreakdown.FinalChance);
+        }
+
+        private static UltimateSuppressionInfo GetUltimateSuppressionInfo(BattleContext context, RuntimeHero caster)
         {
             if (context?.Clock == null || caster == null || caster.Side == TeamSide.None)
             {
-                return Mathf.Clamp01(chance);
+                return new UltimateSuppressionInfo(multiplier: 1f, timeSinceLastAllyUltimateSeconds: -1f);
             }
 
             var lastAllyUltimateCastTimeSeconds = context.GetLastUltimateCastTimeSeconds(caster.Side);
             if (float.IsNegativeInfinity(lastAllyUltimateCastTimeSeconds))
             {
-                return Mathf.Clamp01(chance);
+                return new UltimateSuppressionInfo(multiplier: 1f, timeSinceLastAllyUltimateSeconds: -1f);
             }
 
             var timeSinceLastAllyUltimateSeconds = Mathf.Max(0f, context.Clock.ElapsedTimeSeconds - lastAllyUltimateCastTimeSeconds);
             if (timeSinceLastAllyUltimateSeconds > UltimateAllySuppressionWindowSeconds)
             {
-                return Mathf.Clamp01(chance);
+                return new UltimateSuppressionInfo(multiplier: 1f, timeSinceLastAllyUltimateSeconds);
             }
 
-            return Mathf.Clamp01(chance * UltimateAllySuppressionChanceMultiplier);
+            return new UltimateSuppressionInfo(
+                multiplier: UltimateAllySuppressionChanceMultiplier,
+                timeSinceLastAllyUltimateSeconds);
+        }
+
+        private static void PublishUltimateDecisionEvaluated(
+            BattleContext context,
+            RuntimeHero caster,
+            SkillData skill,
+            RuntimeHero primaryTarget,
+            int affectedTargetCount,
+            bool usesTemplateDecision,
+            int fallbackStage,
+            UltimateDecisionOutcome outcome,
+            string decisionSummary,
+            UltimateChanceBreakdown chanceBreakdown)
+        {
+            if (context?.EventBus == null || caster == null || skill == null)
+            {
+                return;
+            }
+
+            context.EventBus.Publish(new UltimateDecisionEvaluatedEvent(
+                caster,
+                skill,
+                primaryTarget,
+                usesTemplateDecision,
+                affectedTargetCount,
+                fallbackStage,
+                outcome,
+                decisionSummary,
+                chanceBreakdown.ChanceEvaluated,
+                BuildUltimateChanceSummary(chanceBreakdown),
+                chanceBreakdown.FinalChance,
+                chanceBreakdown.SuppressionMultiplier,
+                chanceBreakdown.TimeSinceLastAllyUltimateSeconds,
+                chanceBreakdown.RollEvaluated,
+                chanceBreakdown.RollValue,
+                chanceBreakdown.RollPassed,
+                caster.NextUltimateDecisionCheckTimeSeconds));
+        }
+
+        private static string BuildLegacyUltimateDecisionSummary(SkillData skill, List<RuntimeHero> affectedTargets, bool hasHighValueOpportunity)
+        {
+            return $"legacy skillType={skill?.skillType.ToString() ?? "Unknown"} affected={(affectedTargets != null ? affectedTargets.Count : 0)} minTargets={Mathf.Max(1, skill != null ? skill.minTargetsToCast : 1)} highValueRule={GetLegacyHighValueRuleLabel(skill)} highValuePass={hasHighValueOpportunity}";
+        }
+
+        private static string GetLegacyHighValueRuleLabel(SkillData skill)
+        {
+            if (skill == null)
+            {
+                return "unknown";
+            }
+
+            return skill.skillType switch
+            {
+                SkillType.AreaDamage => "atLeast2Targets",
+                SkillType.Stun => "atLeast2Targets",
+                SkillType.KnockUp => "atLeast2Targets",
+                SkillType.SingleTargetHeal => "anyValidTarget",
+                SkillType.AreaHeal => "anyValidTarget",
+                SkillType.Buff => "anyValidTarget",
+                _ => "anyValidTarget",
+            };
+        }
+
+        private static string BuildUltimateChanceSummary(UltimateChanceBreakdown chanceBreakdown)
+        {
+            if (!chanceBreakdown.ChanceEvaluated)
+            {
+                return "chance=skipped";
+            }
+
+            var allyGapLabel = chanceBreakdown.TimeSinceLastAllyUltimateSeconds >= 0f
+                ? chanceBreakdown.TimeSinceLastAllyUltimateSeconds.ToString("0.00")
+                : "none";
+            return $"chance={{base={chanceBreakdown.BaseChance:0.00} fallback={chanceBreakdown.FallbackBonus:0.00} extra={chanceBreakdown.ExtraUnitBonus:0.00} secondary={chanceBreakdown.SecondaryPriorityBonus:0.00} pre={chanceBreakdown.PreSuppressionChance:0.00} suppression={chanceBreakdown.SuppressionMultiplier:0.00} allyGap={allyGapLabel} final={chanceBreakdown.FinalChance:0.00}}}";
+        }
+
+        private static string FormatUltimateTargetLabel(RuntimeHero target)
+        {
+            if (target == null)
+            {
+                return "none";
+            }
+
+            var displayName = target.Definition != null && !string.IsNullOrWhiteSpace(target.Definition.displayName)
+                ? target.Definition.displayName
+                : target.RuntimeId;
+            return $"{displayName}[{target.Side}|{target.RuntimeId}]";
         }
 
         private static int GetConditionUnitCount(

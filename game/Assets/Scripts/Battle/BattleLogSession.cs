@@ -10,6 +10,7 @@ namespace Fight.Battle
     {
         private readonly List<string> fullLogEntries = new List<string>();
         private readonly List<string> blueWarriorSpotlightEntries = new List<string>();
+        private readonly List<string> ultimateDecisionEntries = new List<string>();
 
         private string trackedBlueWarriorHeroId;
         private string trackedBlueWarriorDisplayName;
@@ -33,6 +34,7 @@ namespace Fight.Battle
             {
                 case BattleStartedEvent started:
                     fullLogEntries.Clear();
+                    ultimateDecisionEntries.Clear();
                     CurrentBattleLogId = System.DateTime.Now.ToString("yyyyMMdd_HHmmss");
                     ResetBlueWarriorSpotlight();
                     CaptureTrackedBlueWarrior(started.Input);
@@ -53,6 +55,11 @@ namespace Fight.Battle
                 case SkillCastEvent skillCast:
                     AddLog($"{FormatHeroLabel(skillCast.Caster)} started casting {skillCast.Skill.displayName} on {FormatHeroLabel(skillCast.PrimaryTarget, "area")} ({skillCast.AffectedTargetCount} target(s)).");
                     TryAddBlueWarriorSkillCast(skillCast);
+                    break;
+                case UltimateDecisionEvaluatedEvent ultimateDecision:
+                    var decisionLog = FormatUltimateDecisionLog(ultimateDecision);
+                    AddLog(decisionLog);
+                    AddUltimateDecisionLog(decisionLog);
                     break;
                 case SkillAreaCreatedEvent areaCreated:
                     var areaDuration = areaCreated.Area?.Effect != null ? areaCreated.Area.Effect.durationSeconds : 0f;
@@ -108,6 +115,8 @@ namespace Fight.Battle
             builder.AppendLine();
             AppendBlueWarriorSpotlight(builder);
             builder.AppendLine();
+            AppendUltimateDecisionTrace(builder);
+            builder.AppendLine();
             builder.AppendLine("Full Event Log");
             builder.AppendLine();
 
@@ -127,6 +136,11 @@ namespace Fight.Battle
         private void AddBlueWarriorSpotlightLog(string message)
         {
             blueWarriorSpotlightEntries.Add($"[{Time.timeSinceLevelLoad:0.0}] {message}");
+        }
+
+        private void AddUltimateDecisionLog(string message)
+        {
+            ultimateDecisionEntries.Add($"[{Time.timeSinceLevelLoad:0.0}] {message}");
         }
 
         private static string FormatDamageLog(DamageAppliedEvent damageApplied)
@@ -183,6 +197,29 @@ namespace Fight.Battle
             return $"{casterName}'s {skillName} triggered around {protectedName}, affecting {reactiveGuardTriggered.AffectedTargetCount} enemy target(s).";
         }
 
+        private static string FormatUltimateDecisionLog(UltimateDecisionEvaluatedEvent ultimateDecision)
+        {
+            if (ultimateDecision == null)
+            {
+                return "UltimateDecision <null>";
+            }
+
+            var casterLabel = FormatHeroLabel(ultimateDecision.Caster, "Unknown");
+            var skillName = ultimateDecision.Skill != null ? ultimateDecision.Skill.displayName : "Unknown Ultimate";
+            var pathLabel = ultimateDecision.UsesTemplateDecision ? "template" : "legacy";
+            var targetLabel = FormatHeroLabel(ultimateDecision.PrimaryTarget, "none");
+            var chanceSummary = ultimateDecision.ChanceEvaluated
+                ? ultimateDecision.ChanceSummary
+                : "chance=skipped";
+            var rollSummary = ultimateDecision.RollEvaluated
+                ? $" roll={ultimateDecision.RollValue:0.000} pass={ultimateDecision.RollPassed}"
+                : ultimateDecision.ChanceEvaluated
+                    ? " roll=auto-pass"
+                    : string.Empty;
+
+            return $"UltimateDecision {casterLabel} skill={skillName} path={pathLabel} result={ultimateDecision.Outcome} target={targetLabel} affected={ultimateDecision.AffectedTargetCount} fallbackStage={ultimateDecision.FallbackStage} detail={{ {ultimateDecision.DecisionSummary} }} {chanceSummary}{rollSummary} nextCheck={ultimateDecision.NextDecisionCheckTimeSeconds:0.00}";
+        }
+
         private void AppendBlueWarriorSpotlight(StringBuilder builder)
         {
             builder.AppendLine("Blue Warrior Spotlight (Skybreaker Slot)");
@@ -213,6 +250,22 @@ namespace Fight.Battle
             for (var i = 0; i < blueWarriorSpotlightEntries.Count; i++)
             {
                 builder.AppendLine(blueWarriorSpotlightEntries[i]);
+            }
+        }
+
+        private void AppendUltimateDecisionTrace(StringBuilder builder)
+        {
+            builder.AppendLine("Ultimate Decision Trace");
+
+            if (ultimateDecisionEntries.Count == 0)
+            {
+                builder.AppendLine("No ultimate decision entries recorded in this battle.");
+                return;
+            }
+
+            for (var i = 0; i < ultimateDecisionEntries.Count; i++)
+            {
+                builder.AppendLine(ultimateDecisionEntries[i]);
             }
         }
 
