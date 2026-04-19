@@ -254,7 +254,6 @@ namespace Fight.Editor
                 importer.textureType = TextureImporterType.Sprite;
                 importer.spriteImportMode = SpriteImportMode.Single;
                 importer.spritePixelsPerUnit = pixelsPerUnit;
-                importer.spriteMeshType = SpriteMeshType.Tight;
                 importer.alphaIsTransparency = true;
                 importer.mipmapEnabled = false;
                 importer.wrapMode = TextureWrapMode.Clamp;
