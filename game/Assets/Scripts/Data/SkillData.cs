@@ -15,6 +15,8 @@ namespace Fight.Data
         public SkillSlotType slotType = SkillSlotType.ActiveSkill;
         public SkillType skillType = SkillType.SingleTargetDamage;
         public SkillTargetType targetType = SkillTargetType.NearestEnemy;
+        public HeroClass preferredEnemyHeroClass = HeroClass.Assassin;
+        public SkillTargetType fallbackTargetType = SkillTargetType.NearestEnemy;
 
         [Header("Numbers")]
         [Min(0.1f)] public float castRange = 4f;

@@ -40,6 +40,15 @@ namespace Fight.Battle
             return FindHighestDamageEnemy(heroes, actor, maxRange);
         }
 
+        public static RuntimeHero SelectEnemyTargetByHeroClass(
+            IReadOnlyList<RuntimeHero> heroes,
+            RuntimeHero actor,
+            float maxRange,
+            HeroClass preferredHeroClass)
+        {
+            return FindNearestEnemyByHeroClass(heroes, actor, maxRange, preferredHeroClass);
+        }
+
         public static RuntimeHero SelectPreferredAllyTarget(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange, bool allowHealthyFallback = false)
         {
             return FindLowestHealthAlly(heroes, actor, maxRange, allowHealthyFallback);
@@ -322,6 +331,41 @@ namespace Fight.Battle
         private static RuntimeHero FindAssassinTarget(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange)
         {
             return FindBackmostEnemy(heroes, actor, maxRange) ?? FindNearestEnemy(heroes, actor, maxRange);
+        }
+
+        private static RuntimeHero FindNearestEnemyByHeroClass(
+            IReadOnlyList<RuntimeHero> heroes,
+            RuntimeHero actor,
+            float maxRange,
+            HeroClass preferredHeroClass)
+        {
+            RuntimeHero best = null;
+            var bestDistance = float.MaxValue;
+
+            for (var i = 0; i < heroes.Count; i++)
+            {
+                var candidate = heroes[i];
+                if (candidate == null
+                    || candidate.IsDead
+                    || candidate.Side == actor.Side
+                    || !candidate.CanBeDirectTargeted
+                    || candidate.Definition == null
+                    || candidate.Definition.heroClass != preferredHeroClass)
+                {
+                    continue;
+                }
+
+                var distance = Vector3.Distance(actor.CurrentPosition, candidate.CurrentPosition);
+                if (distance > maxRange || distance >= bestDistance)
+                {
+                    continue;
+                }
+
+                bestDistance = distance;
+                best = candidate;
+            }
+
+            return best;
         }
 
         private static RuntimeHero FindBackmostEnemy(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange)

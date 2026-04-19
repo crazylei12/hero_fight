@@ -19,6 +19,12 @@ namespace Fight.Editor
             window.Show();
         }
 
+        public static void ExportDefaultFolderBatch()
+        {
+            BalanceSheetService.Export(GetDefaultAbsoluteFolderPath());
+            EditorApplication.Exit(0);
+        }
+
         private void OnEnable()
         {
             relativeFolder = EditorPrefs.GetString(FolderPreferenceKey, BalanceSheetService.DefaultRelativeFolder);
@@ -85,10 +91,20 @@ namespace Fight.Editor
 
         private string GetAbsoluteFolderPath()
         {
-            var projectRoot = Directory.GetParent(Application.dataPath)?.FullName ?? Application.dataPath;
             var safeRelativeFolder = string.IsNullOrWhiteSpace(relativeFolder)
                 ? BalanceSheetService.DefaultRelativeFolder
                 : relativeFolder.Trim();
+            return GetAbsoluteFolderPath(safeRelativeFolder);
+        }
+
+        private static string GetDefaultAbsoluteFolderPath()
+        {
+            return GetAbsoluteFolderPath(BalanceSheetService.DefaultRelativeFolder);
+        }
+
+        private static string GetAbsoluteFolderPath(string safeRelativeFolder)
+        {
+            var projectRoot = Directory.GetParent(Application.dataPath)?.FullName ?? Application.dataPath;
             return Path.GetFullPath(Path.Combine(projectRoot, safeRelativeFolder));
         }
 

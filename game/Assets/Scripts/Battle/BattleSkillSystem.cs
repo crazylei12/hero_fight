@@ -213,29 +213,7 @@ namespace Fight.Battle
         private static RuntimeHero SelectPrimaryTarget(BattleContext context, RuntimeHero caster, SkillData skill)
         {
             var effectiveCastRange = GetSkillSelectionCastRange(skill);
-            switch (skill.targetType)
-            {
-                case SkillTargetType.Self:
-                    return caster;
-                case SkillTargetType.AllAllies:
-                    return FindFirstGlobalTeamTarget(context.Heroes, caster, skill, includeAllies: true);
-                case SkillTargetType.AllEnemies:
-                    return FindFirstGlobalTeamTarget(context.Heroes, caster, skill, includeAllies: false);
-                case SkillTargetType.NearestEnemy:
-                    return SelectCurrentOrNearestEnemyTarget(context, caster, skill, effectiveCastRange);
-                case SkillTargetType.LowestHealthEnemy:
-                    return FindLowestHealth(context.Heroes, caster, skill, includeAllies: false, effectiveCastRange);
-                case SkillTargetType.LowestHealthAlly:
-                    return FindLowestHealth(context.Heroes, caster, skill, includeAllies: true, effectiveCastRange);
-                case SkillTargetType.HighestDamageEnemyInRange:
-                    return BattleAiDirector.SelectHighestDamageEnemyTarget(context.Heroes, caster, effectiveCastRange);
-                case SkillTargetType.DensestEnemyArea:
-                    return FindDensestEnemyAnchor(context.Heroes, caster, effectiveCastRange, skill.areaRadius);
-                case SkillTargetType.BackmostEnemy:
-                    return BattleAiDirector.SelectBackmostEnemyTarget(context.Heroes, caster, effectiveCastRange);
-                default:
-                    return null;
-            }
+            return SelectPrimaryTargetByType(context, caster, skill, skill.targetType, effectiveCastRange, allowFallbackForPriorityTarget: true);
         }
 
         private static RuntimeHero SelectUltimatePrimaryTarget(BattleContext context, RuntimeHero caster, SkillData skill)
@@ -286,19 +264,68 @@ namespace Fight.Battle
                 return null;
             }
 
-            return skill.targetType switch
+            return SelectPrimaryTargetByType(context, caster, skill, skill.targetType, effectiveCastRange, allowFallbackForPriorityTarget: true);
+        }
+
+        private static RuntimeHero SelectPrimaryTargetByType(
+            BattleContext context,
+            RuntimeHero caster,
+            SkillData skill,
+            SkillTargetType targetType,
+            float effectiveCastRange,
+            bool allowFallbackForPriorityTarget)
+        {
+            if (context == null || caster == null || skill == null)
             {
-                SkillTargetType.Self => caster,
-                SkillTargetType.AllAllies => FindFirstGlobalTeamTarget(context.Heroes, caster, skill, includeAllies: true),
-                SkillTargetType.AllEnemies => FindFirstGlobalTeamTarget(context.Heroes, caster, skill, includeAllies: false),
-                SkillTargetType.NearestEnemy => SelectCurrentOrNearestEnemyTarget(context, caster, skill, effectiveCastRange),
-                SkillTargetType.LowestHealthEnemy => FindLowestHealth(context.Heroes, caster, skill, includeAllies: false, effectiveCastRange),
-                SkillTargetType.LowestHealthAlly => FindLowestHealth(context.Heroes, caster, skill, includeAllies: true, effectiveCastRange),
-                SkillTargetType.HighestDamageEnemyInRange => BattleAiDirector.SelectHighestDamageEnemyTarget(context.Heroes, caster, effectiveCastRange),
-                SkillTargetType.DensestEnemyArea => FindDensestEnemyAnchor(context.Heroes, caster, effectiveCastRange, skill.areaRadius),
-                SkillTargetType.BackmostEnemy => BattleAiDirector.SelectBackmostEnemyTarget(context.Heroes, caster, effectiveCastRange),
-                _ => null,
-            };
+                return null;
+            }
+
+            switch (targetType)
+            {
+                case SkillTargetType.Self:
+                    return caster;
+                case SkillTargetType.AllAllies:
+                    return FindFirstGlobalTeamTarget(context.Heroes, caster, skill, includeAllies: true);
+                case SkillTargetType.AllEnemies:
+                    return FindFirstGlobalTeamTarget(context.Heroes, caster, skill, includeAllies: false);
+                case SkillTargetType.NearestEnemy:
+                    return SelectCurrentOrNearestEnemyTarget(context, caster, skill, effectiveCastRange);
+                case SkillTargetType.LowestHealthEnemy:
+                    return FindLowestHealth(context.Heroes, caster, skill, includeAllies: false, effectiveCastRange);
+                case SkillTargetType.LowestHealthAlly:
+                    return FindLowestHealth(context.Heroes, caster, skill, includeAllies: true, effectiveCastRange);
+                case SkillTargetType.HighestDamageEnemyInRange:
+                    return BattleAiDirector.SelectHighestDamageEnemyTarget(context.Heroes, caster, effectiveCastRange);
+                case SkillTargetType.DensestEnemyArea:
+                    return FindDensestEnemyAnchor(context.Heroes, caster, effectiveCastRange, skill.areaRadius);
+                case SkillTargetType.BackmostEnemy:
+                    return BattleAiDirector.SelectBackmostEnemyTarget(context.Heroes, caster, effectiveCastRange);
+                case SkillTargetType.PriorityEnemyHeroClass:
+                    var preferredTarget = BattleAiDirector.SelectEnemyTargetByHeroClass(
+                        context.Heroes,
+                        caster,
+                        effectiveCastRange,
+                        skill.preferredEnemyHeroClass);
+                    if (preferredTarget != null || !allowFallbackForPriorityTarget)
+                    {
+                        return preferredTarget;
+                    }
+
+                    var fallbackTargetType = skill.fallbackTargetType == SkillTargetType.PriorityEnemyHeroClass
+                        ? SkillTargetType.NearestEnemy
+                        : skill.fallbackTargetType;
+                    return fallbackTargetType == SkillTargetType.None
+                        ? null
+                        : SelectPrimaryTargetByType(
+                            context,
+                            caster,
+                            skill,
+                            fallbackTargetType,
+                            effectiveCastRange,
+                            allowFallbackForPriorityTarget: false);
+                default:
+                    return null;
+            }
         }
 
         private static RuntimeHero SelectCurrentOrNearestEnemyTarget(
@@ -521,6 +548,8 @@ namespace Fight.Battle
                     return candidate.Side == caster.Side;
                 case SkillTargetType.AllEnemies:
                     return candidate.Side != caster.Side;
+                case SkillTargetType.PriorityEnemyHeroClass:
+                    return candidate.Side != caster.Side;
             }
 
             var targetAllies = skill.skillType == SkillType.SingleTargetHeal
@@ -606,6 +635,8 @@ namespace Fight.Battle
                     return CountLowHealthUnitsInRange(context, caster, primaryTarget, searchRadius, includeAllies: true, healthThreshold) >= requiredUnitCount;
                 case UltimateConditionType.SelfLowHealth:
                     return GetHealthRatio(caster) <= healthThreshold;
+                case UltimateConditionType.EnemyHeroClassInRange:
+                    return CountUnitsOfHeroClassInRange(context, caster, primaryTarget, searchRadius, condition.heroClassFilter) >= requiredUnitCount;
                 case UltimateConditionType.TargetIsHighValue:
                     return IsHighValueTarget(primaryTarget, caster, skill, condition);
                 case UltimateConditionType.InCombatDuration:
@@ -658,6 +689,7 @@ namespace Fight.Battle
                 case UltimateConditionType.AllyCountInRange:
                 case UltimateConditionType.EnemyLowHealthInRange:
                 case UltimateConditionType.AllyLowHealthInRange:
+                case UltimateConditionType.EnemyHeroClassInRange:
                     var measuredCount = GetConditionUnitCount(context, caster, skill, primaryTarget, primaryCondition);
                     var requiredCount = GetEffectiveRequiredUnitCount(primaryCondition, decision?.fallback, context);
                     chance += Mathf.Max(0, measuredCount - requiredCount) * UltimateExtraUnitReleaseChance;
@@ -726,6 +758,7 @@ namespace Fight.Battle
                 UltimateConditionType.AllyCountInRange => CountUnitsInRange(context, caster, primaryTarget, searchRadius, countAllies: true),
                 UltimateConditionType.EnemyLowHealthInRange => CountLowHealthUnitsInRange(context, caster, primaryTarget, searchRadius, includeAllies: false, healthThreshold),
                 UltimateConditionType.AllyLowHealthInRange => CountLowHealthUnitsInRange(context, caster, primaryTarget, searchRadius, includeAllies: true, healthThreshold),
+                UltimateConditionType.EnemyHeroClassInRange => CountUnitsOfHeroClassInRange(context, caster, primaryTarget, searchRadius, condition.heroClassFilter),
                 _ => 0,
             };
         }
@@ -873,6 +906,37 @@ namespace Fight.Battle
                 }
 
                 if (GetHealthRatio(candidate) <= healthPercentThreshold)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        private static int CountUnitsOfHeroClassInRange(
+            BattleContext context,
+            RuntimeHero caster,
+            RuntimeHero primaryTarget,
+            float searchRadius,
+            HeroClass heroClassFilter)
+        {
+            var center = GetSearchCenter(caster, primaryTarget);
+            var count = 0;
+
+            for (var i = 0; i < context.Heroes.Count; i++)
+            {
+                var candidate = context.Heroes[i];
+                if (candidate == null
+                    || candidate.IsDead
+                    || candidate.Side == caster.Side
+                    || candidate.Definition == null
+                    || candidate.Definition.heroClass != heroClassFilter)
+                {
+                    continue;
+                }
+
+                if (Vector3.Distance(candidate.CurrentPosition, center) <= searchRadius)
                 {
                     count++;
                 }

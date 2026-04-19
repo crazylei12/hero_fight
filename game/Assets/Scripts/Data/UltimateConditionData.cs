@@ -14,6 +14,7 @@ namespace Fight.Data
         [Min(0f)] public float durationSeconds = 0f;
 
         public HighValueTargetType highValueTargetType = HighValueTargetType.None;
+        public HeroClass heroClassFilter = HeroClass.Assassin;
         public bool requireTargetInCastRange = true;
     }
 }
