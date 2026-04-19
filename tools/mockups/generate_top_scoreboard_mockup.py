@@ -231,11 +231,6 @@ def slanted_panel(size: tuple[int, int] = (1920, 260)) -> Image.Image:
     draw.line(polygon + [polygon[0]], fill=(255, 255, 255, 38), width=2)
     draw.line(inner + [inner[0]], fill=(255, 255, 255, 18), width=2)
 
-    for index in range(14):
-        alpha = int(26 * (1 - index / 14))
-        draw.rounded_rectangle((56 + index * 2, 100 + index, 770 - index * 3, 224 - index), radius=18, outline=(BLUE_SOFT[0], BLUE_SOFT[1], BLUE_SOFT[2], alpha), width=2)
-        draw.rounded_rectangle((1150 + index * 3, 100 + index, 1864 - index * 2, 224 - index), radius=18, outline=(RED_SOFT[0], RED_SOFT[1], RED_SOFT[2], alpha), width=2)
-
     return image
 
 
@@ -300,7 +295,7 @@ def make_background(size: tuple[int, int] = (1920, 560)) -> Image.Image:
     return image
 
 
-def generate(prefix: str = "top_scoreboard_mockup_v7") -> tuple[Path, Path]:
+def generate(prefix: str = "top_scoreboard_mockup_v8") -> tuple[Path, Path]:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
     ribbon_blue = Image.open(LAYERLAB / "Label-Title/Title_Ribbon_03_Blue.png").convert("RGBA")
@@ -381,17 +376,7 @@ def generate(prefix: str = "top_scoreboard_mockup_v7") -> tuple[Path, Path]:
     scoreboard_path = OUT_DIR / f"{prefix}.png"
     canvas.save(scoreboard_path)
 
-    preview = make_background()
-    shadow = Image.new("RGBA", preview.size, (0, 0, 0, 0))
-    blurred = canvas.filter(ImageFilter.GaussianBlur(12))
-    shadow.alpha_composite(blurred, (0, 20))
-    preview.alpha_composite(shadow.filter(ImageFilter.GaussianBlur(6)))
-    preview.alpha_composite(canvas, (0, 12))
-
-    preview_draw = ImageDraw.Draw(preview)
-    preview_draw.text((134, 304), "预览图：顶部计分板素材 v7", font=get_font(24), fill=(255, 237, 212, 180), stroke_width=1, stroke_fill=(0, 0, 0, 150))
-    preview_draw.text((134, 336), "保持对称与居中，只把比分圆点整体下沉一档，避免压住数字", font=get_font(18), fill=(233, 235, 242, 150), stroke_width=1, stroke_fill=(0, 0, 0, 150))
-
+    preview = canvas.crop((20, 54, 1900, 238))
     preview_path = OUT_DIR / f"{prefix}_preview.png"
     preview.save(preview_path)
 
