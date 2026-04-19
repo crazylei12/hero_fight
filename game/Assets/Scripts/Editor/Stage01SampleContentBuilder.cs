@@ -1950,6 +1950,7 @@ namespace Fight.Editor
             skill.reactiveGuard.forcedMovementDistance = 0f;
             skill.reactiveGuard.forcedMovementDurationSeconds = 0f;
             skill.reactiveGuard.forcedMovementPeakHeight = 0f;
+            skill.reactiveGuard.healProtectedHeroPerSuccessfulKnockUp = 0f;
             skill.reactiveGuard.onTriggerStatusEffects.Clear();
         }
 
@@ -2294,7 +2295,7 @@ namespace Fight.Editor
                 return skill;
             }
 
-            skill.description = "Stage-01 demo skill: single-target anti-dive protection with a one-shot reactive knock-up and knockback.";
+            skill.description = "Stage-01 demo skill: single-target anti-dive protection with a one-shot reactive knock-up, knockback, and per-knock-up healing.";
             skill.targetType = SkillTargetType.ThreatenedRangedAlly;
             skill.fallbackTargetType = SkillTargetType.LowestHealthRangedAlly;
             skill.targetPrioritySearchRadius = ScaleRangedHeroDistance(2.333333f);
@@ -2334,6 +2335,7 @@ namespace Fight.Editor
             skill.reactiveGuard.forcedMovementDistance = 1.8f;
             skill.reactiveGuard.forcedMovementDurationSeconds = 0.25f;
             skill.reactiveGuard.forcedMovementPeakHeight = 0.7f;
+            skill.reactiveGuard.healProtectedHeroPerSuccessfulKnockUp = 15f;
             skill.reactiveGuard.onTriggerStatusEffects.Add(new StatusEffectData
             {
                 effectType = StatusEffectType.KnockUp,
