@@ -16,7 +16,7 @@ namespace Fight.Battle
         private const float UltimateFirstFallbackBonus = 0.2f;
         private const float UltimateSecondFallbackBonus = 0.5f;
         private const float UltimateSecondaryPriorityBonus = 0.25f;
-        private const float UltimateAllySuppressionWindowSeconds = 1.2f;
+        private const float UltimateAllySuppressionWindowSeconds = 5f;
         private const float UltimateAllySuppressionChanceMultiplier = 0.25f;
 
         public static bool TryCastSkill(BattleContext context, RuntimeHero caster, BattleManager battleManager)
