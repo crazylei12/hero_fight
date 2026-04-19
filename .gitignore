@@ -60,6 +60,11 @@ Thumbs.db
 !/game/Assets/Resources/Stage01Demo.meta
 !/game/Assets/Resources/Stage01Demo/
 !/game/Assets/Resources/Stage01Demo/**
+!/game/Assets/Resources/UI.meta
+!/game/Assets/Resources/UI/
+!/game/Assets/Resources/UI/BattleHud.meta
+!/game/Assets/Resources/UI/BattleHud/
+!/game/Assets/Resources/UI/BattleHud/**
 !/game/Assets/Resources/DOTweenSettings.asset
 !/game/Assets/Resources/DOTweenSettings.asset.meta
 
