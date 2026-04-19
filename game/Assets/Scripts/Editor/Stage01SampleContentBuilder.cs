@@ -41,6 +41,7 @@ namespace Fight.Editor
         private const string SupportPrefabPath = "Assets/Prefabs/Heroes/support_001_sunpriest/Sunpriest.prefab";
         private const string WindchimePrefabPath = "Assets/Prefabs/Heroes/support_002_windchime/Windchime.prefab";
         private const string WarriorPrefabPath = "Assets/Prefabs/Heroes/warrior_001_skybreaker/Skybreaker.prefab";
+        private const string BladesmanPrefabPath = "Assets/Prefabs/Heroes/warrior_002_bladesman/Bladesman.prefab";
         private const string FireMagePrefabPath = "Assets/HeroEditor4D/heroes/FIREMAGE.prefab";
         private const string FrostMagePrefabPath = "Assets/Prefabs/Heroes/mage_002_frostmage/Frostmage.prefab";
         private const string TankPrefabPath = "Assets/Prefabs/Heroes/tank_001_ironwall/Ironwall.prefab";
@@ -153,6 +154,7 @@ namespace Fight.Editor
                 HeroTag.Melee, HeroTag.Dive, HeroTag.Burst);
             ConfigureBladesmanBasicAttack(bladesman, overwriteExistingContent, bladesmanHeroExisted);
             EnsureHeroSkillReferences(bladesman, bladesmanActive, bladesmanUltimate);
+            EnsureHeroBattlePrefabReference(bladesman, LoadBattlePrefab("warrior_002_bladesman", HeroClass.Warrior));
 
             var mageUltimateSkill = CreateSkill("skill_mage_ultimate_meteor", "Meteor Fall", SkillSlotType.Ultimate, SkillType.AreaDamage, SkillTargetType.Self, 0f, ScaleRangedHeroDistance(6f), 0.55f, 0f, 3, overwriteExistingContent, out var mageUltimateExisted);
 
@@ -394,6 +396,7 @@ namespace Fight.Editor
             var bladesmanHero = AssetDatabase.LoadAssetAtPath<HeroDefinition>(BladesmanHeroAssetPath);
             var bladesmanActiveSkill = AssetDatabase.LoadAssetAtPath<SkillData>(BladesmanActiveSkillAssetPath);
             var bladesmanUltimateSkill = AssetDatabase.LoadAssetAtPath<SkillData>(BladesmanUltimateSkillAssetPath);
+            var bladesmanBattlePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(BladesmanPrefabPath);
             var windchimeHero = AssetDatabase.LoadAssetAtPath<HeroDefinition>(WindchimeHeroAssetPath);
             var windchimeActiveSkill = AssetDatabase.LoadAssetAtPath<SkillData>(WindchimeActiveSkillAssetPath);
             var windchimeUltimateSkill = AssetDatabase.LoadAssetAtPath<SkillData>(WindchimeUltimateSkillAssetPath);
@@ -401,6 +404,7 @@ namespace Fight.Editor
             var catalogContainsBladesman = CatalogContainsHero(heroCatalog, "warrior_002_bladesman");
             var catalogContainsWindchime = CatalogContainsHero(heroCatalog, "support_002_windchime");
             var bladesmanReferencesValid = HeroHasExpectedSkillReferences(bladesmanHero, bladesmanActiveSkill, bladesmanUltimateSkill);
+            var bladesmanBattlePrefabValid = HeroHasExpectedBattlePrefab(bladesmanHero, bladesmanBattlePrefab);
             var windchimeReferencesValid = HeroHasExpectedSkillReferences(windchimeHero, windchimeActiveSkill, windchimeUltimateSkill);
             var windchimeBattlePrefabValid = HeroHasExpectedBattlePrefab(windchimeHero, windchimeBattlePrefab);
 
@@ -420,6 +424,7 @@ namespace Fight.Editor
                 || !catalogContainsBladesman
                 || !catalogContainsWindchime
                 || !bladesmanReferencesValid
+                || !bladesmanBattlePrefabValid
                 || !windchimeReferencesValid
                 || !windchimeBattlePrefabValid;
         }
@@ -653,6 +658,7 @@ namespace Fight.Editor
                 "marksman_001_longshot" => MarksmanPrefabPath,
                 "marksman_002_rifleman" => RiflemanPrefabPath,
                 "support_002_windchime" => WindchimePrefabPath,
+                "warrior_002_bladesman" => BladesmanPrefabPath,
                 "tank_002_shieldwarden" => ShieldwardenPrefabPath,
                 _ => heroClass switch
                 {
