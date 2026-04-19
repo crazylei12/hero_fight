@@ -246,6 +246,7 @@ namespace Fight.Editor
                 out var windchimeHeroExisted,
                 HeroTag.Ranged, HeroTag.Control, HeroTag.Buff);
             ConfigureWindchimeBasicAttack(windchime, overwriteExistingContent, windchimeHeroExisted);
+            EnsureHeroSkillReferences(windchime, windchimeActive, windchimeUltimateSkill);
 
             var marksmanActive = CreateLongshotActiveSkill(overwriteExistingContent);
             var marksmanUltimateSkill = CreateLongshotUltimateSkill(overwriteExistingContent, out var marksmanUltimateExisted);
@@ -370,10 +371,11 @@ namespace Fight.Editor
             var hasBasicAttackOnlyScene = AssetDatabase.LoadAssetAtPath<SceneAsset>(BasicAttackOnlyBattleScenePath) != null;
             var hasDefaultBattleInput = AssetDatabase.LoadAssetAtPath<BattleInputConfig>(DefaultBattleInputAssetPath) != null;
             var heroCatalog = AssetDatabase.LoadAssetAtPath<HeroCatalogData>(DefaultHeroCatalogAssetPath);
-            var hasWindchimeHero = AssetDatabase.LoadAssetAtPath<HeroDefinition>(WindchimeHeroAssetPath) != null;
-            var hasWindchimeActiveSkill = AssetDatabase.LoadAssetAtPath<SkillData>(WindchimeActiveSkillAssetPath) != null;
-            var hasWindchimeUltimateSkill = AssetDatabase.LoadAssetAtPath<SkillData>(WindchimeUltimateSkillAssetPath) != null;
+            var windchimeHero = AssetDatabase.LoadAssetAtPath<HeroDefinition>(WindchimeHeroAssetPath);
+            var windchimeActiveSkill = AssetDatabase.LoadAssetAtPath<SkillData>(WindchimeActiveSkillAssetPath);
+            var windchimeUltimateSkill = AssetDatabase.LoadAssetAtPath<SkillData>(WindchimeUltimateSkillAssetPath);
             var catalogContainsWindchime = CatalogContainsHero(heroCatalog, "support_002_windchime");
+            var windchimeReferencesValid = HeroHasExpectedSkillReferences(windchimeHero, windchimeActiveSkill, windchimeUltimateSkill);
 
             return !hasMainMenuScene
                 || !hasHeroSelectScene
@@ -382,10 +384,11 @@ namespace Fight.Editor
                 || !hasBasicAttackOnlyScene
                 || !hasDefaultBattleInput
                 || heroCatalog == null
-                || !hasWindchimeHero
-                || !hasWindchimeActiveSkill
-                || !hasWindchimeUltimateSkill
-                || !catalogContainsWindchime;
+                || windchimeHero == null
+                || windchimeActiveSkill == null
+                || windchimeUltimateSkill == null
+                || !catalogContainsWindchime
+                || !windchimeReferencesValid;
         }
 
         private static bool CatalogContainsHero(HeroCatalogData catalog, string heroId)
@@ -405,6 +408,32 @@ namespace Fight.Editor
             }
 
             return false;
+        }
+
+        private static bool HeroHasExpectedSkillReferences(HeroDefinition hero, SkillData expectedActiveSkill, SkillData expectedUltimateSkill)
+        {
+            return hero != null
+                && expectedActiveSkill != null
+                && expectedUltimateSkill != null
+                && hero.activeSkill == expectedActiveSkill
+                && hero.ultimateSkill == expectedUltimateSkill;
+        }
+
+        private static void EnsureHeroSkillReferences(HeroDefinition hero, SkillData activeSkill, SkillData ultimateSkill)
+        {
+            if (hero == null || activeSkill == null || ultimateSkill == null)
+            {
+                return;
+            }
+
+            if (hero.activeSkill == activeSkill && hero.ultimateSkill == ultimateSkill)
+            {
+                return;
+            }
+
+            hero.activeSkill = activeSkill;
+            hero.ultimateSkill = ultimateSkill;
+            EditorUtility.SetDirty(hero);
         }
 
         private static void EnsureFolders()

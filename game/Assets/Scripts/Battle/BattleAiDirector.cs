@@ -826,22 +826,22 @@ namespace Fight.Battle
                 return false;
             }
 
-            if (currentHealth < bestCurrentHealth - Mathf.Epsilon)
-            {
-                return true;
-            }
-
-            if (Mathf.Abs(currentHealth - bestCurrentHealth) > Mathf.Epsilon)
-            {
-                return false;
-            }
-
             if (healthRatio < bestHealthRatio - Mathf.Epsilon)
             {
                 return true;
             }
 
             if (Mathf.Abs(healthRatio - bestHealthRatio) > Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            if (currentHealth < bestCurrentHealth - Mathf.Epsilon)
+            {
+                return true;
+            }
+
+            if (Mathf.Abs(currentHealth - bestCurrentHealth) > Mathf.Epsilon)
             {
                 return false;
             }
