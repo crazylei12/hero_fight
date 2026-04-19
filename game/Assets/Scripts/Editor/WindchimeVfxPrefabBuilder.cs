@@ -332,12 +332,12 @@ namespace Fight.Editor
             var stillwindArea = InstantiateNestedPrefab(areaGenericBluePrefab, root.transform, "StillwindArea");
             ConfigureAreaSourceInstance(stillwindArea, Vector3.zero, Vector3.one * StillwindDomainFieldScale);
             ConfigureParticleSystems(stillwindArea, loop: true, prewarm: true);
-            OffsetRendererOrders(stillwindArea, 0);
+            OffsetRendererOrders(stillwindArea, -4);
 
             var stillwindPulse = InstantiateNestedPrefab(areaGenericBlueOutbreakPrefab, root.transform, "StillwindPulse");
             ConfigureAreaSourceInstance(stillwindPulse, Vector3.zero, Vector3.one * StillwindDomainPulseScale);
             ConfigureParticleSystems(stillwindPulse, loop: true, prewarm: true);
-            OffsetRendererOrders(stillwindPulse, 8);
+            OffsetRendererOrders(stillwindPulse, -2);
 
             return root;
         }
@@ -408,7 +408,7 @@ namespace Fight.Editor
 
             instance.transform.localPosition = localPosition;
             instance.transform.localScale = localScale;
-            instance.transform.localRotation = Quaternion.identity;
+            instance.transform.localRotation = TopDownRotation;
         }
 
         private static void RetintGuardParticleSystems(GameObject root)
