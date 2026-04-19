@@ -55,6 +55,7 @@ namespace Fight.Editor
         private const string FrostMageActiveAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FrostMageFrostBurst.prefab";
         private const string FrostMageUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FrostMageBlizzardField.prefab";
         private const string MageUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FireMageMeteorField.prefab";
+        private const string BladesmanActiveImpactVfxPrefabPath = "Assets/Prefabs/VFX/Skills/BladesmanRendingSlash.prefab";
         private const string RiflemanActiveTargetIndicatorVfxPrefabPath = "Assets/Prefabs/VFX/Skills/RiflemanBurstFireTargetReticle.prefab";
         private const string RiflemanUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/RiflemanFragGrenadeBurst.prefab";
         private const string RiflemanUltimateProjectileVfxPrefabPath = "Assets/Prefabs/VFX/Projectiles/RiflemanFragGrenadeProjectile.prefab";
@@ -155,6 +156,13 @@ namespace Fight.Editor
             ConfigureBladesmanBasicAttack(bladesman, overwriteExistingContent, bladesmanHeroExisted);
             EnsureHeroSkillReferences(bladesman, bladesmanActive, bladesmanUltimate);
             EnsureHeroBattlePrefabReference(bladesman, LoadBattlePrefab("warrior_002_bladesman", HeroClass.Warrior));
+            EnsureSkillCastImpactVfxPresentation(
+                bladesmanActive,
+                AssetDatabase.LoadAssetAtPath<GameObject>(BladesmanActiveImpactVfxPrefabPath),
+                new Vector3(0f, 0.12f, 0f),
+                new Vector3(0f, 0f, -90f),
+                new Vector3(0.18f, 0.18f, 1f),
+                true);
 
             var mageUltimateSkill = CreateSkill("skill_mage_ultimate_meteor", "Meteor Fall", SkillSlotType.Ultimate, SkillType.AreaDamage, SkillTargetType.Self, 0f, ScaleRangedHeroDistance(6f), 0.55f, 0f, 3, overwriteExistingContent, out var mageUltimateExisted);
 
@@ -397,6 +405,7 @@ namespace Fight.Editor
             var bladesmanActiveSkill = AssetDatabase.LoadAssetAtPath<SkillData>(BladesmanActiveSkillAssetPath);
             var bladesmanUltimateSkill = AssetDatabase.LoadAssetAtPath<SkillData>(BladesmanUltimateSkillAssetPath);
             var bladesmanBattlePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(BladesmanPrefabPath);
+            var bladesmanActiveImpactVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(BladesmanActiveImpactVfxPrefabPath);
             var windchimeHero = AssetDatabase.LoadAssetAtPath<HeroDefinition>(WindchimeHeroAssetPath);
             var windchimeActiveSkill = AssetDatabase.LoadAssetAtPath<SkillData>(WindchimeActiveSkillAssetPath);
             var windchimeUltimateSkill = AssetDatabase.LoadAssetAtPath<SkillData>(WindchimeUltimateSkillAssetPath);
@@ -405,6 +414,13 @@ namespace Fight.Editor
             var catalogContainsWindchime = CatalogContainsHero(heroCatalog, "support_002_windchime");
             var bladesmanReferencesValid = HeroHasExpectedSkillReferences(bladesmanHero, bladesmanActiveSkill, bladesmanUltimateSkill);
             var bladesmanBattlePrefabValid = HeroHasExpectedBattlePrefab(bladesmanHero, bladesmanBattlePrefab);
+            var bladesmanActiveImpactVfxValid = SkillHasExpectedCastImpactVfxPresentation(
+                bladesmanActiveSkill,
+                bladesmanActiveImpactVfxPrefab,
+                new Vector3(0f, 0.12f, 0f),
+                new Vector3(0f, 0f, -90f),
+                new Vector3(0.18f, 0.18f, 1f),
+                true);
             var windchimeReferencesValid = HeroHasExpectedSkillReferences(windchimeHero, windchimeActiveSkill, windchimeUltimateSkill);
             var windchimeBattlePrefabValid = HeroHasExpectedBattlePrefab(windchimeHero, windchimeBattlePrefab);
 
@@ -425,6 +441,7 @@ namespace Fight.Editor
                 || !catalogContainsWindchime
                 || !bladesmanReferencesValid
                 || !bladesmanBattlePrefabValid
+                || !bladesmanActiveImpactVfxValid
                 || !windchimeReferencesValid
                 || !windchimeBattlePrefabValid;
         }
@@ -482,6 +499,23 @@ namespace Fight.Editor
                 && hero.visualConfig.battlePrefab == expectedBattlePrefab;
         }
 
+        private static bool SkillHasExpectedCastImpactVfxPresentation(
+            SkillData skill,
+            GameObject expectedPrefab,
+            Vector3 expectedOffset,
+            Vector3 expectedEulerAngles,
+            Vector3 expectedScaleMultiplier,
+            bool expectedAlignToTargetDirection)
+        {
+            return skill != null
+                && expectedPrefab != null
+                && skill.castImpactVfxPrefab == expectedPrefab
+                && skill.castImpactVfxLocalOffset == expectedOffset
+                && skill.castImpactVfxEulerAngles == expectedEulerAngles
+                && skill.castImpactVfxScaleMultiplier == expectedScaleMultiplier
+                && skill.castImpactVfxAlignToTargetDirection == expectedAlignToTargetDirection;
+        }
+
         private static void EnsureHeroBattlePrefabReference(HeroDefinition hero, GameObject battlePrefab)
         {
             if (hero == null || battlePrefab == null)
@@ -497,6 +531,36 @@ namespace Fight.Editor
 
             hero.visualConfig.battlePrefab = battlePrefab;
             EditorUtility.SetDirty(hero);
+        }
+
+        private static void EnsureSkillCastImpactVfxPresentation(
+            SkillData skill,
+            GameObject prefab,
+            Vector3 localOffset,
+            Vector3 eulerAngles,
+            Vector3 scaleMultiplier,
+            bool alignToTargetDirection)
+        {
+            if (skill == null || prefab == null)
+            {
+                return;
+            }
+
+            if (skill.castImpactVfxPrefab == prefab
+                && skill.castImpactVfxLocalOffset == localOffset
+                && skill.castImpactVfxEulerAngles == eulerAngles
+                && skill.castImpactVfxScaleMultiplier == scaleMultiplier
+                && skill.castImpactVfxAlignToTargetDirection == alignToTargetDirection)
+            {
+                return;
+            }
+
+            skill.castImpactVfxPrefab = prefab;
+            skill.castImpactVfxLocalOffset = localOffset;
+            skill.castImpactVfxEulerAngles = eulerAngles;
+            skill.castImpactVfxScaleMultiplier = scaleMultiplier;
+            skill.castImpactVfxAlignToTargetDirection = alignToTargetDirection;
+            EditorUtility.SetDirty(skill);
         }
 
         private static void EnsureFolders()
@@ -743,6 +807,11 @@ namespace Fight.Editor
             skill.allowsSelfCast = targetType == SkillTargetType.Self || targetType == SkillTargetType.AllAllies;
             ResetReactiveGuard(skill);
             ResetActionSequence(skill);
+            skill.castImpactVfxPrefab = null;
+            skill.castImpactVfxLocalOffset = Vector3.zero;
+            skill.castImpactVfxEulerAngles = Vector3.zero;
+            skill.castImpactVfxScaleMultiplier = Vector3.one;
+            skill.castImpactVfxAlignToTargetDirection = false;
             skill.persistentAreaVfxEulerAngles = Vector3.zero;
             skill.skillAreaPresentationType = SkillAreaPresentationType.None;
             ResetUltimateDecision(skill);
@@ -1412,6 +1481,11 @@ namespace Fight.Editor
 
             AddDamageEffect(skill, 1.35f);
             skill.description = "Stage-01 demo skill: apply defense down before dealing a heavy single-target strike.";
+            skill.castImpactVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(BladesmanActiveImpactVfxPrefabPath);
+            skill.castImpactVfxLocalOffset = new Vector3(0f, 0.12f, 0f);
+            skill.castImpactVfxEulerAngles = new Vector3(0f, 0f, -90f);
+            skill.castImpactVfxScaleMultiplier = new Vector3(0.18f, 0.18f, 1f);
+            skill.castImpactVfxAlignToTargetDirection = true;
             ResetUltimateDecision(skill);
             EditorUtility.SetDirty(skill);
             return skill;

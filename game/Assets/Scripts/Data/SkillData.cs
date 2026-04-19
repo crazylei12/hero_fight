@@ -36,6 +36,11 @@ namespace Fight.Data
 
         [Header("Presentation")]
         public GameObject targetIndicatorVfxPrefab;
+        public GameObject castImpactVfxPrefab;
+        public Vector3 castImpactVfxLocalOffset = Vector3.zero;
+        public Vector3 castImpactVfxEulerAngles = Vector3.zero;
+        public Vector3 castImpactVfxScaleMultiplier = Vector3.one;
+        public bool castImpactVfxAlignToTargetDirection;
         public GameObject castProjectileVfxPrefab;
         public GameObject persistentAreaVfxPrefab;
         [Min(0.1f)] public float persistentAreaVfxScaleMultiplier = 1f;

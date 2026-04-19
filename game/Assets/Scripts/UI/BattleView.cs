@@ -48,6 +48,7 @@ namespace Fight.UI
         private const int HealEventVfxSortOrderOffset = 190;
         private const int DashChargeSortOrderOffset = -6;
         private const int SkillTargetIndicatorSortOrderOffset = 214;
+        private const int SkillCastImpactVfxSortOrderOffset = 212;
         private const int ThrownProjectileSortOrderOffset = -4;
         private const string HealImpactTransientKey = "heal_received";
         private const string DashChargeTransientKey = "dash_charge";
@@ -1734,12 +1735,20 @@ namespace Fight.UI
                 PlayHealImpactVfx(healAppliedEvent);
             }
 
-            if (battleEvent is SkillCastEvent skillCastEvent
-                && skillCastEvent.PrimaryTarget != null
-                && skillCastEvent.Skill != null
-                && skillCastEvent.Skill.targetIndicatorVfxPrefab != null)
+            if (battleEvent is SkillCastEvent skillCastImpactEvent
+                && skillCastImpactEvent.PrimaryTarget != null
+                && skillCastImpactEvent.Skill != null
+                && skillCastImpactEvent.Skill.castImpactVfxPrefab != null)
             {
-                PlaySkillTargetIndicatorVfx(skillCastEvent);
+                PlaySkillCastImpactVfx(skillCastImpactEvent);
+            }
+
+            if (battleEvent is SkillCastEvent skillTargetIndicatorEvent
+                && skillTargetIndicatorEvent.PrimaryTarget != null
+                && skillTargetIndicatorEvent.Skill != null
+                && skillTargetIndicatorEvent.Skill.targetIndicatorVfxPrefab != null)
+            {
+                PlaySkillTargetIndicatorVfx(skillTargetIndicatorEvent);
             }
 
             foreach (var driver in heroAnimationDrivers.Values)
@@ -1885,6 +1894,56 @@ namespace Fight.UI
                 SkillTargetIndicatorSortOrderOffset,
                 uniqueKey,
                 lifetimeOverrideSeconds: expiresAtSeconds - GetElapsedTimeSeconds());
+        }
+
+        private void PlaySkillCastImpactVfx(SkillCastEvent skillCastEvent)
+        {
+            if (skillCastEvent?.PrimaryTarget == null
+                || skillCastEvent.Skill == null
+                || skillCastEvent.Skill.castImpactVfxPrefab == null)
+            {
+                return;
+            }
+
+            var worldPosition = Map(skillCastEvent.PrimaryTarget.CurrentPosition) + skillCastEvent.Skill.castImpactVfxLocalOffset;
+            var sortingOrder = Sort(worldPosition.y, SkillCastImpactVfxSortOrderOffset);
+            if (heroViews.TryGetValue(skillCastEvent.PrimaryTarget.RuntimeId, out var targetView)
+                && targetView?.SortingGroup != null)
+            {
+                sortingOrder = targetView.SortingGroup.sortingOrder + SkillCastImpactVfxSortOrderOffset;
+            }
+
+            var rotation = ResolveSkillCastImpactRotation(skillCastEvent);
+            SpawnTransientWorldVfx(
+                skillCastEvent.Skill.castImpactVfxPrefab,
+                worldPosition,
+                sortingOrder,
+                rotation,
+                skillCastEvent.Skill.castImpactVfxScaleMultiplier);
+        }
+
+        private Quaternion ResolveSkillCastImpactRotation(SkillCastEvent skillCastEvent)
+        {
+            var eulerAngles = skillCastEvent?.Skill != null
+                ? skillCastEvent.Skill.castImpactVfxEulerAngles
+                : Vector3.zero;
+
+            if (skillCastEvent?.Skill == null
+                || !skillCastEvent.Skill.castImpactVfxAlignToTargetDirection
+                || skillCastEvent.Caster == null
+                || skillCastEvent.PrimaryTarget == null)
+            {
+                return Quaternion.Euler(eulerAngles);
+            }
+
+            var direction = Map(skillCastEvent.PrimaryTarget.CurrentPosition) - Map(skillCastEvent.Caster.CurrentPosition);
+            if (direction.sqrMagnitude < 0.0001f)
+            {
+                return Quaternion.Euler(eulerAngles);
+            }
+
+            var zAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+            return Quaternion.Euler(eulerAngles + new Vector3(0f, 0f, zAngle));
         }
 
         private static string GetSkillTargetIndicatorTransientKey(RuntimeHero caster, SkillData skill)
