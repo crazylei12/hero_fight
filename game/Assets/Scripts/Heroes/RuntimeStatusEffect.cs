@@ -11,7 +11,8 @@ namespace Fight.Heroes
         {
             EffectType = data.effectType;
             Definition = StatusEffectCatalog.Get(data.effectType);
-            RemainingDurationSeconds = data.durationSeconds;
+            TotalDurationSeconds = Mathf.Max(0f, data.durationSeconds);
+            RemainingDurationSeconds = TotalDurationSeconds;
             Magnitude = data.magnitude;
             ActiveSkillCooldownCapSeconds = Mathf.Max(0f, data.activeSkillCooldownCapSeconds);
             TickIntervalSeconds = Mathf.Max(0.1f, data.tickIntervalSeconds);
@@ -28,6 +29,8 @@ namespace Fight.Heroes
         public StatusEffectDefinition Definition { get; }
 
         public float RemainingDurationSeconds { get; private set; }
+
+        public float TotalDurationSeconds { get; private set; }
 
         public float Magnitude { get; private set; }
 
@@ -76,7 +79,8 @@ namespace Fight.Heroes
         {
             var previousTickIntervalSeconds = TickIntervalSeconds;
             var previousTimeUntilNextTickSeconds = TimeUntilNextTickSeconds;
-            RemainingDurationSeconds = data.durationSeconds;
+            TotalDurationSeconds = Mathf.Max(0f, data.durationSeconds);
+            RemainingDurationSeconds = TotalDurationSeconds;
             if (refreshMagnitude)
             {
                 Magnitude = data.magnitude;
