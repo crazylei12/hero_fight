@@ -64,6 +64,8 @@ namespace Fight.Heroes
 
     public class RuntimeHero
     {
+        private const float DefaultKnockUpVisualPeakHeight = 0.72f;
+
         public RuntimeHero(HeroDefinition definition, TeamSide side, Vector3 spawnPosition, int slotIndex)
         {
             Definition = definition;
@@ -306,6 +308,7 @@ namespace Fight.Heroes
             actionLockRemainingSeconds = Mathf.Max(0f, actionLockRemainingSeconds - deltaTime);
             TickForcedMovement(deltaTime);
             StatusEffectSystem.Tick(this, deltaTime, onPeriodicStatusTick, onExpiredStatus);
+            UpdateStatusDrivenVisualHeightOffset();
             ClampActiveSkillCooldownToStatusCap();
             if (HasHardControl)
             {
@@ -686,6 +689,36 @@ namespace Fight.Heroes
 
             VisualHeightOffset = 0f;
             activeForcedMovement = null;
+        }
+
+        private void UpdateStatusDrivenVisualHeightOffset()
+        {
+            if (activeForcedMovement != null)
+            {
+                return;
+            }
+
+            var statusDrivenHeight = 0f;
+            for (var i = 0; i < activeStatusEffects.Count; i++)
+            {
+                var status = activeStatusEffects[i];
+                if (status == null
+                    || status.EffectType != StatusEffectType.KnockUp
+                    || status.IsExpired)
+                {
+                    continue;
+                }
+
+                var durationSeconds = Mathf.Max(0.0001f, status.TotalDurationSeconds);
+                var elapsedRatio = 1f - Mathf.Clamp01(status.RemainingDurationSeconds / durationSeconds);
+                var arcHeight = Mathf.Sin(elapsedRatio * Mathf.PI) * DefaultKnockUpVisualPeakHeight;
+                if (arcHeight > statusDrivenHeight)
+                {
+                    statusDrivenHeight = arcHeight;
+                }
+            }
+
+            VisualHeightOffset = statusDrivenHeight;
         }
 
         private void RegisterForcedMovementInterrupt()
