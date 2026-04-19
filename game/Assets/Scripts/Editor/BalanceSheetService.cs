@@ -953,6 +953,7 @@ namespace Fight.Editor
                     SkillEffectTargetMode.PrimaryTarget => "主目标",
                     SkillEffectTargetMode.EnemiesInRadiusAroundCaster => "施法者周围敌人",
                     SkillEffectTargetMode.AlliesInRadiusAroundCaster => "施法者周围友军",
+                    SkillEffectTargetMode.OtherAlliesInRadiusAroundCaster => "施法者周围其他友军",
                     SkillEffectTargetMode.DashPathEnemies => "突进路径敌人",
                     _ => value.ToString(),
                 },

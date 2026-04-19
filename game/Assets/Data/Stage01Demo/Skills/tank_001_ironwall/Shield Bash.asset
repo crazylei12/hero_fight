@@ -10,23 +10,27 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bea5ec4d01f80a948a332187ac325d06, type: 3}
-  m_Name: Shield Bash
+  m_Name: Bulwark Bond
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_tank_active_shieldbash
-  displayName: Shield Bash
-  description: 'Stage-01 demo skill: Shield Bash'
+  displayName: Bulwark Bond
+  description: 'Stage-01 demo skill: Bulwark Bond'
   slotType: 0
-  skillType: 8
-  targetType: 1
-  castRange: 1.8
+  skillType: 3
+  targetType: 14
+  preferredEnemyHeroClass: 3
+  fallbackTargetType: 0
+  targetPrioritySearchRadius: 6
+  targetPriorityRequiredUnitCount: 1
+  castRange: 4.5
   areaRadius: 0
   cooldownSeconds: 8
   minTargetsToCast: 1
   effects:
   - effectType: 0
-    targetMode: 0
+    targetMode: 8
     powerMultiplier: 0.8
-    radiusOverride: 0
+    radiusOverride: 4.5
     durationSeconds: 0
     tickIntervalSeconds: 1
     followCaster: 0
@@ -38,9 +42,9 @@ MonoBehaviour:
     forcedMovementPeakHeight: 0
     statusEffects: []
   - effectType: 2
-    targetMode: 0
+    targetMode: 8
     powerMultiplier: 1
-    radiusOverride: 0
+    radiusOverride: 4.5
     durationSeconds: 0
     tickIntervalSeconds: 1
     followCaster: 0
@@ -51,9 +55,9 @@ MonoBehaviour:
     forcedMovementDurationSeconds: 0
     forcedMovementPeakHeight: 0
     statusEffects:
-    - effectType: 17
-      durationSeconds: 1
-      magnitude: 1
+    - effectType: 16
+      durationSeconds: 3.5
+      magnitude: 0.35
       activeSkillCooldownCapSeconds: 0
       tickIntervalSeconds: 1
       maxStacks: 1

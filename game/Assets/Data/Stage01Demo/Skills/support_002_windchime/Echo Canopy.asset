@@ -88,6 +88,14 @@ MonoBehaviour:
       tickIntervalSeconds: 1
       maxStacks: 1
       refreshDurationOnReapply: 1
+    guardLoopVfxPrefab: {fileID: 9100000000000000001, guid: 3d7fd98e412943cc8e724f39e6dd7e94, type: 3}
+    guardLoopVfxLocalOffset: {x: 0, y: 0.7, z: 0}
+    guardLoopVfxLocalScale: {x: 1, y: 1, z: 1}
+    guardLoopVfxEulerAngles: {x: 0, y: 0, z: 0}
+    triggerVfxPrefab: {fileID: 9200000000000000001, guid: bcf55d6c9f55419e9dd3f9d0af4ac7d2, type: 3}
+    triggerVfxLocalOffset: {x: 0, y: 0.7, z: 0}
+    triggerVfxLocalScale: {x: 1, y: 1, z: 1}
+    triggerVfxEulerAngles: {x: 0, y: 0, z: 0}
   actionSequence:
     enabled: 0
     payloadType: 0
@@ -102,6 +110,11 @@ MonoBehaviour:
     targetRefreshMode: 1
     interruptFlags: 3
   targetIndicatorVfxPrefab: {fileID: 0}
+  castImpactVfxPrefab: {fileID: 0}
+  castImpactVfxLocalOffset: {x: 0, y: 0, z: 0}
+  castImpactVfxEulerAngles: {x: 0, y: 0, z: 0}
+  castImpactVfxScaleMultiplier: {x: 1, y: 1, z: 1}
+  castImpactVfxAlignToTargetDirection: 0
   castProjectileVfxPrefab: {fileID: 0}
   persistentAreaVfxPrefab: {fileID: 0}
   persistentAreaVfxScaleMultiplier: 1

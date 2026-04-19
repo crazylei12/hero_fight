@@ -49,6 +49,8 @@ namespace Fight.UI
         private const int DashChargeSortOrderOffset = -6;
         private const int SkillTargetIndicatorSortOrderOffset = 214;
         private const int SkillCastImpactVfxSortOrderOffset = 212;
+        private const int ReactiveGuardLoopSortOrderOffset = 178;
+        private const int ReactiveGuardTriggerSortOrderOffset = 206;
         private const int ThrownProjectileSortOrderOffset = -4;
         private const string HealImpactTransientKey = "heal_received";
         private const string DashChargeTransientKey = "dash_charge";
@@ -193,6 +195,7 @@ namespace Fight.UI
             public float BlinkRevealStartedAtSeconds = -1f;
             public StatusEffectViewState ForcedMovementStatusView;
             public readonly Dictionary<StatusEffectType, StatusEffectViewState> StatusEffectViews = new Dictionary<StatusEffectType, StatusEffectViewState>();
+            public readonly Dictionary<string, StatusEffectViewState> ReactiveGuardViews = new Dictionary<string, StatusEffectViewState>();
             public readonly List<TransientHeroVfxState> TransientVfx = new List<TransientHeroVfxState>();
         }
 
@@ -416,6 +419,7 @@ namespace Fight.UI
             UpdatePrefabHitFlash(hero, view);
             SyncForcedMovementStatusVfx(hero, view, heroSortingOrder);
             SyncStatusEffects(hero, view, heroSortingOrder);
+            SyncReactiveGuardVfx(hero, view, heroSortingOrder);
             SyncTransientVfx(hero, view, heroSortingOrder);
 
             if (view.AnimationDriver != null)
@@ -973,6 +977,80 @@ namespace Fight.UI
             ApplyStatusEffectView(view.ForcedMovementStatusView, KnockbackStatusVfxConfig, heroSortingOrder, view.LastForcedMovementDirection);
         }
 
+        private void SyncReactiveGuardVfx(RuntimeHero hero, HeroViewState view, int heroSortingOrder)
+        {
+            if (hero == null || view == null || view.StatusEffectRoot == null)
+            {
+                return;
+            }
+
+            List<string> activeReactiveGuardKeys = null;
+            var context = battleManager != null ? battleManager.Context : null;
+            var reactiveGuards = context != null ? context.ReactiveGuards : null;
+            if (reactiveGuards != null)
+            {
+                for (var i = 0; i < reactiveGuards.Count; i++)
+                {
+                    var guard = reactiveGuards[i];
+                    if (guard == null
+                        || guard.ProtectedHero != hero
+                        || guard.IsExpired
+                        || guard.TriggersRemaining <= 0
+                        || guard.SourceSkill?.reactiveGuard?.guardLoopVfxPrefab == null
+                        || !TryBuildReactiveGuardViewKey(guard.Caster, guard.SourceSkill, out var reactiveGuardKey))
+                    {
+                        continue;
+                    }
+
+                    if (!view.ReactiveGuardViews.TryGetValue(reactiveGuardKey, out var guardView))
+                    {
+                        guardView = CreateAttachedHeroVfxView($"{reactiveGuardKey}_Loop", view, guard.SourceSkill.reactiveGuard.guardLoopVfxPrefab);
+                        if (guardView == null)
+                        {
+                            continue;
+                        }
+
+                        view.ReactiveGuardViews.Add(reactiveGuardKey, guardView);
+                    }
+
+                    ApplyAttachedHeroVfxView(
+                        guardView,
+                        guard.SourceSkill.reactiveGuard.guardLoopVfxLocalOffset,
+                        guard.SourceSkill.reactiveGuard.guardLoopVfxLocalScale,
+                        guard.SourceSkill.reactiveGuard.guardLoopVfxEulerAngles,
+                        heroSortingOrder,
+                        ReactiveGuardLoopSortOrderOffset);
+
+                    activeReactiveGuardKeys ??= new List<string>();
+                    activeReactiveGuardKeys.Add(reactiveGuardKey);
+                }
+            }
+
+            List<string> staleReactiveGuardKeys = null;
+            foreach (var pair in view.ReactiveGuardViews)
+            {
+                if (activeReactiveGuardKeys != null && activeReactiveGuardKeys.Contains(pair.Key))
+                {
+                    continue;
+                }
+
+                staleReactiveGuardKeys ??= new List<string>();
+                staleReactiveGuardKeys.Add(pair.Key);
+            }
+
+            if (staleReactiveGuardKeys == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < staleReactiveGuardKeys.Count; i++)
+            {
+                var key = staleReactiveGuardKeys[i];
+                DestroyStatusEffectView(view.ReactiveGuardViews[key]);
+                view.ReactiveGuardViews.Remove(key);
+            }
+        }
+
         private StatusEffectViewState CreateStatusEffectView(StatusEffectType effectType, HeroViewState view, StatusEffectVfxConfig config)
         {
             return CreateStatusEffectView(effectType.ToString(), view, config);
@@ -1002,6 +1080,39 @@ namespace Fight.UI
                 SortingGroup = instance.GetComponent<SortingGroup>(),
                 OrbitController = instance.GetComponent<OrbitingStatusIconVfx>(),
                 LoadedPrefabResourcesPath = config.LoopPrefabResourcesPath,
+                Renderers = instance.GetComponentsInChildren<Renderer>(true),
+                ParticleSystems = instance.GetComponentsInChildren<ParticleSystem>(true),
+                BaseLocalPosition = instance.transform.localPosition,
+                BaseLocalScale = instance.transform.localScale,
+                BaseLocalRotation = instance.transform.localRotation,
+            };
+
+            if (state.SortingGroup == null)
+            {
+                state.SortingGroup = instance.AddComponent<SortingGroup>();
+            }
+
+            RestartStatusEffectView(state);
+            return state;
+        }
+
+        private StatusEffectViewState CreateAttachedHeroVfxView(string effectName, HeroViewState view, GameObject prefab)
+        {
+            if (view?.StatusEffectRoot == null || prefab == null)
+            {
+                return null;
+            }
+
+            var instance = Instantiate(prefab, view.StatusEffectRoot);
+            instance.name = $"{effectName}_AttachedVfx";
+            RemovePrefabPhysics(instance);
+
+            var state = new StatusEffectViewState
+            {
+                Root = instance,
+                SortingGroup = instance.GetComponent<SortingGroup>(),
+                OrbitController = instance.GetComponent<OrbitingStatusIconVfx>(),
+                LoadedPrefabResourcesPath = string.Empty,
                 Renderers = instance.GetComponentsInChildren<Renderer>(true),
                 ParticleSystems = instance.GetComponentsInChildren<ParticleSystem>(true),
                 BaseLocalPosition = instance.transform.localPosition,
@@ -1053,6 +1164,57 @@ namespace Fight.UI
             {
                 SetRendererSorting(viewState.Renderers, sortingOrder);
             }
+        }
+
+        private static void ApplyAttachedHeroVfxView(
+            StatusEffectViewState viewState,
+            Vector3 localOffset,
+            Vector3 localScale,
+            Vector3 localEulerAngles,
+            int heroSortingOrder,
+            int sortingOrderOffset)
+        {
+            if (viewState?.Root == null)
+            {
+                return;
+            }
+
+            var attachedTransform = viewState.Root.transform;
+            attachedTransform.localPosition = viewState.BaseLocalPosition + localOffset;
+            attachedTransform.localRotation = Quaternion.Euler(localEulerAngles) * viewState.BaseLocalRotation;
+            attachedTransform.localScale = new Vector3(
+                viewState.BaseLocalScale.x * localScale.x,
+                viewState.BaseLocalScale.y * localScale.y,
+                viewState.BaseLocalScale.z * localScale.z);
+
+            var sortingOrder = heroSortingOrder + sortingOrderOffset;
+            if (viewState.OrbitController != null)
+            {
+                viewState.OrbitController.SetBaseSortingOrder(sortingOrder);
+            }
+            else if (viewState.SortingGroup != null)
+            {
+                viewState.SortingGroup.sortingOrder = sortingOrder;
+            }
+            else
+            {
+                SetRendererSorting(viewState.Renderers, sortingOrder);
+            }
+        }
+
+        private static bool TryBuildReactiveGuardViewKey(RuntimeHero caster, SkillData sourceSkill, out string reactiveGuardKey)
+        {
+            reactiveGuardKey = null;
+            if (caster == null || sourceSkill == null)
+            {
+                return false;
+            }
+
+            var skillId = !string.IsNullOrWhiteSpace(sourceSkill.skillId)
+                ? sourceSkill.skillId
+                : sourceSkill.name;
+            reactiveGuardKey = $"reactive_guard_{caster.RuntimeId}_{skillId}";
+            return !string.IsNullOrWhiteSpace(reactiveGuardKey);
         }
 
         private static void ApplyOrbitingStatusEffectLayout(List<StatusEffectViewState> orbitViews)
@@ -1751,6 +1913,11 @@ namespace Fight.UI
                 PlaySkillTargetIndicatorVfx(skillTargetIndicatorEvent);
             }
 
+            if (battleEvent is ReactiveGuardTriggeredEvent reactiveGuardTriggeredEvent)
+            {
+                PlayReactiveGuardTriggerVfx(reactiveGuardTriggeredEvent);
+            }
+
             foreach (var driver in heroAnimationDrivers.Values)
             {
                 if (driver != null)
@@ -1786,6 +1953,39 @@ namespace Fight.UI
                     PlayDashChargeVfx(forcedMovementAppliedEvent);
                 }
             }
+        }
+
+        private void PlayReactiveGuardTriggerVfx(ReactiveGuardTriggeredEvent reactiveGuardTriggeredEvent)
+        {
+            if (reactiveGuardTriggeredEvent?.ProtectedHero == null
+                || reactiveGuardTriggeredEvent.SourceSkill?.reactiveGuard == null
+                || reactiveGuardTriggeredEvent.SourceSkill.reactiveGuard.triggerVfxPrefab == null
+                || !heroViews.TryGetValue(reactiveGuardTriggeredEvent.ProtectedHero.RuntimeId, out var protectedHeroView)
+                || protectedHeroView == null
+                || reactiveGuardTriggeredEvent.ProtectedHero.IsDead
+                || ShouldHideCorpse(protectedHeroView))
+            {
+                return;
+            }
+
+            if (TryBuildReactiveGuardViewKey(
+                    reactiveGuardTriggeredEvent.Caster,
+                    reactiveGuardTriggeredEvent.SourceSkill,
+                    out var reactiveGuardKey)
+                && protectedHeroView.ReactiveGuardViews.TryGetValue(reactiveGuardKey, out var reactiveGuardView))
+            {
+                DestroyStatusEffectView(reactiveGuardView);
+                protectedHeroView.ReactiveGuardViews.Remove(reactiveGuardKey);
+            }
+
+            var guardPresentation = reactiveGuardTriggeredEvent.SourceSkill.reactiveGuard;
+            SpawnTransientHeroVfx(
+                protectedHeroView,
+                guardPresentation.triggerVfxPrefab,
+                guardPresentation.triggerVfxLocalOffset,
+                ReactiveGuardTriggerSortOrderOffset,
+                localRotation: Quaternion.Euler(guardPresentation.triggerVfxEulerAngles),
+                localScaleMultiplier: guardPresentation.triggerVfxLocalScale);
         }
 
         private static void DisableSnapshotBehaviours(GameObject instance)
