@@ -17,11 +17,16 @@ namespace Fight.Editor
         private const string SoftCircleSpritePath = GeneratedArtFolder + "/vfx_soft_circle.png";
         private const string EchoCanopyGuardPrefabPath = SharedPrefabsFolder + "/WindchimeEchoCanopyGuard.prefab";
         private const string EchoCanopyBurstPrefabPath = SkillPrefabsFolder + "/WindchimeEchoCanopyBurst.prefab";
+        private const string StillwindDomainPrefabPath = SkillPrefabsFolder + "/WindchimeStillwindDomainField.prefab";
         private const string WindchimeActiveSkillAssetPath = "Assets/Data/Stage01Demo/Skills/support_002_windchime/Echo Canopy.asset";
         private const string ShieldWindSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Shields/Shield_wind.prefab";
         private const string HitWindSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Range_attack/Hit_wind.prefab";
+        private const string AreaGenericBlueSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Area_generic/Area_generic_blue.prefab";
+        private const string AreaGenericBlueOutbreakSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Area_generic/Area_generic_blue_outbreak.prefab";
         private const float EchoCanopyGuardSourceScale = 0.54f;
         private const float EchoCanopyBurstSourceScale = 0.28f;
+        private const float StillwindDomainFieldScale = 0.16f;
+        private const float StillwindDomainPulseScale = 0.18f;
         private static readonly Quaternion TopDownRotation = Quaternion.Euler(90f, 0f, 0f);
         private static readonly Vector3 ReactiveGuardLocalOffset = new Vector3(0f, 0.58f, 0f);
         private static readonly Color GuardHaloBackColor = new Color(0.72f, 0.92f, 1f, 0.18f);
@@ -34,6 +39,11 @@ namespace Fight.Editor
         private static readonly Color GuardRingStartMaxColor = new Color(0.98f, 1f, 1f, 0.58f);
         private static readonly Color BurstStartMinColor = new Color(0.72f, 0.90f, 1f, 0.24f);
         private static readonly Color BurstStartMaxColor = new Color(1f, 1f, 1f, 0.7f);
+        private static readonly Color StillwindBaseColor = new Color(0.54f, 0.84f, 0.98f, 0.16f);
+        private static readonly Color StillwindCoreColor = new Color(0.90f, 0.98f, 1f, 0.14f);
+        private static readonly Color StillwindEdgeTintColor = new Color(0.46f, 0.80f, 0.96f, 0.11f);
+        private static readonly Color StillwindHaloColor = new Color(0.84f, 0.97f, 1f, 0.10f);
+        private static readonly Color StillwindWakeColor = new Color(0.78f, 0.94f, 1f, 0.12f);
         private static bool autoBuildScheduled;
 
         [InitializeOnLoadMethod]
@@ -57,6 +67,7 @@ namespace Fight.Editor
 
             BuildEchoCanopyGuardPrefab();
             BuildEchoCanopyBurstPrefab();
+            BuildStillwindDomainPrefab();
             SyncStage01DemoAssets();
 
             AssetDatabase.SaveAssets();
@@ -100,16 +111,20 @@ namespace Fight.Editor
                     BuilderScriptAssetPath,
                     SoftCircleSpritePath,
                     ShieldWindSourcePrefabPath,
-                    HitWindSourcePrefabPath)
+                    HitWindSourcePrefabPath,
+                    AreaGenericBlueSourcePrefabPath,
+                    AreaGenericBlueOutbreakSourcePrefabPath)
                 > GetLatestTimestampUtc(
                     EchoCanopyGuardPrefabPath,
-                    EchoCanopyBurstPrefabPath);
+                    EchoCanopyBurstPrefabPath,
+                    StillwindDomainPrefabPath);
         }
 
         private static bool AllOutputAssetsExist()
         {
             return AssetDatabase.LoadAssetAtPath<GameObject>(EchoCanopyGuardPrefabPath) != null
-                && AssetDatabase.LoadAssetAtPath<GameObject>(EchoCanopyBurstPrefabPath) != null;
+                && AssetDatabase.LoadAssetAtPath<GameObject>(EchoCanopyBurstPrefabPath) != null
+                && AssetDatabase.LoadAssetAtPath<GameObject>(StillwindDomainPrefabPath) != null;
         }
 
         private static void BuildEchoCanopyGuardPrefab()
@@ -120,6 +135,11 @@ namespace Fight.Editor
         private static void BuildEchoCanopyBurstPrefab()
         {
             SavePrefab(CreateEchoCanopyBurstRoot(), EchoCanopyBurstPrefabPath);
+        }
+
+        private static void BuildStillwindDomainPrefab()
+        {
+            SavePrefab(CreateStillwindDomainRoot(), StillwindDomainPrefabPath);
         }
 
         private static GameObject CreateEchoCanopyGuardRoot()
@@ -207,6 +227,112 @@ namespace Fight.Editor
             return root;
         }
 
+        private static GameObject CreateStillwindDomainRoot()
+        {
+            var softCircleSprite = EnsureSoftCircleSprite();
+            var areaGenericBluePrefab = LoadRequiredAsset<GameObject>(AreaGenericBlueSourcePrefabPath);
+            var areaGenericBlueOutbreakPrefab = LoadRequiredAsset<GameObject>(AreaGenericBlueOutbreakSourcePrefabPath);
+            var echoCanopyGuardPrefab = LoadRequiredAsset<GameObject>(EchoCanopyGuardPrefabPath);
+
+            var root = new GameObject("WindchimeStillwindDomainField");
+            root.AddComponent<SortingGroup>();
+
+            CreateSprite(
+                root.transform,
+                "StillwindBase",
+                softCircleSprite,
+                StillwindBaseColor,
+                -30,
+                Vector3.zero,
+                new Vector3(0.98f, 0.94f, 1f));
+            CreateSprite(
+                root.transform,
+                "StillwindCore",
+                softCircleSprite,
+                StillwindCoreColor,
+                -24,
+                new Vector3(0f, 0.01f, 0f),
+                new Vector3(0.64f, 0.60f, 1f));
+            CreateSprite(
+                root.transform,
+                "StillwindEdgeTint",
+                softCircleSprite,
+                StillwindEdgeTintColor,
+                -18,
+                Vector3.zero,
+                new Vector3(0.84f, 0.80f, 1f));
+            CreateSprite(
+                root.transform,
+                "StillwindHalo",
+                softCircleSprite,
+                StillwindHaloColor,
+                -12,
+                Vector3.zero,
+                new Vector3(1.08f, 1.02f, 1f));
+
+            var frontWake = CreateSprite(
+                root.transform,
+                "FrontWake",
+                softCircleSprite,
+                StillwindWakeColor,
+                -8,
+                new Vector3(0f, 0.23f, 0f),
+                new Vector3(0.42f, 0.16f, 1f));
+            frontWake.transform.localRotation = Quaternion.Euler(0f, 0f, 4f);
+
+            var rearWake = CreateSprite(
+                root.transform,
+                "RearWake",
+                softCircleSprite,
+                StillwindWakeColor,
+                -8,
+                new Vector3(0f, -0.23f, 0f),
+                new Vector3(0.42f, 0.16f, 1f));
+            rearWake.transform.localRotation = Quaternion.Euler(0f, 0f, -4f);
+
+            var leftWake = CreateSprite(
+                root.transform,
+                "LeftWake",
+                softCircleSprite,
+                StillwindWakeColor,
+                -8,
+                new Vector3(-0.25f, 0f, 0f),
+                new Vector3(0.18f, 0.38f, 1f));
+            leftWake.transform.localRotation = Quaternion.Euler(0f, 0f, 18f);
+
+            var rightWake = CreateSprite(
+                root.transform,
+                "RightWake",
+                softCircleSprite,
+                StillwindWakeColor,
+                -8,
+                new Vector3(0.25f, 0f, 0f),
+                new Vector3(0.18f, 0.38f, 1f));
+            rightWake.transform.localRotation = Quaternion.Euler(0f, 0f, -18f);
+
+            var stillwindArea = InstantiateNestedPrefab(areaGenericBluePrefab, root.transform, "StillwindArea");
+            ConfigureAreaSourceInstance(stillwindArea, Vector3.zero, Vector3.one * StillwindDomainFieldScale);
+            ConfigureParticleSystems(stillwindArea, loop: true, prewarm: true);
+            OffsetRendererOrders(stillwindArea, 0);
+
+            var stillwindPulse = InstantiateNestedPrefab(areaGenericBlueOutbreakPrefab, root.transform, "StillwindPulse");
+            ConfigureAreaSourceInstance(stillwindPulse, Vector3.zero, Vector3.one * StillwindDomainPulseScale);
+            ConfigureParticleSystems(stillwindPulse, loop: true, prewarm: true);
+            OffsetRendererOrders(stillwindPulse, 8);
+
+            var outerFlow = InstantiateNestedPrefab(echoCanopyGuardPrefab, root.transform, "OuterFlow");
+            outerFlow.transform.localPosition = Vector3.zero;
+            outerFlow.transform.localScale = new Vector3(0.92f, 0.88f, 1f);
+            OffsetRendererOrders(outerFlow, 16);
+
+            var innerFlow = InstantiateNestedPrefab(echoCanopyGuardPrefab, root.transform, "InnerFlow");
+            innerFlow.transform.localPosition = new Vector3(0f, 0.01f, 0f);
+            innerFlow.transform.localScale = new Vector3(0.58f, 0.54f, 1f);
+            OffsetRendererOrders(innerFlow, 12);
+
+            return root;
+        }
+
         private static void SyncStage01DemoAssets()
         {
             var echoCanopyGuardPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(EchoCanopyGuardPrefabPath);
@@ -262,6 +388,18 @@ namespace Fight.Editor
                 main.prewarm = loop && prewarm;
                 main.scalingMode = ParticleSystemScalingMode.Hierarchy;
             }
+        }
+
+        private static void ConfigureAreaSourceInstance(GameObject instance, Vector3 localPosition, Vector3 localScale)
+        {
+            if (instance == null)
+            {
+                return;
+            }
+
+            instance.transform.localPosition = localPosition;
+            instance.transform.localScale = localScale;
+            instance.transform.localRotation = Quaternion.identity;
         }
 
         private static void RetintGuardParticleSystems(GameObject root)
