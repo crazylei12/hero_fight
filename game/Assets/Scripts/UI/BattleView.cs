@@ -22,6 +22,7 @@ namespace Fight.UI
         private const string StunStatusLoopVfxResourcesPath = "Stage01Demo/VFX/Statuses/StunStatusLoop";
         private const string KnockUpStatusBurstVfxResourcesPath = "Stage01Demo/VFX/Statuses/KnockUpStatusBurst";
         private const string KnockbackStatusLoopVfxResourcesPath = "Stage01Demo/VFX/Statuses/KnockbackStatusLoop";
+        private const string TauntStatusLoopVfxResourcesPath = "Stage01Demo/VFX/Statuses/TauntStatusLoop";
         private const string AttackPowerUpStatusLoopVfxResourcesPath = "Stage01Demo/VFX/Statuses/AttackPowerUpStatusLoop";
         private const string AttackPowerDownStatusLoopVfxResourcesPath = "Stage01Demo/VFX/Statuses/AttackPowerDownStatusLoop";
         private const string DefenseUpStatusLoopVfxResourcesPath = "Stage01Demo/VFX/Statuses/DefenseUpStatusLoop";
@@ -54,6 +55,7 @@ namespace Fight.UI
         {
             { StatusEffectType.Stun, new StatusEffectVfxConfig(StunStatusLoopVfxResourcesPath, new Vector3(0f, 1.1f, 0f), Vector3.one * 0.85f, Vector3.zero, 180) },
             { StatusEffectType.KnockUp, new StatusEffectVfxConfig(KnockUpStatusBurstVfxResourcesPath, new Vector3(0f, 0.74f, 0f), Vector3.one * 0.9f, Vector3.zero, 165) },
+            { StatusEffectType.Taunt, new StatusEffectVfxConfig(TauntStatusLoopVfxResourcesPath, new Vector3(0f, 1.2f, 0f), Vector3.one * 0.92f, Vector3.zero, 186) },
         };
         private static readonly StatusEffectVfxConfig KnockbackStatusVfxConfig = new StatusEffectVfxConfig(
             KnockbackStatusLoopVfxResourcesPath,

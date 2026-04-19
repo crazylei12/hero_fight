@@ -9,13 +9,17 @@ namespace Fight.Editor
     {
         private const string BuildMenuPath = "Fight/Stage 01/Build Shared Status VFX Prefabs";
         private const string GeneratedArtFolder = "Assets/Art/VFX/Generated";
+        private const string StatusIconsFolder = "Assets/Art/VFX/StatusIcons";
         private const string PrefabsRootFolder = "Assets/Prefabs/VFX";
         private const string SharedPrefabsFolder = PrefabsRootFolder + "/Shared";
         private const string StatusResourcesFolder = "Assets/Resources/Stage01Demo/VFX/Statuses";
         private const string BuilderScriptAssetPath = "Assets/Scripts/Editor/StatusVfxPrefabBuilder.cs";
         private const string SoftCircleSpritePath = GeneratedArtFolder + "/vfx_soft_circle.png";
+        private const string TauntIconSpritePath = StatusIconsFolder + "/TauntEffect.png";
         private const string KnockbackStatusPrefabPath = SharedPrefabsFolder + "/KnockbackStatusLoop.prefab";
         private const string KnockbackStatusResourcesPrefabPath = StatusResourcesFolder + "/KnockbackStatusLoop.prefab";
+        private const string TauntStatusPrefabPath = SharedPrefabsFolder + "/TauntStatusLoop.prefab";
+        private const string TauntStatusResourcesPrefabPath = StatusResourcesFolder + "/TauntStatusLoop.prefab";
         private const string WindAuraSourcePrefabPath = "Assets/Hun0FX/FX/BuffnDebuff_vol1/FX_Buff_01_Wind.prefab";
         private static readonly Quaternion TopDownRotation = Quaternion.Euler(90f, 0f, 0f);
         private static bool autoBuildScheduled;
@@ -36,12 +40,15 @@ namespace Fight.Editor
         public static void BuildSharedStatusVfxPrefabs()
         {
             EnsureFolder(GeneratedArtFolder);
+            EnsureFolder(StatusIconsFolder);
             EnsureFolder(PrefabsRootFolder);
             EnsureFolder(SharedPrefabsFolder);
             EnsureFolder(StatusResourcesFolder);
 
             var softCircleSprite = EnsureSoftCircleSprite();
+            var tauntIconSprite = EnsureStatusIconSprite(TauntIconSpritePath, 512f);
             BuildKnockbackStatusPrefabs(softCircleSprite);
+            BuildTauntStatusPrefabs(softCircleSprite, tauntIconSprite);
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -75,6 +82,12 @@ namespace Fight.Editor
         {
             SavePrefab(CreateKnockbackStatusRoot(softCircleSprite), KnockbackStatusPrefabPath);
             SavePrefab(CreateKnockbackStatusRoot(softCircleSprite), KnockbackStatusResourcesPrefabPath);
+        }
+
+        private static void BuildTauntStatusPrefabs(Sprite softCircleSprite, Sprite tauntIconSprite)
+        {
+            SavePrefab(CreateTauntStatusRoot(softCircleSprite, tauntIconSprite), TauntStatusPrefabPath);
+            SavePrefab(CreateTauntStatusRoot(softCircleSprite, tauntIconSprite), TauntStatusResourcesPrefabPath);
         }
 
         private static GameObject CreateKnockbackStatusRoot(Sprite softCircleSprite)
@@ -139,6 +152,48 @@ namespace Fight.Editor
             return root;
         }
 
+        private static GameObject CreateTauntStatusRoot(Sprite softCircleSprite, Sprite tauntIconSprite)
+        {
+            var root = new GameObject("TauntStatusLoop");
+            root.AddComponent<SortingGroup>();
+
+            CreateSprite(
+                root.transform,
+                "BackGlow",
+                softCircleSprite,
+                new Color(1f, 0.22f, 0.22f, 0.12f),
+                1,
+                new Vector3(0f, 0.02f, 0f),
+                new Vector3(0.82f, 0.62f, 1f));
+            CreateSprite(
+                root.transform,
+                "CoreGlow",
+                softCircleSprite,
+                new Color(1f, 0.44f, 0.38f, 0.18f),
+                3,
+                new Vector3(0f, 0.03f, 0f),
+                new Vector3(0.56f, 0.42f, 1f));
+
+            CreateSprite(
+                root.transform,
+                "IconShadow",
+                tauntIconSprite,
+                new Color(0f, 0f, 0f, 0.3f),
+                8,
+                new Vector3(0.03f, -0.04f, 0f),
+                new Vector3(0.27f, 0.27f, 1f));
+            CreateSprite(
+                root.transform,
+                "Icon",
+                tauntIconSprite,
+                Color.white,
+                12,
+                new Vector3(0f, 0f, 0f),
+                new Vector3(0.27f, 0.27f, 1f));
+
+            return root;
+        }
+
         private static void SaveParticleSystemLoopingState(GameObject root, bool loop)
         {
             if (root == null)
@@ -183,6 +238,32 @@ namespace Fight.Editor
             }
 
             return LoadRequiredAsset<Sprite>(SoftCircleSpritePath);
+        }
+
+        private static Sprite EnsureStatusIconSprite(string iconSpritePath, float pixelsPerUnit)
+        {
+            var fullPath = GetAbsoluteProjectPath(iconSpritePath);
+            if (!File.Exists(fullPath))
+            {
+                throw new FileNotFoundException($"Missing source status icon at {iconSpritePath}");
+            }
+
+            AssetDatabase.ImportAsset(iconSpritePath, ImportAssetOptions.ForceSynchronousImport);
+            if (AssetImporter.GetAtPath(iconSpritePath) is TextureImporter importer)
+            {
+                importer.textureType = TextureImporterType.Sprite;
+                importer.spriteImportMode = SpriteImportMode.Single;
+                importer.spritePixelsPerUnit = pixelsPerUnit;
+                importer.spriteMeshType = SpriteMeshType.Tight;
+                importer.alphaIsTransparency = true;
+                importer.mipmapEnabled = false;
+                importer.wrapMode = TextureWrapMode.Clamp;
+                importer.filterMode = FilterMode.Point;
+                importer.textureCompression = TextureImporterCompression.Uncompressed;
+                importer.SaveAndReimport();
+            }
+
+            return LoadRequiredAsset<Sprite>(iconSpritePath);
         }
 
         private static Texture2D BuildSoftCircleTexture(int size)
@@ -317,14 +398,20 @@ namespace Fight.Editor
                 return true;
             }
 
-            return GetLatestTimestampUtc(BuilderScriptAssetPath, SoftCircleSpritePath)
-                > GetLatestTimestampUtc(KnockbackStatusPrefabPath, KnockbackStatusResourcesPrefabPath);
+            return GetLatestTimestampUtc(BuilderScriptAssetPath, SoftCircleSpritePath, TauntIconSpritePath)
+                > GetLatestTimestampUtc(
+                    KnockbackStatusPrefabPath,
+                    KnockbackStatusResourcesPrefabPath,
+                    TauntStatusPrefabPath,
+                    TauntStatusResourcesPrefabPath);
         }
 
         private static bool AllOutputAssetsExist()
         {
             return AssetDatabase.LoadAssetAtPath<GameObject>(KnockbackStatusPrefabPath) != null
-                && AssetDatabase.LoadAssetAtPath<GameObject>(KnockbackStatusResourcesPrefabPath) != null;
+                && AssetDatabase.LoadAssetAtPath<GameObject>(KnockbackStatusResourcesPrefabPath) != null
+                && AssetDatabase.LoadAssetAtPath<GameObject>(TauntStatusPrefabPath) != null
+                && AssetDatabase.LoadAssetAtPath<GameObject>(TauntStatusResourcesPrefabPath) != null;
         }
 
         private static System.DateTime GetLatestTimestampUtc(params string[] assetPaths)
