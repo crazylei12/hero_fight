@@ -977,7 +977,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2033358281781022946, guid: d7ac2173ed9eb4548a13d535e6ec77f6, type: 3}
       propertyPath: m_SortingOrder
-      value: 8
+      value: -2
       objectReference: {fileID: 0}
     - target: {fileID: 2033358281781950856, guid: d7ac2173ed9eb4548a13d535e6ec77f6, type: 3}
       propertyPath: looping
@@ -1041,7 +1041,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2033358281797257176, guid: d7ac2173ed9eb4548a13d535e6ec77f6, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
-      value: 90
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2033358281797257176, guid: d7ac2173ed9eb4548a13d535e6ec77f6, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
@@ -1069,11 +1069,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6347302178792995641, guid: d7ac2173ed9eb4548a13d535e6ec77f6, type: 3}
       propertyPath: m_SortingOrder
-      value: 8
+      value: -2
       objectReference: {fileID: 0}
     - target: {fileID: 6347302178894016928, guid: d7ac2173ed9eb4548a13d535e6ec77f6, type: 3}
       propertyPath: m_SortingOrder
-      value: 8
+      value: -2
       objectReference: {fileID: 0}
     - target: {fileID: 6347302178894016931, guid: d7ac2173ed9eb4548a13d535e6ec77f6, type: 3}
       propertyPath: looping
@@ -1109,7 +1109,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6347302179275083558, guid: d7ac2173ed9eb4548a13d535e6ec77f6, type: 3}
       propertyPath: m_SortingOrder
-      value: 8
+      value: -2
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -1129,6 +1129,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 5006934863009650213}
     m_Modifications:
+    - target: {fileID: 2982401395560101866, guid: c804e1d2a1c76104d89c84ce9f290566, type: 3}
+      propertyPath: m_SortingOrder
+      value: -4
+      objectReference: {fileID: 0}
     - target: {fileID: 2982401395829383660, guid: c804e1d2a1c76104d89c84ce9f290566, type: 3}
       propertyPath: m_Name
       value: StillwindArea
@@ -1175,7 +1179,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2982401395829383665, guid: c804e1d2a1c76104d89c84ce9f290566, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
-      value: 90
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2982401395829383665, guid: c804e1d2a1c76104d89c84ce9f290566, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
@@ -1200,6 +1204,18 @@ PrefabInstance:
     - target: {fileID: 2982401395829383666, guid: c804e1d2a1c76104d89c84ce9f290566, type: 3}
       propertyPath: startDelay.maxCurve.m_Curve.Array.data[1].value
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2982401395829383667, guid: c804e1d2a1c76104d89c84ce9f290566, type: 3}
+      propertyPath: m_SortingOrder
+      value: -4
+      objectReference: {fileID: 0}
+    - target: {fileID: 2982401396734111875, guid: c804e1d2a1c76104d89c84ce9f290566, type: 3}
+      propertyPath: m_SortingOrder
+      value: -4
+      objectReference: {fileID: 0}
+    - target: {fileID: 3970600122379111189, guid: c804e1d2a1c76104d89c84ce9f290566, type: 3}
+      propertyPath: m_SortingOrder
+      value: -4
       objectReference: {fileID: 0}
     - target: {fileID: 6805664005276391306, guid: c804e1d2a1c76104d89c84ce9f290566, type: 3}
       propertyPath: looping

@@ -125,9 +125,9 @@ Transform:
   - {fileID: 4611789903428783513}
   - {fileID: 4016379623630019648}
   - {fileID: 6471521894623365912}
-  - {fileID: 8075548918761059298}
   - {fileID: 3854554494393690489}
-  - {fileID: 3016120904675264478}
+  - {fileID: 1638662171598271205}
+  - {fileID: 8017291660906001459}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!210 &1866852842277268568
@@ -426,27 +426,27 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 4369787679609024320, guid: 50779f44bcc21b940ab46d434edd5b49, type: 3}
       propertyPath: m_SortingOrder
-      value: 11
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 4369787679739668784, guid: 50779f44bcc21b940ab46d434edd5b49, type: 3}
       propertyPath: m_SortingOrder
-      value: 10
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 4369787680043664563, guid: 50779f44bcc21b940ab46d434edd5b49, type: 3}
       propertyPath: m_SortingOrder
-      value: 11
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 4369787680043664564, guid: 50779f44bcc21b940ab46d434edd5b49, type: 3}
       propertyPath: m_LocalScale.x
-      value: 0.092
+      value: 0.128
       objectReference: {fileID: 0}
     - target: {fileID: 4369787680043664564, guid: 50779f44bcc21b940ab46d434edd5b49, type: 3}
       propertyPath: m_LocalScale.y
-      value: 0.092
+      value: 0.128
       objectReference: {fileID: 0}
     - target: {fileID: 4369787680043664564, guid: 50779f44bcc21b940ab46d434edd5b49, type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.092
+      value: 0.128
       objectReference: {fileID: 0}
     - target: {fileID: 4369787680043664564, guid: 50779f44bcc21b940ab46d434edd5b49, type: 3}
       propertyPath: m_LocalPosition.x
@@ -490,19 +490,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4369787680043664565, guid: 50779f44bcc21b940ab46d434edd5b49, type: 3}
       propertyPath: m_Name
-      value: SanctuaryLoopInner
+      value: SanctuaryLoop
       objectReference: {fileID: 0}
     - target: {fileID: 4369787680153853906, guid: 50779f44bcc21b940ab46d434edd5b49, type: 3}
       propertyPath: m_SortingOrder
-      value: 11
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 4369787680474089926, guid: 50779f44bcc21b940ab46d434edd5b49, type: 3}
       propertyPath: m_SortingOrder
-      value: 10
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 4369787680985902743, guid: 50779f44bcc21b940ab46d434edd5b49, type: 3}
       propertyPath: m_SortingOrder
-      value: 10
+      value: 8
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -607,12 +607,12 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 3d0c8d31a8a941646b2de64e41f449a8, type: 3}
---- !u!4 &3016120904675264478 stripped
+--- !u!4 &8017291660906001459 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7308761314370252936, guid: 3d0c8d31a8a941646b2de64e41f449a8, type: 3}
   m_PrefabInstance: {fileID: 733748059181614267}
   m_PrefabAsset: {fileID: 0}
---- !u!1001 &5527753248014563158
+--- !u!1001 &1638662171598271204
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -622,27 +622,27 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 4369787679609024320, guid: 50779f44bcc21b940ab46d434edd5b49, type: 3}
       propertyPath: m_SortingOrder
-      value: 9
+      value: 11
       objectReference: {fileID: 0}
     - target: {fileID: 4369787679739668784, guid: 50779f44bcc21b940ab46d434edd5b49, type: 3}
       propertyPath: m_SortingOrder
-      value: 8
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 4369787680043664563, guid: 50779f44bcc21b940ab46d434edd5b49, type: 3}
       propertyPath: m_SortingOrder
-      value: 9
+      value: 11
       objectReference: {fileID: 0}
     - target: {fileID: 4369787680043664564, guid: 50779f44bcc21b940ab46d434edd5b49, type: 3}
       propertyPath: m_LocalScale.x
-      value: 0.128
+      value: 0.092
       objectReference: {fileID: 0}
     - target: {fileID: 4369787680043664564, guid: 50779f44bcc21b940ab46d434edd5b49, type: 3}
       propertyPath: m_LocalScale.y
-      value: 0.128
+      value: 0.092
       objectReference: {fileID: 0}
     - target: {fileID: 4369787680043664564, guid: 50779f44bcc21b940ab46d434edd5b49, type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.128
+      value: 0.092
       objectReference: {fileID: 0}
     - target: {fileID: 4369787680043664564, guid: 50779f44bcc21b940ab46d434edd5b49, type: 3}
       propertyPath: m_LocalPosition.x
@@ -686,27 +686,27 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4369787680043664565, guid: 50779f44bcc21b940ab46d434edd5b49, type: 3}
       propertyPath: m_Name
-      value: SanctuaryLoop
+      value: SanctuaryLoopInner
       objectReference: {fileID: 0}
     - target: {fileID: 4369787680153853906, guid: 50779f44bcc21b940ab46d434edd5b49, type: 3}
       propertyPath: m_SortingOrder
-      value: 9
+      value: 11
       objectReference: {fileID: 0}
     - target: {fileID: 4369787680474089926, guid: 50779f44bcc21b940ab46d434edd5b49, type: 3}
       propertyPath: m_SortingOrder
-      value: 8
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 4369787680985902743, guid: 50779f44bcc21b940ab46d434edd5b49, type: 3}
       propertyPath: m_SortingOrder
-      value: 8
+      value: 10
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 50779f44bcc21b940ab46d434edd5b49, type: 3}
---- !u!4 &8075548918761059298 stripped
+--- !u!4 &1638662171598271205 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4369787680043664564, guid: 50779f44bcc21b940ab46d434edd5b49, type: 3}
-  m_PrefabInstance: {fileID: 5527753248014563158}
+  m_PrefabInstance: {fileID: 1638662171598271204}
   m_PrefabAsset: {fileID: 0}

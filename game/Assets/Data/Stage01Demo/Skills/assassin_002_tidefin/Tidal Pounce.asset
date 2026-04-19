@@ -18,7 +18,7 @@ MonoBehaviour:
   slotType: 0
   skillType: 4
   targetType: 9
-  castRange: 4
+  castRange: 18
   areaRadius: 0
   cooldownSeconds: 5.5
   minTargetsToCast: 1
@@ -72,6 +72,8 @@ MonoBehaviour:
     temporarySkillCastRangeOverride: 0
     targetRefreshMode: 1
     interruptFlags: 3
+  targetIndicatorVfxPrefab: {fileID: 0}
+  castProjectileVfxPrefab: {fileID: 0}
   persistentAreaVfxPrefab: {fileID: 0}
   persistentAreaVfxScaleMultiplier: 1
   persistentAreaVfxEulerAngles: {x: 0, y: 0, z: 0}

@@ -9652,7 +9652,7 @@ GameObject:
   - component: {fileID: 4419217189970019513}
   - component: {fileID: 1638136153522563709}
   m_Layer: 0
-  m_Name: "\u98CE\u8BED"
+  m_Name: Windchime
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
