@@ -27,20 +27,6 @@ MonoBehaviour:
   cooldownSeconds: 8
   minTargetsToCast: 1
   effects:
-  - effectType: 0
-    targetMode: 8
-    powerMultiplier: 0.8
-    radiusOverride: 4.5
-    durationSeconds: 0
-    tickIntervalSeconds: 1
-    followCaster: 0
-    persistentAreaPulseEffectType: 1
-    persistentAreaTargetType: 0
-    forcedMovementDirection: 0
-    forcedMovementDistance: 0
-    forcedMovementDurationSeconds: 0
-    forcedMovementPeakHeight: 0
-    statusEffects: []
   - effectType: 2
     targetMode: 8
     powerMultiplier: 1
@@ -76,6 +62,8 @@ MonoBehaviour:
     temporarySkillCastRangeOverride: 0
     targetRefreshMode: 1
     interruptFlags: 3
+  targetIndicatorVfxPrefab: {fileID: 0}
+  castProjectileVfxPrefab: {fileID: 0}
   persistentAreaVfxPrefab: {fileID: 0}
   persistentAreaVfxScaleMultiplier: 1
   persistentAreaVfxEulerAngles: {x: 0, y: 0, z: 0}

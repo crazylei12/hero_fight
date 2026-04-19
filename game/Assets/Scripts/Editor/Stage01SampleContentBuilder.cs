@@ -220,7 +220,7 @@ namespace Fight.Editor
                 HeroTag.Melee, HeroTag.Dive, HeroTag.Control);
             ConfigureTidefinBasicAttack(tidefin, overwriteExistingContent, tidefinHeroExisted);
 
-            var tankActive = CreateTauntSkill("skill_tank_active_shieldbash", "Shield Bash", SkillSlotType.ActiveSkill, 1.8f, 0f, 0.8f, 8f, 1f, overwriteExistingContent);
+            var tankActive = CreateIronwallActiveSkill(overwriteExistingContent);
             var tankUltimateSkill = CreateBuffSkill("skill_tank_ultimate_ironoath", "Iron Oath", SkillSlotType.Ultimate, SkillTargetType.AllAllies, 6f, 6f, 1f, 0f, StatusEffectType.DefenseModifier, 8f, 2f, overwriteExistingContent, out var tankUltimateExisted);
 
             var tank = CreateHero(
@@ -2722,6 +2722,53 @@ namespace Fight.Editor
             return skill;
         }
 
+        private static SkillData CreateIronwallActiveSkill(bool overwriteExistingContent)
+        {
+            var skill = CreateSkill(
+                "skill_tank_active_shieldbash",
+                "Bulwark Bond",
+                SkillSlotType.ActiveSkill,
+                SkillType.Buff,
+                SkillTargetType.ThreatenedAlly,
+                4.5f,
+                0f,
+                0f,
+                8f,
+                1,
+                overwriteExistingContent,
+                out var existedBefore);
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.description = "Stage-01 demo skill: short-area damage share protection for nearby allies.";
+            skill.targetType = SkillTargetType.ThreatenedAlly;
+            skill.fallbackTargetType = SkillTargetType.None;
+            skill.targetPrioritySearchRadius = 6f;
+            skill.targetPriorityRequiredUnitCount = 1;
+            skill.castRange = 4.5f;
+            skill.areaRadius = 0f;
+            skill.cooldownSeconds = 8f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+
+            var statusEffect = AddApplyStatusEffectsEffect(skill);
+            statusEffect.targetMode = SkillEffectTargetMode.OtherAlliesInRadiusAroundCaster;
+            statusEffect.radiusOverride = 4.5f;
+            statusEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.DamageShare,
+                durationSeconds = 3.5f,
+                magnitude = 0.35f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
         private static void EnsureBasicAttackStatusList(BasicAttackData basicAttack)
         {
             if (basicAttack != null && basicAttack.onHitStatusEffects == null)
@@ -2837,6 +2884,7 @@ namespace Fight.Editor
             {
                 "skill_bladesman_active_rendingslash" => "Rending Slash",
                 "skill_bladesman_ultimate_flyingswallowsever" => "Flying Swallow Sever",
+                "skill_tank_active_shieldbash" => "Shield Bash",
                 "skill_tank_ultimate_ironoath" => "Ground Lock",
                 _ => null,
             };
