@@ -187,6 +187,19 @@ namespace Fight.Editor
                 overwriteExistingContent,
                 HeroTag.Melee, HeroTag.Control, HeroTag.Buff);
 
+            var shieldwardenActive = CreateShieldwardenActiveSkill(overwriteExistingContent);
+            var shieldwardenUltimateSkill = CreateShieldwardenUltimateSkill(overwriteExistingContent, out var shieldwardenUltimateExisted);
+
+            var shieldwarden = CreateHero(
+                "tank_002_shieldwarden",
+                "Shieldwarden",
+                HeroClass.Tank,
+                560f, 24f, 34f, 1f / 1.05f, 3.6f, 0.05f, 1.5f, 1.8f,
+                shieldwardenActive,
+                ConfigureShieldwardenUltimate(shieldwardenUltimateSkill, overwriteExistingContent, shieldwardenUltimateExisted),
+                overwriteExistingContent,
+                HeroTag.Melee, HeroTag.Control, HeroTag.Buff);
+
             var supportActive = CreateSupportActiveSkill(overwriteExistingContent);
             var supportUltimateSkill = CreateSupportUltimateSkill(overwriteExistingContent, out var supportUltimateExisted);
 
@@ -232,7 +245,7 @@ namespace Fight.Editor
                 HeroTag.Ranged, HeroTag.SustainedDamage, HeroTag.AreaDamage);
             ConfigureRiflemanBasicAttack(rifleman, overwriteExistingContent, riflemanHeroExisted);
 
-            CreateHeroCatalog(warrior, mage, frostmage, assassin, tidefin, tank, support, marksman, rifleman);
+            CreateHeroCatalog(warrior, mage, frostmage, assassin, tidefin, tank, shieldwarden, support, marksman, rifleman);
 
             var battleInput = CreateBattleInput(
                 "Stage01DemoBattleInput",
@@ -536,6 +549,8 @@ namespace Fight.Editor
             skill.slotType = slotType;
             skill.skillType = skillType;
             skill.targetType = targetType;
+            skill.preferredEnemyHeroClass = HeroClass.Assassin;
+            skill.fallbackTargetType = SkillTargetType.NearestEnemy;
             skill.castRange = castRange;
             skill.areaRadius = areaRadius;
             skill.cooldownSeconds = slotType == SkillSlotType.Ultimate ? 0f : cooldownSeconds;
@@ -1512,6 +1527,7 @@ namespace Fight.Editor
             condition.healthPercentThreshold = 1f;
             condition.durationSeconds = 0f;
             condition.highValueTargetType = HighValueTargetType.None;
+            condition.heroClassFilter = HeroClass.Assassin;
             condition.requireTargetInCastRange = true;
         }
 
@@ -1716,6 +1732,154 @@ namespace Fight.Editor
             skill.ultimateDecision.fallback.fallbackType = UltimateFallbackType.LowerPrimaryThreshold;
             skill.ultimateDecision.fallback.triggerAfterSeconds = 40f;
             skill.ultimateDecision.fallback.overrideHealthPercentThreshold = 1f;
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateShieldwardenActiveSkill(bool overwriteExistingContent)
+        {
+            var skill = CreateSkill(
+                "skill_shieldwarden_active_wardenscall",
+                "Warden's Call",
+                SkillSlotType.ActiveSkill,
+                SkillType.Taunt,
+                SkillTargetType.PriorityEnemyHeroClass,
+                8f,
+                0f,
+                0f,
+                8f,
+                1,
+                overwriteExistingContent,
+                out var existedBefore);
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.targetType = SkillTargetType.PriorityEnemyHeroClass;
+            skill.preferredEnemyHeroClass = HeroClass.Assassin;
+            skill.fallbackTargetType = SkillTargetType.NearestEnemy;
+            skill.castRange = 8f;
+            skill.areaRadius = 0f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+            var statusEffect = AddApplyStatusEffectsEffect(skill);
+            statusEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.Taunt,
+                durationSeconds = 1.5f,
+                magnitude = 1f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateShieldwardenUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
+        {
+            var skill = CreateSkill(
+                "skill_shieldwarden_ultimate_lastbastion",
+                "Last Bastion",
+                SkillSlotType.Ultimate,
+                SkillType.Taunt,
+                SkillTargetType.AllEnemies,
+                0f,
+                0f,
+                0f,
+                0f,
+                1,
+                overwriteExistingContent,
+                out existedBefore);
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.skillType = SkillType.Taunt;
+            skill.targetType = SkillTargetType.AllEnemies;
+            skill.castRange = 0f;
+            skill.areaRadius = 0f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+
+            var tauntEffect = AddApplyStatusEffectsEffect(skill);
+            tauntEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.Taunt,
+                durationSeconds = 3f,
+                magnitude = 1f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
+            var selfBuffEffect = AddApplyStatusEffectsEffect(skill);
+            selfBuffEffect.targetMode = SkillEffectTargetMode.Caster;
+            selfBuffEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.DefenseModifier,
+                durationSeconds = 4f,
+                magnitude = 2.5f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData ConfigureShieldwardenUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.skillType = SkillType.Taunt;
+            skill.targetType = SkillTargetType.AllEnemies;
+            skill.castRange = 0f;
+            skill.areaRadius = 0f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+
+            var tauntEffect = AddApplyStatusEffectsEffect(skill);
+            tauntEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.Taunt,
+                durationSeconds = 3f,
+                magnitude = 1f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
+            var selfBuffEffect = AddApplyStatusEffectsEffect(skill);
+            selfBuffEffect.targetMode = SkillEffectTargetMode.Caster;
+            selfBuffEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.DefenseModifier,
+                durationSeconds = 4f,
+                magnitude = 2.5f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
+            ResetUltimateDecision(skill);
+            skill.ultimateDecision.targetingType = UltimateTargetingType.Self;
+            skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;
+            skill.ultimateDecision.primaryCondition.searchRadius = 6f;
+            skill.ultimateDecision.primaryCondition.requiredUnitCount = 3;
+            skill.ultimateDecision.secondaryCondition.conditionType = UltimateConditionType.EnemyHeroClassInRange;
+            skill.ultimateDecision.secondaryCondition.searchRadius = 6f;
+            skill.ultimateDecision.secondaryCondition.requiredUnitCount = 1;
+            skill.ultimateDecision.secondaryCondition.heroClassFilter = HeroClass.Assassin;
+            skill.ultimateDecision.combineMode = UltimateConditionCombineMode.PrimaryOnly;
+            skill.ultimateDecision.fallback.fallbackType = UltimateFallbackType.LowerPrimaryThreshold;
+            skill.ultimateDecision.fallback.triggerAfterSeconds = 45f;
+            skill.ultimateDecision.fallback.overrideRequiredUnitCount = 2;
             EditorUtility.SetDirty(skill);
             return skill;
         }
@@ -2121,6 +2285,8 @@ namespace Fight.Editor
                 "skill_frostmage_ultimate_blizzard" => "mage_002_frostmage",
                 "skill_tidefin_active_tidalpounce" => "assassin_002_tidefin",
                 "skill_tidefin_ultimate_ruintide" => "assassin_002_tidefin",
+                "skill_shieldwarden_active_wardenscall" => "tank_002_shieldwarden",
+                "skill_shieldwarden_ultimate_lastbastion" => "tank_002_shieldwarden",
                 "skill_rifleman_active_burstfire" => "marksman_002_rifleman",
                 "skill_rifleman_ultimate_fraggrenade" => "marksman_002_rifleman",
                 _ => null,

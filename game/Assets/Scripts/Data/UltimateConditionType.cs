@@ -10,5 +10,6 @@ namespace Fight.Data
         SelfLowHealth = 5,
         TargetIsHighValue = 6,
         InCombatDuration = 7,
+        EnemyHeroClassInRange = 8,
     }
 }

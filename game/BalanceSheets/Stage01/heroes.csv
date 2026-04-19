@@ -1,11 +1,13 @@
 ﻿#说明,唯一且稳定的英雄ID，用来定位资产。,显示名，主要用于人工识别。,只读说明列，帮助识别英雄职业。,基础最大生命值。,基础攻击力。,基础防御力。,基础攻速。,基础移动速度。,0 到 1 之间的小数，例如 0.25 = 25%。,暴击伤害倍率，例如 1.5。,基础攻击距离。,普攻伤害或治疗倍率。,0 表示沿用基础攻击距离。,使用投射物时的飞行速度。
 heroId|英雄ID,displayName|英雄名,heroClass|职业,maxHealth|最大生命,attackPower|攻击力,defense|防御力,attackSpeed|攻速,moveSpeed|移速,criticalChance|暴击率,criticalDamageMultiplier|暴击伤害,attackRange|攻击距离,basicAttackDamageMultiplier|普攻倍率,basicAttackRangeOverride|普攻射程覆盖,basicAttackProjectileSpeed|普攻投射物速度
 #表用途,只展示英雄基础属性与普攻数值；非数值配置不在这张表里维护，空白单元格导入时会跳过。
-assassin_001_shadowstep,Shadowstep,Assassin|刺客,290,52,8,1.2,5.4,0.2,1.8,1.3,1,1.3,0
-mage_001_firemage,FIREMAGE,Mage|法师,300,48,10,0.8,3.8,0.08,1.5,5.8,1,5.8,14
-mage_002_frostmage,Frostmage,Mage|法师,310,42,10,0.7692308,3.7,0.08,1.5,5.8,1,5.8,14
-marksman_001_longshot,Longshot,Marksman|射手,310,34,12,1.351351,4.1,0.22,1.9,6,1,6,16
-marksman_002_rifleman,Rifleman,Marksman|射手,280,40,6,0.6993007,3.2,0.18,1.75,6.2,1.15,6.2,18
-support_001_sunpriest,Sunpriest,Support|辅助,320,22,12,0.9,4,0.05,1.5,5.2,1,5.2,14
+assassin_001_shadowstep,Shadowstep,Assassin|刺客,290,70,8,1.2,5.4,0.2,1.8,1.3,1,1.3,0
+assassin_002_tidefin,Tidefin,Assassin|刺客,320,44,12,1.111111,5,0.12,1.6,1.3,1,1.3,0
+mage_001_firemage,FIREMAGE,Mage|法师,300,48,10,0.8,3.8,0.08,1.5,8.7,1,8.7,14
+mage_002_frostmage,Frostmage,Mage|法师,310,42,10,0.7692308,3.7,0.08,1.5,8.7,1,8.7,14
+marksman_001_longshot,Longshot,Marksman|射手,310,34,12,1.351351,4.1,0.22,1.9,9,1,9,16
+marksman_002_rifleman,Rifleman,Marksman|射手,280,40,6,0.6993007,3.2,0.18,1.75,9.3,1.15,9.3,18
+support_001_sunpriest,Sunpriest,Support|辅助,320,22,12,0.9,4,0.05,1.5,7.8,1,7.8,14
 tank_001_ironwall,Ironwall,Tank|坦克,560,28,40,0.9,3.6,0.05,1.5,1.8,1,1.8,0
+tank_002_shieldwarden,Shieldwarden,Tank|坦克,560,24,34,0.952381,3.6,0.05,1.5,1.8,1,1.8,0
 warrior_001_skybreaker,Skybreaker,Warrior|战士,420,38,24,1.1,4.2,0.15,1.6,1.7,1,1.7,0
