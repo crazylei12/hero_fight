@@ -12,16 +12,28 @@ namespace Fight.Editor
         private const string PrefabsRootFolder = "Assets/Prefabs/VFX";
         private const string SkillPrefabsFolder = PrefabsRootFolder + "/Skills";
         private const string SharedPrefabsFolder = PrefabsRootFolder + "/Shared";
+        private const string GeneratedArtFolder = "Assets/Art/VFX/Generated";
         private const string BuilderScriptAssetPath = "Assets/Scripts/Editor/WindchimeVfxPrefabBuilder.cs";
+        private const string SoftCircleSpritePath = GeneratedArtFolder + "/vfx_soft_circle.png";
         private const string EchoCanopyGuardPrefabPath = SharedPrefabsFolder + "/WindchimeEchoCanopyGuard.prefab";
         private const string EchoCanopyBurstPrefabPath = SkillPrefabsFolder + "/WindchimeEchoCanopyBurst.prefab";
         private const string WindchimeActiveSkillAssetPath = "Assets/Data/Stage01Demo/Skills/support_002_windchime/Echo Canopy.asset";
         private const string ShieldWindSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Shields/Shield_wind.prefab";
         private const string HitWindSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Range_attack/Hit_wind.prefab";
-        private const float EchoCanopyGuardSourceScale = 0.13f;
-        private const float EchoCanopyBurstSourceScale = 0.24f;
+        private const float EchoCanopyGuardSourceScale = 0.18f;
+        private const float EchoCanopyBurstSourceScale = 0.28f;
         private static readonly Quaternion TopDownRotation = Quaternion.Euler(90f, 0f, 0f);
-        private static readonly Vector3 ReactiveGuardLocalOffset = new Vector3(0f, 0.7f, 0f);
+        private static readonly Vector3 ReactiveGuardLocalOffset = new Vector3(0f, 0.58f, 0f);
+        private static readonly Color GuardHaloBackColor = new Color(0.72f, 0.92f, 1f, 0.18f);
+        private static readonly Color GuardHaloCoreColor = new Color(0.94f, 1f, 1f, 0.22f);
+        private static readonly Color GuardWakeColor = new Color(0.82f, 0.95f, 1f, 0.16f);
+        private static readonly Color GuardHighlightColor = new Color(0.98f, 1f, 1f, 0.14f);
+        private static readonly Color GuardWindStartMinColor = new Color(0.68f, 0.90f, 1f, 0.18f);
+        private static readonly Color GuardWindStartMaxColor = new Color(0.98f, 1f, 1f, 0.42f);
+        private static readonly Color GuardRingStartMinColor = new Color(0.70f, 0.92f, 1f, 0.26f);
+        private static readonly Color GuardRingStartMaxColor = new Color(0.98f, 1f, 1f, 0.58f);
+        private static readonly Color BurstStartMinColor = new Color(0.72f, 0.90f, 1f, 0.24f);
+        private static readonly Color BurstStartMaxColor = new Color(1f, 1f, 1f, 0.7f);
         private static bool autoBuildScheduled;
 
         [InitializeOnLoadMethod]
@@ -86,6 +98,7 @@ namespace Fight.Editor
 
             return GetLatestTimestampUtc(
                     BuilderScriptAssetPath,
+                    SoftCircleSpritePath,
                     ShieldWindSourcePrefabPath,
                     HitWindSourcePrefabPath)
                 > GetLatestTimestampUtc(
@@ -111,17 +124,68 @@ namespace Fight.Editor
 
         private static GameObject CreateEchoCanopyGuardRoot()
         {
+            var softCircleSprite = EnsureSoftCircleSprite();
             var shieldWindPrefab = LoadRequiredAsset<GameObject>(ShieldWindSourcePrefabPath);
 
             var root = new GameObject("WindchimeEchoCanopyGuard");
             root.AddComponent<SortingGroup>();
 
+            CreateSprite(
+                root.transform,
+                "RearVeil",
+                softCircleSprite,
+                GuardHaloBackColor,
+                0,
+                new Vector3(0f, -0.05f, 0f),
+                new Vector3(0.92f, 0.72f, 1f));
+            CreateSprite(
+                root.transform,
+                "CoreVeil",
+                softCircleSprite,
+                GuardHaloCoreColor,
+                2,
+                new Vector3(0f, 0.02f, 0f),
+                new Vector3(0.64f, 0.52f, 1f));
+
+            var leftWake = CreateSprite(
+                root.transform,
+                "LeftWake",
+                softCircleSprite,
+                GuardWakeColor,
+                1,
+                new Vector3(-0.24f, -0.03f, 0f),
+                new Vector3(0.22f, 0.46f, 1f));
+            leftWake.transform.localRotation = Quaternion.Euler(0f, 0f, 18f);
+
+            var rightWake = CreateSprite(
+                root.transform,
+                "RightWake",
+                softCircleSprite,
+                GuardWakeColor,
+                1,
+                new Vector3(0.24f, -0.03f, 0f),
+                new Vector3(0.22f, 0.46f, 1f));
+            rightWake.transform.localRotation = Quaternion.Euler(0f, 0f, -18f);
+
+            CreateSprite(
+                root.transform,
+                "UpperHighlight",
+                softCircleSprite,
+                GuardHighlightColor,
+                4,
+                new Vector3(0f, 0.14f, 0f),
+                new Vector3(0.38f, 0.22f, 1f));
+
             var shieldWind = InstantiateNestedPrefab(shieldWindPrefab, root.transform, "ShieldWind");
-            shieldWind.transform.localPosition = new Vector3(0f, 0.04f, 0f);
+            shieldWind.transform.localPosition = new Vector3(0f, -0.02f, 0f);
             shieldWind.transform.localScale = Vector3.one * EchoCanopyGuardSourceScale;
             shieldWind.transform.localRotation = TopDownRotation;
+            DisableChild(shieldWind.transform, "shield_AB");
+            DisableChild(shieldWind.transform, "shield_add");
+            DisableChild(shieldWind.transform, "leaves");
             ConfigureParticleSystems(shieldWind, loop: true, prewarm: true);
-            OffsetRendererOrders(shieldWind, 12);
+            RetintGuardParticleSystems(shieldWind);
+            OffsetRendererOrders(shieldWind, 8);
 
             return root;
         }
@@ -137,6 +201,7 @@ namespace Fight.Editor
             windBurst.transform.localPosition = new Vector3(0f, 0.02f, 0f);
             windBurst.transform.localScale = Vector3.one * EchoCanopyBurstSourceScale;
             ConfigureParticleSystems(windBurst, loop: false, prewarm: false);
+            RetintBurstParticleSystems(windBurst);
             OffsetRendererOrders(windBurst, 18);
 
             return root;
@@ -197,6 +262,105 @@ namespace Fight.Editor
                 main.prewarm = loop && prewarm;
                 main.scalingMode = ParticleSystemScalingMode.Hierarchy;
             }
+        }
+
+        private static void RetintGuardParticleSystems(GameObject root)
+        {
+            if (root == null)
+            {
+                return;
+            }
+
+            var particleSystems = root.GetComponentsInChildren<ParticleSystem>(true);
+            for (var i = 0; i < particleSystems.Length; i++)
+            {
+                var particleSystem = particleSystems[i];
+                if (particleSystem == null)
+                {
+                    continue;
+                }
+
+                var particleName = particleSystem.gameObject.name;
+                var main = particleSystem.main;
+                switch (particleName)
+                {
+                    case "circle":
+                    case "stroke":
+                        main.startColor = new ParticleSystem.MinMaxGradient(GuardRingStartMinColor, GuardRingStartMaxColor);
+                        ApplyLifetimeGradient(
+                            particleSystem,
+                            new Color(1f, 1f, 1f, 0f),
+                            new Color(0.90f, 0.98f, 1f, 0.34f),
+                            new Color(0.66f, 0.90f, 1f, 0f));
+                        break;
+                    default:
+                        main.startColor = new ParticleSystem.MinMaxGradient(GuardWindStartMinColor, GuardWindStartMaxColor);
+                        ApplyLifetimeGradient(
+                            particleSystem,
+                            new Color(1f, 1f, 1f, 0f),
+                            new Color(0.86f, 0.97f, 1f, 0.28f),
+                            new Color(0.68f, 0.90f, 1f, 0f));
+                        break;
+                }
+            }
+        }
+
+        private static void RetintBurstParticleSystems(GameObject root)
+        {
+            if (root == null)
+            {
+                return;
+            }
+
+            var particleSystems = root.GetComponentsInChildren<ParticleSystem>(true);
+            for (var i = 0; i < particleSystems.Length; i++)
+            {
+                var particleSystem = particleSystems[i];
+                if (particleSystem == null)
+                {
+                    continue;
+                }
+
+                var main = particleSystem.main;
+                main.startColor = new ParticleSystem.MinMaxGradient(BurstStartMinColor, BurstStartMaxColor);
+                ApplyLifetimeGradient(
+                    particleSystem,
+                    new Color(1f, 1f, 1f, 0f),
+                    new Color(0.86f, 0.96f, 1f, 0.42f),
+                    new Color(0.64f, 0.88f, 1f, 0f));
+            }
+        }
+
+        private static void ApplyLifetimeGradient(
+            ParticleSystem particleSystem,
+            Color startColor,
+            Color midColor,
+            Color endColor)
+        {
+            if (particleSystem == null)
+            {
+                return;
+            }
+
+            var colorOverLifetime = particleSystem.colorOverLifetime;
+            colorOverLifetime.enabled = true;
+
+            var gradient = new Gradient();
+            gradient.SetKeys(
+                new[]
+                {
+                    new GradientColorKey(startColor, 0f),
+                    new GradientColorKey(midColor, 0.35f),
+                    new GradientColorKey(endColor, 1f),
+                },
+                new[]
+                {
+                    new GradientAlphaKey(startColor.a, 0f),
+                    new GradientAlphaKey(midColor.a, 0.35f),
+                    new GradientAlphaKey(endColor.a, 1f),
+                });
+
+            colorOverLifetime.color = new ParticleSystem.MinMaxGradient(gradient);
         }
 
         private static void EnsureFolder(string folderPath)
@@ -271,6 +435,116 @@ namespace Fight.Editor
             }
 
             return asset;
+        }
+
+        private static Sprite EnsureSoftCircleSprite()
+        {
+            if (!File.Exists(GetAbsoluteProjectPath(SoftCircleSpritePath)))
+            {
+                EnsureFolder(GeneratedArtFolder);
+                var texture = BuildSoftCircleTexture(128);
+                File.WriteAllBytes(GetAbsoluteProjectPath(SoftCircleSpritePath), texture.EncodeToPNG());
+                Object.DestroyImmediate(texture);
+                AssetDatabase.ImportAsset(SoftCircleSpritePath, ImportAssetOptions.ForceSynchronousImport);
+
+                if (AssetImporter.GetAtPath(SoftCircleSpritePath) is TextureImporter importer)
+                {
+                    importer.textureType = TextureImporterType.Sprite;
+                    importer.spriteImportMode = SpriteImportMode.Single;
+                    importer.alphaIsTransparency = true;
+                    importer.mipmapEnabled = false;
+                    importer.wrapMode = TextureWrapMode.Clamp;
+                    importer.filterMode = FilterMode.Bilinear;
+                    importer.SaveAndReimport();
+                }
+            }
+
+            return LoadRequiredAsset<Sprite>(SoftCircleSpritePath);
+        }
+
+        private static Texture2D BuildSoftCircleTexture(int size)
+        {
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false)
+            {
+                filterMode = FilterMode.Bilinear,
+                wrapMode = TextureWrapMode.Clamp,
+            };
+
+            var pixels = new Color[size * size];
+            var center = (size - 1) * 0.5f;
+            var radius = size * 0.5f;
+            for (var y = 0; y < size; y++)
+            {
+                for (var x = 0; x < size; x++)
+                {
+                    var dx = x - center;
+                    var dy = y - center;
+                    var distance = Mathf.Sqrt((dx * dx) + (dy * dy));
+                    var alpha = distance <= radius
+                        ? 1f - Mathf.Clamp01((distance - (radius * 0.62f)) / Mathf.Max(1f, radius * 0.38f))
+                        : 0f;
+                    alpha *= alpha;
+                    pixels[(y * size) + x] = new Color(1f, 1f, 1f, alpha);
+                }
+            }
+
+            texture.SetPixels(pixels);
+            texture.Apply();
+            return texture;
+        }
+
+        private static SpriteRenderer CreateSprite(
+            Transform parent,
+            string name,
+            Sprite sprite,
+            Color color,
+            int sortingOrder,
+            Vector3 localPosition,
+            Vector3 localScale)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = localPosition;
+            go.transform.localScale = localScale;
+
+            var renderer = go.AddComponent<SpriteRenderer>();
+            renderer.sprite = sprite;
+            renderer.color = color;
+            renderer.sortingOrder = sortingOrder;
+            return renderer;
+        }
+
+        private static void DisableChild(Transform root, string childName)
+        {
+            var child = FindChildRecursive(root, childName);
+            if (child != null)
+            {
+                child.gameObject.SetActive(false);
+            }
+        }
+
+        private static Transform FindChildRecursive(Transform root, string childName)
+        {
+            if (root == null || string.IsNullOrWhiteSpace(childName))
+            {
+                return null;
+            }
+
+            if (string.Equals(root.name, childName, System.StringComparison.Ordinal))
+            {
+                return root;
+            }
+
+            for (var i = 0; i < root.childCount; i++)
+            {
+                var result = FindChildRecursive(root.GetChild(i), childName);
+                if (result != null)
+                {
+                    return result;
+                }
+            }
+
+            return null;
         }
 
         private static string GetAbsoluteProjectPath(string assetPath)
