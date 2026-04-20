@@ -138,6 +138,7 @@ namespace Fight.UI
         [SerializeField] private string arenaBackgroundProjectRelativePath = "Assets/Resources/Battle/jjc_background.png";
 
         private BattleManager battleManager;
+        private Camera battleCamera;
         private readonly Dictionary<string, HeroViewState> heroViews = new Dictionary<string, HeroViewState>();
         private readonly Dictionary<string, HeroBattleAnimationDriver> heroAnimationDrivers = new Dictionary<string, HeroBattleAnimationDriver>();
         private readonly Dictionary<string, ProjectileViewState> projectileViews = new Dictionary<string, ProjectileViewState>();
@@ -331,6 +332,8 @@ namespace Fight.UI
 
         protected virtual void LateUpdate()
         {
+            ApplyArenaCameraLayout();
+
             var context = battleManager.Context;
             if (context == null)
             {
@@ -1703,21 +1706,21 @@ namespace Fight.UI
 
         private void EnsureArena()
         {
-            var camera = FindFirstObjectByType<Camera>();
-            if (camera == null)
+            battleCamera = FindFirstObjectByType<Camera>();
+            if (battleCamera == null)
             {
-                camera = new GameObject("BattleCamera").AddComponent<Camera>();
+                battleCamera = new GameObject("BattleCamera").AddComponent<Camera>();
             }
 
             var arenaBackground = TryLoadArenaBackgroundSprite();
-            camera.orthographic = true;
-            camera.orthographicSize = Stage01ArenaSpec.CameraOrthographicSize;
-            camera.transform.position = new Vector3(0f, 0f, -10f);
-            camera.transform.rotation = Quaternion.identity;
-            camera.clearFlags = CameraClearFlags.SolidColor;
-            camera.backgroundColor = arenaBackground != null
+            battleCamera.orthographic = true;
+            battleCamera.transform.position = new Vector3(0f, 0f, -10f);
+            battleCamera.transform.rotation = Quaternion.identity;
+            battleCamera.clearFlags = CameraClearFlags.SolidColor;
+            battleCamera.backgroundColor = arenaBackground != null
                 ? new Color(0.08f, 0.1f, 0.14f)
                 : new Color(0.39f, 0.67f, 0.95f);
+            ApplyArenaCameraLayout();
 
             if (GameObject.Find(ArenaRootName) != null)
             {
@@ -1742,6 +1745,31 @@ namespace Fight.UI
                 MakeSprite("Dust", arenaRoot, circleSprite, new Color(0.8f, 0.59f, 0.35f, 0.26f), -397, new Vector3(0f, -0.25f, 0f), new Vector3(Stage01ArenaSpec.DustWidthWorldUnits, Stage01ArenaSpec.DustHeightWorldUnits, 1f));
                 MakeSprite("Ring", arenaRoot, circleSprite, new Color(0.76f, 0.55f, 0.33f, 0.18f), -396, new Vector3(0f, -0.15f, 0f), new Vector3(Stage01ArenaSpec.RingWidthWorldUnits, Stage01ArenaSpec.RingHeightWorldUnits, 1f));
             }
+        }
+
+        private void ApplyArenaCameraLayout()
+        {
+            if (battleCamera == null)
+            {
+                battleCamera = FindFirstObjectByType<Camera>();
+            }
+
+            if (battleCamera == null)
+            {
+                return;
+            }
+
+            var viewportRect = new Rect(0f, 0f, 1f, 1f);
+            var orthographicSize = Stage01ArenaSpec.CameraOrthographicSize;
+            if (GetComponent<BattleSideHeroSidebarHud>() != null
+                && BattleScreenLayout.TryGetMetrics(out var layout))
+            {
+                viewportRect = layout.BattleViewportNormalized;
+                orthographicSize = BattleScreenLayout.GetRequiredOrthographicSize(layout.BattleViewportAspect);
+            }
+
+            battleCamera.rect = viewportRect;
+            battleCamera.orthographicSize = orthographicSize;
         }
 
         private Sprite TryLoadArenaBackgroundSprite()
