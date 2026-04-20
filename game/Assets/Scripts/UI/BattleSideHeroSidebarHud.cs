@@ -13,6 +13,8 @@ namespace Fight.UI
         private const int TeamSize = BattleInputConfig.DefaultTeamSize;
         private const float DesignCardWidth = 139f;
         private const float DesignCardHeight = 88f;
+        private const float PortraitVisibleHeightRatio = 0.54f;
+        private const float PortraitVerticalPlacementBias = 0.15f;
 
         [SerializeField] private float sideMargin = 12f;
         [SerializeField] private float bottomMargin = 12f;
@@ -317,12 +319,37 @@ namespace Fight.UI
             GUI.color = Color.white;
             var texture = sprite.texture;
             var textureRect = sprite.textureRect;
+            var visibleHeight = textureRect.height * PortraitVisibleHeightRatio;
+            if (visibleHeight <= Mathf.Epsilon)
+            {
+                visibleHeight = textureRect.height;
+            }
+
             var texCoords = new Rect(
                 textureRect.x / texture.width,
-                textureRect.y / texture.height,
+                (textureRect.y + textureRect.height - visibleHeight) / texture.height,
                 textureRect.width / texture.width,
-                textureRect.height / texture.height);
-            GUI.DrawTextureWithTexCoords(rect, texture, texCoords, true);
+                visibleHeight / texture.height);
+
+            var croppedAspect = textureRect.width / visibleHeight;
+            var drawWidth = rect.height * croppedAspect;
+            var drawHeight = rect.height;
+            if (drawWidth < rect.width)
+            {
+                drawWidth = rect.width;
+                drawHeight = rect.width / croppedAspect;
+            }
+
+            var drawX = rect.x + ((rect.width - drawWidth) * 0.5f);
+            var drawY = rect.y + ((rect.height - drawHeight) * PortraitVerticalPlacementBias);
+
+            GUI.BeginGroup(rect);
+            GUI.DrawTextureWithTexCoords(
+                new Rect(drawX - rect.x, drawY - rect.y, drawWidth, drawHeight),
+                texture,
+                texCoords,
+                true);
+            GUI.EndGroup();
             GUI.color = previousColor;
         }
 
