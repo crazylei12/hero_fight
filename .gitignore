@@ -70,6 +70,11 @@ Thumbs.db
 
 !/game/Assets/Art.meta
 !/game/Assets/Art/
+!/game/Assets/Art/UI.meta
+!/game/Assets/Art/UI/
+!/game/Assets/Art/UI/Mockups.meta
+!/game/Assets/Art/UI/Mockups/
+!/game/Assets/Art/UI/Mockups/**
 !/game/Assets/Art/VFX.meta
 !/game/Assets/Art/VFX/
 !/game/Assets/Art/VFX/Generated.meta
