@@ -15,7 +15,7 @@ ULTIMATE_ICONS = ROOT / "game/Assets/UltimateCleanGUIPack/Common/Sprites/Icons"
 AVATAR = ROOT / "game/Assets/FantasyWorkshop/AvatarMaker/Images"
 
 BASE_WIDTH = 154
-BASE_HEIGHT = 94
+BASE_HEIGHT = 88
 SCALE = 5
 
 CARD_WIDTH = BASE_WIDTH * SCALE
@@ -370,7 +370,7 @@ def make_preview(card: Image.Image) -> Image.Image:
     return preview
 
 
-def generate(prefix: str = "side_hero_sidebar_mockup_v4") -> tuple[Path, Path]:
+def generate(prefix: str = "side_hero_sidebar_mockup_v5") -> tuple[Path, Path]:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
     card = Image.new("RGBA", (CARD_WIDTH, CARD_HEIGHT), (0, 0, 0, 0))
@@ -405,7 +405,7 @@ def generate(prefix: str = "side_hero_sidebar_mockup_v4") -> tuple[Path, Path]:
     draw.rectangle(rect(0, 23, 28, 71), fill=(15, 20, 28, 220))
     for x in (0, 9.33, 18.66, 28):
         draw.line((s(x), s(23), s(x), s(46)), fill=(70, 97, 135, 170), width=max(1, s(0.28)))
-    for y in (23, 34, 46, 60, 74, 88, 94):
+    for y in (23, 34, 46, 60, 74, 88):
         draw.line((0, s(y), s(28), s(y)), fill=(70, 97, 135, 160), width=max(1, s(0.28)))
 
     centered_text(draw, rect(0, 24, 9.33, 8.5), "K", FONT_KDA, TEXT_MAIN)
@@ -464,7 +464,7 @@ def generate(prefix: str = "side_hero_sidebar_mockup_v4") -> tuple[Path, Path]:
     draw.text((shield_x + s(6.2), s(67.8)), "43", font=FONT_CORE, fill=TEXT_MAIN, stroke_width=1, stroke_fill=(0, 0, 0, 170))
 
     # Light trim at the end of the panel after removing the old bottom portrait strip.
-    draw.line((s(31), s(88), s(146), s(88)), fill=(255, 255, 255, 18), width=max(1, s(0.28)))
+    draw.line((s(31), s(88), s(146), s(88)), fill=(255, 255, 255, 12), width=max(1, s(0.2)))
 
     card_path = OUT_DIR / f"{prefix}.png"
     preview_path = OUT_DIR / f"{prefix}_preview.png"
@@ -484,7 +484,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate a static single-hero sidebar mockup.")
     parser.add_argument(
         "--prefix",
-        default="side_hero_sidebar_mockup_v4",
+        default="side_hero_sidebar_mockup_v5",
         help="Output filename prefix without extension.",
     )
     return parser.parse_args()
