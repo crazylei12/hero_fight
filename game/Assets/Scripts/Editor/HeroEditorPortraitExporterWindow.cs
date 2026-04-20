@@ -29,6 +29,7 @@ namespace Fight.Editor
     public sealed class HeroEditorPortraitExporterWindow : EditorWindow
     {
         private const string MenuPath = "Fight/Tools/HeroEditor PNG Exporter";
+        private const string DefaultHeroesFolderAssetPath = "Assets/Prefabs/Heroes";
         private const string SourceFolderPreferenceKey = "Fight.Editor.HeroEditorPortraitExporter.SourceFolder";
         private const string OutputFolderPreferenceKey = "Fight.Editor.HeroEditorPortraitExporter.OutputFolder";
         private const string FileSuffixPreferenceKey = "Fight.Editor.HeroEditorPortraitExporter.FileSuffix";
@@ -50,8 +51,13 @@ namespace Fight.Editor
         private void OnEnable()
         {
             options ??= new HeroEditorPortraitExportOptions();
-            var sourceFolderPath = EditorPrefs.GetString(SourceFolderPreferenceKey, string.Empty);
+            var sourceFolderPath = EditorPrefs.GetString(SourceFolderPreferenceKey, DefaultHeroesFolderAssetPath);
             sourceFolderAsset = LoadFolderAsset(sourceFolderPath);
+            if (sourceFolderAsset == null)
+            {
+                sourceFolderAsset = LoadFolderAsset(DefaultHeroesFolderAssetPath);
+            }
+
             options.relativeOutputFolder = EditorPrefs.GetString(OutputFolderPreferenceKey, HeroEditorPortraitExportOptions.DefaultRelativeOutputFolder);
             options.fileSuffix = EditorPrefs.GetString(FileSuffixPreferenceKey, "_idle_front");
             options.saveNextToPrefabFolder = EditorPrefs.GetBool(SaveNextToPrefabPreferenceKey, true);
@@ -107,6 +113,11 @@ namespace Fight.Editor
 
                 using (new EditorGUILayout.HorizontalScope())
                 {
+                    if (GUILayout.Button("使用默认英雄目录"))
+                    {
+                        sourceFolderAsset = LoadFolderAsset(DefaultHeroesFolderAssetPath);
+                    }
+
                     if (GUILayout.Button("使用当前选择目录"))
                     {
                         TryAssignSourceFolderFromSelection();
