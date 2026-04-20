@@ -11,14 +11,76 @@ namespace Fight.Editor
     public static class HeroPortraitSyncUtility
     {
         private const string SyncMenuPath = "Fight/Dev/Sync Hero Portraits From Prefab PNGs";
-        private const string Stage01HeroesRoot = "Assets/Data/Stage01Demo/Heroes";
         private const string PrefabHeroesRoot = "Assets/Prefabs/Heroes";
         private const string PreferredPortraitSuffix = "_idle_front";
+        private static bool autoSyncScheduled;
+        private static bool autoSyncInProgress;
+
+        [InitializeOnLoadMethod]
+        private static void ScheduleInitialAutoSync()
+        {
+            if (Application.isBatchMode)
+            {
+                return;
+            }
+
+            ScheduleAutoSync();
+        }
 
         [MenuItem(SyncMenuPath)]
         public static void SyncStage01DemoHeroPortraits()
         {
-            var heroAssetPaths = AssetDatabase.FindAssets("t:HeroDefinition", new[] { Stage01HeroesRoot })
+            SyncHeroPortraits(logSummary: true);
+        }
+
+        public static void ScheduleAutoSync()
+        {
+            if (autoSyncScheduled || autoSyncInProgress)
+            {
+                return;
+            }
+
+            autoSyncScheduled = true;
+            EditorApplication.delayCall += RunScheduledAutoSync;
+        }
+
+        public static bool CouldAffectPortraitSync(string assetPath)
+        {
+            if (string.IsNullOrWhiteSpace(assetPath))
+            {
+                return false;
+            }
+
+            var normalizedAssetPath = assetPath.Replace("\\", "/");
+            if (normalizedAssetPath.StartsWith(PrefabHeroesRoot, StringComparison.OrdinalIgnoreCase))
+            {
+                return normalizedAssetPath.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
+                    || normalizedAssetPath.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase);
+            }
+
+            if (!normalizedAssetPath.EndsWith(".asset", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            return AssetDatabase.GetMainAssetTypeAtPath(normalizedAssetPath) == typeof(HeroDefinition);
+        }
+
+        private static void RunScheduledAutoSync()
+        {
+            autoSyncScheduled = false;
+            if (EditorApplication.isCompiling || EditorApplication.isUpdating)
+            {
+                ScheduleAutoSync();
+                return;
+            }
+
+            SyncHeroPortraits(logSummary: false);
+        }
+
+        private static void SyncHeroPortraits(bool logSummary)
+        {
+            var heroAssetPaths = AssetDatabase.FindAssets("t:HeroDefinition")
                 .Select(AssetDatabase.GUIDToAssetPath)
                 .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
                 .ToList();
@@ -26,29 +88,43 @@ namespace Fight.Editor
             var updatedCount = 0;
             var missingCount = 0;
 
-            foreach (var heroAssetPath in heroAssetPaths)
+            autoSyncInProgress = true;
+            try
             {
-                var hero = AssetDatabase.LoadAssetAtPath<HeroDefinition>(heroAssetPath);
-                if (hero == null)
+                foreach (var heroAssetPath in heroAssetPaths)
                 {
-                    continue;
-                }
+                    var hero = AssetDatabase.LoadAssetAtPath<HeroDefinition>(heroAssetPath);
+                    if (hero == null)
+                    {
+                        continue;
+                    }
 
-                if (TryAssignPortraitFromPrefabFolder(hero))
-                {
-                    updatedCount++;
-                    continue;
-                }
+                    if (TryAssignPortraitFromPrefabFolder(hero))
+                    {
+                        updatedCount++;
+                        continue;
+                    }
 
-                if (hero.visualConfig == null || hero.visualConfig.portrait == null)
-                {
-                    missingCount++;
+                    if (hero.visualConfig == null || hero.visualConfig.portrait == null)
+                    {
+                        missingCount++;
+                    }
                 }
             }
+            finally
+            {
+                autoSyncInProgress = false;
+            }
 
-            AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();
-            Debug.Log($"[HeroPortraitSync] Synced {updatedCount} hero portrait reference(s); missing portraits for {missingCount} hero(es).");
+            if (updatedCount > 0)
+            {
+                AssetDatabase.SaveAssets();
+            }
+
+            if (logSummary || updatedCount > 0)
+            {
+                Debug.Log($"[HeroPortraitSync] Synced {updatedCount} hero portrait reference(s); missing portraits for {missingCount} hero(es).");
+            }
         }
 
         public static void SyncStage01DemoHeroPortraitsBatch()
@@ -224,6 +300,22 @@ namespace Fight.Editor
             importer.alphaIsTransparency = true;
             importer.mipmapEnabled = false;
             importer.SaveAndReimport();
+        }
+    }
+
+    internal sealed class HeroPortraitSyncAssetPostprocessor : AssetPostprocessor
+    {
+        private static void OnPostprocessAllAssets(
+            string[] importedAssets,
+            string[] deletedAssets,
+            string[] movedAssets,
+            string[] movedFromAssetPaths)
+        {
+            if (importedAssets.Any(HeroPortraitSyncUtility.CouldAffectPortraitSync)
+                || movedAssets.Any(HeroPortraitSyncUtility.CouldAffectPortraitSync))
+            {
+                HeroPortraitSyncUtility.ScheduleAutoSync();
+            }
         }
     }
 }
