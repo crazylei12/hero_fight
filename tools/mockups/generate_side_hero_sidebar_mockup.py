@@ -10,6 +10,7 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageOps
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT_DIR = ROOT / "game/Assets/Art/UI/Mockups"
+RUNTIME_OUT_DIR = ROOT / "game/Assets/Resources/UI/BattleHud"
 LAYERLAB = ROOT / "game/Assets/Layer Lab/GUI Pro-FantasyRPG/ResourcesData/Sprites/Component"
 ULTIMATE_ICONS = ROOT / "game/Assets/UltimateCleanGUIPack/Common/Sprites/Icons"
 AVATAR = ROOT / "game/Assets/FantasyWorkshop/AvatarMaker/Images"
@@ -533,6 +534,88 @@ def generate(prefix: str = "side_hero_sidebar_mockup_v8") -> tuple[Path, Path]:
     return card_path, preview_path
 
 
+def generate_runtime_base(prefix: str = "side_hero_sidebar_runtime_base") -> Path:
+    RUNTIME_OUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    card = Image.new("RGBA", (CARD_WIDTH, CARD_HEIGHT), (0, 0, 0, 0))
+    draw_beveled_panel(
+        card,
+        (0, 0, CARD_WIDTH - 1, CARD_HEIGHT - 1),
+        fill=(16, 19, 27, 255),
+        inner_fill=PANEL_DARK,
+        outline=FRAME_OUTLINE,
+        shadow_alpha=120,
+        bevel=s(2.2),
+    )
+
+    header = fit(load_button("Button_Rectangle_01_Convex_Red.Png"), CARD_WIDTH, s(23))
+    card.alpha_composite(header, (0, 0))
+
+    draw = ImageDraw.Draw(card)
+
+    left_tab = fit(load_button("Button_Rectangle_01_Convex_Dark.Png"), s(28), s(23))
+    card.alpha_composite(left_tab, (0, 0))
+    draw.rectangle(rect(0, 0, 28, 23), fill=(106, 48, 56, 82))
+    draw.line((s(28), s(3), s(28), s(20)), fill=(84, 19, 22, 170), width=max(1, s(0.35)))
+    draw_arrow_button(card, rect(121, 2.2, 18, 18))
+
+    draw.line((s(28), s(23), s(28), s(88)), fill=BLUE_OUTLINE, width=max(1, s(0.4)))
+    draw.line((s(29), s(62), s(139), s(62)), fill=(38, 52, 76, 200), width=max(1, s(0.35)))
+
+    draw.rectangle(rect(0, 23, 28, 71), fill=(15, 20, 28, 220))
+    for x in (0, 9.33, 18.66, 28):
+        draw.line((s(x), s(23), s(x), s(46)), fill=(70, 97, 135, 170), width=max(1, s(0.28)))
+    for y in (23, 34, 46, 60, 74, 88):
+        draw.line((0, s(y), s(28), s(y)), fill=(70, 97, 135, 160), width=max(1, s(0.28)))
+
+    sword_small = load_rotated_icon(ULTIMATE_ICONS / "Tools/Sword.png", SWORD_TINT, (s(6.0), s(3.4)), 90)
+    shield_small = load_icon(ULTIMATE_ICONS / "Shield/Shield.png", SHIELD_TINT, (s(4.8), s(4.8)))
+    heal_small = load_icon(ULTIMATE_ICONS / "Life/Health.png", HEAL_TINT, (s(4.2), s(4.2)))
+    stat_icon_center_x = s(5.8)
+    for icon, y_center_units in ((sword_small, 53.0), (shield_small, 66.5), (heal_small, 80.0)):
+        center_y = s(y_center_units)
+        icon_x = stat_icon_center_x - (icon.size[0] // 2)
+        card.alpha_composite(icon, (icon_x, center_y - (icon.size[1] // 2)))
+
+    portrait_slot = rect(33, 27, 33, 33)
+    slot_image = fit(load_button("Button_Rectangle_01_Convex_Dark.Png"), portrait_slot[2] - portrait_slot[0], portrait_slot[3] - portrait_slot[1])
+    card.alpha_composite(slot_image, (portrait_slot[0], portrait_slot[1]))
+
+    trait_rows = [
+        rect(70, 27.0, 69, 9.0),
+        rect(70, 37.5, 69, 9.0),
+        rect(70, 48.0, 69, 9.0),
+    ]
+    for trait_row in trait_rows:
+        trait_panel = fit(load_button("Button_Rectangle_01_Convex_Dark.Png"), trait_row[2] - trait_row[0], trait_row[3] - trait_row[1])
+        card.alpha_composite(trait_panel, (trait_row[0], trait_row[1]))
+
+    bottom_box = rect(29, 62, 110, 26)
+    draw_beveled_panel(
+        card,
+        bottom_box,
+        fill=(14, 18, 27, 230),
+        inner_fill=(17, 23, 34, 242),
+        outline=(44, 61, 88, 170),
+        shadow_alpha=70,
+        bevel=s(1.8),
+    )
+
+    sword_large = load_rotated_icon(ULTIMATE_ICONS / "Tools/Sword.png", SWORD_TINT, (s(7.2), s(4.0)), 90)
+    shield_large = load_icon(ULTIMATE_ICONS / "Shield/Shield.png", SHIELD_TINT, (s(5.8), s(5.8)))
+    left_stat_center_x = bottom_box[0] + ((bottom_box[2] - bottom_box[0]) // 4)
+    right_stat_center_x = bottom_box[0] + (((bottom_box[2] - bottom_box[0]) * 3) // 4)
+    core_center_y = bottom_box[1] + ((bottom_box[3] - bottom_box[1]) // 2)
+    card.alpha_composite(sword_large, (left_stat_center_x - sword_large.width - s(1.8), core_center_y - (sword_large.height // 2)))
+    card.alpha_composite(shield_large, (right_stat_center_x - shield_large.width - s(1.8), core_center_y - (shield_large.height // 2)))
+
+    draw.line((s(31), s(88), s(146), s(88)), fill=(255, 255, 255, 12), width=max(1, s(0.2)))
+
+    card_path = RUNTIME_OUT_DIR / f"{prefix}.png"
+    card.save(card_path)
+    return card_path
+
+
 def write_meta(path: Path) -> None:
     meta_path = path.with_suffix(path.suffix + ".meta")
     if meta_path.exists():
@@ -547,6 +630,16 @@ def parse_args() -> argparse.Namespace:
         default="side_hero_sidebar_mockup_v8",
         help="Output filename prefix without extension.",
     )
+    parser.add_argument(
+        "--runtime-base",
+        action="store_true",
+        help="Export the textless runtime base used by the in-game sidebar HUD.",
+    )
+    parser.add_argument(
+        "--runtime-prefix",
+        default="side_hero_sidebar_runtime_base",
+        help="Runtime base filename prefix without extension.",
+    )
     return parser.parse_args()
 
 
@@ -557,6 +650,11 @@ def main() -> None:
     write_meta(preview_path)
     print(card_path)
     print(preview_path)
+
+    if args.runtime_base:
+        runtime_base_path = generate_runtime_base(prefix=args.runtime_prefix)
+        write_meta(runtime_base_path)
+        print(runtime_base_path)
 
 
 if __name__ == "__main__":
