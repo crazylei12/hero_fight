@@ -220,8 +220,10 @@ namespace Fight.UI
                     DimTextColor);
             }
 
-            DrawShadowedLabel(ScaleRect(54f, 68f, 18f, 12f, scale, mirrorLayout), viewData.AttackText, coreValueAlignedStyle, viewData.AttackColor);
-            DrawShadowedLabel(ScaleRect(107f, 68f, 18f, 12f, scale, mirrorLayout), viewData.DefenseText, coreValueAlignedStyle, viewData.DefenseColor);
+            var attackValueX = mirrorLayout ? 54f : 58f;
+            var defenseValueX = mirrorLayout ? 107f : 111f;
+            DrawShadowedLabel(ScaleRect(attackValueX, 68f, 18f, 12f, scale, mirrorLayout), viewData.AttackText, coreValueAlignedStyle, viewData.AttackColor);
+            DrawShadowedLabel(ScaleRect(defenseValueX, 68f, 18f, 12f, scale, mirrorLayout), viewData.DefenseText, coreValueAlignedStyle, viewData.DefenseColor);
 
             if (viewData.IsDead)
             {
