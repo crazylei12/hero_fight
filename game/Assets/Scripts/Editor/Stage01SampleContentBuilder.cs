@@ -40,14 +40,14 @@ namespace Fight.Editor
         private const string MonkActiveSkillAssetPath = SkillsRootFolder + "/support_003_monk/Renewing Pulse.asset";
         private const string MonkUltimateSkillAssetPath = SkillsRootFolder + "/support_003_monk/Guardian Mantra.asset";
         private const string AssassinPrefabPath = "Assets/Prefabs/Heroes/assassin_001_shadowstep/Shadowstep.prefab";
-        private const string TidefinPrefabPath = "Assets/FantasyMonsters/Monsters/Insects/PurpleScarab/PurpleScarab.prefab";
+        private const string TidefinPrefabPath = "Assets/Prefabs/Heroes/assassin_002_tidefin/Tidefin.prefab";
         private const string MarksmanPrefabPath = "Assets/Prefabs/Heroes/marksman_001_longshot/Longshot.prefab";
         private const string RiflemanPrefabPath = "Assets/Prefabs/Heroes/marksman_002_rifleman/Rifleman.prefab";
         private const string SupportPrefabPath = "Assets/Prefabs/Heroes/support_001_sunpriest/Sunpriest.prefab";
         private const string WindchimePrefabPath = "Assets/Prefabs/Heroes/support_002_windchime/Windchime.prefab";
         private const string WarriorPrefabPath = "Assets/Prefabs/Heroes/warrior_001_skybreaker/Skybreaker.prefab";
         private const string BladesmanPrefabPath = "Assets/Prefabs/Heroes/warrior_002_bladesman/Bladesman.prefab";
-        private const string FireMagePrefabPath = "Assets/HeroEditor4D/heroes/FIREMAGE.prefab";
+        private const string FireMagePrefabPath = "Assets/Prefabs/Heroes/mage_001_firemage/FIREMAGE.prefab";
         private const string FrostMagePrefabPath = "Assets/Prefabs/Heroes/mage_002_frostmage/Frostmage.prefab";
         private const string TankPrefabPath = "Assets/Prefabs/Heroes/tank_001_ironwall/Ironwall.prefab";
         private const string ShieldwardenPrefabPath = "Assets/Prefabs/Heroes/tank_002_shieldwarden/Shieldwarden.prefab";
