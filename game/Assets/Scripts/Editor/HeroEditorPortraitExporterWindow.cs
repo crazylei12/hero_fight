@@ -20,6 +20,8 @@ namespace Fight.Editor
         public float paddingMultiplier = 1.12f;
         public Vector2 framingOffset = new Vector2(0f, 0.1f);
         public bool includeShadow;
+        public bool saveNextToPrefabFolder = true;
+        public bool searchRecursively = true;
         public string relativeOutputFolder = DefaultRelativeOutputFolder;
         public string fileSuffix = "_idle_front";
     }
@@ -27,10 +29,14 @@ namespace Fight.Editor
     public sealed class HeroEditorPortraitExporterWindow : EditorWindow
     {
         private const string MenuPath = "Fight/Tools/HeroEditor PNG Exporter";
+        private const string SourceFolderPreferenceKey = "Fight.Editor.HeroEditorPortraitExporter.SourceFolder";
         private const string OutputFolderPreferenceKey = "Fight.Editor.HeroEditorPortraitExporter.OutputFolder";
         private const string FileSuffixPreferenceKey = "Fight.Editor.HeroEditorPortraitExporter.FileSuffix";
+        private const string SaveNextToPrefabPreferenceKey = "Fight.Editor.HeroEditorPortraitExporter.SaveNextToPrefab";
+        private const string SearchRecursivelyPreferenceKey = "Fight.Editor.HeroEditorPortraitExporter.SearchRecursively";
 
         [SerializeField] private GameObject sourcePrefab;
+        [SerializeField] private DefaultAsset sourceFolderAsset;
         [SerializeField] private HeroEditorPortraitExportOptions options = new HeroEditorPortraitExportOptions();
 
         [MenuItem(MenuPath)]
@@ -44,8 +50,12 @@ namespace Fight.Editor
         private void OnEnable()
         {
             options ??= new HeroEditorPortraitExportOptions();
+            var sourceFolderPath = EditorPrefs.GetString(SourceFolderPreferenceKey, string.Empty);
+            sourceFolderAsset = LoadFolderAsset(sourceFolderPath);
             options.relativeOutputFolder = EditorPrefs.GetString(OutputFolderPreferenceKey, HeroEditorPortraitExportOptions.DefaultRelativeOutputFolder);
             options.fileSuffix = EditorPrefs.GetString(FileSuffixPreferenceKey, "_idle_front");
+            options.saveNextToPrefabFolder = EditorPrefs.GetBool(SaveNextToPrefabPreferenceKey, true);
+            options.searchRecursively = EditorPrefs.GetBool(SearchRecursivelyPreferenceKey, true);
         }
 
         private void OnDisable()
@@ -55,8 +65,11 @@ namespace Fight.Editor
                 return;
             }
 
+            EditorPrefs.SetString(SourceFolderPreferenceKey, GetFolderAssetPath(sourceFolderAsset) ?? string.Empty);
             EditorPrefs.SetString(OutputFolderPreferenceKey, options.relativeOutputFolder ?? HeroEditorPortraitExportOptions.DefaultRelativeOutputFolder);
             EditorPrefs.SetString(FileSuffixPreferenceKey, options.fileSuffix ?? "_idle_front");
+            EditorPrefs.SetBool(SaveNextToPrefabPreferenceKey, options.saveNextToPrefabFolder);
+            EditorPrefs.SetBool(SearchRecursivelyPreferenceKey, options.searchRecursively);
         }
 
         private void OnGUI()
@@ -64,12 +77,12 @@ namespace Fight.Editor
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("HeroEditor 正面 Idle PNG 导出", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(
-                "这个工具会把包含 Character4D 的 prefab 放进临时 prefab 场景，自动切到正面朝向、Idle 状态，并输出透明背景 PNG。",
+                "这个工具会把包含 Character4D 的 prefab 切到正面朝向和 Idle 状态，并导出透明背景 PNG。现在支持按目录批量导出，并可直接写回每个 prefab 所在文件夹。",
                 MessageType.Info);
 
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                EditorGUILayout.LabelField("源 Prefab", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField("单个 Prefab", EditorStyles.boldLabel);
                 sourcePrefab = (GameObject)EditorGUILayout.ObjectField("Prefab", sourcePrefab, typeof(GameObject), false);
 
                 using (new EditorGUILayout.HorizontalScope())
@@ -79,11 +92,29 @@ namespace Fight.Editor
                         sourcePrefab = Selection.activeObject as GameObject;
                     }
 
-                    if (GUILayout.Button("打开输出目录"))
+                    if (GUILayout.Button("打开 Prefab 所在目录"))
                     {
-                        var outputFolder = HeroEditorPortraitExporter.ResolveOutputFolderAbsolutePath(options);
-                        Directory.CreateDirectory(outputFolder);
-                        EditorUtility.RevealInFinder(outputFolder);
+                        RevealPrefabFolder(sourcePrefab);
+                    }
+                }
+            }
+
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField("批量目录", EditorStyles.boldLabel);
+                sourceFolderAsset = (DefaultAsset)EditorGUILayout.ObjectField("Folder", sourceFolderAsset, typeof(DefaultAsset), false);
+                EditorGUILayout.LabelField("资源路径", GetFolderAssetPath(sourceFolderAsset) ?? "<未指定>", EditorStyles.wordWrappedLabel);
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Button("使用当前选择目录"))
+                    {
+                        TryAssignSourceFolderFromSelection();
+                    }
+
+                    if (GUILayout.Button("打开源目录"))
+                    {
+                        RevealFolder(sourceFolderAsset);
                     }
                 }
             }
@@ -91,14 +122,24 @@ namespace Fight.Editor
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
                 EditorGUILayout.LabelField("导出设置", EditorStyles.boldLabel);
-                options.relativeOutputFolder = EditorGUILayout.TextField("相对项目根目录", options.relativeOutputFolder);
-                EditorGUILayout.LabelField("绝对路径", HeroEditorPortraitExporter.ResolveOutputFolderAbsolutePath(options), EditorStyles.wordWrappedLabel);
                 options.fileSuffix = EditorGUILayout.TextField("文件后缀", options.fileSuffix);
                 options.width = EditorGUILayout.IntField("宽度", options.width);
                 options.height = EditorGUILayout.IntField("高度", options.height);
                 options.paddingMultiplier = EditorGUILayout.Slider("边缘留白", options.paddingMultiplier, 1.0f, 1.6f);
                 options.framingOffset = EditorGUILayout.Vector2Field("镜头偏移", options.framingOffset);
                 options.includeShadow = EditorGUILayout.Toggle("包含阴影", options.includeShadow);
+                options.searchRecursively = EditorGUILayout.Toggle("递归子目录", options.searchRecursively);
+                options.saveNextToPrefabFolder = EditorGUILayout.Toggle("保存到 prefab 同目录", options.saveNextToPrefabFolder);
+
+                if (!options.saveNextToPrefabFolder)
+                {
+                    options.relativeOutputFolder = EditorGUILayout.TextField("相对项目根目录", options.relativeOutputFolder);
+                    EditorGUILayout.LabelField("绝对路径", HeroEditorPortraitExporter.ResolveOutputFolderAbsolutePath(options), EditorStyles.wordWrappedLabel);
+                }
+                else
+                {
+                    EditorGUILayout.HelpBox("启用后，每个 prefab 会把 PNG 直接写到它自己所在的资源文件夹里。", MessageType.None);
+                }
             }
 
             EditorGUILayout.Space();
@@ -114,11 +155,16 @@ namespace Fight.Editor
                 {
                     ExportSelectedPrefabs();
                 }
+
+                if (GUILayout.Button("导出目录内所有 Prefab", GUILayout.Height(36f)))
+                {
+                    ExportFolderPrefabs();
+                }
             }
 
             EditorGUILayout.Space();
             EditorGUILayout.HelpBox(
-                "批量导出会扫描当前 Project 里选中的 prefab，并只处理包含 Character4D 的资源。默认文件名格式是 <PrefabName>_idle_front.png。",
+                "目录批量导出会扫描指定文件夹中的 prefab，并只处理包含 Character4D 的资源。默认文件名格式是 <PrefabName>_idle_front.png。",
                 MessageType.None);
         }
 
@@ -150,8 +196,24 @@ namespace Fight.Editor
             RunWithDialog(() =>
             {
                 var exportedPaths = HeroEditorPortraitExporter.ExportPrefabs(prefabs, options).ToList();
-                Debug.Log($"[HeroEditorPortraitExporter] Exported {exportedPaths.Count} portraits to {HeroEditorPortraitExporter.ResolveOutputFolderAbsolutePath(options)}");
+                Debug.Log($"[HeroEditorPortraitExporter] Exported {exportedPaths.Count} portraits.");
             }, "批量导出完成");
+        }
+
+        private void ExportFolderPrefabs()
+        {
+            var folderAssetPath = GetFolderAssetPath(sourceFolderAsset);
+            if (string.IsNullOrWhiteSpace(folderAssetPath))
+            {
+                EditorUtility.DisplayDialog("缺少目录", "请先指定一个包含英雄 prefab 的资源目录。", "OK");
+                return;
+            }
+
+            RunWithDialog(() =>
+            {
+                var exportedPaths = HeroEditorPortraitExporter.ExportPrefabsInFolder(folderAssetPath, options).ToList();
+                Debug.Log($"[HeroEditorPortraitExporter] Exported {exportedPaths.Count} portraits from folder [{folderAssetPath}].");
+            }, "目录导出完成");
         }
 
         private void RunWithDialog(Action action, string title)
@@ -159,7 +221,7 @@ namespace Fight.Editor
             try
             {
                 action.Invoke();
-                EditorUtility.DisplayDialog(title, HeroEditorPortraitExporter.ResolveOutputFolderAbsolutePath(options), "OK");
+                EditorUtility.DisplayDialog(title, GetCompletionMessage(), "OK");
             }
             catch (Exception exception)
             {
@@ -167,11 +229,111 @@ namespace Fight.Editor
                 EditorUtility.DisplayDialog("执行失败", exception.Message, "OK");
             }
         }
+
+        private string GetCompletionMessage()
+        {
+            if (options.saveNextToPrefabFolder)
+            {
+                return "已保存到各 prefab 自己所在的文件夹。";
+            }
+
+            return HeroEditorPortraitExporter.ResolveOutputFolderAbsolutePath(options);
+        }
+
+        private static void RevealPrefabFolder(GameObject prefab)
+        {
+            if (prefab == null)
+            {
+                return;
+            }
+
+            var assetPath = AssetDatabase.GetAssetPath(prefab);
+            if (string.IsNullOrWhiteSpace(assetPath))
+            {
+                return;
+            }
+
+            var folderAssetPath = Path.GetDirectoryName(assetPath)?.Replace("\\", "/");
+            if (string.IsNullOrWhiteSpace(folderAssetPath))
+            {
+                return;
+            }
+
+            var absoluteFolderPath = HeroEditorPortraitExporter.ResolveAssetPathToAbsolutePath(folderAssetPath);
+            Directory.CreateDirectory(absoluteFolderPath);
+            EditorUtility.RevealInFinder(absoluteFolderPath);
+        }
+
+        private static void RevealFolder(DefaultAsset folderAsset)
+        {
+            var folderAssetPath = GetFolderAssetPath(folderAsset);
+            if (string.IsNullOrWhiteSpace(folderAssetPath))
+            {
+                return;
+            }
+
+            var absoluteFolderPath = HeroEditorPortraitExporter.ResolveAssetPathToAbsolutePath(folderAssetPath);
+            Directory.CreateDirectory(absoluteFolderPath);
+            EditorUtility.RevealInFinder(absoluteFolderPath);
+        }
+
+        private void TryAssignSourceFolderFromSelection()
+        {
+            var selectedFolderPath = GetSelectedFolderAssetPath();
+            if (string.IsNullOrWhiteSpace(selectedFolderPath))
+            {
+                EditorUtility.DisplayDialog("无法识别目录", "请在 Project 视图中选一个文件夹，或选中该目录下的 prefab。", "OK");
+                return;
+            }
+
+            sourceFolderAsset = LoadFolderAsset(selectedFolderPath);
+        }
+
+        private static DefaultAsset LoadFolderAsset(string folderAssetPath)
+        {
+            return string.IsNullOrWhiteSpace(folderAssetPath) || !AssetDatabase.IsValidFolder(folderAssetPath)
+                ? null
+                : AssetDatabase.LoadAssetAtPath<DefaultAsset>(folderAssetPath);
+        }
+
+        private static string GetFolderAssetPath(DefaultAsset folderAsset)
+        {
+            if (folderAsset == null)
+            {
+                return null;
+            }
+
+            var assetPath = AssetDatabase.GetAssetPath(folderAsset);
+            return AssetDatabase.IsValidFolder(assetPath) ? assetPath : null;
+        }
+
+        private static string GetSelectedFolderAssetPath()
+        {
+            var selectedAsset = Selection.activeObject;
+            if (selectedAsset == null)
+            {
+                return null;
+            }
+
+            var assetPath = AssetDatabase.GetAssetPath(selectedAsset);
+            if (string.IsNullOrWhiteSpace(assetPath))
+            {
+                return null;
+            }
+
+            if (AssetDatabase.IsValidFolder(assetPath))
+            {
+                return assetPath;
+            }
+
+            return Path.GetDirectoryName(assetPath)?.Replace("\\", "/");
+        }
     }
 
     public static class HeroEditorPortraitExporter
     {
         private const string CommandLineMethodSourceArg = "-fightPortraitSource";
+        private const string CommandLineMethodFolderArg = "-fightPortraitFolder";
         private const string CommandLineMethodOutputArg = "-fightPortraitOutput";
         private const string CommandLineWidthArg = "-fightPortraitWidth";
         private const string CommandLineHeightArg = "-fightPortraitHeight";
@@ -179,6 +341,8 @@ namespace Fight.Editor
         private const string CommandLineIncludeShadowArg = "-fightPortraitIncludeShadow";
         private const string CommandLineOffsetXArg = "-fightPortraitOffsetX";
         private const string CommandLineOffsetYArg = "-fightPortraitOffsetY";
+        private const string CommandLineRecursiveArg = "-fightPortraitRecursive";
+        private const string CommandLineSaveNextToPrefabArg = "-fightPortraitSaveNextToPrefab";
 
         public static IEnumerable<GameObject> GetSelectedPrefabAssets()
         {
@@ -186,6 +350,29 @@ namespace Fight.Editor
                 .OfType<GameObject>()
                 .Where(IsPrefabAsset)
                 .Where(ContainsCharacter4D);
+        }
+
+        public static IEnumerable<GameObject> GetPrefabAssetsInFolder(string folderAssetPath, bool recursive)
+        {
+            if (string.IsNullOrWhiteSpace(folderAssetPath) || !AssetDatabase.IsValidFolder(folderAssetPath))
+            {
+                throw new InvalidOperationException($"Folder [{folderAssetPath}] is not a valid Unity asset folder.");
+            }
+
+            var normalizedFolderPath = folderAssetPath.Replace("\\", "/").TrimEnd('/');
+            var prefabAssetPaths = AssetDatabase.FindAssets("t:Prefab", new[] { normalizedFolderPath })
+                .Select(AssetDatabase.GUIDToAssetPath)
+                .Where(assetPath => recursive || string.Equals(Path.GetDirectoryName(assetPath)?.Replace("\\", "/"), normalizedFolderPath, StringComparison.OrdinalIgnoreCase))
+                .Distinct(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var assetPath in prefabAssetPaths)
+            {
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(assetPath);
+                if (ContainsCharacter4D(prefab))
+                {
+                    yield return prefab;
+                }
+            }
         }
 
         public static IEnumerable<string> ExportPrefabs(IEnumerable<GameObject> prefabs, HeroEditorPortraitExportOptions options)
@@ -200,6 +387,18 @@ namespace Fight.Editor
 
             AssetDatabase.Refresh();
             return exportedPaths;
+        }
+
+        public static IEnumerable<string> ExportPrefabsInFolder(string folderAssetPath, HeroEditorPortraitExportOptions options)
+        {
+            var normalizedOptions = NormalizeOptions(options);
+            var prefabs = GetPrefabAssetsInFolder(folderAssetPath, normalizedOptions.searchRecursively).ToList();
+            if (prefabs.Count == 0)
+            {
+                throw new InvalidOperationException($"Folder [{folderAssetPath}] does not contain any prefab with Character4D.");
+            }
+
+            return ExportPrefabs(prefabs, normalizedOptions);
         }
 
         public static string ExportPrefab(GameObject prefab, HeroEditorPortraitExportOptions options)
@@ -221,12 +420,7 @@ namespace Fight.Editor
 
             var normalizedOptions = NormalizeOptions(options);
             var sourceAssetPath = AssetDatabase.GetAssetPath(prefab);
-            var absoluteOutputFolder = ResolveOutputFolderAbsolutePath(normalizedOptions);
-            Directory.CreateDirectory(absoluteOutputFolder);
-
-            var outputPath = Path.Combine(
-                absoluteOutputFolder,
-                $"{SanitizeFileName(prefab.name)}{normalizedOptions.fileSuffix}.png");
+            var outputPath = ResolveOutputPath(sourceAssetPath, prefab.name, normalizedOptions);
 
             ExportPrefabAtAssetPath(sourceAssetPath, outputPath, normalizedOptions);
             AssetDatabase.Refresh();
@@ -240,45 +434,68 @@ namespace Fight.Editor
             return Path.GetFullPath(Path.Combine(projectRoot, normalizedOptions.relativeOutputFolder));
         }
 
+        public static string ResolveAssetPathToAbsolutePath(string assetPath)
+        {
+            if (string.IsNullOrWhiteSpace(assetPath))
+            {
+                throw new InvalidOperationException("Asset path must not be empty.");
+            }
+
+            var normalizedAssetPath = assetPath.Replace("\\", "/").TrimStart('/');
+            var projectRoot = Directory.GetParent(Application.dataPath)?.FullName ?? Application.dataPath;
+            return Path.GetFullPath(Path.Combine(projectRoot, normalizedAssetPath));
+        }
+
         public static void ExportFromCommandLine()
         {
             try
             {
                 var arguments = Environment.GetCommandLineArgs();
                 var sourceAssetPath = ReadArgument(arguments, CommandLineMethodSourceArg);
-                if (string.IsNullOrWhiteSpace(sourceAssetPath))
-                {
-                    throw new InvalidOperationException($"Missing required argument {CommandLineMethodSourceArg}.");
-                }
-
-                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(sourceAssetPath);
-                if (prefab == null)
-                {
-                    throw new InvalidOperationException($"Could not load prefab at path [{sourceAssetPath}].");
-                }
+                var sourceFolderAssetPath = ReadArgument(arguments, CommandLineMethodFolderArg);
 
                 var options = NormalizeOptions(new HeroEditorPortraitExportOptions());
                 options.width = ReadIntArgument(arguments, CommandLineWidthArg, options.width);
                 options.height = ReadIntArgument(arguments, CommandLineHeightArg, options.height);
                 options.paddingMultiplier = ReadFloatArgument(arguments, CommandLinePaddingArg, options.paddingMultiplier);
                 options.includeShadow = ReadBoolArgument(arguments, CommandLineIncludeShadowArg, options.includeShadow);
+                options.searchRecursively = ReadBoolArgument(arguments, CommandLineRecursiveArg, options.searchRecursively);
+                options.saveNextToPrefabFolder = ReadBoolArgument(arguments, CommandLineSaveNextToPrefabArg, options.saveNextToPrefabFolder);
                 options.framingOffset = new Vector2(
                     ReadFloatArgument(arguments, CommandLineOffsetXArg, options.framingOffset.x),
                     ReadFloatArgument(arguments, CommandLineOffsetYArg, options.framingOffset.y));
 
-                var outputPath = ReadArgument(arguments, CommandLineMethodOutputArg);
-                if (string.IsNullOrWhiteSpace(outputPath))
+                if (!string.IsNullOrWhiteSpace(sourceAssetPath))
                 {
-                    outputPath = Path.Combine("Temp", "HeroPortraitExports", $"{SanitizeFileName(prefab.name)}{options.fileSuffix}.png");
+                    var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(sourceAssetPath);
+                    if (prefab == null)
+                    {
+                        throw new InvalidOperationException($"Could not load prefab at path [{sourceAssetPath}].");
+                    }
+
+                    var outputPath = ReadArgument(arguments, CommandLineMethodOutputArg);
+                    if (string.IsNullOrWhiteSpace(outputPath))
+                    {
+                        outputPath = Path.Combine("Temp", "HeroPortraitExports", $"{SanitizeFileName(prefab.name)}{options.fileSuffix}.png");
+                    }
+
+                    var projectRoot = Directory.GetParent(Application.dataPath)?.FullName ?? Application.dataPath;
+                    var absoluteOutputPath = Path.IsPathRooted(outputPath)
+                        ? outputPath
+                        : Path.GetFullPath(Path.Combine(projectRoot, outputPath));
+
+                    ExportPrefabAtAssetPath(sourceAssetPath, absoluteOutputPath, options);
+                    Debug.Log($"[HeroEditorPortraitExporter] Exported portrait to {absoluteOutputPath}");
                 }
-
-                var projectRoot = Directory.GetParent(Application.dataPath)?.FullName ?? Application.dataPath;
-                var absoluteOutputPath = Path.IsPathRooted(outputPath)
-                    ? outputPath
-                    : Path.GetFullPath(Path.Combine(projectRoot, outputPath));
-
-                ExportPrefabAtAssetPath(sourceAssetPath, absoluteOutputPath, options);
-                Debug.Log($"[HeroEditorPortraitExporter] Exported portrait to {absoluteOutputPath}");
+                else if (!string.IsNullOrWhiteSpace(sourceFolderAssetPath))
+                {
+                    var exportedPaths = ExportPrefabsInFolder(sourceFolderAssetPath, options).ToList();
+                    Debug.Log($"[HeroEditorPortraitExporter] Exported {exportedPaths.Count} portraits from folder [{sourceFolderAssetPath}].");
+                }
+                else
+                {
+                    throw new InvalidOperationException($"Missing required argument {CommandLineMethodSourceArg} or {CommandLineMethodFolderArg}.");
+                }
             }
             catch (Exception exception)
             {
@@ -522,6 +739,29 @@ namespace Fight.Editor
 
             texture.SetPixels32(centeredPixels);
             texture.Apply(false, false);
+        }
+
+        private static string ResolveOutputPath(string prefabAssetPath, string prefabName, HeroEditorPortraitExportOptions options)
+        {
+            var normalizedOptions = NormalizeOptions(options);
+            var fileName = $"{SanitizeFileName(prefabName)}{normalizedOptions.fileSuffix}.png";
+
+            if (normalizedOptions.saveNextToPrefabFolder)
+            {
+                var prefabFolderAssetPath = Path.GetDirectoryName(prefabAssetPath)?.Replace("\\", "/");
+                if (string.IsNullOrWhiteSpace(prefabFolderAssetPath))
+                {
+                    throw new InvalidOperationException($"Could not resolve prefab folder for [{prefabAssetPath}].");
+                }
+
+                var absolutePrefabFolder = ResolveAssetPathToAbsolutePath(prefabFolderAssetPath);
+                Directory.CreateDirectory(absolutePrefabFolder);
+                return Path.Combine(absolutePrefabFolder, fileName);
+            }
+
+            var absoluteOutputFolder = ResolveOutputFolderAbsolutePath(normalizedOptions);
+            Directory.CreateDirectory(absoluteOutputFolder);
+            return Path.Combine(absoluteOutputFolder, fileName);
         }
 
         private static HeroEditorPortraitExportOptions NormalizeOptions(HeroEditorPortraitExportOptions options)
