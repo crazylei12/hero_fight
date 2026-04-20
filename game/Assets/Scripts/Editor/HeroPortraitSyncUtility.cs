@@ -12,7 +12,8 @@ namespace Fight.Editor
     {
         private const string SyncMenuPath = "Fight/Dev/Sync Hero Portraits From Prefab PNGs";
         private const string PrefabHeroesRoot = "Assets/Prefabs/Heroes";
-        private const string PreferredPortraitSuffix = "_idle_front";
+        private const string FrontPortraitSuffix = "_idle_front";
+        private const string MonsterPortraitSuffix = "_idle_monster";
         private static bool autoSyncScheduled;
         private static bool autoSyncInProgress;
 
@@ -220,8 +221,9 @@ namespace Fight.Editor
             var portraitAssetPaths = AssetDatabase.FindAssets("t:Texture2D", new[] { folderPath })
                 .Select(AssetDatabase.GUIDToAssetPath)
                 .Where(path => path.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
-                .Where(path => Path.GetFileNameWithoutExtension(path).EndsWith(PreferredPortraitSuffix, StringComparison.OrdinalIgnoreCase))
+                .Where(path => GetPortraitSuffixPriority(path) < int.MaxValue)
                 .OrderBy(path => GetPortraitMatchScore(path, hero))
+                .ThenBy(path => GetPortraitSuffixPriority(path))
                 .ThenBy(path => path, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
@@ -231,9 +233,15 @@ namespace Fight.Editor
         private static int GetPortraitMatchScore(string assetPath, HeroDefinition hero)
         {
             var fileName = Path.GetFileNameWithoutExtension(assetPath);
+            var portraitSuffix = GetPortraitSuffix(assetPath);
+            if (string.IsNullOrWhiteSpace(portraitSuffix))
+            {
+                return 100;
+            }
+
             var displayNameCandidate = string.IsNullOrWhiteSpace(hero.displayName)
                 ? null
-                : $"{hero.displayName}{PreferredPortraitSuffix}";
+                : $"{hero.displayName}{portraitSuffix}";
             if (!string.IsNullOrWhiteSpace(displayNameCandidate)
                 && string.Equals(fileName, displayNameCandidate, StringComparison.OrdinalIgnoreCase))
             {
@@ -241,7 +249,7 @@ namespace Fight.Editor
             }
 
             var prefabNameCandidate = hero.visualConfig?.battlePrefab != null
-                ? $"{hero.visualConfig.battlePrefab.name}{PreferredPortraitSuffix}"
+                ? $"{hero.visualConfig.battlePrefab.name}{portraitSuffix}"
                 : null;
             if (!string.IsNullOrWhiteSpace(prefabNameCandidate)
                 && string.Equals(fileName, prefabNameCandidate, StringComparison.OrdinalIgnoreCase))
@@ -251,12 +259,38 @@ namespace Fight.Editor
 
             var heroNameFromId = ExtractHeroNameFromId(hero.heroId);
             if (!string.IsNullOrWhiteSpace(heroNameFromId)
-                && string.Equals(fileName, $"{heroNameFromId}{PreferredPortraitSuffix}", StringComparison.OrdinalIgnoreCase))
+                && string.Equals(fileName, $"{heroNameFromId}{portraitSuffix}", StringComparison.OrdinalIgnoreCase))
             {
                 return 2;
             }
 
             return 10;
+        }
+
+        private static int GetPortraitSuffixPriority(string assetPath)
+        {
+            return GetPortraitSuffix(assetPath) switch
+            {
+                FrontPortraitSuffix => 0,
+                MonsterPortraitSuffix => 1,
+                _ => int.MaxValue,
+            };
+        }
+
+        private static string GetPortraitSuffix(string assetPath)
+        {
+            var fileName = Path.GetFileNameWithoutExtension(assetPath);
+            if (fileName.EndsWith(FrontPortraitSuffix, StringComparison.OrdinalIgnoreCase))
+            {
+                return FrontPortraitSuffix;
+            }
+
+            if (fileName.EndsWith(MonsterPortraitSuffix, StringComparison.OrdinalIgnoreCase))
+            {
+                return MonsterPortraitSuffix;
+            }
+
+            return null;
         }
 
         private static string ExtractHeroNameFromId(string heroId)
