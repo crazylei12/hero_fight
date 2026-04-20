@@ -17,6 +17,8 @@ namespace Fight.Editor
     public sealed class HeroEditorPortraitExportOptions
     {
         public const string DefaultRelativeOutputFolder = "Exports/HeroEditorPortraits";
+        public const string DefaultCharacter4DFileSuffix = "_idle_front";
+        public const string DefaultMonsterFileSuffix = "_idle_monster";
 
         public int width = 1024;
         public int height = 1024;
@@ -26,7 +28,8 @@ namespace Fight.Editor
         public bool saveNextToPrefabFolder = true;
         public bool searchRecursively = true;
         public string relativeOutputFolder = DefaultRelativeOutputFolder;
-        public string fileSuffix = "_idle_front";
+        public string character4DFileSuffix = DefaultCharacter4DFileSuffix;
+        public string monsterFileSuffix = DefaultMonsterFileSuffix;
     }
 
     public sealed class HeroEditorPortraitExporterWindow : EditorWindow
@@ -35,7 +38,8 @@ namespace Fight.Editor
         private const string DefaultHeroesFolderAssetPath = "Assets/Prefabs/Heroes";
         private const string SourceFolderPreferenceKey = "Fight.Editor.HeroEditorPortraitExporter.SourceFolder";
         private const string OutputFolderPreferenceKey = "Fight.Editor.HeroEditorPortraitExporter.OutputFolder";
-        private const string FileSuffixPreferenceKey = "Fight.Editor.HeroEditorPortraitExporter.FileSuffix";
+        private const string Character4DFileSuffixPreferenceKey = "Fight.Editor.HeroEditorPortraitExporter.Character4DFileSuffix";
+        private const string MonsterFileSuffixPreferenceKey = "Fight.Editor.HeroEditorPortraitExporter.MonsterFileSuffix";
         private const string SaveNextToPrefabPreferenceKey = "Fight.Editor.HeroEditorPortraitExporter.SaveNextToPrefab";
         private const string SearchRecursivelyPreferenceKey = "Fight.Editor.HeroEditorPortraitExporter.SearchRecursively";
 
@@ -62,7 +66,8 @@ namespace Fight.Editor
             }
 
             options.relativeOutputFolder = EditorPrefs.GetString(OutputFolderPreferenceKey, HeroEditorPortraitExportOptions.DefaultRelativeOutputFolder);
-            options.fileSuffix = EditorPrefs.GetString(FileSuffixPreferenceKey, "_idle_front");
+            options.character4DFileSuffix = EditorPrefs.GetString(Character4DFileSuffixPreferenceKey, HeroEditorPortraitExportOptions.DefaultCharacter4DFileSuffix);
+            options.monsterFileSuffix = EditorPrefs.GetString(MonsterFileSuffixPreferenceKey, HeroEditorPortraitExportOptions.DefaultMonsterFileSuffix);
             options.saveNextToPrefabFolder = EditorPrefs.GetBool(SaveNextToPrefabPreferenceKey, true);
             options.searchRecursively = EditorPrefs.GetBool(SearchRecursivelyPreferenceKey, true);
         }
@@ -76,7 +81,8 @@ namespace Fight.Editor
 
             EditorPrefs.SetString(SourceFolderPreferenceKey, GetFolderAssetPath(sourceFolderAsset) ?? string.Empty);
             EditorPrefs.SetString(OutputFolderPreferenceKey, options.relativeOutputFolder ?? HeroEditorPortraitExportOptions.DefaultRelativeOutputFolder);
-            EditorPrefs.SetString(FileSuffixPreferenceKey, options.fileSuffix ?? "_idle_front");
+            EditorPrefs.SetString(Character4DFileSuffixPreferenceKey, options.character4DFileSuffix ?? HeroEditorPortraitExportOptions.DefaultCharacter4DFileSuffix);
+            EditorPrefs.SetString(MonsterFileSuffixPreferenceKey, options.monsterFileSuffix ?? HeroEditorPortraitExportOptions.DefaultMonsterFileSuffix);
             EditorPrefs.SetBool(SaveNextToPrefabPreferenceKey, options.saveNextToPrefabFolder);
             EditorPrefs.SetBool(SearchRecursivelyPreferenceKey, options.searchRecursively);
         }
@@ -136,7 +142,8 @@ namespace Fight.Editor
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
                 EditorGUILayout.LabelField("导出设置", EditorStyles.boldLabel);
-                options.fileSuffix = EditorGUILayout.TextField("文件后缀", options.fileSuffix);
+                options.character4DFileSuffix = EditorGUILayout.TextField("Character4D 后缀", options.character4DFileSuffix);
+                options.monsterFileSuffix = EditorGUILayout.TextField("Monster 后缀", options.monsterFileSuffix);
                 options.width = EditorGUILayout.IntField("宽度", options.width);
                 options.height = EditorGUILayout.IntField("高度", options.height);
                 options.paddingMultiplier = EditorGUILayout.Slider("边缘留白", options.paddingMultiplier, 1.0f, 1.6f);
@@ -178,7 +185,7 @@ namespace Fight.Editor
 
             EditorGUILayout.Space();
             EditorGUILayout.HelpBox(
-                "目录批量导出会扫描指定文件夹中的 prefab，并处理当前支持的英雄模板。默认文件名格式是 <PrefabName>_idle_front.png。",
+                "目录批量导出会扫描指定文件夹中的 prefab，并处理当前支持的英雄模板。默认命名是 Character4D => <PrefabName>_idle_front.png；Monster => <PrefabName>_idle_monster.png。",
                 MessageType.None);
         }
 
@@ -442,7 +449,7 @@ namespace Fight.Editor
 
             var normalizedOptions = NormalizeOptions(options);
             var sourceAssetPath = AssetDatabase.GetAssetPath(prefab);
-            var outputPath = ResolveOutputPath(sourceAssetPath, prefab.name, normalizedOptions);
+            var outputPath = ResolveOutputPath(sourceAssetPath, prefab.name, captureProfile, normalizedOptions);
 
             ExportPrefabAtAssetPath(sourceAssetPath, outputPath, normalizedOptions);
             AssetDatabase.Refresh();
@@ -495,10 +502,17 @@ namespace Fight.Editor
                         throw new InvalidOperationException($"Could not load prefab at path [{sourceAssetPath}].");
                     }
 
+                    var captureProfile = GetPortraitCaptureProfile(prefab);
+                    if (captureProfile == PortraitCaptureProfile.Unsupported)
+                    {
+                        throw new InvalidOperationException($"Prefab [{prefab.name}] is not a supported portrait capture target.");
+                    }
+
                     var outputPath = ReadArgument(arguments, CommandLineMethodOutputArg);
                     if (string.IsNullOrWhiteSpace(outputPath))
                     {
-                        outputPath = Path.Combine("Temp", "HeroPortraitExports", $"{SanitizeFileName(prefab.name)}{options.fileSuffix}.png");
+                        var fileSuffix = GetFileSuffixForProfile(options, captureProfile);
+                        outputPath = Path.Combine("Temp", "HeroPortraitExports", $"{SanitizeFileName(prefab.name)}{fileSuffix}.png");
                     }
 
                     var projectRoot = Directory.GetParent(Application.dataPath)?.FullName ?? Application.dataPath;
@@ -950,10 +964,11 @@ namespace Fight.Editor
             texture.Apply(false, false);
         }
 
-        private static string ResolveOutputPath(string prefabAssetPath, string prefabName, HeroEditorPortraitExportOptions options)
+        private static string ResolveOutputPath(string prefabAssetPath, string prefabName, PortraitCaptureProfile captureProfile, HeroEditorPortraitExportOptions options)
         {
             var normalizedOptions = NormalizeOptions(options);
-            var fileName = $"{SanitizeFileName(prefabName)}{normalizedOptions.fileSuffix}.png";
+            var fileSuffix = GetFileSuffixForProfile(normalizedOptions, captureProfile);
+            var fileName = $"{SanitizeFileName(prefabName)}{fileSuffix}.png";
 
             if (normalizedOptions.saveNextToPrefabFolder)
             {
@@ -982,11 +997,26 @@ namespace Fight.Editor
             normalized.relativeOutputFolder = string.IsNullOrWhiteSpace(normalized.relativeOutputFolder)
                 ? HeroEditorPortraitExportOptions.DefaultRelativeOutputFolder
                 : normalized.relativeOutputFolder.Trim();
-            normalized.fileSuffix = string.IsNullOrWhiteSpace(normalized.fileSuffix)
-                ? "_idle_front"
-                : normalized.fileSuffix.Trim();
-            normalized.fileSuffix = SanitizeFileName(normalized.fileSuffix);
+            normalized.character4DFileSuffix = string.IsNullOrWhiteSpace(normalized.character4DFileSuffix)
+                ? HeroEditorPortraitExportOptions.DefaultCharacter4DFileSuffix
+                : normalized.character4DFileSuffix.Trim();
+            normalized.character4DFileSuffix = SanitizeFileName(normalized.character4DFileSuffix);
+            normalized.monsterFileSuffix = string.IsNullOrWhiteSpace(normalized.monsterFileSuffix)
+                ? HeroEditorPortraitExportOptions.DefaultMonsterFileSuffix
+                : normalized.monsterFileSuffix.Trim();
+            normalized.monsterFileSuffix = SanitizeFileName(normalized.monsterFileSuffix);
             return normalized;
+        }
+
+        private static string GetFileSuffixForProfile(HeroEditorPortraitExportOptions options, PortraitCaptureProfile captureProfile)
+        {
+            var normalizedOptions = NormalizeOptions(options);
+            return captureProfile switch
+            {
+                PortraitCaptureProfile.HeroEditorCharacter4D => normalizedOptions.character4DFileSuffix,
+                PortraitCaptureProfile.FantasyMonster => normalizedOptions.monsterFileSuffix,
+                _ => throw new InvalidOperationException("Unsupported portrait capture profile.")
+            };
         }
 
         private static bool IsPrefabAsset(GameObject prefab)
