@@ -11,8 +11,21 @@ namespace Fight.UI
     {
         private const string RuntimeBaseTexturePath = "UI/BattleHud/side_hero_sidebar_runtime_base";
         private const int TeamSize = BattleInputConfig.DefaultTeamSize;
-        private const float DesignCardWidth = BattleScreenLayout.DesignCardWidth;
-        private const float DesignCardHeight = BattleScreenLayout.DesignCardHeight;
+        private const float DesignCardWidth = 139f;
+        private const float DesignCardHeight = 88f;
+
+        [SerializeField] private float sideMargin = 12f;
+        [SerializeField] private float bottomMargin = 12f;
+        [SerializeField] private float verticalGap = 10f;
+        [SerializeField] private float topHudReservedHeightAt1080p = 194f;
+        [SerializeField] private float maxCardWidth = 280f;
+        [SerializeField] private float maxCardHeight = 176f;
+        [SerializeField] private float minCardHeight = 96f;
+        [SerializeField] private float maxSideWidthRatio = 0.19f;
+        [SerializeField] private float toggleButtonWidth = 18f;
+        [SerializeField] private float toggleButtonMinHeight = 72f;
+        [SerializeField] private float toggleButtonMaxHeight = 132f;
+        [SerializeField] private float toggleButtonScreenInset = 2f;
 
         private static readonly Color BlueAccent = new Color32(88, 173, 255, 255);
         private static readonly Color RedAccent = new Color32(255, 126, 126, 255);
@@ -31,6 +44,8 @@ namespace Fight.UI
         private static readonly Color DeadOverlayColor = new Color32(0, 0, 0, 116);
         private static readonly Color PortraitFallbackColor = new Color32(31, 40, 54, 235);
         private static readonly Color PortraitInnerFallbackColor = new Color32(53, 65, 84, 255);
+        private static readonly Color ToggleButtonFillColor = new Color32(22, 28, 38, 220);
+        private static readonly Color ToggleButtonOutlineColor = new Color32(112, 122, 140, 255);
         private static readonly string[] TraitPlaceholders = { "Reserved 1", "Reserved 2", "Reserved 3" };
 
         private readonly List<RuntimeHero> blueHeroes = new List<RuntimeHero>(TeamSize);
@@ -47,7 +62,10 @@ namespace Fight.UI
         private GUIStyle traitStyle;
         private GUIStyle coreValueAlignedStyle;
         private GUIStyle portraitFallbackStyle;
+        private GUIStyle toggleButtonStyle;
         private float lastStyleScale = -1f;
+        private bool isBlueSidebarExpanded = true;
+        private bool isRedSidebarExpanded = true;
 
         private sealed class HeroSidebarViewData
         {
@@ -67,6 +85,44 @@ namespace Fight.UI
             public bool IsDead;
         }
 
+        private readonly struct SidebarLayout
+        {
+            public SidebarLayout(float cardWidth, float cardHeight, float leftX, float rightX, float startY, float totalHeight, float toggleButtonWidth, float toggleButtonHeight)
+            {
+                CardWidth = cardWidth;
+                CardHeight = cardHeight;
+                LeftX = leftX;
+                RightX = rightX;
+                StartY = startY;
+                TotalHeight = totalHeight;
+                ToggleButtonWidth = toggleButtonWidth;
+                ToggleButtonHeight = toggleButtonHeight;
+            }
+
+            public float CardWidth { get; }
+
+            public float CardHeight { get; }
+
+            public float LeftX { get; }
+
+            public float RightX { get; }
+
+            public float StartY { get; }
+
+            public float TotalHeight { get; }
+
+            public float ToggleButtonWidth { get; }
+
+            public float ToggleButtonHeight { get; }
+
+            public Rect GetCardRect(TeamSide side, int slotIndex, float verticalGap)
+            {
+                var resolvedX = side == TeamSide.Blue ? LeftX : RightX;
+                var resolvedY = StartY + (Mathf.Clamp(slotIndex, 0, TeamSize - 1) * (CardHeight + verticalGap));
+                return new Rect(resolvedX, resolvedY, CardWidth, CardHeight);
+            }
+        }
+
         private void Awake()
         {
             battleManager = GetComponent<BattleManager>();
@@ -84,7 +140,7 @@ namespace Fight.UI
             CollectTeamHeroes(context, TeamSide.Blue, blueHeroes);
             CollectTeamHeroes(context, TeamSide.Red, redHeroes);
 
-            if (!BattleScreenLayout.TryGetMetrics(out var layout))
+            if (!TryGetSidebarLayout(out var layout))
             {
                 return;
             }
@@ -92,18 +148,29 @@ namespace Fight.UI
             var styleScale = layout.CardWidth / DesignCardWidth;
             EnsureStyles(styleScale);
 
+            if (isBlueSidebarExpanded)
+            {
+                DrawSidebarCards(layout, blueHeroes, TeamSide.Blue, mirrorLayout: false);
+            }
+
+            if (isRedSidebarExpanded)
+            {
+                DrawSidebarCards(layout, redHeroes, TeamSide.Red, mirrorLayout: true);
+            }
+
+            DrawSideToggleButton(layout, TeamSide.Blue);
+            DrawSideToggleButton(layout, TeamSide.Red);
+        }
+
+        private void DrawSidebarCards(SidebarLayout layout, List<RuntimeHero> heroes, TeamSide side, bool mirrorLayout)
+        {
             for (var slotIndex = 0; slotIndex < TeamSize; slotIndex++)
             {
                 DrawHeroCard(
-                    layout.GetCardRect(TeamSide.Blue, slotIndex),
-                    blueHeroes.Count > slotIndex ? blueHeroes[slotIndex] : null,
-                    TeamSide.Blue,
-                    mirrorLayout: false);
-                DrawHeroCard(
-                    layout.GetCardRect(TeamSide.Red, slotIndex),
-                    redHeroes.Count > slotIndex ? redHeroes[slotIndex] : null,
-                    TeamSide.Red,
-                    mirrorLayout: true);
+                    layout.GetCardRect(side, slotIndex, verticalGap),
+                    heroes.Count > slotIndex ? heroes[slotIndex] : null,
+                    side,
+                    mirrorLayout);
             }
         }
 
@@ -291,6 +358,7 @@ namespace Fight.UI
             traitStyle = BuildStyle(2.5f, scale, TextAnchor.MiddleCenter, FontStyle.Normal, allowShrink: true);
             coreValueAlignedStyle = BuildStyle(5.2f, scale, TextAnchor.MiddleLeft, FontStyle.Bold);
             portraitFallbackStyle = BuildStyle(6f, scale, TextAnchor.MiddleCenter, FontStyle.Bold);
+            toggleButtonStyle = BuildStyle(8.2f, scale, TextAnchor.MiddleCenter, FontStyle.Bold);
         }
 
         private GUIStyle BuildStyle(float designFontSize, float scale, TextAnchor alignment, FontStyle fontStyle, bool allowShrink = false)
@@ -326,10 +394,99 @@ namespace Fight.UI
             buffer.Sort((left, right) => left.SlotIndex.CompareTo(right.SlotIndex));
         }
 
+        private bool TryGetSidebarLayout(out SidebarLayout layout)
+        {
+            layout = default;
+
+            var topReserved = Mathf.Clamp((Screen.height / 1080f) * topHudReservedHeightAt1080p, 96f, 220f);
+            var availableHeight = Mathf.Max(0f, Screen.height - topReserved - bottomMargin);
+            if (availableHeight <= 0f)
+            {
+                return false;
+            }
+
+            var maxHeightByAvailable = (availableHeight - (verticalGap * (TeamSize - 1))) / TeamSize;
+            var cardHeight = Mathf.Min(maxCardHeight, maxHeightByAvailable);
+            if (maxHeightByAvailable >= minCardHeight)
+            {
+                cardHeight = Mathf.Max(minCardHeight, cardHeight);
+            }
+
+            if (cardHeight < 72f)
+            {
+                return false;
+            }
+
+            var cardWidth = Mathf.Min(maxCardWidth, cardHeight * (DesignCardWidth / DesignCardHeight));
+            cardWidth = Mathf.Min(cardWidth, Screen.width * maxSideWidthRatio);
+            var maxWidthByScreen = Mathf.Max(120f, (Screen.width - (sideMargin * 2f) - 12f) * 0.5f);
+            cardWidth = Mathf.Min(cardWidth, maxWidthByScreen);
+            cardHeight = cardWidth * (DesignCardHeight / DesignCardWidth);
+
+            var totalHeight = (cardHeight * TeamSize) + (verticalGap * (TeamSize - 1));
+            var startY = topReserved + Mathf.Max(0f, (availableHeight - totalHeight) * 0.5f);
+            var leftX = sideMargin;
+            var rightX = Screen.width - sideMargin - cardWidth;
+            var resolvedButtonWidth = Mathf.Clamp(cardWidth * 0.13f, toggleButtonWidth, 28f);
+            var resolvedButtonHeight = Mathf.Clamp(totalHeight * 0.22f, toggleButtonMinHeight, toggleButtonMaxHeight);
+
+            layout = new SidebarLayout(cardWidth, cardHeight, leftX, rightX, startY, totalHeight, resolvedButtonWidth, resolvedButtonHeight);
+            return true;
+        }
+
         private static Rect ScaleRect(float x, float y, float width, float height, float scale, bool mirrorLayout)
         {
             var resolvedX = mirrorLayout ? DesignCardWidth - x - width : x;
             return new Rect(resolvedX * scale, y * scale, width * scale, height * scale);
+        }
+
+        private void DrawSideToggleButton(SidebarLayout layout, TeamSide side)
+        {
+            var expanded = side == TeamSide.Blue ? isBlueSidebarExpanded : isRedSidebarExpanded;
+            var rect = GetToggleButtonRect(layout, side);
+            var accentColor = side == TeamSide.Red ? RedAccent : BlueAccent;
+
+            DrawTintedRect(rect, ToggleButtonFillColor);
+            DrawOutline(rect, ToggleButtonOutlineColor);
+            DrawTintedRect(
+                side == TeamSide.Blue
+                    ? new Rect(rect.xMax - 2f, rect.y, 2f, rect.height)
+                    : new Rect(rect.x, rect.y, 2f, rect.height),
+                accentColor);
+
+            var arrow = side == TeamSide.Blue
+                ? (expanded ? "<" : ">")
+                : (expanded ? ">" : "<");
+            DrawShadowedLabel(rect, arrow, toggleButtonStyle, MainTextColor);
+
+            if (!GUI.Button(rect, GUIContent.none, GUIStyle.none))
+            {
+                return;
+            }
+
+            if (side == TeamSide.Blue)
+            {
+                isBlueSidebarExpanded = !isBlueSidebarExpanded;
+            }
+            else
+            {
+                isRedSidebarExpanded = !isRedSidebarExpanded;
+            }
+        }
+
+        private Rect GetToggleButtonRect(SidebarLayout layout, TeamSide side)
+        {
+            var buttonY = layout.StartY + ((layout.TotalHeight - layout.ToggleButtonHeight) * 0.5f);
+            if (side == TeamSide.Blue)
+            {
+                return new Rect(toggleButtonScreenInset, buttonY, layout.ToggleButtonWidth, layout.ToggleButtonHeight);
+            }
+
+            return new Rect(
+                Screen.width - toggleButtonScreenInset - layout.ToggleButtonWidth,
+                buttonY,
+                layout.ToggleButtonWidth,
+                layout.ToggleButtonHeight);
         }
 
         private static string GetStateText(RuntimeHero hero)
