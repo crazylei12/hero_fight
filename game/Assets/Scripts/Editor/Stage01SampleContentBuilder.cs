@@ -870,6 +870,7 @@ namespace Fight.Editor
             }
 
             hero.visualConfig.battlePrefab = battlePrefab;
+            HeroPortraitSyncUtility.TryAssignPortraitFromPrefabFolder(hero);
             EditorUtility.SetDirty(hero);
         }
 
@@ -1047,6 +1048,7 @@ namespace Fight.Editor
                 || heroId == "support_002_windchime";
             hero.visualConfig.projectileEulerAngles = Vector3.zero;
             hero.visualConfig.hitVfxPrefab = null;
+            HeroPortraitSyncUtility.TryAssignPortraitFromPrefabFolder(hero);
             EditorUtility.SetDirty(hero);
             return hero;
         }
