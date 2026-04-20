@@ -40,7 +40,7 @@ MonoBehaviour:
   usesSpecialLogic: 0
   specialLogicNotes: 
   visualConfig:
-    portrait: {fileID: 0}
+    portrait: {fileID: 21300000, guid: 3756107077ed1d04bb57a3fc4996d52c, type: 3}
     battlePrefab: {fileID: 392277954102595269, guid: 36202056fd953e847b0a501d889fecaf, type: 3}
     animatorController: {fileID: 9100000, guid: c0fbc9a82051e94429aa17cc4b2f48e5, type: 2}
     battlePrefabFacesLeftByDefault: 0
@@ -51,3 +51,4 @@ MonoBehaviour:
     hitVfxPrefab: {fileID: 0}
     castSfx: {fileID: 0}
   debugNotes: Stage-01 demo hero for Tank.
+
