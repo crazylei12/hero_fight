@@ -13,7 +13,8 @@ namespace Fight.UI
         private const int TeamSize = BattleInputConfig.DefaultTeamSize;
         private const float DesignCardWidth = 139f;
         private const float DesignCardHeight = 88f;
-        private const float PortraitVisibleHeightRatio = 0.54f;
+        private const float PortraitCropTopInsetRatio = 0.18f;
+        private const float PortraitVisibleHeightRatio = 0.50f;
         private const float PortraitVerticalPlacementBias = 0.15f;
 
         [SerializeField] private float sideMargin = 12f;
@@ -325,9 +326,13 @@ namespace Fight.UI
                 visibleHeight = textureRect.height;
             }
 
+            var topInset = textureRect.height * PortraitCropTopInsetRatio;
+            var maxTopInset = Mathf.Max(0f, textureRect.height - visibleHeight);
+            topInset = Mathf.Clamp(topInset, 0f, maxTopInset);
+
             var texCoords = new Rect(
                 textureRect.x / texture.width,
-                (textureRect.y + textureRect.height - visibleHeight) / texture.height,
+                (textureRect.y + textureRect.height - topInset - visibleHeight) / texture.height,
                 textureRect.width / texture.width,
                 visibleHeight / texture.height);
 
