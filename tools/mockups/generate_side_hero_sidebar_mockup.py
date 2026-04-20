@@ -5,7 +5,7 @@ import textwrap
 import uuid
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFilter, ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageOps
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -14,7 +14,7 @@ LAYERLAB = ROOT / "game/Assets/Layer Lab/GUI Pro-FantasyRPG/ResourcesData/Sprite
 ULTIMATE_ICONS = ROOT / "game/Assets/UltimateCleanGUIPack/Common/Sprites/Icons"
 AVATAR = ROOT / "game/Assets/FantasyWorkshop/AvatarMaker/Images"
 
-BASE_WIDTH = 154
+BASE_WIDTH = 139
 BASE_HEIGHT = 88
 SCALE = 5
 
@@ -187,11 +187,18 @@ FONT_KDA = get_font(s(4.2))
 FONT_STAT = get_font(s(5.0))
 FONT_SMALL_NUMBER = get_font(s(4.4))
 FONT_NAME = get_font(s(4.6))
-FONT_TRAIT = get_font(s(3.6))
+FONT_TRAIT = get_font(s(2.8))
 FONT_CORE = get_font(s(6.4))
 
 
 def fit(image: Image.Image, width: int, height: int) -> Image.Image:
+    return image.resize((width, height), Image.Resampling.LANCZOS)
+
+
+def fit_contain(image: Image.Image, max_width: int, max_height: int) -> Image.Image:
+    ratio = min(max_width / image.width, max_height / image.height)
+    width = max(1, int(round(image.width * ratio)))
+    height = max(1, int(round(image.height * ratio)))
     return image.resize((width, height), Image.Resampling.LANCZOS)
 
 
@@ -200,6 +207,18 @@ def alpha_mask_to_color(image: Image.Image, rgba: tuple[int, int, int, int]) -> 
     tinted = Image.new("RGBA", image.size, rgba)
     tinted.putalpha(mask)
     return tinted
+
+
+def recolor_from_template(
+    image: Image.Image,
+    dark_rgb: tuple[int, int, int],
+    light_rgb: tuple[int, int, int],
+) -> Image.Image:
+    alpha = image.getchannel("A")
+    grayscale = ImageOps.grayscale(image)
+    colored = ImageOps.colorize(grayscale, black=dark_rgb, white=light_rgb).convert("RGBA")
+    colored.putalpha(alpha)
+    return colored
 
 
 def trim_to_alpha(image: Image.Image) -> Image.Image:
@@ -290,8 +309,8 @@ def load_button(name: str) -> Image.Image:
 
 def load_icon(path: Path, tint: tuple[int, int, int, int], size: tuple[int, int]) -> Image.Image:
     image = trim_to_alpha(Image.open(path).convert("RGBA"))
-    image = fit(image, size[0], size[1])
-    return alpha_mask_to_color(image, tint)
+    image = alpha_mask_to_color(image, tint)
+    return fit_contain(image, size[0], size[1])
 
 
 def load_rotated_icon(
@@ -301,7 +320,40 @@ def load_rotated_icon(
     angle: int,
 ) -> Image.Image:
     image = load_icon(path, tint, size)
-    return image.rotate(angle, expand=True, resample=Image.Resampling.BICUBIC)
+    return trim_to_alpha(image.rotate(angle, expand=True, resample=Image.Resampling.BICUBIC))
+
+
+def draw_icon_value_group(
+    canvas: Image.Image,
+    draw: ImageDraw.ImageDraw,
+    center_x: int,
+    center_y: int,
+    icon: Image.Image,
+    text: str,
+    font: ImageFont.FreeTypeFont | ImageFont.ImageFont,
+    fill: tuple[int, int, int, int],
+    *,
+    gap: int,
+    stroke_width: int = 1,
+    stroke_fill: tuple[int, int, int, int] = (0, 0, 0, 170),
+) -> None:
+    bbox = draw.textbbox((0, 0), text, font=font, stroke_width=stroke_width)
+    text_width = bbox[2] - bbox[0]
+    text_height = bbox[3] - bbox[1]
+    group_width = icon.width + gap + text_width
+    start_x = center_x - (group_width // 2)
+    icon_y = center_y - (icon.height // 2)
+    text_x = start_x + icon.width + gap
+    text_y = center_y - (text_height // 2) - s(0.3)
+    canvas.alpha_composite(icon, (start_x, icon_y))
+    draw.text(
+        (text_x, text_y),
+        text,
+        font=font,
+        fill=fill,
+        stroke_width=stroke_width,
+        stroke_fill=stroke_fill,
+    )
 
 
 def compose_avatar(size: tuple[int, int]) -> Image.Image:
@@ -341,10 +393,17 @@ def compose_avatar(size: tuple[int, int]) -> Image.Image:
 
 
 def draw_arrow_button(canvas: Image.Image, bounds: tuple[int, int, int, int]) -> None:
-    button = fit(load_button("Button_Rectangle_01_Convex_Yellow.Png"), bounds[2] - bounds[0], bounds[3] - bounds[1])
-    canvas.alpha_composite(button, (bounds[0], bounds[1]))
+    template = fit(load_button("Button_Rectangle_01_Convex_Yellow.Png"), bounds[2] - bounds[0], bounds[3] - bounds[1])
+    outer = recolor_from_template(template, (120, 22, 20), (232, 70, 68))
+    canvas.alpha_composite(outer, (bounds[0], bounds[1]))
+
+    inset_x = s(0.9)
+    inner_bounds = (bounds[0] + inset_x, bounds[1], bounds[2] - inset_x, bounds[3])
+    button = fit(load_button("Button_Rectangle_01_Convex_Yellow.Png"), inner_bounds[2] - inner_bounds[0], inner_bounds[3] - inner_bounds[1])
+    canvas.alpha_composite(button, (inner_bounds[0], inner_bounds[1]))
+
     draw = ImageDraw.Draw(canvas)
-    x0, y0, x1, y1 = bounds
+    x0, y0, x1, y1 = inner_bounds
     draw.line((x0 + s(1.7), y1 - s(2.2), x1 - s(2.1), y0 + s(2.1)), fill=(71, 42, 14, 255), width=max(1, s(0.8)))
     draw.line((x1 - s(2.1), y0 + s(2.1), x1 - s(2.1), y0 + s(5.3)), fill=(71, 42, 14, 255), width=max(1, s(0.8)))
     draw.line((x1 - s(2.1), y0 + s(2.1), x1 - s(5.5), y0 + s(2.1)), fill=(71, 42, 14, 255), width=max(1, s(0.8)))
@@ -370,7 +429,7 @@ def make_preview(card: Image.Image) -> Image.Image:
     return preview
 
 
-def generate(prefix: str = "side_hero_sidebar_mockup_v5") -> tuple[Path, Path]:
+def generate(prefix: str = "side_hero_sidebar_mockup_v8") -> tuple[Path, Path]:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
     card = Image.new("RGBA", (CARD_WIDTH, CARD_HEIGHT), (0, 0, 0, 0))
@@ -394,12 +453,12 @@ def generate(prefix: str = "side_hero_sidebar_mockup_v5") -> tuple[Path, Path]:
     draw.rectangle(rect(0, 0, 28, 23), fill=(106, 48, 56, 82))
     draw.line((s(28), s(3), s(28), s(20)), fill=(84, 19, 22, 170), width=max(1, s(0.35)))
     centered_text(draw, rect(1, 0, 27, 23), "资讯", FONT_TAB, TEXT_MAIN, stroke_width=1, stroke_fill=(49, 12, 15, 180))
-    centered_text(draw, rect(28, 0, 56, 23), "核查", FONT_TAB, TEXT_MAIN, stroke_width=1, stroke_fill=(49, 12, 15, 180))
-    draw_arrow_button(card, rect(133, 2, 18, 18))
+    centered_text(draw, rect(28, 0, 93, 23), "选手名", FONT_TAB, TEXT_MAIN, stroke_width=1, stroke_fill=(49, 12, 15, 180))
+    draw_arrow_button(card, rect(121, 2.2, 18, 18))
 
     # Inner separators
-    draw.line((s(28), s(23), s(28), s(92)), fill=BLUE_OUTLINE, width=max(1, s(0.4)))
-    draw.line((s(29), s(62), s(165), s(62)), fill=(38, 52, 76, 200), width=max(1, s(0.35)))
+    draw.line((s(28), s(23), s(28), s(88)), fill=BLUE_OUTLINE, width=max(1, s(0.4)))
+    draw.line((s(29), s(62), s(139), s(62)), fill=(38, 52, 76, 200), width=max(1, s(0.35)))
 
     # Left stat column
     draw.rectangle(rect(0, 23, 28, 71), fill=(15, 20, 28, 220))
@@ -415,14 +474,16 @@ def generate(prefix: str = "side_hero_sidebar_mockup_v5") -> tuple[Path, Path]:
     centered_text(draw, rect(9.33, 34.5, 9.33, 9.5), "0", FONT_SMALL_NUMBER, TEXT_MUTED)
     centered_text(draw, rect(18.66, 34.5, 9.34, 9.5), "0", FONT_SMALL_NUMBER, TEXT_MUTED)
 
-    sword_small = load_rotated_icon(ULTIMATE_ICONS / "Tools/Sword.png", SWORD_TINT, (s(4.2), s(4.2)), 90)
-    shield_small = load_icon(ULTIMATE_ICONS / "Shield/Shield.png", SHIELD_TINT, (s(4.2), s(4.2)))
+    sword_small = load_rotated_icon(ULTIMATE_ICONS / "Tools/Sword.png", SWORD_TINT, (s(6.0), s(3.4)), 90)
+    shield_small = load_icon(ULTIMATE_ICONS / "Shield/Shield.png", SHIELD_TINT, (s(4.8), s(4.8)))
     heal_small = load_icon(ULTIMATE_ICONS / "Life/Health.png", HEAL_TINT, (s(4.2), s(4.2)))
 
-    for icon, value, y_units in ((sword_small, "0", 53.0), (shield_small, "0", 66.5), (heal_small, "0", 80.0)):
-        icon_y = s(y_units)
-        card.alpha_composite(icon, (s(4), icon_y - s(0.2)))
-        draw_text_right(draw, s(24), icon_y + (icon.size[1] // 2), value, FONT_SMALL_NUMBER, TEXT_MUTED)
+    stat_icon_center_x = s(5.8)
+    for icon, value, y_center_units in ((sword_small, "0", 53.0), (shield_small, "0", 66.5), (heal_small, "0", 80.0)):
+        center_y = s(y_center_units)
+        icon_x = stat_icon_center_x - (icon.size[0] // 2)
+        card.alpha_composite(icon, (icon_x, center_y - (icon.size[1] // 2)))
+        draw_text_right(draw, s(24), center_y, value, FONT_SMALL_NUMBER, TEXT_MUTED)
 
     # Portrait block
     portrait_slot = rect(33, 27, 33, 33)
@@ -431,18 +492,19 @@ def generate(prefix: str = "side_hero_sidebar_mockup_v5") -> tuple[Path, Path]:
     portrait = compose_avatar((portrait_slot[2] - portrait_slot[0] - s(2), portrait_slot[3] - portrait_slot[1] - s(2)))
     card.alpha_composite(portrait, (portrait_slot[0] + s(1), portrait_slot[1] + s(1)))
 
-    # Name strip and trait reserve
-    name_box = rect(70, 27, 69, 12)
-    trait_box = rect(70, 41, 69, 19)
-    name_panel = fit(load_button("Button_Rectangle_01_Convex_Dark.Png"), name_box[2] - name_box[0], name_box[3] - name_box[1])
-    trait_panel = fit(load_button("Button_Rectangle_01_Convex_Dark.Png"), trait_box[2] - trait_box[0], trait_box[3] - trait_box[1])
-    card.alpha_composite(name_panel, (name_box[0], name_box[1]))
-    card.alpha_composite(trait_panel, (trait_box[0], trait_box[1]))
-    centered_text(draw, name_box, "快手", FONT_NAME, TEXT_MAIN, stroke_width=1, stroke_fill=(0, 0, 0, 170))
-    centered_text(draw, trait_box, "特性预留", FONT_TRAIT, TEXT_DIM)
+    # Trait reserve
+    trait_rows = [
+        rect(70, 27.0, 69, 9.0),
+        rect(70, 37.5, 69, 9.0),
+        rect(70, 48.0, 69, 9.0),
+    ]
+    for index, trait_row in enumerate(trait_rows, start=1):
+        trait_panel = fit(load_button("Button_Rectangle_01_Convex_Dark.Png"), trait_row[2] - trait_row[0], trait_row[3] - trait_row[1])
+        card.alpha_composite(trait_panel, (trait_row[0], trait_row[1]))
+        centered_text(draw, trait_row, f"特性 {index}", FONT_TRAIT, TEXT_DIM)
 
     # Core stats section
-    bottom_box = rect(29, 62, 120, 26)
+    bottom_box = rect(29, 62, 110, 26)
     draw_beveled_panel(
         card,
         bottom_box,
@@ -453,15 +515,13 @@ def generate(prefix: str = "side_hero_sidebar_mockup_v5") -> tuple[Path, Path]:
         bevel=s(1.8),
     )
 
-    sword_large = load_rotated_icon(ULTIMATE_ICONS / "Tools/Sword.png", SWORD_TINT, (s(4.2), s(4.2)), 90)
-    shield_large = load_icon(ULTIMATE_ICONS / "Shield/Shield.png", SHIELD_TINT, (s(4.2), s(4.2)))
-    sword_x = s(47)
-    shield_x = s(95)
-    core_y = s(68.5)
-    card.alpha_composite(sword_large, (sword_x, core_y - s(0.2)))
-    card.alpha_composite(shield_large, (shield_x, core_y))
-    draw.text((sword_x + s(6.2), s(67.8)), "42", font=FONT_CORE, fill=TEXT_MAIN, stroke_width=1, stroke_fill=(0, 0, 0, 170))
-    draw.text((shield_x + s(6.2), s(67.8)), "43", font=FONT_CORE, fill=TEXT_MAIN, stroke_width=1, stroke_fill=(0, 0, 0, 170))
+    sword_large = load_rotated_icon(ULTIMATE_ICONS / "Tools/Sword.png", SWORD_TINT, (s(7.2), s(4.0)), 90)
+    shield_large = load_icon(ULTIMATE_ICONS / "Shield/Shield.png", SHIELD_TINT, (s(5.8), s(5.8)))
+    left_stat_center_x = bottom_box[0] + ((bottom_box[2] - bottom_box[0]) // 4)
+    right_stat_center_x = bottom_box[0] + (((bottom_box[2] - bottom_box[0]) * 3) // 4)
+    core_center_y = bottom_box[1] + ((bottom_box[3] - bottom_box[1]) // 2)
+    draw_icon_value_group(card, draw, left_stat_center_x, core_center_y, sword_large, "42", FONT_CORE, TEXT_MAIN, gap=s(1.6))
+    draw_icon_value_group(card, draw, right_stat_center_x, core_center_y, shield_large, "43", FONT_CORE, TEXT_MAIN, gap=s(1.6))
 
     # Light trim at the end of the panel after removing the old bottom portrait strip.
     draw.line((s(31), s(88), s(146), s(88)), fill=(255, 255, 255, 12), width=max(1, s(0.2)))
@@ -484,7 +544,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate a static single-hero sidebar mockup.")
     parser.add_argument(
         "--prefix",
-        default="side_hero_sidebar_mockup_v5",
+        default="side_hero_sidebar_mockup_v8",
         help="Output filename prefix without extension.",
     )
     return parser.parse_args()
