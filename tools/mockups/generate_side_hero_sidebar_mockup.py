@@ -14,7 +14,7 @@ LAYERLAB = ROOT / "game/Assets/Layer Lab/GUI Pro-FantasyRPG/ResourcesData/Sprite
 ULTIMATE_ICONS = ROOT / "game/Assets/UltimateCleanGUIPack/Common/Sprites/Icons"
 AVATAR = ROOT / "game/Assets/FantasyWorkshop/AvatarMaker/Images"
 
-BASE_WIDTH = 166
+BASE_WIDTH = 154
 BASE_HEIGHT = 94
 SCALE = 5
 
@@ -370,7 +370,7 @@ def make_preview(card: Image.Image) -> Image.Image:
     return preview
 
 
-def generate(prefix: str = "side_hero_sidebar_mockup_v3") -> tuple[Path, Path]:
+def generate(prefix: str = "side_hero_sidebar_mockup_v4") -> tuple[Path, Path]:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
     card = Image.new("RGBA", (CARD_WIDTH, CARD_HEIGHT), (0, 0, 0, 0))
@@ -395,7 +395,7 @@ def generate(prefix: str = "side_hero_sidebar_mockup_v3") -> tuple[Path, Path]:
     draw.line((s(28), s(3), s(28), s(20)), fill=(84, 19, 22, 170), width=max(1, s(0.35)))
     centered_text(draw, rect(1, 0, 27, 23), "资讯", FONT_TAB, TEXT_MAIN, stroke_width=1, stroke_fill=(49, 12, 15, 180))
     centered_text(draw, rect(28, 0, 56, 23), "核查", FONT_TAB, TEXT_MAIN, stroke_width=1, stroke_fill=(49, 12, 15, 180))
-    draw_arrow_button(card, rect(145, 2, 18, 18))
+    draw_arrow_button(card, rect(133, 2, 18, 18))
 
     # Inner separators
     draw.line((s(28), s(23), s(28), s(92)), fill=BLUE_OUTLINE, width=max(1, s(0.4)))
@@ -425,15 +425,15 @@ def generate(prefix: str = "side_hero_sidebar_mockup_v3") -> tuple[Path, Path]:
         draw_text_right(draw, s(24), icon_y + (icon.size[1] // 2), value, FONT_SMALL_NUMBER, TEXT_MUTED)
 
     # Portrait block
-    portrait_slot = rect(33, 27, 34, 33)
+    portrait_slot = rect(33, 27, 33, 33)
     slot_image = fit(load_button("Button_Rectangle_01_Convex_Dark.Png"), portrait_slot[2] - portrait_slot[0], portrait_slot[3] - portrait_slot[1])
     card.alpha_composite(slot_image, (portrait_slot[0], portrait_slot[1]))
     portrait = compose_avatar((portrait_slot[2] - portrait_slot[0] - s(2), portrait_slot[3] - portrait_slot[1] - s(2)))
     card.alpha_composite(portrait, (portrait_slot[0] + s(1), portrait_slot[1] + s(1)))
 
     # Name strip and trait reserve
-    name_box = rect(73, 27, 84, 12)
-    trait_box = rect(73, 41, 84, 19)
+    name_box = rect(70, 27, 69, 12)
+    trait_box = rect(70, 41, 69, 19)
     name_panel = fit(load_button("Button_Rectangle_01_Convex_Dark.Png"), name_box[2] - name_box[0], name_box[3] - name_box[1])
     trait_panel = fit(load_button("Button_Rectangle_01_Convex_Dark.Png"), trait_box[2] - trait_box[0], trait_box[3] - trait_box[1])
     card.alpha_composite(name_panel, (name_box[0], name_box[1]))
@@ -442,10 +442,21 @@ def generate(prefix: str = "side_hero_sidebar_mockup_v3") -> tuple[Path, Path]:
     centered_text(draw, trait_box, "特性预留", FONT_TRAIT, TEXT_DIM)
 
     # Core stats section
+    bottom_box = rect(29, 62, 120, 26)
+    draw_beveled_panel(
+        card,
+        bottom_box,
+        fill=(14, 18, 27, 230),
+        inner_fill=(17, 23, 34, 242),
+        outline=(44, 61, 88, 170),
+        shadow_alpha=70,
+        bevel=s(1.8),
+    )
+
     sword_large = load_rotated_icon(ULTIMATE_ICONS / "Tools/Sword.png", SWORD_TINT, (s(4.2), s(4.2)), 90)
     shield_large = load_icon(ULTIMATE_ICONS / "Shield/Shield.png", SHIELD_TINT, (s(4.2), s(4.2)))
-    sword_x = s(52)
-    shield_x = s(108)
+    sword_x = s(47)
+    shield_x = s(95)
     core_y = s(68.5)
     card.alpha_composite(sword_large, (sword_x, core_y - s(0.2)))
     card.alpha_composite(shield_large, (shield_x, core_y))
@@ -453,7 +464,7 @@ def generate(prefix: str = "side_hero_sidebar_mockup_v3") -> tuple[Path, Path]:
     draw.text((shield_x + s(6.2), s(67.8)), "43", font=FONT_CORE, fill=TEXT_MAIN, stroke_width=1, stroke_fill=(0, 0, 0, 170))
 
     # Light trim at the end of the panel after removing the old bottom portrait strip.
-    draw.line((s(31), s(88), s(158), s(88)), fill=(255, 255, 255, 18), width=max(1, s(0.28)))
+    draw.line((s(31), s(88), s(146), s(88)), fill=(255, 255, 255, 18), width=max(1, s(0.28)))
 
     card_path = OUT_DIR / f"{prefix}.png"
     preview_path = OUT_DIR / f"{prefix}_preview.png"
@@ -473,7 +484,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate a static single-hero sidebar mockup.")
     parser.add_argument(
         "--prefix",
-        default="side_hero_sidebar_mockup_v3",
+        default="side_hero_sidebar_mockup_v4",
         help="Output filename prefix without extension.",
     )
     return parser.parse_args()
