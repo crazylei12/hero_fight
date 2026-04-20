@@ -20,7 +20,7 @@ MonoBehaviour:
     maxHealth: 410
     attackPower: 46
     defense: 22
-    attackSpeed: 0.89285713
+    attackSpeed: 0.8928571
     moveSpeed: 4.5
     criticalChance: 0.12
     criticalDamageMultiplier: 1.65
@@ -53,4 +53,3 @@ MonoBehaviour:
     castSfx: {fileID: 0}
   debugNotes: Stage-01 demo hero for Warrior. Bladesman validates pre-damage defense
     shred and fixed-distance line-breaking dash damage.
-

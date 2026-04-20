@@ -117,6 +117,12 @@ MonoBehaviour:
   castImpactVfxScaleMultiplier: {x: 1, y: 1, z: 1}
   castImpactVfxAlignToTargetDirection: 0
   castProjectileVfxPrefab: {fileID: 0}
+  dashTravelVfxPrefab: {fileID: 0}
+  dashTravelVfxLocalOffset: {x: 0, y: 0, z: 0}
+  dashTravelVfxForwardOffset: 0
+  dashTravelVfxEulerAngles: {x: 0, y: 0, z: 0}
+  dashTravelVfxScaleMultiplier: {x: 1, y: 1, z: 1}
+  dashTravelVfxPathWidthScaleMultiplier: 1
   persistentAreaVfxPrefab: {fileID: 0}
   persistentAreaVfxScaleMultiplier: 1
   persistentAreaVfxEulerAngles: {x: 0, y: 0, z: 0}

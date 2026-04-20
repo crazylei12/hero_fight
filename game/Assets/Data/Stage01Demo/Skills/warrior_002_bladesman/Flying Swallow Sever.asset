@@ -66,7 +66,16 @@ MonoBehaviour:
     forcedMovementDistance: 0
     forcedMovementDurationSeconds: 0
     forcedMovementPeakHeight: 0
+    healProtectedHeroPerSuccessfulKnockUp: 0
     onTriggerStatusEffects: []
+    guardLoopVfxPrefab: {fileID: 0}
+    guardLoopVfxLocalOffset: {x: 0, y: 0, z: 0}
+    guardLoopVfxLocalScale: {x: 1, y: 1, z: 1}
+    guardLoopVfxEulerAngles: {x: 0, y: 0, z: 0}
+    triggerVfxPrefab: {fileID: 0}
+    triggerVfxLocalOffset: {x: 0, y: 0, z: 0}
+    triggerVfxLocalScale: {x: 1, y: 1, z: 1}
+    triggerVfxEulerAngles: {x: 0, y: 0, z: 0}
   actionSequence:
     enabled: 0
     payloadType: 0
@@ -81,6 +90,11 @@ MonoBehaviour:
     targetRefreshMode: 1
     interruptFlags: 3
   targetIndicatorVfxPrefab: {fileID: 0}
+  castImpactVfxPrefab: {fileID: 0}
+  castImpactVfxLocalOffset: {x: 0, y: 0, z: 0}
+  castImpactVfxEulerAngles: {x: 0, y: 0, z: 0}
+  castImpactVfxScaleMultiplier: {x: 1, y: 1, z: 1}
+  castImpactVfxAlignToTargetDirection: 0
   castProjectileVfxPrefab: {fileID: 0}
   dashTravelVfxPrefab: {fileID: 6209638768021923619, guid: 093616a1906e4db98d3f98e4581216bc, type: 3}
   dashTravelVfxLocalOffset: {x: 0, y: 0, z: 0}

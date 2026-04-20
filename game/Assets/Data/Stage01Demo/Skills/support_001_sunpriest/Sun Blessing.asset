@@ -80,6 +80,8 @@ MonoBehaviour:
   castImpactVfxEulerAngles: {x: 0, y: 0, z: 0}
   castImpactVfxScaleMultiplier: {x: 1, y: 1, z: 1}
   castImpactVfxAlignToTargetDirection: 0
+  castImpactVfxScaleWithSkillArea: 0
+  castImpactVfxAreaDiameterScaleMultiplier: 1
   castProjectileVfxPrefab: {fileID: 0}
   dashTravelVfxPrefab: {fileID: 0}
   dashTravelVfxLocalOffset: {x: 0, y: 0, z: 0}

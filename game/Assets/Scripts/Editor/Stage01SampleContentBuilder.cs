@@ -39,6 +39,7 @@ namespace Fight.Editor
         private const string MonkHeroAssetPath = HeroesRootFolder + "/support_003_monk/Monk.asset";
         private const string MonkActiveSkillAssetPath = SkillsRootFolder + "/support_003_monk/Renewing Pulse.asset";
         private const string MonkUltimateSkillAssetPath = SkillsRootFolder + "/support_003_monk/Guardian Mantra.asset";
+        private const string MonkActiveImpactVfxPrefabPath = "Assets/Prefabs/VFX/Skills/MonkRenewingPulseBurst.prefab";
         private const string AssassinPrefabPath = "Assets/Prefabs/Heroes/assassin_001_shadowstep/Shadowstep.prefab";
         private const string TidefinPrefabPath = "Assets/Prefabs/Heroes/assassin_002_tidefin/Tidefin.prefab";
         private const string MarksmanPrefabPath = "Assets/Prefabs/Heroes/marksman_001_longshot/Longshot.prefab";
@@ -302,6 +303,15 @@ namespace Fight.Editor
             ConfigureMonkBasicAttack(monk, overwriteExistingContent, monkHeroExisted);
             EnsureHeroSkillReferences(monk, monkActive, monkUltimateSkill);
             EnsureHeroBattlePrefabReference(monk, LoadBattlePrefab("support_003_monk", HeroClass.Support));
+            EnsureSkillCastImpactVfxPresentation(
+                monkActive,
+                AssetDatabase.LoadAssetAtPath<GameObject>(MonkActiveImpactVfxPrefabPath),
+                Vector3.zero,
+                Vector3.zero,
+                Vector3.one,
+                false,
+                true,
+                1f);
 
             var marksmanActive = CreateLongshotActiveSkill(overwriteExistingContent);
             var marksmanUltimateSkill = CreateLongshotUltimateSkill(overwriteExistingContent, out var marksmanUltimateExisted);
@@ -460,6 +470,15 @@ namespace Fight.Editor
             var windchimeBattlePrefabValid = HeroHasExpectedBattlePrefab(windchimeHero, windchimeBattlePrefab);
             var monkReferencesValid = HeroHasExpectedSkillReferences(monkHero, monkActiveSkill, monkUltimateSkill);
             var monkBattlePrefabValid = monkBattlePrefab == null || HeroHasExpectedBattlePrefab(monkHero, monkBattlePrefab);
+            var monkActiveImpactVfxValid = SkillHasExpectedCastImpactVfxPresentation(
+                monkActiveSkill,
+                AssetDatabase.LoadAssetAtPath<GameObject>(MonkActiveImpactVfxPrefabPath),
+                Vector3.zero,
+                Vector3.zero,
+                Vector3.one,
+                false,
+                true,
+                1f);
 
             return !hasMainMenuScene
                 || !hasHeroSelectScene
@@ -486,7 +505,8 @@ namespace Fight.Editor
                 || !windchimeReferencesValid
                 || !windchimeBattlePrefabValid
                 || !monkReferencesValid
-                || !monkBattlePrefabValid;
+                || !monkBattlePrefabValid
+                || !monkActiveImpactVfxValid;
         }
 
         private static void EnsureDemoContentValidationPassed(bool logFailures)
@@ -846,7 +866,9 @@ namespace Fight.Editor
             Vector3 expectedOffset,
             Vector3 expectedEulerAngles,
             Vector3 expectedScaleMultiplier,
-            bool expectedAlignToTargetDirection)
+            bool expectedAlignToTargetDirection,
+            bool expectedScaleWithSkillArea = false,
+            float expectedAreaDiameterScaleMultiplier = 1f)
         {
             return skill != null
                 && expectedPrefab != null
@@ -854,7 +876,9 @@ namespace Fight.Editor
                 && skill.castImpactVfxLocalOffset == expectedOffset
                 && skill.castImpactVfxEulerAngles == expectedEulerAngles
                 && skill.castImpactVfxScaleMultiplier == expectedScaleMultiplier
-                && skill.castImpactVfxAlignToTargetDirection == expectedAlignToTargetDirection;
+                && skill.castImpactVfxAlignToTargetDirection == expectedAlignToTargetDirection
+                && skill.castImpactVfxScaleWithSkillArea == expectedScaleWithSkillArea
+                && Mathf.Approximately(skill.castImpactVfxAreaDiameterScaleMultiplier, expectedAreaDiameterScaleMultiplier);
         }
 
         private static void EnsureHeroBattlePrefabReference(HeroDefinition hero, GameObject battlePrefab)
@@ -881,7 +905,9 @@ namespace Fight.Editor
             Vector3 localOffset,
             Vector3 eulerAngles,
             Vector3 scaleMultiplier,
-            bool alignToTargetDirection)
+            bool alignToTargetDirection,
+            bool scaleWithSkillArea = false,
+            float areaDiameterScaleMultiplier = 1f)
         {
             if (skill == null || prefab == null)
             {
@@ -892,7 +918,9 @@ namespace Fight.Editor
                 && skill.castImpactVfxLocalOffset == localOffset
                 && skill.castImpactVfxEulerAngles == eulerAngles
                 && skill.castImpactVfxScaleMultiplier == scaleMultiplier
-                && skill.castImpactVfxAlignToTargetDirection == alignToTargetDirection)
+                && skill.castImpactVfxAlignToTargetDirection == alignToTargetDirection
+                && skill.castImpactVfxScaleWithSkillArea == scaleWithSkillArea
+                && Mathf.Approximately(skill.castImpactVfxAreaDiameterScaleMultiplier, areaDiameterScaleMultiplier))
             {
                 return;
             }
@@ -902,6 +930,8 @@ namespace Fight.Editor
             skill.castImpactVfxEulerAngles = eulerAngles;
             skill.castImpactVfxScaleMultiplier = scaleMultiplier;
             skill.castImpactVfxAlignToTargetDirection = alignToTargetDirection;
+            skill.castImpactVfxScaleWithSkillArea = scaleWithSkillArea;
+            skill.castImpactVfxAreaDiameterScaleMultiplier = areaDiameterScaleMultiplier;
             EditorUtility.SetDirty(skill);
         }
 
