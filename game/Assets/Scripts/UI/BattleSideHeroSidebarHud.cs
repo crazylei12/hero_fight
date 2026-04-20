@@ -11,17 +11,8 @@ namespace Fight.UI
     {
         private const string RuntimeBaseTexturePath = "UI/BattleHud/side_hero_sidebar_runtime_base";
         private const int TeamSize = BattleInputConfig.DefaultTeamSize;
-        private const float DesignCardWidth = 139f;
-        private const float DesignCardHeight = 88f;
-
-        [SerializeField] private float sideMargin = 12f;
-        [SerializeField] private float bottomMargin = 12f;
-        [SerializeField] private float verticalGap = 10f;
-        [SerializeField] private float topHudReservedHeightAt1080p = 194f;
-        [SerializeField] private float maxCardWidth = 280f;
-        [SerializeField] private float maxCardHeight = 176f;
-        [SerializeField] private float minCardHeight = 96f;
-        [SerializeField] private float maxSideWidthRatio = 0.19f;
+        private const float DesignCardWidth = BattleScreenLayout.DesignCardWidth;
+        private const float DesignCardHeight = BattleScreenLayout.DesignCardHeight;
 
         private static readonly Color BlueAccent = new Color32(88, 173, 255, 255);
         private static readonly Color RedAccent = new Color32(255, 126, 126, 255);
@@ -93,49 +84,23 @@ namespace Fight.UI
             CollectTeamHeroes(context, TeamSide.Blue, blueHeroes);
             CollectTeamHeroes(context, TeamSide.Red, redHeroes);
 
-            var topReserved = Mathf.Clamp((Screen.height / 1080f) * topHudReservedHeightAt1080p, 96f, 220f);
-            var availableHeight = Mathf.Max(0f, Screen.height - topReserved - bottomMargin);
-            if (availableHeight <= 0f)
+            if (!BattleScreenLayout.TryGetMetrics(out var layout))
             {
                 return;
             }
 
-            var maxHeightByAvailable = (availableHeight - (verticalGap * (TeamSize - 1))) / TeamSize;
-            var cardHeight = Mathf.Min(maxCardHeight, maxHeightByAvailable);
-            if (maxHeightByAvailable >= minCardHeight)
-            {
-                cardHeight = Mathf.Max(minCardHeight, cardHeight);
-            }
-
-            if (cardHeight < 72f)
-            {
-                return;
-            }
-
-            var cardWidth = Mathf.Min(maxCardWidth, cardHeight * (DesignCardWidth / DesignCardHeight));
-            cardWidth = Mathf.Min(cardWidth, Screen.width * maxSideWidthRatio);
-            var maxWidthByScreen = Mathf.Max(120f, (Screen.width - (sideMargin * 2f) - 12f) * 0.5f);
-            cardWidth = Mathf.Min(cardWidth, maxWidthByScreen);
-            cardHeight = cardWidth * (DesignCardHeight / DesignCardWidth);
-
-            var totalHeight = (cardHeight * TeamSize) + (verticalGap * (TeamSize - 1));
-            var startY = topReserved + Mathf.Max(0f, (availableHeight - totalHeight) * 0.5f);
-            var leftX = sideMargin;
-            var rightX = Screen.width - sideMargin - cardWidth;
-
-            var styleScale = cardWidth / DesignCardWidth;
+            var styleScale = layout.CardWidth / DesignCardWidth;
             EnsureStyles(styleScale);
 
             for (var slotIndex = 0; slotIndex < TeamSize; slotIndex++)
             {
-                var y = startY + (slotIndex * (cardHeight + verticalGap));
                 DrawHeroCard(
-                    new Rect(leftX, y, cardWidth, cardHeight),
+                    layout.GetCardRect(TeamSide.Blue, slotIndex),
                     blueHeroes.Count > slotIndex ? blueHeroes[slotIndex] : null,
                     TeamSide.Blue,
                     mirrorLayout: false);
                 DrawHeroCard(
-                    new Rect(rightX, y, cardWidth, cardHeight),
+                    layout.GetCardRect(TeamSide.Red, slotIndex),
                     redHeroes.Count > slotIndex ? redHeroes[slotIndex] : null,
                     TeamSide.Red,
                     mirrorLayout: true);
