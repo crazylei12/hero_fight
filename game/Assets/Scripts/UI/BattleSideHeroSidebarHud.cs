@@ -35,6 +35,9 @@ namespace Fight.UI
         private static readonly Color MainTextColor = new Color32(242, 244, 248, 255);
         private static readonly Color MutedTextColor = new Color32(170, 176, 188, 255);
         private static readonly Color DimTextColor = new Color32(120, 127, 141, 255);
+        private static readonly Color InfoTabFillColor = new Color32(34, 36, 44, 236);
+        private static readonly Color InfoTabHighlightColor = new Color32(88, 92, 104, 110);
+        private static readonly Color InfoTabDividerColor = new Color32(17, 19, 24, 255);
         private static readonly Color BlueHeaderTint = new Color32(57, 113, 198, 255);
         private static readonly Color RedHeaderTint = new Color32(198, 47, 49, 255);
         private static readonly Color StatusBadgeFill = new Color32(214, 161, 46, 255);
@@ -208,6 +211,7 @@ namespace Fight.UI
             }
 
             DrawTeamHeaderTint(rect, side, mirrorLayout);
+            DrawInfoTabTint(rect, mirrorLayout);
 
             DrawTintedRect(
                 mirrorLayout
@@ -574,6 +578,21 @@ namespace Fight.UI
             var designRect = ScaleRect(28f, 0f, 111f, 23f, rect.width / DesignCardWidth, mirrorLayout);
             var color = side == TeamSide.Red ? RedHeaderTint : BlueHeaderTint;
             DrawTintedRect(designRect, color);
+        }
+
+        private static void DrawInfoTabTint(Rect rect, bool mirrorLayout)
+        {
+            var scale = rect.width / DesignCardWidth;
+            var tabRect = ScaleRect(1f, 0f, 27f, 23f, scale, mirrorLayout);
+            DrawTintedRect(tabRect, InfoTabFillColor);
+            DrawTintedRect(
+                new Rect(tabRect.x + 1f, tabRect.y + 1f, Mathf.Max(0f, tabRect.width - 2f), Mathf.Max(1f, tabRect.height * 0.12f)),
+                InfoTabHighlightColor);
+
+            var dividerRect = mirrorLayout
+                ? new Rect(tabRect.x - 1f, tabRect.y, 1f, tabRect.height)
+                : new Rect(tabRect.xMax, tabRect.y, 1f, tabRect.height);
+            DrawTintedRect(dividerRect, InfoTabDividerColor);
         }
 
         private void DrawStateBadge(Rect rect, string stateText, Color textColor)
