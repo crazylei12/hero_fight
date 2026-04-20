@@ -886,7 +886,7 @@ namespace Fight.Battle
             var hasSecondaryCondition = decision.secondaryCondition != null
                 && decision.secondaryCondition.conditionType != UltimateConditionType.None;
             var secondaryTrace = hasSecondaryCondition
-                ? EvaluateUltimateConditionTrace(context, caster, skill, primaryTarget, decision.secondaryCondition, null, affectedTargets, "secondary")
+                ? EvaluateUltimateConditionTrace(context, caster, skill, primaryTarget, decision.secondaryCondition, decision.fallback, affectedTargets, "secondary")
                 : new UltimateConditionTrace(false, true, "secondary=none");
 
             var finalPass = primaryTrace.Passed;
@@ -1099,7 +1099,7 @@ namespace Fight.Battle
                 case UltimateConditionType.AllyLowHealthInRange:
                 case UltimateConditionType.EnemyHeroClassInRange:
                 case UltimateConditionType.EnemyCountInDashPath:
-                    var measuredCount = GetConditionUnitCount(context, caster, skill, primaryTarget, primaryCondition);
+                    var measuredCount = GetConditionUnitCount(context, caster, skill, primaryTarget, primaryCondition, decision?.fallback);
                     var requiredCount = GetEffectiveRequiredUnitCount(primaryCondition, decision?.fallback, context);
                     extraUnitBonus = Mathf.Max(0, measuredCount - requiredCount) * UltimateExtraUnitReleaseChance;
                     break;
@@ -1119,7 +1119,7 @@ namespace Fight.Battle
                 && decision.combineMode == UltimateConditionCombineMode.PrimaryOnly
                 && secondaryCondition != null
                 && secondaryCondition.conditionType != UltimateConditionType.None
-                && EvaluateUltimateCondition(context, caster, skill, primaryTarget, secondaryCondition, null, null))
+                && EvaluateUltimateCondition(context, caster, skill, primaryTarget, secondaryCondition, decision.fallback, null))
             {
                 // Stage-01 uses PrimaryOnly + secondaryCondition to express
                 // "the main cast gate is unchanged, but this opportunity is more attractive".
@@ -1296,10 +1296,11 @@ namespace Fight.Battle
             RuntimeHero caster,
             SkillData skill,
             RuntimeHero primaryTarget,
-            UltimateConditionData condition)
+            UltimateConditionData condition,
+            UltimateFallbackData fallback)
         {
             var searchRadius = GetEffectiveSearchRadius(skill, condition);
-            var healthThreshold = GetEffectiveHealthPercentThreshold(condition, null, context);
+            var healthThreshold = GetEffectiveHealthPercentThreshold(condition, fallback, context);
 
             return condition.conditionType switch
             {
