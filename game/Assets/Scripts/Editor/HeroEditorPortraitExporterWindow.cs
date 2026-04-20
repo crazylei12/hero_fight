@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using Assets.FantasyMonsters.Common.Scripts;
 using Assets.HeroEditor4D.Common.Scripts.CharacterScripts;
 using Assets.HeroEditor4D.Common.Scripts.Enums;
 using UnityEditor;
@@ -83,9 +84,9 @@ namespace Fight.Editor
         private void OnGUI()
         {
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField("HeroEditor 正面 Idle PNG 导出", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("英雄 Idle PNG 导出", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(
-                "这个工具会把包含 Character4D 的 prefab 切到正面朝向和 Idle 状态，并导出透明背景 PNG。现在支持按目录批量导出，并可直接写回每个 prefab 所在文件夹。",
+                "这个工具会自动识别英雄 prefab 类型。Character4D 会切到正面 Idle；FantasyMonsters/Tidefin 这类模板会切到 Idle 并直接截图。现在支持按目录批量导出，并可直接写回每个 prefab 所在文件夹。",
                 MessageType.Info);
 
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
@@ -177,7 +178,7 @@ namespace Fight.Editor
 
             EditorGUILayout.Space();
             EditorGUILayout.HelpBox(
-                "目录批量导出会扫描指定文件夹中的 prefab，并只处理包含 Character4D 的资源。默认文件名格式是 <PrefabName>_idle_front.png。",
+                "目录批量导出会扫描指定文件夹中的 prefab，并处理当前支持的英雄模板。默认文件名格式是 <PrefabName>_idle_front.png。",
                 MessageType.None);
         }
 
@@ -185,7 +186,7 @@ namespace Fight.Editor
         {
             if (sourcePrefab == null)
             {
-                EditorUtility.DisplayDialog("缺少 Prefab", "请先指定一个包含 Character4D 的 prefab。", "OK");
+                EditorUtility.DisplayDialog("缺少 Prefab", "请先指定一个受支持的英雄 prefab。", "OK");
                 return;
             }
 
@@ -202,7 +203,7 @@ namespace Fight.Editor
             var prefabs = HeroEditorPortraitExporter.GetSelectedPrefabAssets().ToList();
             if (prefabs.Count == 0)
             {
-                EditorUtility.DisplayDialog("没有可导出的 Prefab", "请在 Project 视图中选择至少一个包含 Character4D 的 prefab。", "OK");
+                EditorUtility.DisplayDialog("没有可导出的 Prefab", "请在 Project 视图中选择至少一个受支持的英雄 prefab。", "OK");
                 return;
             }
 
@@ -345,6 +346,13 @@ namespace Fight.Editor
 
     public static class HeroEditorPortraitExporter
     {
+        private enum PortraitCaptureProfile
+        {
+            Unsupported = 0,
+            HeroEditorCharacter4D = 1,
+            FantasyMonster = 2
+        }
+
         private const string CommandLineMethodSourceArg = "-fightPortraitSource";
         private const string CommandLineMethodFolderArg = "-fightPortraitFolder";
         private const string CommandLineMethodOutputArg = "-fightPortraitOutput";
@@ -362,7 +370,7 @@ namespace Fight.Editor
             return Selection.objects
                 .OfType<GameObject>()
                 .Where(IsPrefabAsset)
-                .Where(ContainsCharacter4D);
+                .Where(IsSupportedPortraitPrefab);
         }
 
         public static IEnumerable<GameObject> GetPrefabAssetsInFolder(string folderAssetPath, bool recursive)
@@ -381,7 +389,7 @@ namespace Fight.Editor
             foreach (var assetPath in prefabAssetPaths)
             {
                 var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(assetPath);
-                if (ContainsCharacter4D(prefab))
+                if (IsSupportedPortraitPrefab(prefab))
                 {
                     yield return prefab;
                 }
@@ -408,7 +416,7 @@ namespace Fight.Editor
             var prefabs = GetPrefabAssetsInFolder(folderAssetPath, normalizedOptions.searchRecursively).ToList();
             if (prefabs.Count == 0)
             {
-                throw new InvalidOperationException($"Folder [{folderAssetPath}] does not contain any prefab with Character4D.");
+                throw new InvalidOperationException($"Folder [{folderAssetPath}] does not contain any supported hero prefab.");
             }
 
             return ExportPrefabs(prefabs, normalizedOptions);
@@ -426,9 +434,10 @@ namespace Fight.Editor
                 throw new InvalidOperationException("只能导出 Project 里的 prefab 资源。");
             }
 
-            if (!ContainsCharacter4D(prefab))
+            var captureProfile = GetPortraitCaptureProfile(prefab);
+            if (captureProfile == PortraitCaptureProfile.Unsupported)
             {
-                throw new InvalidOperationException($"Prefab [{prefab.name}] 不包含 Character4D，无法走 HeroEditor 正面 Idle 导出流程。");
+                throw new InvalidOperationException($"Prefab [{prefab.name}] 不是当前支持的英雄模板，无法自动导出头像。");
             }
 
             var normalizedOptions = NormalizeOptions(options);
@@ -539,18 +548,16 @@ namespace Fight.Editor
 
             try
             {
-                var character = prefabRoot.GetComponentInChildren<Character4D>(true);
-                if (character == null)
+                var captureProfile = GetPortraitCaptureProfile(prefabRoot);
+                if (captureProfile == PortraitCaptureProfile.Unsupported)
                 {
-                    throw new InvalidOperationException($"Prefab at [{assetPath}] does not contain a Character4D component.");
+                    throw new InvalidOperationException($"Prefab at [{assetPath}] is not a supported portrait capture target.");
                 }
 
-                PrepareCharacterForPortraitCapture(character, options);
-
-                var spriteRenderers = CollectCaptureRenderers(character, options.includeShadow);
+                var spriteRenderers = PreparePortraitSubjectForCapture(prefabRoot, captureProfile, options);
                 if (spriteRenderers.Count == 0)
                 {
-                    throw new InvalidOperationException($"Prefab at [{assetPath}] has no visible SpriteRenderer after switching to front idle state.");
+                    throw new InvalidOperationException($"Prefab at [{assetPath}] has no visible SpriteRenderer after preparing profile [{captureProfile}].");
                 }
 
                 var bounds = CalculateBounds(spriteRenderers);
@@ -612,14 +619,13 @@ namespace Fight.Editor
                 previewRoot.hideFlags = HideFlags.HideAndDontSave;
                 SceneManager.MoveGameObjectToScene(previewRoot, previewScene);
 
-                var previewCharacter = previewRoot.GetComponentInChildren<Character4D>(true);
-                if (previewCharacter == null)
+                var previewProfile = GetPortraitCaptureProfile(previewRoot);
+                if (previewProfile == PortraitCaptureProfile.Unsupported)
                 {
                     return null;
                 }
 
-                PrepareCharacterForPortraitCapture(previewCharacter, options);
-                var previewRenderers = CollectCaptureRenderers(previewCharacter, options.includeShadow);
+                var previewRenderers = PreparePortraitSubjectForCapture(previewRoot, previewProfile, options);
                 if (previewRenderers.Count == 0)
                 {
                     return null;
@@ -790,9 +796,63 @@ namespace Fight.Editor
             animator.speed = 0f;
         }
 
-        private static List<SpriteRenderer> CollectCaptureRenderers(Character4D character, bool includeShadow)
+        private static void PrepareMonsterForPortraitCapture(Monster monster)
         {
-            return character.GetComponentsInChildren<SpriteRenderer>(true)
+            if (monster == null)
+            {
+                return;
+            }
+
+            monster.SetHead(0);
+
+            var animator = monster.Animator != null ? monster.Animator : monster.GetComponentInChildren<Animator>(true);
+            if (animator == null)
+            {
+                return;
+            }
+
+            animator.Rebind();
+            animator.Update(0f);
+            monster.SetState(MonsterState.Idle);
+            animator.Update(0.05f);
+            animator.Update(0f);
+            animator.speed = 0f;
+        }
+
+        private static List<SpriteRenderer> PreparePortraitSubjectForCapture(GameObject prefabRoot, PortraitCaptureProfile captureProfile, HeroEditorPortraitExportOptions options)
+        {
+            switch (captureProfile)
+            {
+                case PortraitCaptureProfile.HeroEditorCharacter4D:
+                {
+                    var character = prefabRoot.GetComponentInChildren<Character4D>(true);
+                    if (character == null)
+                    {
+                        throw new InvalidOperationException("Character4D capture profile was selected, but no Character4D component was found.");
+                    }
+
+                    PrepareCharacterForPortraitCapture(character, options);
+                    return CollectCaptureRenderers(character.gameObject, options.includeShadow);
+                }
+                case PortraitCaptureProfile.FantasyMonster:
+                {
+                    var monster = prefabRoot.GetComponentInChildren<Monster>(true);
+                    if (monster == null)
+                    {
+                        throw new InvalidOperationException("FantasyMonster capture profile was selected, but no Monster component was found.");
+                    }
+
+                    PrepareMonsterForPortraitCapture(monster);
+                    return CollectCaptureRenderers(monster.gameObject, options.includeShadow);
+                }
+                default:
+                    throw new InvalidOperationException("Unsupported portrait capture profile.");
+            }
+        }
+
+        private static List<SpriteRenderer> CollectCaptureRenderers(GameObject root, bool includeShadow)
+        {
+            return root.GetComponentsInChildren<SpriteRenderer>(true)
                 .Where(renderer => renderer != null)
                 .Where(renderer => renderer.enabled)
                 .Where(renderer => renderer.gameObject.activeInHierarchy)
@@ -936,9 +996,29 @@ namespace Fight.Editor
                 && PrefabUtility.GetPrefabAssetType(prefab) != PrefabAssetType.NotAPrefab;
         }
 
-        private static bool ContainsCharacter4D(GameObject prefab)
+        private static PortraitCaptureProfile GetPortraitCaptureProfile(GameObject prefab)
         {
-            return prefab != null && prefab.GetComponentInChildren<Character4D>(true) != null;
+            if (prefab == null)
+            {
+                return PortraitCaptureProfile.Unsupported;
+            }
+
+            if (prefab.GetComponentInChildren<Character4D>(true) != null)
+            {
+                return PortraitCaptureProfile.HeroEditorCharacter4D;
+            }
+
+            if (prefab.GetComponentInChildren<Monster>(true) != null)
+            {
+                return PortraitCaptureProfile.FantasyMonster;
+            }
+
+            return PortraitCaptureProfile.Unsupported;
+        }
+
+        private static bool IsSupportedPortraitPrefab(GameObject prefab)
+        {
+            return GetPortraitCaptureProfile(prefab) != PortraitCaptureProfile.Unsupported;
         }
 
         private static string SanitizeFileName(string fileName)
