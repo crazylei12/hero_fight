@@ -25,6 +25,26 @@ namespace Fight.Battle
             };
         }
 
+        public static RuntimeHero SelectLockedPreferredEnemyTarget(
+            IReadOnlyList<RuntimeHero> heroes,
+            RuntimeHero actor,
+            RuntimeHero currentTarget,
+            float maxRange)
+        {
+            return IsLockedPreferredEnemyTargetValid(actor, currentTarget)
+                ? currentTarget
+                : SelectPreferredEnemyTarget(heroes, actor, maxRange);
+        }
+
+        public static bool IsLockedPreferredEnemyTargetValid(RuntimeHero actor, RuntimeHero currentTarget)
+        {
+            return actor != null
+                && currentTarget != null
+                && !currentTarget.IsDead
+                && currentTarget.Side != actor.Side
+                && currentTarget.CanBeDirectTargeted;
+        }
+
         public static RuntimeHero SelectNearestEnemyTarget(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange)
         {
             return FindNearestEnemy(heroes, actor, maxRange);

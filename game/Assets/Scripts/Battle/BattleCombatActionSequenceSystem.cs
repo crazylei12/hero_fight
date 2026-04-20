@@ -165,7 +165,11 @@ namespace Fight.Battle
                     actor,
                     actor.AttackRange,
                     allowHealthyFallback: true),
-                BasicAttackTargetType.PreferredEnemy => BattleAiDirector.SelectPreferredEnemyTarget(context.Heroes, actor, actor.AttackRange),
+                BasicAttackTargetType.PreferredEnemy => BattleAiDirector.SelectLockedPreferredEnemyTarget(
+                    context.Heroes,
+                    actor,
+                    sequence.PreferredTarget,
+                    actor.AttackRange),
                 _ => BattleAiDirector.SelectNearestEnemyTarget(context.Heroes, actor, actor.AttackRange),
             };
 
