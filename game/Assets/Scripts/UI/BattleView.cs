@@ -2339,12 +2339,13 @@ namespace Fight.UI
             }
 
             var rotation = ResolveSkillCastImpactRotation(skillCastEvent);
+            var scale = ResolveSkillCastImpactScale(skillCastEvent);
             SpawnTransientWorldVfx(
                 skillCastEvent.Skill.castImpactVfxPrefab,
                 worldPosition,
                 sortingOrder,
                 rotation,
-                skillCastEvent.Skill.castImpactVfxScaleMultiplier);
+                scale);
         }
 
         private Quaternion ResolveSkillCastImpactRotation(SkillCastEvent skillCastEvent)
@@ -2369,6 +2370,26 @@ namespace Fight.UI
 
             var zAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
             return Quaternion.Euler(eulerAngles + new Vector3(0f, 0f, zAngle));
+        }
+
+        private Vector3 ResolveSkillCastImpactScale(SkillCastEvent skillCastEvent)
+        {
+            var skill = skillCastEvent?.Skill;
+            var scale = skill != null ? skill.castImpactVfxScaleMultiplier : Vector3.one;
+            if (skill == null
+                || !skill.castImpactVfxScaleWithSkillArea
+                || skill.areaRadius <= 0f)
+            {
+                return scale;
+            }
+
+            var areaDiameter = Mathf.Max(0.1f, skill.areaRadius * 2f);
+            var areaScaleMultiplier = Mathf.Max(0.1f, skill.castImpactVfxAreaDiameterScaleMultiplier);
+            var dynamicScale = areaDiameter * areaScaleMultiplier;
+            return new Vector3(
+                scale.x * dynamicScale,
+                scale.y * dynamicScale,
+                scale.z);
         }
 
         private static string GetSkillTargetIndicatorTransientKey(RuntimeHero caster, SkillData skill)

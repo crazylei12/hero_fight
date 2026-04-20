@@ -18,6 +18,10 @@ MonoBehaviour:
   slotType: 1
   skillType: 1
   targetType: 5
+  preferredEnemyHeroClass: 2
+  fallbackTargetType: 1
+  targetPrioritySearchRadius: 0
+  targetPriorityRequiredUnitCount: 1
   castRange: 0
   areaRadius: 9
   cooldownSeconds: 0
@@ -38,6 +42,25 @@ MonoBehaviour:
     forcedMovementPeakHeight: 0
     statusEffects: []
   allowsSelfCast: 1
+  reactiveGuard:
+    enabled: 0
+    durationSeconds: 0
+    triggerRadius: 0
+    effectRadius: 0
+    maxTriggerCount: 1
+    forcedMovementDistance: 0
+    forcedMovementDurationSeconds: 0
+    forcedMovementPeakHeight: 0
+    healProtectedHeroPerSuccessfulKnockUp: 0
+    onTriggerStatusEffects: []
+    guardLoopVfxPrefab: {fileID: 0}
+    guardLoopVfxLocalOffset: {x: 0, y: 0, z: 0}
+    guardLoopVfxLocalScale: {x: 1, y: 1, z: 1}
+    guardLoopVfxEulerAngles: {x: 0, y: 0, z: 0}
+    triggerVfxPrefab: {fileID: 0}
+    triggerVfxLocalOffset: {x: 0, y: 0, z: 0}
+    triggerVfxLocalScale: {x: 1, y: 1, z: 1}
+    triggerVfxEulerAngles: {x: 0, y: 0, z: 0}
   actionSequence:
     enabled: 0
     payloadType: 0
@@ -52,7 +75,18 @@ MonoBehaviour:
     targetRefreshMode: 1
     interruptFlags: 3
   targetIndicatorVfxPrefab: {fileID: 0}
+  castImpactVfxPrefab: {fileID: 0}
+  castImpactVfxLocalOffset: {x: 0, y: 0, z: 0}
+  castImpactVfxEulerAngles: {x: 0, y: 0, z: 0}
+  castImpactVfxScaleMultiplier: {x: 1, y: 1, z: 1}
+  castImpactVfxAlignToTargetDirection: 0
   castProjectileVfxPrefab: {fileID: 0}
+  dashTravelVfxPrefab: {fileID: 0}
+  dashTravelVfxLocalOffset: {x: 0, y: 0, z: 0}
+  dashTravelVfxForwardOffset: 0
+  dashTravelVfxEulerAngles: {x: 0, y: 0, z: 0}
+  dashTravelVfxScaleMultiplier: {x: 1, y: 1, z: 1}
+  dashTravelVfxPathWidthScaleMultiplier: 1
   persistentAreaVfxPrefab: {fileID: 8269785463387386777, guid: e93999083e3721b4bbe61747084b6ed1, type: 3}
   persistentAreaVfxScaleMultiplier: 1
   persistentAreaVfxEulerAngles: {x: 0, y: 0, z: 0}
@@ -66,6 +100,7 @@ MonoBehaviour:
       healthPercentThreshold: 1
       durationSeconds: 0
       highValueTargetType: 0
+      heroClassFilter: 2
       requireTargetInCastRange: 1
     secondaryCondition:
       conditionType: 0
@@ -74,6 +109,7 @@ MonoBehaviour:
       healthPercentThreshold: 1
       durationSeconds: 0
       highValueTargetType: 0
+      heroClassFilter: 2
       requireTargetInCastRange: 1
     fallback:
       fallbackType: 1

@@ -53,4 +53,3 @@ MonoBehaviour:
     castSfx: {fileID: 0}
   debugNotes: Stage-01 demo hero for Marksman. Rifleman validates heavy single-shot
     pacing plus burst-fire sequence and delayed grenade payoff.
-

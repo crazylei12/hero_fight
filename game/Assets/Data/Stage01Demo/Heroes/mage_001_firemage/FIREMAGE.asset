@@ -33,6 +33,8 @@ MonoBehaviour:
     projectileSpeed: 14
     effectType: 0
     targetType: 0
+    targetPrioritySearchRadius: 0
+    onHitStatusEffects: []
   activeSkill: {fileID: 11400000, guid: 9c31a80c4f67405a878ee99b68729d8f, type: 2}
   ultimateSkill: {fileID: 11400000, guid: b22abed7e9d2f694687a916551cd001a, type: 2}
   aiTemplateId: mage_default
@@ -42,6 +44,7 @@ MonoBehaviour:
     portrait: {fileID: 21300000, guid: f4904f0159806d44ab7757582982355f, type: 3}
     battlePrefab: {fileID: 6237993116064068715, guid: 7acaa5000dc1980468f4466e2c192fe9, type: 3}
     animatorController: {fileID: 9100000, guid: c0fbc9a82051e94429aa17cc4b2f48e5, type: 2}
+    battlePrefabFacesLeftByDefault: 0
     projectilePrefab: {fileID: 4475302993740453698, guid: 4440117f42dc64246807d6d985d5220b, type: 3}
     projectileAlignToMovement: 1
     projectileEulerAngles: {x: 0, y: 0, z: 0}

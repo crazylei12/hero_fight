@@ -60,4 +60,3 @@ MonoBehaviour:
     castSfx: {fileID: 0}
   debugNotes: Stage-01 demo hero for Support. Windchime validates reactive backline
     protection, threatened-ranged target selection, and anti-dive area denial.
-
