@@ -3531,7 +3531,7 @@ namespace Fight.Editor
             };
         }
 
-        private static void SetPrivateObjectReference(Object targetObject, string propertyName, Object value)
+        private static void SetPrivateObjectReference(UnityEngine.Object targetObject, string propertyName, UnityEngine.Object value)
         {
             var so = new SerializedObject(targetObject);
             var property = so.FindProperty(propertyName);
@@ -3540,7 +3540,7 @@ namespace Fight.Editor
             EditorUtility.SetDirty(targetObject);
         }
 
-        private static void SetPrivateBool(Object targetObject, string propertyName, bool value)
+        private static void SetPrivateBool(UnityEngine.Object targetObject, string propertyName, bool value)
         {
             var so = new SerializedObject(targetObject);
             var property = so.FindProperty(propertyName);
@@ -3549,7 +3549,7 @@ namespace Fight.Editor
             EditorUtility.SetDirty(targetObject);
         }
 
-        private static void SetPrivateString(Object targetObject, string propertyName, string value)
+        private static void SetPrivateString(UnityEngine.Object targetObject, string propertyName, string value)
         {
             var so = new SerializedObject(targetObject);
             var property = so.FindProperty(propertyName);
