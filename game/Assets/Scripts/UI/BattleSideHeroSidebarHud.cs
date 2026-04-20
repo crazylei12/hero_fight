@@ -13,6 +13,7 @@ namespace Fight.UI
         private const int TeamSize = BattleInputConfig.DefaultTeamSize;
         private const float DesignCardWidth = 139f;
         private const float DesignCardHeight = 88f;
+        private const string MonsterPortraitSuffix = "_idle_monster";
         private const float PortraitCropTopInsetRatio = 0.18f;
         private const float PortraitVisibleHeightRatio = 0.50f;
         private const float PortraitVerticalPlacementBias = 0.15f;
@@ -320,6 +321,12 @@ namespace Fight.UI
                 return;
             }
 
+            if (UsesFullFramePortrait(sprite))
+            {
+                DrawContainedSprite(rect, sprite);
+                return;
+            }
+
             var previousColor = GUI.color;
             GUI.color = Color.white;
             var texture = sprite.texture;
@@ -360,6 +367,39 @@ namespace Fight.UI
                 true);
             GUI.EndGroup();
             GUI.color = previousColor;
+        }
+
+        private void DrawContainedSprite(Rect rect, Sprite sprite)
+        {
+            var previousColor = GUI.color;
+            GUI.color = Color.white;
+
+            var texture = sprite.texture;
+            var textureRect = sprite.textureRect;
+            var texCoords = new Rect(
+                textureRect.x / texture.width,
+                textureRect.y / texture.height,
+                textureRect.width / texture.width,
+                textureRect.height / texture.height);
+
+            var scale = Mathf.Min(rect.width / textureRect.width, rect.height / textureRect.height);
+            var drawWidth = textureRect.width * scale;
+            var drawHeight = textureRect.height * scale;
+            var drawRect = new Rect(
+                rect.x + ((rect.width - drawWidth) * 0.5f),
+                rect.y + ((rect.height - drawHeight) * 0.5f),
+                drawWidth,
+                drawHeight);
+
+            GUI.DrawTextureWithTexCoords(drawRect, texture, texCoords, true);
+            GUI.color = previousColor;
+        }
+
+        private static bool UsesFullFramePortrait(Sprite sprite)
+        {
+            return sprite != null
+                && !string.IsNullOrWhiteSpace(sprite.name)
+                && sprite.name.EndsWith(MonsterPortraitSuffix, System.StringComparison.OrdinalIgnoreCase);
         }
 
         private void DrawShadowedLabel(Rect rect, string text, GUIStyle style, Color mainColor)
