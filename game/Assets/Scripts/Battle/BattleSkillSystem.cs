@@ -2093,7 +2093,7 @@ namespace Fight.Battle
                     continue;
                 }
 
-                caster.RecordHealing(actualHeal);
+                BattleStatsSystem.RecordHealingContribution(context, caster, target, actualHeal);
                 context.EventBus.Publish(new HealAppliedEvent(caster, target, actualHeal, skill, target.CurrentHealth));
             }
         }
@@ -2132,6 +2132,7 @@ namespace Fight.Battle
                 var startPosition = target.CurrentPosition;
                 var destination = GetForcedMovementDestination(caster, target, effect, distance);
                 target.StartForcedMovement(destination, durationSeconds, peakHeight);
+                BattleStatsSystem.RecordForcedMovementContribution(context, caster, target);
                 context.EventBus.Publish(new ForcedMovementAppliedEvent(
                     caster,
                     target,
@@ -2153,13 +2154,29 @@ namespace Fight.Battle
             for (var i = 0; i < effect.statusEffects.Count; i++)
             {
                 var status = effect.statusEffects[i];
+                if (status == null)
+                {
+                    continue;
+                }
+
+                var previousShield = status.effectType == StatusEffectType.Shield
+                    ? StatusEffectSystem.GetTotalShield(target)
+                    : 0f;
                 if (!target.ApplyStatusEffect(status, caster, sourceSkill, caster, out var appliedStatus))
                 {
                     continue;
                 }
 
+                var appliedSource = appliedStatus?.Source ?? caster;
+                BattleStatsSystem.RecordStatusContribution(context, appliedSource, target, status);
+                if (status.effectType == StatusEffectType.Shield)
+                {
+                    var shieldDelta = Mathf.Max(0f, StatusEffectSystem.GetTotalShield(target) - previousShield);
+                    BattleStatsSystem.RecordShieldContribution(context, appliedSource, target, shieldDelta);
+                }
+
                 context.EventBus.Publish(new StatusAppliedEvent(
-                    appliedStatus?.Source ?? caster,
+                    appliedSource,
                     target,
                     status.effectType,
                     status.durationSeconds,

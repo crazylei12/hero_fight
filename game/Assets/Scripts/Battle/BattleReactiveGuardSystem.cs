@@ -167,14 +167,29 @@ namespace Fight.Battle
                 for (var statusIndex = 0; statusIndex < guard.OnTriggerStatusEffects.Count; statusIndex++)
                 {
                     var status = guard.OnTriggerStatusEffects[statusIndex];
-                    if (status == null
-                        || !target.ApplyStatusEffect(status, guard.Caster, guard.SourceSkill, guard.ProtectedHero, out var appliedStatus))
+                    if (status == null)
                     {
                         continue;
                     }
 
+                    var previousShield = status.effectType == StatusEffectType.Shield
+                        ? StatusEffectSystem.GetTotalShield(target)
+                        : 0f;
+                    if (!target.ApplyStatusEffect(status, guard.Caster, guard.SourceSkill, guard.ProtectedHero, out var appliedStatus))
+                    {
+                        continue;
+                    }
+
+                    var appliedSource = appliedStatus?.Source ?? guard.Caster;
+                    BattleStatsSystem.RecordStatusContribution(context, appliedSource, target, status);
+                    if (status.effectType == StatusEffectType.Shield)
+                    {
+                        var shieldDelta = Mathf.Max(0f, StatusEffectSystem.GetTotalShield(target) - previousShield);
+                        BattleStatsSystem.RecordShieldContribution(context, appliedSource, target, shieldDelta);
+                    }
+
                     context.EventBus?.Publish(new StatusAppliedEvent(
-                        appliedStatus?.Source ?? guard.Caster,
+                        appliedSource,
                         target,
                         status.effectType,
                         status.durationSeconds,
@@ -220,6 +235,7 @@ namespace Fight.Battle
                 destination.y = 0f;
                 var startPosition = target.CurrentPosition;
                 target.StartForcedMovement(destination, guard.ForcedMovementDurationSeconds, guard.ForcedMovementPeakHeight);
+                BattleStatsSystem.RecordForcedMovementContribution(context, guard.Caster, target);
                 context.EventBus?.Publish(new ForcedMovementAppliedEvent(
                     guard.Caster,
                     target,
@@ -247,7 +263,7 @@ namespace Fight.Battle
                 return;
             }
 
-            guard.Caster?.RecordHealing(actualHeal);
+            BattleStatsSystem.RecordHealingContribution(context, guard.Caster, guard.ProtectedHero, actualHeal);
             context.EventBus?.Publish(new HealAppliedEvent(
                 guard.Caster,
                 guard.ProtectedHero,

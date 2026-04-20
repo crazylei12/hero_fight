@@ -155,7 +155,7 @@ namespace Fight.Battle
                     return;
                 }
 
-                attacker?.RecordHealing(actualHeal);
+                BattleStatsSystem.RecordHealingContribution(context, attacker, target, actualHeal);
                 context.EventBus.Publish(new HealAppliedEvent(attacker, target, actualHeal, null, target.CurrentHealth));
                 ApplyOnHitStatuses(context, attacker, target);
                 return;
@@ -213,13 +213,29 @@ namespace Fight.Battle
             for (var i = 0; i < onHitStatusEffects.Count; i++)
             {
                 var status = onHitStatusEffects[i];
-                if (status == null || !target.ApplyStatusEffect(status, attacker, null, attacker, out var appliedStatus))
+                if (status == null)
                 {
                     continue;
                 }
 
+                var previousShield = status.effectType == StatusEffectType.Shield
+                    ? StatusEffectSystem.GetTotalShield(target)
+                    : 0f;
+                if (!target.ApplyStatusEffect(status, attacker, null, attacker, out var appliedStatus))
+                {
+                    continue;
+                }
+
+                var appliedSource = appliedStatus?.Source ?? attacker;
+                BattleStatsSystem.RecordStatusContribution(context, appliedSource, target, status);
+                if (status.effectType == StatusEffectType.Shield)
+                {
+                    var shieldDelta = Mathf.Max(0f, StatusEffectSystem.GetTotalShield(target) - previousShield);
+                    BattleStatsSystem.RecordShieldContribution(context, appliedSource, target, shieldDelta);
+                }
+
                 context.EventBus.Publish(new StatusAppliedEvent(
-                    appliedStatus?.Source ?? attacker,
+                    appliedSource,
                     target,
                     status.effectType,
                     status.durationSeconds,

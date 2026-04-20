@@ -144,8 +144,11 @@ namespace Fight.Battle
                     side = hero.Side,
                     kills = hero.Kills,
                     deaths = hero.Deaths,
+                    assists = hero.Assists,
                     damageDealt = hero.DamageDealt,
+                    damageTaken = hero.DamageTaken,
                     healingDone = hero.HealingDone,
+                    shieldingDone = hero.ShieldingDone,
                 });
             }
 

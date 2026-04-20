@@ -66,6 +66,24 @@ namespace Fight.Heroes
     {
         private const float DefaultKnockUpVisualPeakHeight = 0.72f;
 
+        private sealed class RuntimeContributionRecord
+        {
+            public RuntimeContributionRecord(RuntimeHero contributor, float timeSeconds)
+            {
+                Contributor = contributor;
+                LastContributionTimeSeconds = Mathf.Max(0f, timeSeconds);
+            }
+
+            public RuntimeHero Contributor { get; }
+
+            public float LastContributionTimeSeconds { get; private set; }
+
+            public void Refresh(float timeSeconds)
+            {
+                LastContributionTimeSeconds = Mathf.Max(0f, timeSeconds);
+            }
+        }
+
         public RuntimeHero(HeroDefinition definition, TeamSide side, Vector3 spawnPosition, int slotIndex)
         {
             Definition = definition;
@@ -102,7 +120,15 @@ namespace Fight.Heroes
 
         public float DamageDealt { get; private set; }
 
+        public float DamageTaken { get; private set; }
+
         public float HealingDone { get; private set; }
+
+        public float ShieldingDone { get; private set; }
+
+        public float HealingAndShieldingDone => HealingDone + ShieldingDone;
+
+        public int Assists { get; private set; }
 
         public bool IsDead { get; private set; }
 
@@ -226,6 +252,8 @@ namespace Fight.Heroes
         public bool HasPendingCombatAction => pendingCombatAction != null;
 
         private readonly List<RuntimeStatusEffect> activeStatusEffects = new List<RuntimeStatusEffect>();
+        private readonly List<RuntimeContributionRecord> recentHostileContributors = new List<RuntimeContributionRecord>();
+        private readonly List<RuntimeContributionRecord> recentSupportContributors = new List<RuntimeContributionRecord>();
         private RuntimeForcedMovement activeForcedMovement;
         private RuntimeCombatActionSequence activeCombatActionSequence;
         private PendingCombatAction pendingCombatAction;
@@ -251,6 +279,7 @@ namespace Fight.Heroes
             activeForcedMovement = null;
             forcedMovementInterruptTicksRemaining = 0;
             ClearThreatTracking();
+            ClearContributionHistory();
         }
 
         public float ApplyDamage(float amount, Action<RuntimeStatusEffect> onExpiredStatus = null)
@@ -503,9 +532,68 @@ namespace Fight.Heroes
             DamageDealt += Mathf.Max(0f, amount);
         }
 
+        public void RecordDamageTaken(float amount)
+        {
+            DamageTaken += Mathf.Max(0f, amount);
+        }
+
         public void RecordHealing(float amount)
         {
             HealingDone += Mathf.Max(0f, amount);
+        }
+
+        public void RecordShielding(float amount)
+        {
+            ShieldingDone += Mathf.Max(0f, amount);
+        }
+
+        public void MarkAssist()
+        {
+            Assists++;
+        }
+
+        public void RegisterHostileContribution(RuntimeHero contributor, float timeSeconds)
+        {
+            RegisterContribution(recentHostileContributors, contributor, timeSeconds);
+        }
+
+        public void RegisterSupportContribution(RuntimeHero contributor, float timeSeconds)
+        {
+            RegisterContribution(recentSupportContributors, contributor, timeSeconds);
+        }
+
+        public void CollectRecentHostileContributors(
+            TeamSide contributorSide,
+            float currentTimeSeconds,
+            float recentWindowSeconds,
+            ICollection<RuntimeHero> results)
+        {
+            CollectRecentContributors(
+                recentHostileContributors,
+                contributorSide,
+                currentTimeSeconds,
+                recentWindowSeconds,
+                results);
+        }
+
+        public void CollectRecentSupportContributors(
+            TeamSide contributorSide,
+            float currentTimeSeconds,
+            float recentWindowSeconds,
+            ICollection<RuntimeHero> results)
+        {
+            CollectRecentContributors(
+                recentSupportContributors,
+                contributorSide,
+                currentTimeSeconds,
+                recentWindowSeconds,
+                results);
+        }
+
+        public void ClearContributionHistory()
+        {
+            recentHostileContributors.Clear();
+            recentSupportContributors.Clear();
         }
 
         public void MarkDead(float respawnDelaySeconds, Action<RuntimeStatusEffect> onRemovedStatus = null)
@@ -523,6 +611,7 @@ namespace Fight.Heroes
             forcedMovementInterruptTicksRemaining = 0;
             StatusEffectSystem.ClearStatuses(this, onRemovedStatus);
             ClearThreatTracking();
+            ClearContributionHistory();
         }
 
         public bool ReadyToRevive()
@@ -628,6 +717,68 @@ namespace Fight.Heroes
             LastThreatSource = null;
             LastThreatTimeSeconds = -1f;
             ActiveRetreatThreatSource = null;
+        }
+
+        private static void RegisterContribution(
+            List<RuntimeContributionRecord> records,
+            RuntimeHero contributor,
+            float timeSeconds)
+        {
+            if (records == null || contributor == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < records.Count; i++)
+            {
+                var record = records[i];
+                if (record == null || record.Contributor != contributor)
+                {
+                    continue;
+                }
+
+                record.Refresh(timeSeconds);
+                return;
+            }
+
+            records.Add(new RuntimeContributionRecord(contributor, timeSeconds));
+        }
+
+        private static void CollectRecentContributors(
+            List<RuntimeContributionRecord> records,
+            TeamSide contributorSide,
+            float currentTimeSeconds,
+            float recentWindowSeconds,
+            ICollection<RuntimeHero> results)
+        {
+            if (records == null || results == null)
+            {
+                return;
+            }
+
+            var cutoffTimeSeconds = Mathf.Max(0f, currentTimeSeconds - Mathf.Max(0f, recentWindowSeconds));
+            for (var i = records.Count - 1; i >= 0; i--)
+            {
+                var record = records[i];
+                if (record?.Contributor == null)
+                {
+                    records.RemoveAt(i);
+                    continue;
+                }
+
+                if (record.LastContributionTimeSeconds < cutoffTimeSeconds)
+                {
+                    records.RemoveAt(i);
+                    continue;
+                }
+
+                if (contributorSide != TeamSide.None && record.Contributor.Side != contributorSide)
+                {
+                    continue;
+                }
+
+                results.Add(record.Contributor);
+            }
         }
 
         private void ClearCombatActionState()
