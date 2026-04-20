@@ -28,8 +28,12 @@ namespace Fight.UI
         private static readonly Color MainTextColor = new Color32(242, 244, 248, 255);
         private static readonly Color MutedTextColor = new Color32(170, 176, 188, 255);
         private static readonly Color DimTextColor = new Color32(120, 127, 141, 255);
-        private static readonly Color BlueHeaderTint = new Color32(57, 113, 198, 210);
-        private static readonly Color RedHeaderTint = new Color32(198, 47, 49, 210);
+        private static readonly Color BlueHeaderTint = new Color32(57, 113, 198, 255);
+        private static readonly Color RedHeaderTint = new Color32(198, 47, 49, 255);
+        private static readonly Color StatusBadgeFill = new Color32(214, 161, 46, 255);
+        private static readonly Color StatusBadgeOutline = new Color32(120, 63, 18, 255);
+        private static readonly Color StatusBadgeHighlight = new Color32(255, 220, 112, 170);
+        private static readonly Color StatusBadgeIconColor = new Color32(77, 42, 14, 255);
         private static readonly Color PositiveStatColor = new Color32(129, 226, 170, 255);
         private static readonly Color NegativeStatColor = new Color32(255, 153, 147, 255);
         private static readonly Color ShadowColor = new Color32(0, 0, 0, 196);
@@ -188,10 +192,9 @@ namespace Fight.UI
         {
             DrawShadowedLabel(ScaleRect(1f, 0f, 27f, 23f, scale, mirrorLayout), "INFO", tabStyle, MainTextColor);
             DrawShadowedLabel(ScaleRect(28f, 0f, 93f, 23f, scale, mirrorLayout), viewData.DisplayName, titleStyle, MainTextColor);
-            DrawShadowedLabel(
-                ScaleRect(121f, 2.2f, 18f, 18f, scale, mirrorLayout),
+            DrawStateBadge(
+                ScaleRect(121f, 0f, 18f, 23f, scale, mirrorLayout),
                 viewData.StateText,
-                badgeStyle,
                 hero != null && hero.IsDead ? RedAccent : (side == TeamSide.Red ? RedAccent : BlueAccent));
 
             DrawShadowedLabel(ScaleRect(0f, 24f, 9.33f, 8.5f, scale, mirrorLayout), "K", kdaHeaderStyle, MainTextColor);
@@ -412,9 +415,52 @@ namespace Fight.UI
 
         private static void DrawTeamHeaderTint(Rect rect, TeamSide side, bool mirrorLayout)
         {
-            var designRect = ScaleRect(28f, 0f, 93f, 23f, rect.width / DesignCardWidth, mirrorLayout);
+            var designRect = ScaleRect(28f, 0f, 111f, 23f, rect.width / DesignCardWidth, mirrorLayout);
             var color = side == TeamSide.Red ? RedHeaderTint : BlueHeaderTint;
             DrawTintedRect(designRect, color);
+        }
+
+        private void DrawStateBadge(Rect rect, string stateText, Color textColor)
+        {
+            DrawTintedRect(rect, StatusBadgeFill);
+            DrawOutline(rect, StatusBadgeOutline);
+            DrawTintedRect(new Rect(rect.x + 1f, rect.y + 1f, rect.width - 2f, 1.5f), StatusBadgeHighlight);
+
+            var arrowWidth = Mathf.Max(4f, rect.width * 0.34f);
+            var arrowInset = Mathf.Max(2f, rect.width * 0.18f);
+            var arrowTop = rect.y + Mathf.Max(3f, rect.height * 0.18f);
+            var arrowBottom = rect.y + rect.height - Mathf.Max(4f, rect.height * 0.18f);
+            var arrowRight = rect.x + rect.width - arrowInset;
+            var arrowLeft = arrowRight - arrowWidth;
+
+            DrawLine(new Vector2(arrowLeft, arrowBottom), new Vector2(arrowRight, arrowTop), StatusBadgeIconColor, 1.4f);
+            DrawLine(new Vector2(arrowRight - arrowWidth * 0.55f, arrowTop), new Vector2(arrowRight, arrowTop), StatusBadgeIconColor, 1.4f);
+            DrawLine(new Vector2(arrowRight, arrowTop + arrowWidth * 0.55f), new Vector2(arrowRight, arrowTop), StatusBadgeIconColor, 1.4f);
+
+            var textRect = new Rect(
+                rect.x + arrowInset,
+                rect.y + (rect.height * 0.36f),
+                rect.width - arrowWidth - (arrowInset * 2f) - 1f,
+                rect.height * 0.44f);
+            DrawShadowedLabel(textRect, stateText, badgeStyle, textColor);
+        }
+
+        private static void DrawLine(Vector2 from, Vector2 to, Color color, float width)
+        {
+            var matrix = GUI.matrix;
+            var previousColor = GUI.color;
+            var angle = Vector3.Angle(to - from, Vector2.right);
+            if (from.y > to.y)
+            {
+                angle = -angle;
+            }
+
+            var length = Vector2.Distance(from, to);
+            GUI.color = color;
+            GUIUtility.RotateAroundPivot(angle, from);
+            GUI.DrawTexture(new Rect(from.x, from.y - (width * 0.5f), length, width), Texture2D.whiteTexture);
+            GUI.matrix = matrix;
+            GUI.color = previousColor;
         }
 
         private static void DrawOutline(Rect rect, Color color)
