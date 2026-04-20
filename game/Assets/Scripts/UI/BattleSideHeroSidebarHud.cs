@@ -28,6 +28,8 @@ namespace Fight.UI
         private static readonly Color MainTextColor = new Color32(242, 244, 248, 255);
         private static readonly Color MutedTextColor = new Color32(170, 176, 188, 255);
         private static readonly Color DimTextColor = new Color32(120, 127, 141, 255);
+        private static readonly Color BlueHeaderTint = new Color32(57, 113, 198, 210);
+        private static readonly Color RedHeaderTint = new Color32(198, 47, 49, 210);
         private static readonly Color PositiveStatColor = new Color32(129, 226, 170, 255);
         private static readonly Color NegativeStatColor = new Color32(255, 153, 147, 255);
         private static readonly Color ShadowColor = new Color32(0, 0, 0, 196);
@@ -48,7 +50,7 @@ namespace Fight.UI
         private GUIStyle kdaValueStyle;
         private GUIStyle statValueStyle;
         private GUIStyle traitStyle;
-        private GUIStyle coreValueStyle;
+        private GUIStyle coreValueAlignedStyle;
         private GUIStyle portraitFallbackStyle;
         private float lastStyleScale = -1f;
 
@@ -166,6 +168,8 @@ namespace Fight.UI
                 DrawOutline(rect, new Color(0.21f, 0.26f, 0.34f, 1f));
             }
 
+            DrawTeamHeaderTint(rect, side, mirrorLayout);
+
             DrawTintedRect(
                 mirrorLayout
                     ? new Rect(rect.width - Mathf.Max(2f, rect.width * 0.015f), 0f, Mathf.Max(2f, rect.width * 0.015f), rect.height)
@@ -213,8 +217,8 @@ namespace Fight.UI
                     DimTextColor);
             }
 
-            DrawShadowedLabel(ScaleRect(44f, 68f, 29f, 12f, scale, mirrorLayout), viewData.AttackText, coreValueStyle, viewData.AttackColor);
-            DrawShadowedLabel(ScaleRect(97f, 68f, 29f, 12f, scale, mirrorLayout), viewData.DefenseText, coreValueStyle, viewData.DefenseColor);
+            DrawShadowedLabel(ScaleRect(54f, 68f, 18f, 12f, scale, mirrorLayout), viewData.AttackText, coreValueAlignedStyle, viewData.AttackColor);
+            DrawShadowedLabel(ScaleRect(107f, 68f, 18f, 12f, scale, mirrorLayout), viewData.DefenseText, coreValueAlignedStyle, viewData.DefenseColor);
 
             if (viewData.IsDead)
             {
@@ -315,7 +319,7 @@ namespace Fight.UI
             kdaValueStyle = BuildStyle(4.1f, scale, TextAnchor.MiddleCenter, FontStyle.Bold);
             statValueStyle = BuildStyle(3.7f, scale, TextAnchor.MiddleRight, FontStyle.Bold);
             traitStyle = BuildStyle(2.5f, scale, TextAnchor.MiddleCenter, FontStyle.Normal, allowShrink: true);
-            coreValueStyle = BuildStyle(5.2f, scale, TextAnchor.MiddleCenter, FontStyle.Bold);
+            coreValueAlignedStyle = BuildStyle(5.2f, scale, TextAnchor.MiddleLeft, FontStyle.Bold);
             portraitFallbackStyle = BuildStyle(6f, scale, TextAnchor.MiddleCenter, FontStyle.Bold);
         }
 
@@ -404,6 +408,13 @@ namespace Fight.UI
             GUI.color = color;
             GUI.DrawTexture(rect, Texture2D.whiteTexture, ScaleMode.StretchToFill, true);
             GUI.color = previousColor;
+        }
+
+        private static void DrawTeamHeaderTint(Rect rect, TeamSide side, bool mirrorLayout)
+        {
+            var designRect = ScaleRect(28f, 0f, 93f, 23f, rect.width / DesignCardWidth, mirrorLayout);
+            var color = side == TeamSide.Red ? RedHeaderTint : BlueHeaderTint;
+            DrawTintedRect(designRect, color);
         }
 
         private static void DrawOutline(Rect rect, Color color)
