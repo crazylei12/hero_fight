@@ -1,0 +1,55 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 65b49e23d4a4cda45a9a11e1d7bacd97, type: 3}
+  m_Name: Monk
+  m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
+  heroId: support_003_monk
+  displayName: Monk
+  heroClass: 4
+  tags: 000000000400000008000000
+  baseStats:
+    maxHealth: 430
+    attackPower: 20
+    defense: 24
+    attackSpeed: 0.952381
+    moveSpeed: 4
+    criticalChance: 0.05
+    criticalDamageMultiplier: 1.5
+    attackRange: 1.9
+  basicAttack:
+    damageMultiplier: 0.95
+    attackInterval: 1.05
+    rangeOverride: 1.9
+    usesProjectile: 0
+    projectileSpeed: 0
+    effectType: 0
+    targetType: 0
+    targetPrioritySearchRadius: 0
+    onHitStatusEffects: []
+  activeSkill: {fileID: 11400000, guid: a0f1b42f6c2e4bdf8e4f6db2c86ff9b1, type: 2}
+  ultimateSkill: {fileID: 11400000, guid: 45c63a44f39e49b1968d2a3888983adb, type: 2}
+  aiTemplateId: support_default
+  usesSpecialLogic: 0
+  specialLogicNotes: 
+  visualConfig:
+    portrait: {fileID: 0}
+    battlePrefab: {fileID: 33178510622993888, guid: 2d8afc1ad51aba04fae4b3303a3a7588, type: 3}
+    animatorController: {fileID: 9100000, guid: c0fbc9a82051e94429aa17cc4b2f48e5, type: 2}
+    battlePrefabFacesLeftByDefault: 0
+    projectilePrefab: {fileID: 0}
+    projectileAlignToMovement: 0
+    projectileEulerAngles: {x: 0, y: 0, z: 0}
+    castVfxPrefab: {fileID: 0}
+    hitVfxPrefab: {fileID: 0}
+    castSfx: {fileID: 0}
+  debugNotes: Stage-01 demo hero for Support. Monk validates melee frontline sustain
+    with self-centered burst healing and low-threshold team shielding.

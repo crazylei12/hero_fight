@@ -34,6 +34,9 @@ namespace Fight.Editor
         private const string WindchimeHeroAssetPath = HeroesRootFolder + "/support_002_windchime/Windchime.asset";
         private const string WindchimeActiveSkillAssetPath = SkillsRootFolder + "/support_002_windchime/Echo Canopy.asset";
         private const string WindchimeUltimateSkillAssetPath = SkillsRootFolder + "/support_002_windchime/Stillwind Domain.asset";
+        private const string MonkHeroAssetPath = HeroesRootFolder + "/support_003_monk/Monk.asset";
+        private const string MonkActiveSkillAssetPath = SkillsRootFolder + "/support_003_monk/Renewing Pulse.asset";
+        private const string MonkUltimateSkillAssetPath = SkillsRootFolder + "/support_003_monk/Guardian Mantra.asset";
         private const string AssassinPrefabPath = "Assets/Prefabs/Heroes/assassin_001_shadowstep/Shadowstep.prefab";
         private const string TidefinPrefabPath = "Assets/FantasyMonsters/Monsters/Insects/PurpleScarab/PurpleScarab.prefab";
         private const string MarksmanPrefabPath = "Assets/Prefabs/Heroes/marksman_001_longshot/Longshot.prefab";
@@ -280,6 +283,23 @@ namespace Fight.Editor
             EnsureHeroSkillReferences(windchime, windchimeActive, windchimeUltimateSkill);
             EnsureHeroBattlePrefabReference(windchime, LoadBattlePrefab("support_002_windchime", HeroClass.Support));
 
+            var monkActive = CreateMonkActiveSkill(overwriteExistingContent);
+            var monkUltimateSkill = CreateMonkUltimateSkill(overwriteExistingContent, out var monkUltimateExisted);
+
+            var monk = CreateHero(
+                "support_003_monk",
+                "Monk",
+                HeroClass.Support,
+                430f, 20f, 24f, 1f / 1.05f, 4f, 0.05f, 1.5f, 1.9f,
+                monkActive,
+                ConfigureMonkUltimate(monkUltimateSkill, overwriteExistingContent, monkUltimateExisted),
+                overwriteExistingContent,
+                out var monkHeroExisted,
+                HeroTag.Melee, HeroTag.Heal, HeroTag.Buff);
+            ConfigureMonkBasicAttack(monk, overwriteExistingContent, monkHeroExisted);
+            EnsureHeroSkillReferences(monk, monkActive, monkUltimateSkill);
+            EnsureHeroBattlePrefabReference(monk, LoadBattlePrefab("support_003_monk", HeroClass.Support));
+
             var marksmanActive = CreateLongshotActiveSkill(overwriteExistingContent);
             var marksmanUltimateSkill = CreateLongshotUltimateSkill(overwriteExistingContent, out var marksmanUltimateExisted);
 
@@ -310,7 +330,7 @@ namespace Fight.Editor
                 HeroTag.Ranged, HeroTag.SustainedDamage, HeroTag.AreaDamage);
             ConfigureRiflemanBasicAttack(rifleman, overwriteExistingContent, riflemanHeroExisted);
 
-            CreateHeroCatalog(warrior, bladesman, mage, frostmage, assassin, tidefin, tank, shieldwarden, support, windchime, marksman, rifleman);
+            CreateHeroCatalog(warrior, bladesman, mage, frostmage, assassin, tidefin, tank, shieldwarden, support, windchime, monk, marksman, rifleman);
 
             var battleInput = CreateBattleInput(
                 "Stage01DemoBattleInput",
@@ -412,8 +432,13 @@ namespace Fight.Editor
             var windchimeActiveSkill = AssetDatabase.LoadAssetAtPath<SkillData>(WindchimeActiveSkillAssetPath);
             var windchimeUltimateSkill = AssetDatabase.LoadAssetAtPath<SkillData>(WindchimeUltimateSkillAssetPath);
             var windchimeBattlePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(WindchimePrefabPath);
+            var monkHero = AssetDatabase.LoadAssetAtPath<HeroDefinition>(MonkHeroAssetPath);
+            var monkActiveSkill = AssetDatabase.LoadAssetAtPath<SkillData>(MonkActiveSkillAssetPath);
+            var monkUltimateSkill = AssetDatabase.LoadAssetAtPath<SkillData>(MonkUltimateSkillAssetPath);
+            var monkBattlePrefab = LoadBattlePrefab("support_003_monk", HeroClass.Support);
             var catalogContainsBladesman = CatalogContainsHero(heroCatalog, "warrior_002_bladesman");
             var catalogContainsWindchime = CatalogContainsHero(heroCatalog, "support_002_windchime");
+            var catalogContainsMonk = CatalogContainsHero(heroCatalog, "support_003_monk");
             var bladesmanReferencesValid = HeroHasExpectedSkillReferences(bladesmanHero, bladesmanActiveSkill, bladesmanUltimateSkill);
             var bladesmanBattlePrefabValid = HeroHasExpectedBattlePrefab(bladesmanHero, bladesmanBattlePrefab);
             var bladesmanActiveImpactVfxValid = SkillHasExpectedCastImpactVfxPresentation(
@@ -425,6 +450,8 @@ namespace Fight.Editor
                 true);
             var windchimeReferencesValid = HeroHasExpectedSkillReferences(windchimeHero, windchimeActiveSkill, windchimeUltimateSkill);
             var windchimeBattlePrefabValid = HeroHasExpectedBattlePrefab(windchimeHero, windchimeBattlePrefab);
+            var monkReferencesValid = HeroHasExpectedSkillReferences(monkHero, monkActiveSkill, monkUltimateSkill);
+            var monkBattlePrefabValid = monkBattlePrefab == null || HeroHasExpectedBattlePrefab(monkHero, monkBattlePrefab);
 
             return !hasMainMenuScene
                 || !hasHeroSelectScene
@@ -439,13 +466,19 @@ namespace Fight.Editor
                 || windchimeHero == null
                 || windchimeActiveSkill == null
                 || windchimeUltimateSkill == null
+                || monkHero == null
+                || monkActiveSkill == null
+                || monkUltimateSkill == null
                 || !catalogContainsBladesman
                 || !catalogContainsWindchime
+                || !catalogContainsMonk
                 || !bladesmanReferencesValid
                 || !bladesmanBattlePrefabValid
                 || !bladesmanActiveImpactVfxValid
                 || !windchimeReferencesValid
-                || !windchimeBattlePrefabValid;
+                || !windchimeBattlePrefabValid
+                || !monkReferencesValid
+                || !monkBattlePrefabValid;
         }
 
         private static bool CatalogContainsHero(HeroCatalogData catalog, string heroId)
@@ -1706,6 +1739,27 @@ namespace Fight.Editor
             EditorUtility.SetDirty(hero);
         }
 
+        private static void ConfigureMonkBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (hero == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return;
+            }
+
+            hero.basicAttack.damageMultiplier = 0.95f;
+            hero.basicAttack.attackInterval = 1.05f;
+            hero.basicAttack.rangeOverride = 1.9f;
+            hero.basicAttack.usesProjectile = false;
+            hero.basicAttack.projectileSpeed = 0f;
+            hero.basicAttack.effectType = BasicAttackEffectType.Damage;
+            hero.basicAttack.targetType = BasicAttackTargetType.NearestEnemy;
+            hero.basicAttack.targetPrioritySearchRadius = 0f;
+            EnsureBasicAttackStatusList(hero.basicAttack);
+            hero.basicAttack.onHitStatusEffects.Clear();
+            hero.debugNotes = "Stage-01 demo hero for Support. Monk validates melee frontline sustain with self-centered burst healing and low-threshold team shielding.";
+            EditorUtility.SetDirty(hero);
+        }
+
         private static void ConfigureTidefinBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
         {
             if (hero == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
@@ -2069,6 +2123,93 @@ namespace Fight.Editor
             return skill;
         }
 
+        private static SkillData CreateMonkActiveSkill(bool overwriteExistingContent)
+        {
+            var skill = CreateSkill(
+                "skill_monk_active_renewingpulse",
+                "Renewing Pulse",
+                SkillSlotType.ActiveSkill,
+                SkillType.AreaHeal,
+                SkillTargetType.Self,
+                0f,
+                4.5f,
+                0.9f,
+                8f,
+                1,
+                overwriteExistingContent,
+                out var existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.description = "Stage-01 demo skill: self-centered burst heal for nearby allies.";
+            skill.targetType = SkillTargetType.Self;
+            skill.fallbackTargetType = SkillTargetType.None;
+            skill.castRange = 0f;
+            skill.areaRadius = 4.5f;
+            skill.cooldownSeconds = 8f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = true;
+            skill.effects.Clear();
+
+            var healEffect = AddHealEffect(skill, 0.9f);
+            healEffect.targetMode = SkillEffectTargetMode.AlliesInRadiusAroundCaster;
+            healEffect.radiusOverride = skill.areaRadius;
+
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateMonkUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
+        {
+            var skill = CreateSkill(
+                "skill_monk_ultimate_guardianmantra",
+                "Guardian Mantra",
+                SkillSlotType.Ultimate,
+                SkillType.Buff,
+                SkillTargetType.Self,
+                0f,
+                6.8f,
+                0f,
+                0f,
+                1,
+                overwriteExistingContent,
+                out existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.description = "Stage-01 demo skill: self-centered group shield for nearby allies.";
+            skill.targetType = SkillTargetType.Self;
+            skill.fallbackTargetType = SkillTargetType.None;
+            skill.castRange = 0f;
+            skill.areaRadius = 6.8f;
+            skill.cooldownSeconds = 0f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = true;
+            skill.effects.Clear();
+
+            var shieldEffect = AddApplyStatusEffectsEffect(skill);
+            shieldEffect.targetMode = SkillEffectTargetMode.AlliesInRadiusAroundCaster;
+            shieldEffect.radiusOverride = skill.areaRadius;
+            shieldEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.Shield,
+                durationSeconds = 5f,
+                magnitude = 85f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
+            ResetUltimateDecision(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
         private static SkillData ConfigureTankUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
         {
             if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
@@ -2122,6 +2263,30 @@ namespace Fight.Editor
             skill.ultimateDecision.secondaryCondition.searchRadius = Mathf.Max(skill.areaRadius, 5f);
             skill.ultimateDecision.secondaryCondition.requiredUnitCount = 2;
             ApplyHealthFallback(skill, 30f, 0.7f, 45f, 0.85f);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData ConfigureMonkUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            ResetUltimateDecision(skill);
+            skill.ultimateDecision.targetingType = UltimateTargetingType.Self;
+            skill.ultimateDecision.combineMode = UltimateConditionCombineMode.AllMustPass;
+            skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.AllyCountInRange;
+            skill.ultimateDecision.primaryCondition.searchRadius = skill.areaRadius;
+            skill.ultimateDecision.primaryCondition.requiredUnitCount = 2;
+            skill.ultimateDecision.secondaryCondition.conditionType = UltimateConditionType.AllyLowHealthInRange;
+            skill.ultimateDecision.secondaryCondition.searchRadius = skill.areaRadius;
+            skill.ultimateDecision.secondaryCondition.requiredUnitCount = 2;
+            skill.ultimateDecision.secondaryCondition.healthPercentThreshold = 0.7f;
+            skill.ultimateDecision.fallback.fallbackType = UltimateFallbackType.LowerPrimaryThreshold;
+            skill.ultimateDecision.fallback.triggerAfterSeconds = 45f;
+            skill.ultimateDecision.fallback.overrideHealthPercentThreshold = 0.8f;
             EditorUtility.SetDirty(skill);
             return skill;
         }
@@ -2934,6 +3099,8 @@ namespace Fight.Editor
                 "skill_shieldwarden_ultimate_lastbastion" => "tank_002_shieldwarden",
                 "skill_windchime_active_echocanopy" => "support_002_windchime",
                 "skill_windchime_ultimate_stillwinddomain" => "support_002_windchime",
+                "skill_monk_active_renewingpulse" => "support_003_monk",
+                "skill_monk_ultimate_guardianmantra" => "support_003_monk",
                 "skill_rifleman_active_burstfire" => "marksman_002_rifleman",
                 "skill_rifleman_ultimate_fraggrenade" => "marksman_002_rifleman",
                 _ => null,

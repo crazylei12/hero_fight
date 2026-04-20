@@ -98,7 +98,7 @@ namespace Fight.Battle
             {
                 HeroClass.Marksman => baseRange * 0.92f,
                 HeroClass.Mage => baseRange * 0.9f,
-                HeroClass.Support => Mathf.Max(3f, baseRange * 0.85f),
+                HeroClass.Support => IsBacklineSupport(actor) ? Mathf.Max(3f, baseRange * 0.85f) : baseRange,
                 HeroClass.Assassin => Mathf.Min(baseRange, 1.1f),
                 _ => baseRange,
             };
@@ -106,7 +106,7 @@ namespace Fight.Battle
 
         public static Vector3 GetIdleAdvanceDirection(RuntimeHero actor)
         {
-            if (actor.Definition.heroClass == HeroClass.Support)
+            if (actor.Definition.heroClass == HeroClass.Support && IsBacklineSupport(actor))
             {
                 return actor.Side == TeamSide.Blue ? new Vector3(0.6f, 0f, 0f) : new Vector3(-0.6f, 0f, 0f);
             }
@@ -178,6 +178,30 @@ namespace Fight.Battle
                 RangedThreatUnsafeDistanceMinimum,
                 desiredRange * RangedThreatUnsafeDistanceFactor);
             return threatDistance < unsafeDistance;
+        }
+
+        private static bool IsBacklineSupport(RuntimeHero actor)
+        {
+            if (actor?.Definition == null || actor.Definition.heroClass != HeroClass.Support)
+            {
+                return false;
+            }
+
+            var tags = actor.Definition.tags;
+            if (tags != null)
+            {
+                if (tags.Contains(HeroTag.Melee))
+                {
+                    return false;
+                }
+
+                if (tags.Contains(HeroTag.Ranged))
+                {
+                    return true;
+                }
+            }
+
+            return actor.Definition.basicAttack != null && actor.Definition.basicAttack.usesProjectile;
         }
 
         private static RuntimeHero FindNearestEnemy(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange)

@@ -1,0 +1,129 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bea5ec4d01f80a948a332187ac325d06, type: 3}
+  m_Name: Guardian Mantra
+  m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
+  skillId: skill_monk_ultimate_guardianmantra
+  displayName: Guardian Mantra
+  description: 'Stage-01 demo skill: self-centered group shield for nearby allies.'
+  slotType: 1
+  skillType: 3
+  targetType: 5
+  preferredEnemyHeroClass: 2
+  fallbackTargetType: 0
+  targetPrioritySearchRadius: 0
+  targetPriorityRequiredUnitCount: 1
+  castRange: 0
+  areaRadius: 6.8
+  cooldownSeconds: 0
+  minTargetsToCast: 1
+  effects:
+  - effectType: 2
+    targetMode: 4
+    powerMultiplier: 0
+    radiusOverride: 6.8
+    durationSeconds: 0
+    tickIntervalSeconds: 1
+    followCaster: 0
+    persistentAreaPulseEffectType: 1
+    persistentAreaTargetType: 0
+    forcedMovementDirection: 0
+    forcedMovementDistance: 0
+    forcedMovementDurationSeconds: 0
+    forcedMovementPeakHeight: 0
+    statusEffects:
+    - effectType: 15
+      durationSeconds: 5
+      magnitude: 85
+      activeSkillCooldownCapSeconds: 0
+      tickIntervalSeconds: 1
+      maxStacks: 1
+      refreshDurationOnReapply: 1
+  allowsSelfCast: 1
+  reactiveGuard:
+    enabled: 0
+    durationSeconds: 0
+    triggerRadius: 0
+    effectRadius: 0
+    maxTriggerCount: 1
+    forcedMovementDistance: 0
+    forcedMovementDurationSeconds: 0
+    forcedMovementPeakHeight: 0
+    healProtectedHeroPerSuccessfulKnockUp: 0
+    onTriggerStatusEffects: []
+    guardLoopVfxPrefab: {fileID: 0}
+    guardLoopVfxLocalOffset: {x: 0, y: 0, z: 0}
+    guardLoopVfxLocalScale: {x: 1, y: 1, z: 1}
+    guardLoopVfxEulerAngles: {x: 0, y: 0, z: 0}
+    triggerVfxPrefab: {fileID: 0}
+    triggerVfxLocalOffset: {x: 0, y: 0, z: 0}
+    triggerVfxLocalScale: {x: 1, y: 1, z: 1}
+    triggerVfxEulerAngles: {x: 0, y: 0, z: 0}
+  actionSequence:
+    enabled: 0
+    payloadType: 0
+    repeatMode: 0
+    repeatCount: 1
+    durationSeconds: 1
+    intervalSeconds: 0.25
+    windupSeconds: 0
+    recoverySeconds: 0
+    temporaryBasicAttackRangeOverride: 0
+    temporarySkillCastRangeOverride: 0
+    targetRefreshMode: 1
+    interruptFlags: 3
+  targetIndicatorVfxPrefab: {fileID: 0}
+  castImpactVfxPrefab: {fileID: 0}
+  castImpactVfxLocalOffset: {x: 0, y: 0, z: 0}
+  castImpactVfxEulerAngles: {x: 0, y: 0, z: 0}
+  castImpactVfxScaleMultiplier: {x: 1, y: 1, z: 1}
+  castImpactVfxAlignToTargetDirection: 0
+  castProjectileVfxPrefab: {fileID: 0}
+  dashTravelVfxPrefab: {fileID: 0}
+  dashTravelVfxLocalOffset: {x: 0, y: 0, z: 0}
+  dashTravelVfxForwardOffset: 0
+  dashTravelVfxEulerAngles: {x: 0, y: 0, z: 0}
+  dashTravelVfxScaleMultiplier: {x: 1, y: 1, z: 1}
+  dashTravelVfxPathWidthScaleMultiplier: 1
+  persistentAreaVfxPrefab: {fileID: 0}
+  persistentAreaVfxScaleMultiplier: 1
+  persistentAreaVfxEulerAngles: {x: 0, y: 0, z: 0}
+  skillAreaPresentationType: 0
+  ultimateDecision:
+    targetingType: 5
+    primaryCondition:
+      conditionType: 2
+      searchRadius: 6.8
+      requiredUnitCount: 2
+      healthPercentThreshold: 1
+      durationSeconds: 0
+      highValueTargetType: 0
+      heroClassFilter: 2
+      requireTargetInCastRange: 1
+    secondaryCondition:
+      conditionType: 4
+      searchRadius: 6.8
+      requiredUnitCount: 2
+      healthPercentThreshold: 0.7
+      durationSeconds: 0
+      highValueTargetType: 0
+      heroClassFilter: 2
+      requireTargetInCastRange: 1
+    fallback:
+      fallbackType: 1
+      triggerAfterSeconds: 45
+      overrideRequiredUnitCount: 0
+      overrideHealthPercentThreshold: 0.8
+      secondaryTriggerAfterSeconds: 0
+      secondaryOverrideRequiredUnitCount: 0
+      secondaryOverrideHealthPercentThreshold: -1
+    combineMode: 1
