@@ -1,0 +1,417 @@
+using System.Collections.Generic;
+using Fight.Battle;
+using Fight.Data;
+using Fight.Heroes;
+using UnityEngine;
+
+namespace Fight.UI
+{
+    [RequireComponent(typeof(BattleManager))]
+    public sealed class BattleSideHeroSidebarHud : MonoBehaviour
+    {
+        private const string RuntimeBaseTexturePath = "UI/BattleHud/side_hero_sidebar_runtime_base";
+        private const int TeamSize = BattleInputConfig.DefaultTeamSize;
+        private const float DesignCardWidth = 139f;
+        private const float DesignCardHeight = 88f;
+
+        [SerializeField] private float sideMargin = 12f;
+        [SerializeField] private float bottomMargin = 12f;
+        [SerializeField] private float verticalGap = 10f;
+        [SerializeField] private float topHudReservedHeightAt1080p = 194f;
+        [SerializeField] private float maxCardWidth = 280f;
+        [SerializeField] private float maxCardHeight = 176f;
+        [SerializeField] private float minCardHeight = 96f;
+        [SerializeField] private float maxSideWidthRatio = 0.19f;
+
+        private static readonly Color BlueAccent = new Color32(88, 173, 255, 255);
+        private static readonly Color RedAccent = new Color32(255, 126, 126, 255);
+        private static readonly Color MainTextColor = new Color32(242, 244, 248, 255);
+        private static readonly Color MutedTextColor = new Color32(170, 176, 188, 255);
+        private static readonly Color DimTextColor = new Color32(120, 127, 141, 255);
+        private static readonly Color PositiveStatColor = new Color32(129, 226, 170, 255);
+        private static readonly Color NegativeStatColor = new Color32(255, 153, 147, 255);
+        private static readonly Color ShadowColor = new Color32(0, 0, 0, 196);
+        private static readonly Color DeadOverlayColor = new Color32(0, 0, 0, 116);
+        private static readonly Color PortraitFallbackColor = new Color32(31, 40, 54, 235);
+        private static readonly Color PortraitInnerFallbackColor = new Color32(53, 65, 84, 255);
+        private static readonly string[] TraitPlaceholders = { "Reserved 1", "Reserved 2", "Reserved 3" };
+
+        private readonly List<RuntimeHero> blueHeroes = new List<RuntimeHero>(TeamSize);
+        private readonly List<RuntimeHero> redHeroes = new List<RuntimeHero>(TeamSize);
+
+        private BattleManager battleManager;
+        private Texture2D runtimeBaseTexture;
+        private GUIStyle tabStyle;
+        private GUIStyle titleStyle;
+        private GUIStyle badgeStyle;
+        private GUIStyle kdaHeaderStyle;
+        private GUIStyle kdaValueStyle;
+        private GUIStyle statValueStyle;
+        private GUIStyle traitStyle;
+        private GUIStyle coreValueStyle;
+        private GUIStyle portraitFallbackStyle;
+        private float lastStyleScale = -1f;
+
+        private sealed class HeroSidebarViewData
+        {
+            public string DisplayName;
+            public string StateText;
+            public Sprite Portrait;
+            public int Kills;
+            public int Deaths;
+            public string AssistsText;
+            public string DamageDealtText;
+            public string DamageTakenText;
+            public string HealingText;
+            public string AttackText;
+            public string DefenseText;
+            public Color AttackColor = MainTextColor;
+            public Color DefenseColor = MainTextColor;
+            public bool IsDead;
+        }
+
+        private void Awake()
+        {
+            battleManager = GetComponent<BattleManager>();
+            runtimeBaseTexture = Resources.Load<Texture2D>(RuntimeBaseTexturePath);
+        }
+
+        private void OnGUI()
+        {
+            var context = battleManager != null ? battleManager.Context : null;
+            if (context == null)
+            {
+                return;
+            }
+
+            CollectTeamHeroes(context, TeamSide.Blue, blueHeroes);
+            CollectTeamHeroes(context, TeamSide.Red, redHeroes);
+
+            var topReserved = Mathf.Clamp((Screen.height / 1080f) * topHudReservedHeightAt1080p, 96f, 220f);
+            var availableHeight = Mathf.Max(0f, Screen.height - topReserved - bottomMargin);
+            if (availableHeight <= 0f)
+            {
+                return;
+            }
+
+            var maxHeightByAvailable = (availableHeight - (verticalGap * (TeamSize - 1))) / TeamSize;
+            var cardHeight = Mathf.Min(maxCardHeight, maxHeightByAvailable);
+            if (maxHeightByAvailable >= minCardHeight)
+            {
+                cardHeight = Mathf.Max(minCardHeight, cardHeight);
+            }
+
+            if (cardHeight < 72f)
+            {
+                return;
+            }
+
+            var cardWidth = Mathf.Min(maxCardWidth, cardHeight * (DesignCardWidth / DesignCardHeight));
+            cardWidth = Mathf.Min(cardWidth, Screen.width * maxSideWidthRatio);
+            var maxWidthByScreen = Mathf.Max(120f, (Screen.width - (sideMargin * 2f) - 12f) * 0.5f);
+            cardWidth = Mathf.Min(cardWidth, maxWidthByScreen);
+            cardHeight = cardWidth * (DesignCardHeight / DesignCardWidth);
+
+            var totalHeight = (cardHeight * TeamSize) + (verticalGap * (TeamSize - 1));
+            var startY = topReserved + Mathf.Max(0f, (availableHeight - totalHeight) * 0.5f);
+            var leftX = sideMargin;
+            var rightX = Screen.width - sideMargin - cardWidth;
+
+            var styleScale = cardWidth / DesignCardWidth;
+            EnsureStyles(styleScale);
+
+            for (var slotIndex = 0; slotIndex < TeamSize; slotIndex++)
+            {
+                var y = startY + (slotIndex * (cardHeight + verticalGap));
+                DrawHeroCard(
+                    new Rect(leftX, y, cardWidth, cardHeight),
+                    blueHeroes.Count > slotIndex ? blueHeroes[slotIndex] : null,
+                    TeamSide.Blue,
+                    mirrorLayout: false);
+                DrawHeroCard(
+                    new Rect(rightX, y, cardWidth, cardHeight),
+                    redHeroes.Count > slotIndex ? redHeroes[slotIndex] : null,
+                    TeamSide.Red,
+                    mirrorLayout: true);
+            }
+        }
+
+        private void DrawHeroCard(Rect cardRect, RuntimeHero hero, TeamSide side, bool mirrorLayout)
+        {
+            var viewData = BuildViewData(hero);
+            var scale = cardRect.width / DesignCardWidth;
+
+            GUI.BeginGroup(cardRect);
+            DrawCardBackground(new Rect(0f, 0f, cardRect.width, cardRect.height), side, mirrorLayout);
+            DrawSidebarText(scale, viewData, hero, side, mirrorLayout, cardRect.width, cardRect.height);
+            GUI.EndGroup();
+        }
+
+        private void DrawCardBackground(Rect rect, TeamSide side, bool mirrorLayout)
+        {
+            if (runtimeBaseTexture != null)
+            {
+                var previousColor = GUI.color;
+                GUI.color = Color.white;
+                GUI.DrawTextureWithTexCoords(
+                    rect,
+                    runtimeBaseTexture,
+                    mirrorLayout ? new Rect(1f, 0f, -1f, 1f) : new Rect(0f, 0f, 1f, 1f),
+                    true);
+                GUI.color = previousColor;
+            }
+            else
+            {
+                DrawTintedRect(rect, new Color(0.08f, 0.1f, 0.14f, 0.96f));
+                DrawOutline(rect, new Color(0.21f, 0.26f, 0.34f, 1f));
+            }
+
+            DrawTintedRect(
+                mirrorLayout
+                    ? new Rect(rect.width - Mathf.Max(2f, rect.width * 0.015f), 0f, Mathf.Max(2f, rect.width * 0.015f), rect.height)
+                    : new Rect(0f, 0f, Mathf.Max(2f, rect.width * 0.015f), rect.height),
+                side == TeamSide.Red ? RedAccent : BlueAccent);
+        }
+
+        private void DrawSidebarText(
+            float scale,
+            HeroSidebarViewData viewData,
+            RuntimeHero hero,
+            TeamSide side,
+            bool mirrorLayout,
+            float cardWidth,
+            float cardHeight)
+        {
+            DrawShadowedLabel(ScaleRect(1f, 0f, 27f, 23f, scale, mirrorLayout), "INFO", tabStyle, MainTextColor);
+            DrawShadowedLabel(ScaleRect(28f, 0f, 93f, 23f, scale, mirrorLayout), viewData.DisplayName, titleStyle, MainTextColor);
+            DrawShadowedLabel(
+                ScaleRect(121f, 2.2f, 18f, 18f, scale, mirrorLayout),
+                viewData.StateText,
+                badgeStyle,
+                hero != null && hero.IsDead ? RedAccent : (side == TeamSide.Red ? RedAccent : BlueAccent));
+
+            DrawShadowedLabel(ScaleRect(0f, 24f, 9.33f, 8.5f, scale, mirrorLayout), "K", kdaHeaderStyle, MainTextColor);
+            DrawShadowedLabel(ScaleRect(9.33f, 24f, 9.33f, 8.5f, scale, mirrorLayout), "D", kdaHeaderStyle, MainTextColor);
+            DrawShadowedLabel(ScaleRect(18.66f, 24f, 9.34f, 8.5f, scale, mirrorLayout), "A", kdaHeaderStyle, MainTextColor);
+            DrawShadowedLabel(ScaleRect(0f, 34.5f, 9.33f, 9.5f, scale, mirrorLayout), viewData.Kills.ToString(), kdaValueStyle, MainTextColor);
+            DrawShadowedLabel(ScaleRect(9.33f, 34.5f, 9.33f, 9.5f, scale, mirrorLayout), viewData.Deaths.ToString(), kdaValueStyle, MainTextColor);
+            DrawShadowedLabel(ScaleRect(18.66f, 34.5f, 9.34f, 9.5f, scale, mirrorLayout), viewData.AssistsText, kdaValueStyle, MutedTextColor);
+
+            DrawShadowedLabel(ScaleRect(10.2f, 48.4f, 15f, 8f, scale, mirrorLayout), viewData.DamageDealtText, statValueStyle, MainTextColor);
+            DrawShadowedLabel(ScaleRect(10.2f, 61.9f, 15f, 8f, scale, mirrorLayout), viewData.DamageTakenText, statValueStyle, MutedTextColor);
+            DrawShadowedLabel(ScaleRect(10.2f, 75.2f, 15f, 8f, scale, mirrorLayout), viewData.HealingText, statValueStyle, MainTextColor);
+
+            DrawPortrait(ScaleRect(34f, 28f, 31f, 31f, scale, mirrorLayout), viewData.Portrait, viewData.DisplayName);
+
+            for (var index = 0; index < TraitPlaceholders.Length; index++)
+            {
+                var rowY = 27f + (index * 10.5f);
+                DrawShadowedLabel(
+                    ScaleRect(72f, rowY, 65f, 8f, scale, mirrorLayout),
+                    TraitPlaceholders[index],
+                    traitStyle,
+                    DimTextColor);
+            }
+
+            DrawShadowedLabel(ScaleRect(44f, 68f, 29f, 12f, scale, mirrorLayout), viewData.AttackText, coreValueStyle, viewData.AttackColor);
+            DrawShadowedLabel(ScaleRect(97f, 68f, 29f, 12f, scale, mirrorLayout), viewData.DefenseText, coreValueStyle, viewData.DefenseColor);
+
+            if (viewData.IsDead)
+            {
+                DrawTintedRect(new Rect(0f, 0f, cardWidth, cardHeight), DeadOverlayColor);
+                DrawShadowedLabel(new Rect(0f, 0f, cardWidth, cardHeight), "DOWN", titleStyle, MainTextColor);
+            }
+        }
+
+        private HeroSidebarViewData BuildViewData(RuntimeHero hero)
+        {
+            var viewData = new HeroSidebarViewData
+            {
+                DisplayName = hero?.Definition != null && !string.IsNullOrWhiteSpace(hero.Definition.displayName)
+                    ? hero.Definition.displayName
+                    : "Unknown",
+                StateText = GetStateText(hero),
+                Portrait = hero?.Definition?.visualConfig != null ? hero.Definition.visualConfig.portrait : null,
+                Kills = hero != null ? hero.Kills : 0,
+                Deaths = hero != null ? hero.Deaths : 0,
+                AssistsText = "--",
+                DamageDealtText = hero != null ? Mathf.RoundToInt(hero.DamageDealt).ToString() : "0",
+                DamageTakenText = "--",
+                HealingText = hero != null ? Mathf.RoundToInt(hero.HealingDone).ToString() : "0",
+                AttackText = hero != null ? Mathf.RoundToInt(hero.AttackPower).ToString() : "0",
+                DefenseText = hero != null ? Mathf.RoundToInt(hero.Defense).ToString() : "0",
+                IsDead = hero != null && hero.IsDead,
+            };
+
+            if (hero?.Definition?.baseStats != null)
+            {
+                viewData.AttackColor = ResolveStatColor(hero.AttackPower, hero.Definition.baseStats.attackPower);
+                viewData.DefenseColor = ResolveStatColor(hero.Defense, hero.Definition.baseStats.defense);
+            }
+
+            return viewData;
+        }
+
+        private void DrawPortrait(Rect rect, Sprite portrait, string displayName)
+        {
+            if (portrait != null)
+            {
+                DrawSprite(rect, portrait);
+                return;
+            }
+
+            DrawTintedRect(rect, PortraitFallbackColor);
+            DrawTintedRect(new Rect(rect.x + 2f, rect.y + 2f, rect.width - 4f, rect.height - 4f), PortraitInnerFallbackColor);
+            DrawShadowedLabel(rect, GetPortraitFallbackText(displayName), portraitFallbackStyle, MainTextColor);
+        }
+
+        private void DrawSprite(Rect rect, Sprite sprite)
+        {
+            if (sprite == null)
+            {
+                return;
+            }
+
+            var previousColor = GUI.color;
+            GUI.color = Color.white;
+            var texture = sprite.texture;
+            var textureRect = sprite.textureRect;
+            var texCoords = new Rect(
+                textureRect.x / texture.width,
+                textureRect.y / texture.height,
+                textureRect.width / texture.width,
+                textureRect.height / texture.height);
+            GUI.DrawTextureWithTexCoords(rect, texture, texCoords, true);
+            GUI.color = previousColor;
+        }
+
+        private void DrawShadowedLabel(Rect rect, string text, GUIStyle style, Color mainColor)
+        {
+            if (string.IsNullOrWhiteSpace(text) || style == null)
+            {
+                return;
+            }
+
+            var previousColor = style.normal.textColor;
+            style.normal.textColor = ShadowColor;
+            GUI.Label(new Rect(rect.x + 1.5f, rect.y + 1.5f, rect.width, rect.height), text, style);
+            style.normal.textColor = mainColor;
+            GUI.Label(rect, text, style);
+            style.normal.textColor = previousColor;
+        }
+
+        private void EnsureStyles(float scale)
+        {
+            if (Mathf.Abs(lastStyleScale - scale) < 0.01f && titleStyle != null)
+            {
+                return;
+            }
+
+            lastStyleScale = scale;
+            tabStyle = BuildStyle(4.2f, scale, TextAnchor.MiddleCenter, FontStyle.Bold);
+            titleStyle = BuildStyle(4.6f, scale, TextAnchor.MiddleCenter, FontStyle.Bold, allowShrink: true);
+            badgeStyle = BuildStyle(2.8f, scale, TextAnchor.MiddleCenter, FontStyle.Bold);
+            kdaHeaderStyle = BuildStyle(3.4f, scale, TextAnchor.MiddleCenter, FontStyle.Bold);
+            kdaValueStyle = BuildStyle(4.1f, scale, TextAnchor.MiddleCenter, FontStyle.Bold);
+            statValueStyle = BuildStyle(3.7f, scale, TextAnchor.MiddleRight, FontStyle.Bold);
+            traitStyle = BuildStyle(2.5f, scale, TextAnchor.MiddleCenter, FontStyle.Normal, allowShrink: true);
+            coreValueStyle = BuildStyle(5.2f, scale, TextAnchor.MiddleCenter, FontStyle.Bold);
+            portraitFallbackStyle = BuildStyle(6f, scale, TextAnchor.MiddleCenter, FontStyle.Bold);
+        }
+
+        private GUIStyle BuildStyle(float designFontSize, float scale, TextAnchor alignment, FontStyle fontStyle, bool allowShrink = false)
+        {
+            return new GUIStyle(GUI.skin.label)
+            {
+                alignment = alignment,
+                fontSize = Mathf.Max(9, Mathf.RoundToInt(designFontSize * Mathf.Max(1f, scale) * 1.6f)),
+                fontStyle = fontStyle,
+                clipping = allowShrink ? TextClipping.Clip : TextClipping.Overflow,
+                wordWrap = false,
+                normal = { textColor = MainTextColor }
+            };
+        }
+
+        private static void CollectTeamHeroes(BattleContext context, TeamSide side, List<RuntimeHero> buffer)
+        {
+            buffer.Clear();
+            if (context?.Heroes == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < context.Heroes.Count; i++)
+            {
+                var hero = context.Heroes[i];
+                if (hero != null && hero.Side == side)
+                {
+                    buffer.Add(hero);
+                }
+            }
+
+            buffer.Sort((left, right) => left.SlotIndex.CompareTo(right.SlotIndex));
+        }
+
+        private static Rect ScaleRect(float x, float y, float width, float height, float scale, bool mirrorLayout)
+        {
+            var resolvedX = mirrorLayout ? DesignCardWidth - x - width : x;
+            return new Rect(resolvedX * scale, y * scale, width * scale, height * scale);
+        }
+
+        private static string GetStateText(RuntimeHero hero)
+        {
+            if (hero == null)
+            {
+                return string.Empty;
+            }
+
+            if (!hero.IsDead)
+            {
+                return "UP";
+            }
+
+            return Mathf.Max(0, Mathf.CeilToInt(hero.RespawnRemainingSeconds)).ToString();
+        }
+
+        private static string GetPortraitFallbackText(string displayName)
+        {
+            if (string.IsNullOrWhiteSpace(displayName))
+            {
+                return "?";
+            }
+
+            return displayName.Substring(0, 1).ToUpperInvariant();
+        }
+
+        private static Color ResolveStatColor(float currentValue, float baseValue)
+        {
+            if (currentValue > baseValue + Mathf.Epsilon)
+            {
+                return PositiveStatColor;
+            }
+
+            if (currentValue + Mathf.Epsilon < baseValue)
+            {
+                return NegativeStatColor;
+            }
+
+            return MainTextColor;
+        }
+
+        private static void DrawTintedRect(Rect rect, Color color)
+        {
+            var previousColor = GUI.color;
+            GUI.color = color;
+            GUI.DrawTexture(rect, Texture2D.whiteTexture, ScaleMode.StretchToFill, true);
+            GUI.color = previousColor;
+        }
+
+        private static void DrawOutline(Rect rect, Color color)
+        {
+            DrawTintedRect(new Rect(rect.x, rect.y, rect.width, 1f), color);
+            DrawTintedRect(new Rect(rect.x, rect.yMax - 1f, rect.width, 1f), color);
+            DrawTintedRect(new Rect(rect.x, rect.y, 1f, rect.height), color);
+            DrawTintedRect(new Rect(rect.xMax - 1f, rect.y, 1f, rect.height), color);
+        }
+    }
+}

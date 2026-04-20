@@ -10,6 +10,7 @@ namespace Fight.Battle
         [SerializeField] private BattleInputConfig defaultInputConfig;
         [SerializeField] private bool startBattleOnPlay = true;
         [SerializeField] private bool addBattleHud = true;
+        [SerializeField] private bool addBattleSideHeroSidebarHud = true;
         [SerializeField] private bool addBattleView = true;
         [SerializeField] private bool addDebugHud = true;
         [SerializeField] private bool addDebugLogForwarder = true;
@@ -26,6 +27,11 @@ namespace Fight.Battle
             if (addBattleHud && GetComponent<BattleHud>() == null)
             {
                 gameObject.AddComponent<BattleHud>();
+            }
+
+            if (addBattleSideHeroSidebarHud && GetComponent<BattleSideHeroSidebarHud>() == null)
+            {
+                gameObject.AddComponent<BattleSideHeroSidebarHud>();
             }
 
             if (addBattleView && GetComponent<BattleView>() == null)
