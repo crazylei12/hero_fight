@@ -69,7 +69,7 @@ namespace Fight.UI.Flow
             GUI.Label(new Rect(rect.x + 12f, rect.y + 10f, rect.width - 24f, 24f), "Hero Stats", subtitleStyle);
 
             var headerRect = new Rect(rect.x + 12f, rect.y + 40f, rect.width - 24f, 24f);
-            GUI.Label(headerRect, "Hero / Side / K / D / Damage / Healing", bodyStyle);
+            GUI.Label(headerRect, "Hero / Side / K / D / A / Damage / Taken / Heal+Shield", bodyStyle);
 
             var visibleRect = new Rect(rect.x + 12f, rect.y + 68f, rect.width - 24f, rect.height - 80f);
             var sortedStats = BuildSortedStats(heroStats);
@@ -81,7 +81,7 @@ namespace Fight.UI.Flow
             {
                 var line = sortedStats[i];
                 var heroName = string.IsNullOrWhiteSpace(line.heroId) ? "Unknown" : line.heroId;
-                var rowText = $"{heroName}  |  {line.side}  |  {line.kills}  |  {line.deaths}  |  {line.damageDealt:0.0}  |  {line.healingDone:0.0}";
+                var rowText = $"{heroName}  |  {line.side}  |  {line.kills}  |  {line.deaths}  |  {line.assists}  |  {line.damageDealt:0.0}  |  {line.damageTaken:0.0}  |  {(line.healingDone + line.shieldingDone):0.0}";
                 GUI.Label(new Rect(0f, i * 34f, viewRect.width, 28f), rowText, rowStyle);
             }
 
@@ -153,6 +153,12 @@ namespace Fight.UI.Flow
                 if (killComparison != 0)
                 {
                     return killComparison;
+                }
+
+                var assistComparison = right.assists.CompareTo(left.assists);
+                if (assistComparison != 0)
+                {
+                    return assistComparison;
                 }
 
                 return string.Compare(left.heroId, right.heroId, System.StringComparison.OrdinalIgnoreCase);

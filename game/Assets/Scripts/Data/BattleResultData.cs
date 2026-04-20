@@ -23,7 +23,10 @@ namespace Fight.Data
         public TeamSide side = TeamSide.None;
         public int kills;
         public int deaths;
+        public int assists;
         public float damageDealt;
+        public float damageTaken;
         public float healingDone;
+        public float shieldingDone;
     }
 }

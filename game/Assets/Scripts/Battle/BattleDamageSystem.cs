@@ -45,13 +45,22 @@ namespace Fight.Battle
 
             Action<RuntimeStatusEffect> onExpiredStatus = status => PublishStatusRemovedEvent(context, target, status);
             var remainingDamage = Mathf.Max(0f, damageAmount);
-            remainingDamage -= target.ConsumeShield(remainingDamage, onExpiredStatus);
-            if (remainingDamage <= Mathf.Epsilon)
+            var absorbedByShield = target.ConsumeShield(remainingDamage, onExpiredStatus);
+            if (absorbedByShield > Mathf.Epsilon)
             {
-                return 0f;
+                BattleStatsSystem.RecordDamageContribution(context, attacker, target, absorbedByShield);
             }
 
-            RecordIncomingThreat(context, target, attacker);
+            if (absorbedByShield > Mathf.Epsilon || remainingDamage > Mathf.Epsilon)
+            {
+                RecordIncomingThreat(context, target, attacker);
+            }
+
+            remainingDamage -= absorbedByShield;
+            if (remainingDamage <= Mathf.Epsilon)
+            {
+                return absorbedByShield;
+            }
 
             var damageToTarget = remainingDamage;
             List<DamageShareTransfer> damageShareTransfers = null;
@@ -126,7 +135,7 @@ namespace Fight.Battle
                 return 0f;
             }
 
-            attacker?.RecordDamage(actualDamage);
+            BattleStatsSystem.RecordDamageContribution(context, attacker, target, actualDamage);
             context.EventBus?.Publish(new DamageAppliedEvent(
                 attacker,
                 target,
@@ -140,6 +149,7 @@ namespace Fight.Battle
                 return actualDamage;
             }
 
+            BattleStatsSystem.ResolveAssists(context, target, attacker);
             target.MarkDead(
                 context.Input.respawnDelaySeconds,
                 status => PublishStatusRemovedEvent(context, target, status));

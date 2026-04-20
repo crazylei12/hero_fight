@@ -390,7 +390,7 @@ namespace Fight.Battle
                 return;
             }
 
-            status.Source?.RecordHealing(actualHeal);
+            BattleStatsSystem.RecordHealingContribution(context, status.Source, target, actualHeal);
             context.EventBus.Publish(new HealAppliedEvent(status.Source ?? target, target, actualHeal, status.SourceSkill, target.CurrentHealth));
         }
 
