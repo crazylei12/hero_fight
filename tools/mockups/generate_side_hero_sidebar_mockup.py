@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import textwrap
 import uuid
 from pathlib import Path
@@ -23,6 +24,7 @@ CARD_HEIGHT = BASE_HEIGHT * SCALE
 RED_ACCENT = (198, 47, 49, 255)
 RED_ACCENT_SOFT = (233, 84, 79, 255)
 BLUE_OUTLINE = (56, 113, 188, 255)
+FRAME_OUTLINE = (46, 53, 67, 255)
 PANEL_DARK = (18, 23, 33, 248)
 PANEL_DARKER = (10, 14, 22, 255)
 TEXT_MAIN = (237, 239, 244, 255)
@@ -292,6 +294,16 @@ def load_icon(path: Path, tint: tuple[int, int, int, int], size: tuple[int, int]
     return alpha_mask_to_color(image, tint)
 
 
+def load_rotated_icon(
+    path: Path,
+    tint: tuple[int, int, int, int],
+    size: tuple[int, int],
+    angle: int,
+) -> Image.Image:
+    image = load_icon(path, tint, size)
+    return image.rotate(angle, expand=True, resample=Image.Resampling.BICUBIC)
+
+
 def compose_avatar(size: tuple[int, int]) -> Image.Image:
     portrait = Image.new("RGBA", size, (0, 0, 0, 0))
     bg = Image.new("RGBA", size, (0, 0, 0, 0))
@@ -358,7 +370,7 @@ def make_preview(card: Image.Image) -> Image.Image:
     return preview
 
 
-def generate(prefix: str = "side_hero_sidebar_mockup_v1") -> tuple[Path, Path]:
+def generate(prefix: str = "side_hero_sidebar_mockup_v3") -> tuple[Path, Path]:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
     card = Image.new("RGBA", (CARD_WIDTH, CARD_HEIGHT), (0, 0, 0, 0))
@@ -367,7 +379,7 @@ def generate(prefix: str = "side_hero_sidebar_mockup_v1") -> tuple[Path, Path]:
         (0, 0, CARD_WIDTH - 1, CARD_HEIGHT - 1),
         fill=(16, 19, 27, 255),
         inner_fill=PANEL_DARK,
-        outline=BLUE_OUTLINE,
+        outline=FRAME_OUTLINE,
         shadow_alpha=120,
         bevel=s(2.2),
     )
@@ -377,11 +389,12 @@ def generate(prefix: str = "side_hero_sidebar_mockup_v1") -> tuple[Path, Path]:
     draw = ImageDraw.Draw(card)
 
     # Header tabs
-    draw.rectangle(rect(0, 0, 34, 23), fill=(90, 26, 29, 84))
-    draw.line((s(34), s(3), s(34), s(20)), fill=(84, 19, 22, 170), width=max(1, s(0.35)))
-    draw.line((s(84), s(3), s(84), s(20)), fill=(84, 19, 22, 180), width=max(1, s(0.35)))
-    centered_text(draw, rect(3, 0, 28, 23), "资讯", FONT_TAB, TEXT_MAIN, stroke_width=1, stroke_fill=(49, 12, 15, 180))
-    centered_text(draw, rect(34, 0, 48, 23), "核查", FONT_TAB, TEXT_MAIN, stroke_width=1, stroke_fill=(49, 12, 15, 180))
+    left_tab = fit(load_button("Button_Rectangle_01_Convex_Dark.Png"), s(28), s(23))
+    card.alpha_composite(left_tab, (0, 0))
+    draw.rectangle(rect(0, 0, 28, 23), fill=(106, 48, 56, 82))
+    draw.line((s(28), s(3), s(28), s(20)), fill=(84, 19, 22, 170), width=max(1, s(0.35)))
+    centered_text(draw, rect(1, 0, 27, 23), "资讯", FONT_TAB, TEXT_MAIN, stroke_width=1, stroke_fill=(49, 12, 15, 180))
+    centered_text(draw, rect(28, 0, 56, 23), "核查", FONT_TAB, TEXT_MAIN, stroke_width=1, stroke_fill=(49, 12, 15, 180))
     draw_arrow_button(card, rect(145, 2, 18, 18))
 
     # Inner separators
@@ -402,13 +415,13 @@ def generate(prefix: str = "side_hero_sidebar_mockup_v1") -> tuple[Path, Path]:
     centered_text(draw, rect(9.33, 34.5, 9.33, 9.5), "0", FONT_SMALL_NUMBER, TEXT_MUTED)
     centered_text(draw, rect(18.66, 34.5, 9.34, 9.5), "0", FONT_SMALL_NUMBER, TEXT_MUTED)
 
-    sword_small = load_icon(ULTIMATE_ICONS / "Tools/Sword.png", SWORD_TINT, (s(4.2), s(4.2)))
+    sword_small = load_rotated_icon(ULTIMATE_ICONS / "Tools/Sword.png", SWORD_TINT, (s(4.2), s(4.2)), 90)
     shield_small = load_icon(ULTIMATE_ICONS / "Shield/Shield.png", SHIELD_TINT, (s(4.2), s(4.2)))
     heal_small = load_icon(ULTIMATE_ICONS / "Life/Health.png", HEAL_TINT, (s(4.2), s(4.2)))
 
     for icon, value, y_units in ((sword_small, "0", 53.0), (shield_small, "0", 66.5), (heal_small, "0", 80.0)):
         icon_y = s(y_units)
-        card.alpha_composite(icon, (s(4), icon_y))
+        card.alpha_composite(icon, (s(4), icon_y - s(0.2)))
         draw_text_right(draw, s(24), icon_y + (icon.size[1] // 2), value, FONT_SMALL_NUMBER, TEXT_MUTED)
 
     # Portrait block
@@ -429,12 +442,12 @@ def generate(prefix: str = "side_hero_sidebar_mockup_v1") -> tuple[Path, Path]:
     centered_text(draw, trait_box, "特性预留", FONT_TRAIT, TEXT_DIM)
 
     # Core stats section
-    sword_large = load_icon(ULTIMATE_ICONS / "Tools/Sword.png", SWORD_TINT, (s(4.2), s(4.2)))
+    sword_large = load_rotated_icon(ULTIMATE_ICONS / "Tools/Sword.png", SWORD_TINT, (s(4.2), s(4.2)), 90)
     shield_large = load_icon(ULTIMATE_ICONS / "Shield/Shield.png", SHIELD_TINT, (s(4.2), s(4.2)))
     sword_x = s(52)
     shield_x = s(108)
     core_y = s(68.5)
-    card.alpha_composite(sword_large, (sword_x, core_y))
+    card.alpha_composite(sword_large, (sword_x, core_y - s(0.2)))
     card.alpha_composite(shield_large, (shield_x, core_y))
     draw.text((sword_x + s(6.2), s(67.8)), "42", font=FONT_CORE, fill=TEXT_MAIN, stroke_width=1, stroke_fill=(0, 0, 0, 170))
     draw.text((shield_x + s(6.2), s(67.8)), "43", font=FONT_CORE, fill=TEXT_MAIN, stroke_width=1, stroke_fill=(0, 0, 0, 170))
@@ -456,8 +469,19 @@ def write_meta(path: Path) -> None:
     meta_path.write_text(META_TEMPLATE.format(guid=uuid.uuid4().hex), encoding="utf-8")
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Generate a static single-hero sidebar mockup.")
+    parser.add_argument(
+        "--prefix",
+        default="side_hero_sidebar_mockup_v3",
+        help="Output filename prefix without extension.",
+    )
+    return parser.parse_args()
+
+
 def main() -> None:
-    card_path, preview_path = generate()
+    args = parse_args()
+    card_path, preview_path = generate(prefix=args.prefix)
     write_meta(card_path)
     write_meta(preview_path)
     print(card_path)
