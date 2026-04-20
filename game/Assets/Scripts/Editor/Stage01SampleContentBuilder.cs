@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.IO;
 using Fight.Battle;
 using Fight.Data;
@@ -376,6 +378,7 @@ namespace Fight.Editor
             GenerateDemoContentInternal(overwriteExistingContent: false);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
+            EnsureDemoContentValidationPassed(logFailures: true);
         }
 
         public static void GenerateDemoContentBatch()
@@ -393,28 +396,32 @@ namespace Fight.Editor
                 return;
             }
 
-            if (!NeedsDemoContentSync())
+            if (NeedsDemoContentBootstrap())
             {
+                GenerateDemoContent();
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+                Debug.Log("Stage-01 demo content synchronized.");
+            }
+
+            ValidateDemoContentConsistency(logFailures: true);
+        }
+
+        private static void EnsureDemoContent()
+        {
+            if (!NeedsDemoContentBootstrap())
+            {
+                ValidateDemoContentConsistency(logFailures: true);
                 return;
             }
 
             GenerateDemoContent();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            Debug.Log("Stage-01 demo content synchronized.");
+            ValidateDemoContentConsistency(logFailures: true);
         }
 
-        private static void EnsureDemoContent()
-        {
-            if (!NeedsDemoContentSync())
-            {
-                return;
-            }
-
-            GenerateDemoContent();
-        }
-
-        private static bool NeedsDemoContentSync()
+        private static bool NeedsDemoContentBootstrap()
         {
             var hasMainMenuScene = AssetDatabase.LoadAssetAtPath<SceneAsset>(MainMenuScenePath) != null;
             var hasHeroSelectScene = AssetDatabase.LoadAssetAtPath<SceneAsset>(HeroSelectScenePath) != null;
@@ -479,6 +486,304 @@ namespace Fight.Editor
                 || !windchimeBattlePrefabValid
                 || !monkReferencesValid
                 || !monkBattlePrefabValid;
+        }
+
+        private static void EnsureDemoContentValidationPassed(bool logFailures)
+        {
+            if (ValidateDemoContentConsistency(logFailures))
+            {
+                return;
+            }
+
+            throw new InvalidOperationException("Stage-01 demo content validation failed. Reconcile demo asset drift before batch generation or build export.");
+        }
+
+        private static bool ValidateDemoContentConsistency(bool logFailures)
+        {
+            var issues = new List<string>();
+            var monkHero = AssetDatabase.LoadAssetAtPath<HeroDefinition>(MonkHeroAssetPath);
+            var monkActiveSkill = AssetDatabase.LoadAssetAtPath<SkillData>(MonkActiveSkillAssetPath);
+            var monkUltimateSkill = AssetDatabase.LoadAssetAtPath<SkillData>(MonkUltimateSkillAssetPath);
+
+            CollectMonkValidationIssues(issues, monkHero, monkActiveSkill, monkUltimateSkill);
+
+            if (issues.Count == 0)
+            {
+                return true;
+            }
+
+            if (logFailures)
+            {
+                Debug.LogWarning("[Stage01] Demo content validation issues:\n- " + string.Join("\n- ", issues));
+            }
+
+            return false;
+        }
+
+        private static void CollectMonkValidationIssues(List<string> issues, HeroDefinition monkHero, SkillData monkActiveSkill, SkillData monkUltimateSkill)
+        {
+            if (issues == null)
+            {
+                return;
+            }
+
+            if (monkHero == null)
+            {
+                issues.Add("Monk hero asset is missing.");
+            }
+            else
+            {
+                if (monkHero.heroClass != HeroClass.Support)
+                {
+                    issues.Add($"Monk heroClass expected {HeroClass.Support} but found {monkHero.heroClass}.");
+                }
+
+                if (monkHero.baseStats == null)
+                {
+                    issues.Add("Monk baseStats block is missing.");
+                }
+                else
+                {
+                    ReportFloatMismatch(issues, "Monk maxHealth", monkHero.baseStats.maxHealth, 430f);
+                    ReportFloatMismatch(issues, "Monk attackPower", monkHero.baseStats.attackPower, 20f);
+                    ReportFloatMismatch(issues, "Monk defense", monkHero.baseStats.defense, 24f);
+                    ReportFloatMismatch(issues, "Monk attackSpeed", monkHero.baseStats.attackSpeed, 1f / 1.05f);
+                    ReportFloatMismatch(issues, "Monk moveSpeed", monkHero.baseStats.moveSpeed, 4f);
+                    ReportFloatMismatch(issues, "Monk attackRange", monkHero.baseStats.attackRange, 1.9f);
+                }
+
+                if (monkHero.basicAttack == null)
+                {
+                    issues.Add("Monk basicAttack block is missing.");
+                }
+                else
+                {
+                    ReportFloatMismatch(issues, "Monk basic attack damageMultiplier", monkHero.basicAttack.damageMultiplier, 0.95f);
+                    ReportFloatMismatch(issues, "Monk basic attack attackInterval", monkHero.basicAttack.attackInterval, 1.05f);
+                    ReportFloatMismatch(issues, "Monk basic attack rangeOverride", monkHero.basicAttack.rangeOverride, 1.9f);
+
+                    if (monkHero.basicAttack.usesProjectile)
+                    {
+                        issues.Add("Monk basic attack expected melee instant hit, but usesProjectile is true.");
+                    }
+
+                    if (monkHero.basicAttack.effectType != BasicAttackEffectType.Damage)
+                    {
+                        issues.Add($"Monk basic attack effectType expected {BasicAttackEffectType.Damage} but found {monkHero.basicAttack.effectType}.");
+                    }
+
+                    if (monkHero.basicAttack.targetType != BasicAttackTargetType.NearestEnemy)
+                    {
+                        issues.Add($"Monk basic attack targetType expected {BasicAttackTargetType.NearestEnemy} but found {monkHero.basicAttack.targetType}.");
+                    }
+
+                    if (monkHero.basicAttack.onHitStatusEffects != null && monkHero.basicAttack.onHitStatusEffects.Count > 0)
+                    {
+                        issues.Add($"Monk basic attack expected no on-hit status effects, but found {monkHero.basicAttack.onHitStatusEffects.Count}.");
+                    }
+                }
+            }
+
+            if (monkActiveSkill == null)
+            {
+                issues.Add("Monk active skill asset is missing.");
+            }
+            else
+            {
+                if (monkActiveSkill.targetType != SkillTargetType.Self)
+                {
+                    issues.Add($"Monk active targetType expected {SkillTargetType.Self} but found {monkActiveSkill.targetType}.");
+                }
+
+                ReportFloatMismatch(issues, "Monk active castRange", monkActiveSkill.castRange, 0f);
+                ReportFloatMismatch(issues, "Monk active areaRadius", monkActiveSkill.areaRadius, 4.5f);
+                ReportFloatMismatch(issues, "Monk active cooldownSeconds", monkActiveSkill.cooldownSeconds, 8f);
+
+                if (!monkActiveSkill.allowsSelfCast)
+                {
+                    issues.Add("Monk active expected allowsSelfCast = true.");
+                }
+
+                if (monkActiveSkill.effects == null || monkActiveSkill.effects.Count != 1)
+                {
+                    issues.Add($"Monk active expected exactly 1 effect, but found {(monkActiveSkill.effects == null ? 0 : monkActiveSkill.effects.Count)}.");
+                }
+                else
+                {
+                    var healEffect = monkActiveSkill.effects[0];
+                    if (healEffect.effectType != SkillEffectType.DirectHeal)
+                    {
+                        issues.Add($"Monk active effectType expected {SkillEffectType.DirectHeal} but found {healEffect.effectType}.");
+                    }
+
+                    if (healEffect.targetMode != SkillEffectTargetMode.AlliesInRadiusAroundCaster)
+                    {
+                        issues.Add($"Monk active targetMode expected {SkillEffectTargetMode.AlliesInRadiusAroundCaster} but found {healEffect.targetMode}.");
+                    }
+
+                    ReportFloatMismatch(issues, "Monk active heal powerMultiplier", healEffect.powerMultiplier, 0.9f);
+                    ReportFloatMismatch(issues, "Monk active heal radiusOverride", healEffect.radiusOverride, 4.5f);
+                }
+            }
+
+            if (monkUltimateSkill == null)
+            {
+                issues.Add("Monk ultimate skill asset is missing.");
+                return;
+            }
+
+            if (monkUltimateSkill.skillType != SkillType.Buff)
+            {
+                issues.Add($"Monk ultimate skillType expected {SkillType.Buff} but found {monkUltimateSkill.skillType}.");
+            }
+
+            if (monkUltimateSkill.targetType != SkillTargetType.Self)
+            {
+                issues.Add($"Monk ultimate targetType expected {SkillTargetType.Self} but found {monkUltimateSkill.targetType}.");
+            }
+
+            ReportFloatMismatch(issues, "Monk ultimate castRange", monkUltimateSkill.castRange, 0f);
+            ReportFloatMismatch(issues, "Monk ultimate areaRadius", monkUltimateSkill.areaRadius, 6.8f);
+
+            if (!monkUltimateSkill.allowsSelfCast)
+            {
+                issues.Add("Monk ultimate expected allowsSelfCast = true.");
+            }
+
+            if (monkUltimateSkill.effects == null || monkUltimateSkill.effects.Count != 1)
+            {
+                issues.Add($"Monk ultimate expected exactly 1 effect, but found {(monkUltimateSkill.effects == null ? 0 : monkUltimateSkill.effects.Count)}.");
+            }
+            else
+            {
+                var shieldEffect = monkUltimateSkill.effects[0];
+                if (shieldEffect.effectType != SkillEffectType.ApplyStatusEffects)
+                {
+                    issues.Add($"Monk ultimate effectType expected {SkillEffectType.ApplyStatusEffects} but found {shieldEffect.effectType}.");
+                }
+
+                if (shieldEffect.targetMode != SkillEffectTargetMode.AlliesInRadiusAroundCaster)
+                {
+                    issues.Add($"Monk ultimate targetMode expected {SkillEffectTargetMode.AlliesInRadiusAroundCaster} but found {shieldEffect.targetMode}.");
+                }
+
+                ReportFloatMismatch(issues, "Monk ultimate shield radiusOverride", shieldEffect.radiusOverride, 6.8f);
+
+                if (shieldEffect.statusEffects == null || shieldEffect.statusEffects.Count != 1)
+                {
+                    issues.Add($"Monk ultimate expected exactly 1 status effect, but found {(shieldEffect.statusEffects == null ? 0 : shieldEffect.statusEffects.Count)}.");
+                }
+                else
+                {
+                    var shieldStatus = shieldEffect.statusEffects[0];
+                    if (shieldStatus.effectType != StatusEffectType.Shield)
+                    {
+                        issues.Add($"Monk ultimate status effect expected {StatusEffectType.Shield} but found {shieldStatus.effectType}.");
+                    }
+
+                    ReportFloatMismatch(issues, "Monk ultimate shield durationSeconds", shieldStatus.durationSeconds, 5f);
+                    ReportFloatMismatch(issues, "Monk ultimate shield magnitude", shieldStatus.magnitude, 85f);
+
+                    if (shieldStatus.maxStacks != 1)
+                    {
+                        issues.Add($"Monk ultimate shield maxStacks expected 1 but found {shieldStatus.maxStacks}.");
+                    }
+
+                    if (!shieldStatus.refreshDurationOnReapply)
+                    {
+                        issues.Add("Monk ultimate shield expected refreshDurationOnReapply = true.");
+                    }
+                }
+            }
+
+            var decision = monkUltimateSkill.ultimateDecision;
+            if (decision == null)
+            {
+                issues.Add("Monk ultimateDecision block is missing.");
+                return;
+            }
+
+            if (decision.targetingType != UltimateTargetingType.Self)
+            {
+                issues.Add($"Monk ultimate targetingType expected {UltimateTargetingType.Self} but found {decision.targetingType}.");
+            }
+
+            if (decision.combineMode != UltimateConditionCombineMode.AllMustPass)
+            {
+                issues.Add($"Monk ultimate combineMode expected {UltimateConditionCombineMode.AllMustPass} but found {decision.combineMode}.");
+            }
+
+            var primaryCondition = decision.primaryCondition;
+            if (primaryCondition == null)
+            {
+                issues.Add("Monk ultimate primaryCondition is missing.");
+            }
+            else
+            {
+                if (primaryCondition.conditionType != UltimateConditionType.AllyCountInRange)
+                {
+                    issues.Add($"Monk ultimate primary condition expected {UltimateConditionType.AllyCountInRange} but found {primaryCondition.conditionType}.");
+                }
+
+                ReportFloatMismatch(issues, "Monk ultimate primary searchRadius", primaryCondition.searchRadius, 6.8f);
+
+                if (primaryCondition.requiredUnitCount != 2)
+                {
+                    issues.Add($"Monk ultimate primary requiredUnitCount expected 2 but found {primaryCondition.requiredUnitCount}.");
+                }
+            }
+
+            var secondaryCondition = decision.secondaryCondition;
+            if (secondaryCondition == null)
+            {
+                issues.Add("Monk ultimate secondaryCondition is missing.");
+            }
+            else
+            {
+                if (secondaryCondition.conditionType != UltimateConditionType.AllyLowHealthInRange)
+                {
+                    issues.Add($"Monk ultimate secondary condition expected {UltimateConditionType.AllyLowHealthInRange} but found {secondaryCondition.conditionType}.");
+                }
+
+                ReportFloatMismatch(issues, "Monk ultimate secondary searchRadius", secondaryCondition.searchRadius, 6.8f);
+
+                if (secondaryCondition.requiredUnitCount != 2)
+                {
+                    issues.Add($"Monk ultimate secondary requiredUnitCount expected 2 but found {secondaryCondition.requiredUnitCount}.");
+                }
+
+                ReportFloatMismatch(issues, "Monk ultimate secondary healthPercentThreshold", secondaryCondition.healthPercentThreshold, 0.7f);
+            }
+
+            var fallback = decision.fallback;
+            if (fallback == null)
+            {
+                issues.Add("Monk ultimate fallback block is missing.");
+                return;
+            }
+
+            if (fallback.fallbackType != UltimateFallbackType.LowerPrimaryThreshold)
+            {
+                issues.Add($"Monk ultimate fallbackType expected {UltimateFallbackType.LowerPrimaryThreshold} but found {fallback.fallbackType}.");
+            }
+
+            ReportFloatMismatch(issues, "Monk ultimate fallback triggerAfterSeconds", fallback.triggerAfterSeconds, 45f);
+            ReportFloatMismatch(issues, "Monk ultimate fallback overrideHealthPercentThreshold", fallback.overrideHealthPercentThreshold, 0.8f);
+
+            if (fallback.overrideRequiredUnitCount != 0)
+            {
+                issues.Add($"Monk ultimate fallback overrideRequiredUnitCount expected 0 but found {fallback.overrideRequiredUnitCount}.");
+            }
+        }
+
+        private static void ReportFloatMismatch(List<string> issues, string label, float actual, float expected, float tolerance = 0.0001f)
+        {
+            if (Mathf.Abs(actual - expected) <= tolerance)
+            {
+                return;
+            }
+
+            issues.Add($"{label} expected {expected:0.####} but found {actual:0.####}.");
         }
 
         private static bool CatalogContainsHero(HeroCatalogData catalog, string heroId)

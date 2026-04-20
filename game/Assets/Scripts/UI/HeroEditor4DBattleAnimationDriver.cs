@@ -176,14 +176,22 @@ namespace Fight.UI
 
         private void PlayBasicAttack()
         {
-            if (hero.Definition.heroClass is HeroClass.Mage or HeroClass.Support)
+            var definition = hero.Definition;
+            var basicAttack = definition?.basicAttack;
+            if (basicAttack == null)
             {
-                TriggerCast();
+                animationManager.Attack();
                 return;
             }
 
-            if (hero.Definition.basicAttack.usesProjectile)
+            if (basicAttack.usesProjectile)
             {
+                if (definition.heroClass is HeroClass.Mage or HeroClass.Support)
+                {
+                    TriggerCast();
+                    return;
+                }
+
                 TriggerRangedAttack();
                 return;
             }
