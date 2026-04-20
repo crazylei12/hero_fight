@@ -6,7 +6,9 @@ using System.Linq;
 using Assets.HeroEditor4D.Common.Scripts.CharacterScripts;
 using Assets.HeroEditor4D.Common.Scripts.Enums;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace Fight.Editor
 {
@@ -533,9 +535,7 @@ namespace Fight.Editor
             }
 
             prefabRoot.hideFlags = HideFlags.HideAndDontSave;
-            PreviewRenderUtility previewUtility = null;
             Texture2D texture = null;
-            RenderTexture previewRenderTexture = null;
 
             try
             {
@@ -554,34 +554,13 @@ namespace Fight.Editor
                 }
 
                 var bounds = CalculateBounds(spriteRenderers);
-                previewUtility = new PreviewRenderUtility(true, true);
-                previewUtility.camera.clearFlags = CameraClearFlags.SolidColor;
-                previewUtility.camera.backgroundColor = new Color(0f, 0f, 0f, 0f);
-                previewUtility.lights[0].intensity = 0f;
-                previewUtility.lights[1].intensity = 0f;
-                ConfigureCaptureCamera(previewUtility.camera, bounds, options);
-                previewUtility.AddSingleGO(prefabRoot);
-                previewUtility.BeginPreview(new Rect(0f, 0f, options.width, options.height), GUIStyle.none);
-                previewUtility.camera.Render();
-                previewRenderTexture = previewUtility.EndPreview() as RenderTexture;
-                if (previewRenderTexture == null)
+                texture = CapturePortraitTexture(prefabRoot, bounds, options);
+                if (texture == null || !HasOpaquePixels(texture))
                 {
-                    throw new InvalidOperationException("PreviewRenderUtility did not return a RenderTexture.");
+                    throw new InvalidOperationException($"Prefab at [{assetPath}] produced an empty portrait texture.");
                 }
 
-                texture = new Texture2D(options.width, options.height, TextureFormat.ARGB32, false);
-                var previousActiveRenderTexture = RenderTexture.active;
-                try
-                {
-                    RenderTexture.active = previewRenderTexture;
-                    texture.ReadPixels(new Rect(0f, 0f, options.width, options.height), 0, 0);
-                    texture.Apply(false, false);
-                    RecenterOpaquePixels(texture);
-                }
-                finally
-                {
-                    RenderTexture.active = previousActiveRenderTexture;
-                }
+                RecenterOpaquePixels(texture);
 
                 var outputDirectory = Path.GetDirectoryName(absoluteOutputPath);
                 if (string.IsNullOrWhiteSpace(outputDirectory))
@@ -599,6 +578,134 @@ namespace Fight.Editor
                     UnityEngine.Object.DestroyImmediate(texture);
                 }
 
+                UnityEngine.Object.DestroyImmediate(prefabRoot);
+            }
+        }
+
+        private static Texture2D CapturePortraitTexture(GameObject prefabRoot, Bounds bounds, HeroEditorPortraitExportOptions options)
+        {
+            var previewSceneTexture = CapturePortraitTextureWithPreviewScene(prefabRoot, options);
+            if (previewSceneTexture != null && HasOpaquePixels(previewSceneTexture))
+            {
+                return previewSceneTexture;
+            }
+
+            if (previewSceneTexture != null)
+            {
+                UnityEngine.Object.DestroyImmediate(previewSceneTexture);
+            }
+
+            return CapturePortraitTextureWithPreviewRenderUtility(prefabRoot, bounds, options);
+        }
+
+        private static Texture2D CapturePortraitTextureWithPreviewScene(GameObject prefabRoot, HeroEditorPortraitExportOptions options)
+        {
+            var previewScene = default(Scene);
+            GameObject previewRoot = null;
+            GameObject captureCameraObject = null;
+            RenderTexture renderTexture = null;
+
+            try
+            {
+                previewScene = EditorSceneManager.NewPreviewScene();
+                previewRoot = UnityEngine.Object.Instantiate(prefabRoot);
+                previewRoot.hideFlags = HideFlags.HideAndDontSave;
+                SceneManager.MoveGameObjectToScene(previewRoot, previewScene);
+
+                var previewCharacter = previewRoot.GetComponentInChildren<Character4D>(true);
+                if (previewCharacter == null)
+                {
+                    return null;
+                }
+
+                PrepareCharacterForPortraitCapture(previewCharacter, options);
+                var previewRenderers = CollectCaptureRenderers(previewCharacter, options.includeShadow);
+                if (previewRenderers.Count == 0)
+                {
+                    return null;
+                }
+
+                var previewBounds = CalculateBounds(previewRenderers);
+
+                captureCameraObject = new GameObject("HeroEditorPortraitCaptureCamera")
+                {
+                    hideFlags = HideFlags.HideAndDontSave
+                };
+                SceneManager.MoveGameObjectToScene(captureCameraObject, previewScene);
+
+                var captureCamera = captureCameraObject.AddComponent<Camera>();
+                captureCamera.cameraType = CameraType.Preview;
+                captureCamera.cullingMask = ~0;
+                captureCamera.transparencySortMode = TransparencySortMode.Orthographic;
+                ConfigureCaptureCamera(captureCamera, previewBounds, options);
+
+                renderTexture = new RenderTexture(options.width, options.height, 24, RenderTextureFormat.ARGB32)
+                {
+                    antiAliasing = 1
+                };
+
+                captureCamera.targetTexture = renderTexture;
+                captureCamera.Render();
+                captureCamera.targetTexture = null;
+
+                return ReadTextureFromRenderTexture(renderTexture, options.width, options.height);
+            }
+            catch (Exception exception)
+            {
+                Debug.LogWarning($"[HeroEditorPortraitExporter] Preview-scene capture fallback triggered: {exception.Message}");
+                return null;
+            }
+            finally
+            {
+                if (renderTexture != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(renderTexture);
+                }
+
+                if (captureCameraObject != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(captureCameraObject);
+                }
+
+                if (previewRoot != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(previewRoot);
+                }
+
+                if (previewScene.IsValid())
+                {
+                    EditorSceneManager.ClosePreviewScene(previewScene);
+                }
+            }
+        }
+
+        private static Texture2D CapturePortraitTextureWithPreviewRenderUtility(GameObject prefabRoot, Bounds bounds, HeroEditorPortraitExportOptions options)
+        {
+            PreviewRenderUtility previewUtility = null;
+            RenderTexture previewRenderTexture = null;
+
+            try
+            {
+                previewUtility = new PreviewRenderUtility(true, true);
+                previewUtility.camera.clearFlags = CameraClearFlags.SolidColor;
+                previewUtility.camera.backgroundColor = new Color(0f, 0f, 0f, 0f);
+                previewUtility.camera.transparencySortMode = TransparencySortMode.Orthographic;
+                previewUtility.lights[0].intensity = 0f;
+                previewUtility.lights[1].intensity = 0f;
+                ConfigureCaptureCamera(previewUtility.camera, bounds, options);
+                previewUtility.AddSingleGO(prefabRoot);
+                previewUtility.BeginPreview(new Rect(0f, 0f, options.width, options.height), GUIStyle.none);
+                previewUtility.camera.Render();
+                previewRenderTexture = previewUtility.EndPreview() as RenderTexture;
+                if (previewRenderTexture == null)
+                {
+                    return null;
+                }
+
+                return ReadTextureFromRenderTexture(previewRenderTexture, options.width, options.height);
+            }
+            finally
+            {
                 if (previewRenderTexture != null)
                 {
                     UnityEngine.Object.DestroyImmediate(previewRenderTexture);
@@ -608,9 +715,40 @@ namespace Fight.Editor
                 {
                     previewUtility.Cleanup();
                 }
-
-                UnityEngine.Object.DestroyImmediate(prefabRoot);
             }
+        }
+
+        private static Texture2D ReadTextureFromRenderTexture(RenderTexture renderTexture, int width, int height)
+        {
+            if (renderTexture == null)
+            {
+                return null;
+            }
+
+            var texture = new Texture2D(width, height, TextureFormat.ARGB32, false);
+            var previousActiveRenderTexture = RenderTexture.active;
+
+            try
+            {
+                RenderTexture.active = renderTexture;
+                texture.ReadPixels(new Rect(0f, 0f, width, height), 0, 0);
+                texture.Apply(false, false);
+                return texture;
+            }
+            finally
+            {
+                RenderTexture.active = previousActiveRenderTexture;
+            }
+        }
+
+        private static bool HasOpaquePixels(Texture2D texture)
+        {
+            if (texture == null)
+            {
+                return false;
+            }
+
+            return texture.GetPixels32().Any(pixel => pixel.a > 0);
         }
 
         private static void PrepareCharacterForPortraitCapture(Character4D character, HeroEditorPortraitExportOptions options)
