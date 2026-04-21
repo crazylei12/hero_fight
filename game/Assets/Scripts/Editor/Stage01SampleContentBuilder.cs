@@ -2278,7 +2278,7 @@ namespace Fight.Editor
             skill.skillType = SkillType.Buff;
             skill.targetType = SkillTargetType.Self;
             skill.fallbackTargetType = SkillTargetType.None;
-            skill.castRange = 0f;
+            skill.castRange = 2.6f;
             skill.areaRadius = 0f;
             skill.minTargetsToCast = 1;
             skill.allowsSelfCast = true;
