@@ -2796,9 +2796,13 @@ namespace Fight.Editor
             skill.ultimateDecision.targetingType = UltimateTargetingType.UseSkillTargetType;
             skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;
             skill.ultimateDecision.primaryCondition.searchRadius = Stage01ArenaSpec.FullMapTargetingRangeWorldUnits;
-            skill.ultimateDecision.primaryCondition.requiredUnitCount = 4;
+            skill.ultimateDecision.primaryCondition.requiredUnitCount = 3;
             skill.ultimateDecision.combineMode = UltimateConditionCombineMode.PrimaryOnly;
-            ApplyCountFallback(skill, 30f, 3, 45f, 2);
+            skill.ultimateDecision.fallback.fallbackType = UltimateFallbackType.None;
+            skill.ultimateDecision.fallback.triggerAfterSeconds = 0f;
+            skill.ultimateDecision.fallback.overrideRequiredUnitCount = 0;
+            skill.ultimateDecision.fallback.secondaryTriggerAfterSeconds = 0f;
+            skill.ultimateDecision.fallback.secondaryOverrideRequiredUnitCount = 0;
             EditorUtility.SetDirty(skill);
             return skill;
         }
