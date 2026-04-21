@@ -20,6 +20,9 @@
 - `MainMenu -> HeroSelect -> Battle -> Result`
 - `BattleBasicAttackOnly` 仅保留给开发验证
 
+当前 Windows 导出菜单入口：
+- Unity 菜单 `Fight/Build/Export Windows Player`
+
 当前 Windows 导出默认输出位置：
 - `game/Builds/Windows/FightStage01.exe`
 

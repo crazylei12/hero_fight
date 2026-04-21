@@ -456,6 +456,8 @@ namespace Fight.Editor
             }
 
             GenerateDemoContentInternal(overwriteExistingContent: false, showCompletionDialog: false);
+            // Build export should only fail on missing or broken demo asset wiring.
+            // Tuned numbers are expected to drift away from the bootstrap defaults.
             EnsureDemoContentValidationPassed(logFailures: true);
         }
 
@@ -648,99 +650,10 @@ namespace Fight.Editor
             {
                 issues.Add("Monk hero asset is missing.");
             }
-            else
-            {
-                if (monkHero.heroClass != HeroClass.Support)
-                {
-                    issues.Add($"Monk heroClass expected {HeroClass.Support} but found {monkHero.heroClass}.");
-                }
-
-                if (monkHero.baseStats == null)
-                {
-                    issues.Add("Monk baseStats block is missing.");
-                }
-                else
-                {
-                    ReportFloatMismatch(issues, "Monk maxHealth", monkHero.baseStats.maxHealth, 430f);
-                    ReportFloatMismatch(issues, "Monk attackPower", monkHero.baseStats.attackPower, 20f);
-                    ReportFloatMismatch(issues, "Monk defense", monkHero.baseStats.defense, 24f);
-                    ReportFloatMismatch(issues, "Monk attackSpeed", monkHero.baseStats.attackSpeed, 1f / 1.05f);
-                    ReportFloatMismatch(issues, "Monk moveSpeed", monkHero.baseStats.moveSpeed, 4f);
-                    ReportFloatMismatch(issues, "Monk attackRange", monkHero.baseStats.attackRange, 1.9f);
-                }
-
-                if (monkHero.basicAttack == null)
-                {
-                    issues.Add("Monk basicAttack block is missing.");
-                }
-                else
-                {
-                    ReportFloatMismatch(issues, "Monk basic attack damageMultiplier", monkHero.basicAttack.damageMultiplier, 0.95f);
-                    ReportFloatMismatch(issues, "Monk basic attack attackInterval", monkHero.basicAttack.attackInterval, 1.05f);
-                    ReportFloatMismatch(issues, "Monk basic attack rangeOverride", monkHero.basicAttack.rangeOverride, 1.9f);
-
-                    if (monkHero.basicAttack.usesProjectile)
-                    {
-                        issues.Add("Monk basic attack expected melee instant hit, but usesProjectile is true.");
-                    }
-
-                    if (monkHero.basicAttack.effectType != BasicAttackEffectType.Damage)
-                    {
-                        issues.Add($"Monk basic attack effectType expected {BasicAttackEffectType.Damage} but found {monkHero.basicAttack.effectType}.");
-                    }
-
-                    if (monkHero.basicAttack.targetType != BasicAttackTargetType.NearestEnemy)
-                    {
-                        issues.Add($"Monk basic attack targetType expected {BasicAttackTargetType.NearestEnemy} but found {monkHero.basicAttack.targetType}.");
-                    }
-
-                    if (monkHero.basicAttack.onHitStatusEffects != null && monkHero.basicAttack.onHitStatusEffects.Count > 0)
-                    {
-                        issues.Add($"Monk basic attack expected no on-hit status effects, but found {monkHero.basicAttack.onHitStatusEffects.Count}.");
-                    }
-                }
-            }
 
             if (monkActiveSkill == null)
             {
                 issues.Add("Monk active skill asset is missing.");
-            }
-            else
-            {
-                if (monkActiveSkill.targetType != SkillTargetType.Self)
-                {
-                    issues.Add($"Monk active targetType expected {SkillTargetType.Self} but found {monkActiveSkill.targetType}.");
-                }
-
-                ReportFloatMismatch(issues, "Monk active castRange", monkActiveSkill.castRange, 0f);
-                ReportFloatMismatch(issues, "Monk active areaRadius", monkActiveSkill.areaRadius, 4.5f);
-                ReportFloatMismatch(issues, "Monk active cooldownSeconds", monkActiveSkill.cooldownSeconds, 8f);
-
-                if (!monkActiveSkill.allowsSelfCast)
-                {
-                    issues.Add("Monk active expected allowsSelfCast = true.");
-                }
-
-                if (monkActiveSkill.effects == null || monkActiveSkill.effects.Count != 1)
-                {
-                    issues.Add($"Monk active expected exactly 1 effect, but found {(monkActiveSkill.effects == null ? 0 : monkActiveSkill.effects.Count)}.");
-                }
-                else
-                {
-                    var healEffect = monkActiveSkill.effects[0];
-                    if (healEffect.effectType != SkillEffectType.DirectHeal)
-                    {
-                        issues.Add($"Monk active effectType expected {SkillEffectType.DirectHeal} but found {healEffect.effectType}.");
-                    }
-
-                    if (healEffect.targetMode != SkillEffectTargetMode.AlliesInRadiusAroundCaster)
-                    {
-                        issues.Add($"Monk active targetMode expected {SkillEffectTargetMode.AlliesInRadiusAroundCaster} but found {healEffect.targetMode}.");
-                    }
-
-                    ReportFloatMismatch(issues, "Monk active heal powerMultiplier", healEffect.powerMultiplier, 0.9f);
-                    ReportFloatMismatch(issues, "Monk active heal radiusOverride", healEffect.radiusOverride, 4.5f);
-                }
             }
 
             if (monkUltimateSkill == null)
@@ -749,147 +662,55 @@ namespace Fight.Editor
                 return;
             }
 
-            if (monkUltimateSkill.skillType != SkillType.Buff)
+            if (monkHero == null)
             {
-                issues.Add($"Monk ultimate skillType expected {SkillType.Buff} but found {monkUltimateSkill.skillType}.");
-            }
-
-            if (monkUltimateSkill.targetType != SkillTargetType.Self)
-            {
-                issues.Add($"Monk ultimate targetType expected {SkillTargetType.Self} but found {monkUltimateSkill.targetType}.");
-            }
-
-            ReportFloatMismatch(issues, "Monk ultimate castRange", monkUltimateSkill.castRange, 0f);
-            ReportFloatMismatch(issues, "Monk ultimate areaRadius", monkUltimateSkill.areaRadius, 6.8f);
-
-            if (!monkUltimateSkill.allowsSelfCast)
-            {
-                issues.Add("Monk ultimate expected allowsSelfCast = true.");
-            }
-
-            if (monkUltimateSkill.effects == null || monkUltimateSkill.effects.Count != 1)
-            {
-                issues.Add($"Monk ultimate expected exactly 1 effect, but found {(monkUltimateSkill.effects == null ? 0 : monkUltimateSkill.effects.Count)}.");
-            }
-            else
-            {
-                var shieldEffect = monkUltimateSkill.effects[0];
-                if (shieldEffect.effectType != SkillEffectType.ApplyStatusEffects)
-                {
-                    issues.Add($"Monk ultimate effectType expected {SkillEffectType.ApplyStatusEffects} but found {shieldEffect.effectType}.");
-                }
-
-                if (shieldEffect.targetMode != SkillEffectTargetMode.AlliesInRadiusAroundCaster)
-                {
-                    issues.Add($"Monk ultimate targetMode expected {SkillEffectTargetMode.AlliesInRadiusAroundCaster} but found {shieldEffect.targetMode}.");
-                }
-
-                ReportFloatMismatch(issues, "Monk ultimate shield radiusOverride", shieldEffect.radiusOverride, 6.8f);
-
-                if (shieldEffect.statusEffects == null || shieldEffect.statusEffects.Count != 1)
-                {
-                    issues.Add($"Monk ultimate expected exactly 1 status effect, but found {(shieldEffect.statusEffects == null ? 0 : shieldEffect.statusEffects.Count)}.");
-                }
-                else
-                {
-                    var shieldStatus = shieldEffect.statusEffects[0];
-                    if (shieldStatus.effectType != StatusEffectType.Shield)
-                    {
-                        issues.Add($"Monk ultimate status effect expected {StatusEffectType.Shield} but found {shieldStatus.effectType}.");
-                    }
-
-                    ReportFloatMismatch(issues, "Monk ultimate shield durationSeconds", shieldStatus.durationSeconds, 5f);
-                    ReportFloatMismatch(issues, "Monk ultimate shield magnitude", shieldStatus.magnitude, 130f);
-
-                    if (shieldStatus.maxStacks != 1)
-                    {
-                        issues.Add($"Monk ultimate shield maxStacks expected 1 but found {shieldStatus.maxStacks}.");
-                    }
-
-                    if (!shieldStatus.refreshDurationOnReapply)
-                    {
-                        issues.Add("Monk ultimate shield expected refreshDurationOnReapply = true.");
-                    }
-                }
-            }
-
-            var decision = monkUltimateSkill.ultimateDecision;
-            if (decision == null)
-            {
-                issues.Add("Monk ultimateDecision block is missing.");
                 return;
             }
 
-            if (decision.targetingType != UltimateTargetingType.Self)
+            if (monkHero.baseStats == null)
             {
-                issues.Add($"Monk ultimate targetingType expected {UltimateTargetingType.Self} but found {decision.targetingType}.");
+                issues.Add("Monk baseStats block is missing.");
             }
 
-            if (decision.combineMode != UltimateConditionCombineMode.AllMustPass)
+            if (monkHero.basicAttack == null)
             {
-                issues.Add($"Monk ultimate combineMode expected {UltimateConditionCombineMode.AllMustPass} but found {decision.combineMode}.");
+                issues.Add("Monk basicAttack block is missing.");
             }
 
-            var primaryCondition = decision.primaryCondition;
-            if (primaryCondition == null)
+            if (!HeroHasExpectedSkillReferences(monkHero, monkActiveSkill, monkUltimateSkill))
             {
-                issues.Add("Monk ultimate primaryCondition is missing.");
-            }
-            else
-            {
-                if (primaryCondition.conditionType != UltimateConditionType.AllyCountInRange)
-                {
-                    issues.Add($"Monk ultimate primary condition expected {UltimateConditionType.AllyCountInRange} but found {primaryCondition.conditionType}.");
-                }
-
-                ReportFloatMismatch(issues, "Monk ultimate primary searchRadius", primaryCondition.searchRadius, 6.8f);
-
-                if (primaryCondition.requiredUnitCount != 2)
-                {
-                    issues.Add($"Monk ultimate primary requiredUnitCount expected 2 but found {primaryCondition.requiredUnitCount}.");
-                }
+                issues.Add("Monk hero skill references are not aligned with the stage-01 demo skill assets.");
             }
 
-            var secondaryCondition = decision.secondaryCondition;
-            if (secondaryCondition == null)
+            if (monkHero.visualConfig == null || monkHero.visualConfig.battlePrefab == null)
             {
-                issues.Add("Monk ultimate secondaryCondition is missing.");
-            }
-            else
-            {
-                if (secondaryCondition.conditionType != UltimateConditionType.AllyLowHealthInRange)
-                {
-                    issues.Add($"Monk ultimate secondary condition expected {UltimateConditionType.AllyLowHealthInRange} but found {secondaryCondition.conditionType}.");
-                }
-
-                ReportFloatMismatch(issues, "Monk ultimate secondary searchRadius", secondaryCondition.searchRadius, 6.8f);
-
-                if (secondaryCondition.requiredUnitCount != 2)
-                {
-                    issues.Add($"Monk ultimate secondary requiredUnitCount expected 2 but found {secondaryCondition.requiredUnitCount}.");
-                }
-
-                ReportFloatMismatch(issues, "Monk ultimate secondary healthPercentThreshold", secondaryCondition.healthPercentThreshold, 0.7f);
+                issues.Add("Monk battle prefab reference is missing.");
             }
 
-            var fallback = decision.fallback;
-            if (fallback == null)
+            if (!SkillHasExpectedCastImpactVfxPresentation(
+                    monkActiveSkill,
+                    AssetDatabase.LoadAssetAtPath<GameObject>(MonkActiveImpactVfxPrefabPath),
+                    Vector3.zero,
+                    Vector3.zero,
+                    Vector3.one,
+                    false,
+                    true,
+                    1f))
             {
-                issues.Add("Monk ultimate fallback block is missing.");
-                return;
+                issues.Add("Monk active cast impact VFX presentation is missing or misconfigured.");
             }
 
-            if (fallback.fallbackType != UltimateFallbackType.LowerPrimaryThreshold)
+            if (!SkillHasExpectedCastImpactVfxPresentation(
+                    monkUltimateSkill,
+                    AssetDatabase.LoadAssetAtPath<GameObject>(MonkUltimateImpactVfxPrefabPath),
+                    new Vector3(0f, 0.02f, 0f),
+                    Vector3.zero,
+                    Vector3.one,
+                    false,
+                    true,
+                    0.18f))
             {
-                issues.Add($"Monk ultimate fallbackType expected {UltimateFallbackType.LowerPrimaryThreshold} but found {fallback.fallbackType}.");
-            }
-
-            ReportFloatMismatch(issues, "Monk ultimate fallback triggerAfterSeconds", fallback.triggerAfterSeconds, 45f);
-            ReportFloatMismatch(issues, "Monk ultimate fallback overrideHealthPercentThreshold", fallback.overrideHealthPercentThreshold, 0.8f);
-
-            if (fallback.overrideRequiredUnitCount != 0)
-            {
-                issues.Add($"Monk ultimate fallback overrideRequiredUnitCount expected 0 but found {fallback.overrideRequiredUnitCount}.");
+                issues.Add("Monk ultimate cast impact VFX presentation is missing or misconfigured.");
             }
         }
 
