@@ -20,8 +20,17 @@ namespace Fight.Core
 
             var isCritical = CriticalResolver.RollCritical(criticalChance, randomService);
             var critMultiplier = isCritical ? criticalDamageMultiplier : 1f;
-            var mitigatedDamage = baseDamage * critMultiplier * CalculateDefenseMultiplier(defense);
-            return mitigatedDamage;
+            return ResolveRawDamage(baseDamage * critMultiplier, defense);
+        }
+
+        public static float ResolveRawDamage(float rawDamage, float defense)
+        {
+            if (rawDamage <= 0f)
+            {
+                return 0f;
+            }
+
+            return rawDamage * CalculateDefenseMultiplier(defense);
         }
 
         private static float CalculateDefenseMultiplier(float defense)

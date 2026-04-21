@@ -1,4 +1,5 @@
 using Fight.Data;
+using Fight.Core;
 using Fight.Heroes;
 using UnityEngine;
 
@@ -400,12 +401,13 @@ namespace Fight.Battle
 
         private static void ResolveDamageOverTime(BattleContext context, RuntimeHero target, RuntimeStatusEffect status, BattleManager battleManager)
         {
+            var resolvedDamage = DamageResolver.ResolveRawDamage(status.Magnitude, target.Defense);
             var actualDamage = BattleDamageSystem.ApplyResolvedDamage(
                 context,
                 battleManager,
                 status.Source,
                 target,
-                status.Magnitude,
+                resolvedDamage,
                 DamageSourceKind.StatusEffect,
                 status.SourceSkill);
             if (actualDamage <= 0f)
