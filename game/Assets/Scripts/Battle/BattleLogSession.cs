@@ -211,7 +211,7 @@ namespace Fight.Battle
                 return $"{heroName}'s {skillName} temporary override ended.";
             }
 
-            return $"{heroName}'s {skillName} temporary override active: lifesteal {temporaryOverrideChanged.LifestealRatio * 100f:0.#}%, visual scale {temporaryOverrideChanged.VisualScaleMultiplier:0.##}x.";
+            return $"{heroName}'s {skillName} temporary override active: lifesteal {temporaryOverrideChanged.LifestealRatio * 100f:0.#}%, visual scale {temporaryOverrideChanged.VisualScaleMultiplier:0.##}x, tint {temporaryOverrideChanged.VisualTintStrength * 100f:0.#}%.";
         }
 
         private static string FormatReactiveGuardLog(ReactiveGuardTriggeredEvent reactiveGuardTriggered)

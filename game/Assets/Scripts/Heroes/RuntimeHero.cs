@@ -82,11 +82,17 @@ namespace Fight.Heroes
 
             public float VisualScaleMultiplier { get; private set; }
 
+            public Color VisualTintColor { get; private set; }
+
+            public float VisualTintStrength { get; private set; }
+
             public void Refresh(SkillTemporaryOverrideData definition)
             {
                 RemainingDurationSeconds = definition != null ? Mathf.Max(0f, definition.durationSeconds) : 0f;
                 LifestealRatio = definition != null ? Mathf.Max(0f, definition.lifestealRatio) : 0f;
                 VisualScaleMultiplier = definition != null ? Mathf.Max(1f, definition.visualScaleMultiplier) : 1f;
+                VisualTintColor = definition != null ? definition.visualTintColor : Color.white;
+                VisualTintStrength = definition != null ? Mathf.Clamp01(definition.visualTintStrength) : 0f;
             }
 
             public void Tick(float deltaTime)
@@ -300,6 +306,10 @@ namespace Fight.Heroes
         public float CurrentLifestealRatio => GetCurrentLifestealRatio();
 
         public float CurrentVisualScaleMultiplier => GetCurrentVisualScaleMultiplier();
+
+        public Color CurrentVisualTintColor => GetCurrentVisualTintColor();
+
+        public float CurrentVisualTintStrength => GetCurrentVisualTintStrength();
 
         public SkillData CurrentTemporaryOverrideSourceSkill => GetCurrentTemporaryOverrideSourceSkill();
 
@@ -1036,6 +1046,47 @@ namespace Fight.Heroes
             }
 
             return bestScaleMultiplier;
+        }
+
+        private Color GetCurrentVisualTintColor()
+        {
+            RuntimeSkillTemporaryOverride bestOverride = null;
+            for (var i = 0; i < activeTemporarySkillOverrides.Count; i++)
+            {
+                var runtimeOverride = activeTemporarySkillOverrides[i];
+                if (runtimeOverride == null || runtimeOverride.VisualTintStrength <= Mathf.Epsilon)
+                {
+                    continue;
+                }
+
+                if (bestOverride == null
+                    || runtimeOverride.VisualTintStrength > bestOverride.VisualTintStrength + Mathf.Epsilon
+                    || Mathf.Approximately(runtimeOverride.VisualTintStrength, bestOverride.VisualTintStrength)
+                    && runtimeOverride.RemainingDurationSeconds > bestOverride.RemainingDurationSeconds)
+                {
+                    bestOverride = runtimeOverride;
+                }
+            }
+
+            return bestOverride != null ? bestOverride.VisualTintColor : Color.white;
+        }
+
+        private float GetCurrentVisualTintStrength()
+        {
+            var bestTintStrength = 0f;
+            for (var i = 0; i < activeTemporarySkillOverrides.Count; i++)
+            {
+                if (activeTemporarySkillOverrides[i] == null)
+                {
+                    continue;
+                }
+
+                bestTintStrength = Mathf.Max(
+                    bestTintStrength,
+                    Mathf.Clamp01(activeTemporarySkillOverrides[i].VisualTintStrength));
+            }
+
+            return bestTintStrength;
         }
 
         private SkillData GetCurrentTemporaryOverrideSourceSkill()

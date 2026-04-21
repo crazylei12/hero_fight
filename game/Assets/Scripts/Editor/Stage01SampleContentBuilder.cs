@@ -2337,8 +2337,10 @@ namespace Fight.Editor
 
             skill.temporaryOverride.durationSeconds = 6f;
             skill.temporaryOverride.lifestealRatio = 0.35f;
-            skill.temporaryOverride.visualScaleMultiplier = 1.25f;
-            skill.description = "Stage-01 demo skill: enter a short frenzy with bonus damage, attack speed, lifesteal, and visual growth.";
+            skill.temporaryOverride.visualScaleMultiplier = 1.4f;
+            skill.temporaryOverride.visualTintColor = new Color(1f, 0.34f, 0.34f, 1f);
+            skill.temporaryOverride.visualTintStrength = 0.6f;
+            skill.description = "Stage-01 demo skill: enter a short frenzy with bonus damage, attack speed, lifesteal, visual growth, and a red rage tint.";
         }
 
         private static void AddDefaultEffectsForSkill(SkillData skill, float powerMultiplier)
@@ -2884,6 +2886,8 @@ namespace Fight.Editor
             skill.temporaryOverride.durationSeconds = 0f;
             skill.temporaryOverride.lifestealRatio = 0f;
             skill.temporaryOverride.visualScaleMultiplier = 1f;
+            skill.temporaryOverride.visualTintColor = Color.white;
+            skill.temporaryOverride.visualTintStrength = 0f;
         }
 
         private static void ResetReactiveGuard(SkillData skill)

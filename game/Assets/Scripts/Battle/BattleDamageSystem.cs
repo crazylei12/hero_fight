@@ -155,6 +155,7 @@ namespace Fight.Battle
             var endedTemporaryOverrideSkill = target.CurrentTemporaryOverrideSourceSkill;
             var endedTemporaryOverrideLifestealRatio = target.CurrentLifestealRatio;
             var endedTemporaryOverrideVisualScaleMultiplier = target.CurrentVisualScaleMultiplier;
+            var endedTemporaryOverrideVisualTintStrength = target.CurrentVisualTintStrength;
             target.MarkDead(
                 context.Input.respawnDelaySeconds,
                 status => PublishStatusRemovedEvent(context, target, status));
@@ -163,7 +164,8 @@ namespace Fight.Battle
                 target,
                 endedTemporaryOverrideSkill,
                 endedTemporaryOverrideLifestealRatio,
-                endedTemporaryOverrideVisualScaleMultiplier);
+                endedTemporaryOverrideVisualScaleMultiplier,
+                endedTemporaryOverrideVisualTintStrength);
             attacker?.MarkKill();
             context.EventBus?.Publish(new UnitDiedEvent(target, attacker));
 
@@ -180,7 +182,8 @@ namespace Fight.Battle
             RuntimeHero target,
             SkillData endedSkill,
             float lifestealRatio,
-            float visualScaleMultiplier)
+            float visualScaleMultiplier,
+            float visualTintStrength)
         {
             if (context?.EventBus == null
                 || target == null
@@ -189,7 +192,9 @@ namespace Fight.Battle
                 return;
             }
 
-            if (lifestealRatio <= Mathf.Epsilon && visualScaleMultiplier <= 1f + Mathf.Epsilon)
+            if (lifestealRatio <= Mathf.Epsilon
+                && visualScaleMultiplier <= 1f + Mathf.Epsilon
+                && visualTintStrength <= Mathf.Epsilon)
             {
                 return;
             }
@@ -199,7 +204,8 @@ namespace Fight.Battle
                 endedSkill,
                 false,
                 0f,
-                1f));
+                1f,
+                0f));
         }
 
         private static void PublishStatusRemovedEvent(BattleContext context, RuntimeHero target, RuntimeStatusEffect status)

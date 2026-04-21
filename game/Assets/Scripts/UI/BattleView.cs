@@ -623,6 +623,8 @@ namespace Fight.UI
             var blinkRevealAlpha = hero.IsDead
                 ? 1f
                 : Mathf.Lerp(blinkRevealStartAlpha, 1f, blinkRevealProgress);
+            var temporaryTintStrength = hero.IsDead ? 0f : Mathf.Clamp01(hero.CurrentVisualTintStrength);
+            var temporaryTintColor = hero.CurrentVisualTintColor;
 
             for (var i = 0; i < view.VisualSpriteRenderers.Length; i++)
             {
@@ -634,6 +636,7 @@ namespace Fight.UI
 
                 var baseColor = view.VisualSpriteBaseColors[i];
                 var revealedColor = Color.Lerp(baseColor, blinkRevealTintColor, blinkRevealBlend * blinkRevealTintStrength);
+                revealedColor = Color.Lerp(revealedColor, temporaryTintColor, temporaryTintStrength);
                 revealedColor.a = baseColor.a * blinkRevealAlpha;
                 if (intensity <= 0f)
                 {
