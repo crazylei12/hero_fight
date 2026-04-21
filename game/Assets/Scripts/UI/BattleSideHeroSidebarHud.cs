@@ -552,17 +552,18 @@ namespace Fight.UI
         private Rect GetToggleButtonRect(SidebarLayout layout, TeamSide side)
         {
             var buttonY = layout.StartY + ((layout.TotalHeight - layout.ToggleButtonHeight) * 0.5f);
+            var expanded = side == TeamSide.Blue ? isBlueSidebarExpanded : isRedSidebarExpanded;
             if (side == TeamSide.Blue)
             {
                 return new Rect(
-                    layout.LeftX + layout.CardWidth - 1f,
+                    expanded ? layout.LeftX + layout.CardWidth - 1f : 0f,
                     buttonY,
                     layout.ToggleButtonWidth,
                     layout.ToggleButtonHeight);
             }
 
             return new Rect(
-                layout.RightX - layout.ToggleButtonWidth + 1f,
+                expanded ? layout.RightX - layout.ToggleButtonWidth + 1f : Screen.width - layout.ToggleButtonWidth,
                 buttonY,
                 layout.ToggleButtonWidth,
                 layout.ToggleButtonHeight);
