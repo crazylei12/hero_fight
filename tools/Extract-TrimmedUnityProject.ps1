@@ -127,6 +127,13 @@ New-Item -ItemType Directory -Path $script:OutputRoot -Force | Out-Null
 Copy-Item -LiteralPath (Join-Path $script:SourceRoot "Packages") -Destination (Join-Path $script:OutputRoot "Packages") -Recurse -Force
 Copy-Item -LiteralPath (Join-Path $script:SourceRoot "ProjectSettings") -Destination (Join-Path $script:OutputRoot "ProjectSettings") -Recurse -Force
 
+$trimmedUtilitySource = Join-Path $repoRoot "tools\\TrimmedUnityExport\\TrimmedBuildOptimizationUtility.cs"
+if (Test-Path -LiteralPath $trimmedUtilitySource) {
+    Copy-ItemWithMeta `
+        -SourcePath $trimmedUtilitySource `
+        -DestinationPath (Join-Path $script:OutputRoot "Assets\\Editor\\TrimmedBuildOptimizationUtility.cs")
+}
+
 $graphicsSettingsPath = Join-Path $script:OutputRoot "ProjectSettings\\GraphicsSettings.asset"
 if (Test-Path -LiteralPath $graphicsSettingsPath) {
     $graphicsSettingsContent = Get-Content -LiteralPath $graphicsSettingsPath -Raw
