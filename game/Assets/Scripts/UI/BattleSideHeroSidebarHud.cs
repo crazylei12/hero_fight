@@ -29,7 +29,6 @@ namespace Fight.UI
         [SerializeField] private float toggleButtonWidth = 18f;
         [SerializeField] private float toggleButtonMinHeight = 72f;
         [SerializeField] private float toggleButtonMaxHeight = 132f;
-        [SerializeField] private float toggleButtonScreenInset = 2f;
 
         private static readonly Color BlueAccent = new Color32(88, 173, 255, 255);
         private static readonly Color RedAccent = new Color32(255, 126, 126, 255);
@@ -555,11 +554,15 @@ namespace Fight.UI
             var buttonY = layout.StartY + ((layout.TotalHeight - layout.ToggleButtonHeight) * 0.5f);
             if (side == TeamSide.Blue)
             {
-                return new Rect(toggleButtonScreenInset, buttonY, layout.ToggleButtonWidth, layout.ToggleButtonHeight);
+                return new Rect(
+                    layout.LeftX + layout.CardWidth - 1f,
+                    buttonY,
+                    layout.ToggleButtonWidth,
+                    layout.ToggleButtonHeight);
             }
 
             return new Rect(
-                Screen.width - toggleButtonScreenInset - layout.ToggleButtonWidth,
+                layout.RightX - layout.ToggleButtonWidth + 1f,
                 buttonY,
                 layout.ToggleButtonWidth,
                 layout.ToggleButtonHeight);
