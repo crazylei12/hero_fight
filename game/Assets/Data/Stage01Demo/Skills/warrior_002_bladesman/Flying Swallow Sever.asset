@@ -44,7 +44,7 @@ MonoBehaviour:
     statusEffects: []
   - effectType: 0
     targetMode: 5
-    powerMultiplier: 5
+    powerMultiplier: 8
     radiusOverride: 4
     durationSeconds: 0
     tickIntervalSeconds: 1

@@ -49,6 +49,7 @@
 - `docs/planning/stage-01-first-implementation-plan.md`
 - `docs/planning/stage-01-project-bootstrap-checklist.md`
 - `docs/planning/stage-01-plugin-usage-guidelines.md`
+- `docs/planning/stage-01-ultimate-numeric-guidelines.md`
 
 如果任务与某个专项强相关，再额外读取对应文件。
 

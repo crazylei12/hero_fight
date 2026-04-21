@@ -43,7 +43,7 @@ MonoBehaviour:
     statusEffects:
     - effectType: 15
       durationSeconds: 5
-      magnitude: 85
+      magnitude: 130
       activeSkillCooldownCapSeconds: 0
       tickIntervalSeconds: 1
       maxStacks: 1
