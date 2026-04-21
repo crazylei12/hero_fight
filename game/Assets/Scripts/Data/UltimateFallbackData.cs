@@ -15,5 +15,6 @@ namespace Fight.Data
         [Min(0f)] public float secondaryTriggerAfterSeconds = 0f;
         public int secondaryOverrideRequiredUnitCount = 0;
         public float secondaryOverrideHealthPercentThreshold = -1f;
+        public UltimateConditionData alternatePrimaryCondition = new UltimateConditionData();
     }
 }

@@ -61,7 +61,7 @@ namespace Fight.Battle
             remainingDamage -= absorbedByShield;
             if (remainingDamage <= Mathf.Epsilon)
             {
-                return absorbedByShield;
+                return 0f;
             }
 
             var damageToTarget = remainingDamage;
@@ -152,9 +152,18 @@ namespace Fight.Battle
             }
 
             BattleStatsSystem.ResolveAssists(context, target, attacker);
+            var endedTemporaryOverrideSkill = target.CurrentTemporaryOverrideSourceSkill;
+            var endedTemporaryOverrideLifestealRatio = target.CurrentLifestealRatio;
+            var endedTemporaryOverrideVisualScaleMultiplier = target.CurrentVisualScaleMultiplier;
             target.MarkDead(
                 context.Input.respawnDelaySeconds,
                 status => PublishStatusRemovedEvent(context, target, status));
+            PublishTemporaryOverrideEndedEvent(
+                context,
+                target,
+                endedTemporaryOverrideSkill,
+                endedTemporaryOverrideLifestealRatio,
+                endedTemporaryOverrideVisualScaleMultiplier);
             attacker?.MarkKill();
             context.EventBus?.Publish(new UnitDiedEvent(target, attacker));
 
@@ -164,6 +173,33 @@ namespace Fight.Battle
             }
 
             return actualDamage;
+        }
+
+        private static void PublishTemporaryOverrideEndedEvent(
+            BattleContext context,
+            RuntimeHero target,
+            SkillData endedSkill,
+            float lifestealRatio,
+            float visualScaleMultiplier)
+        {
+            if (context?.EventBus == null
+                || target == null
+                || endedSkill == null)
+            {
+                return;
+            }
+
+            if (lifestealRatio <= Mathf.Epsilon && visualScaleMultiplier <= 1f + Mathf.Epsilon)
+            {
+                return;
+            }
+
+            context.EventBus.Publish(new SkillTemporaryOverrideChangedEvent(
+                target,
+                endedSkill,
+                false,
+                0f,
+                1f));
         }
 
         private static void PublishStatusRemovedEvent(BattleContext context, RuntimeHero target, RuntimeStatusEffect status)

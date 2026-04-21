@@ -1604,7 +1604,7 @@ namespace Fight.Editor
             skill.skillType = SkillType.AreaDamage;
             skill.targetType = SkillTargetType.AllEnemies;
             skill.fallbackTargetType = SkillTargetType.None;
-            skill.castRange = 0f;
+            skill.castRange = 2.6f;
             skill.areaRadius = 0f;
             skill.minTargetsToCast = 1;
             skill.allowsSelfCast = false;
@@ -1910,7 +1910,7 @@ namespace Fight.Editor
             skill.skillType = SkillType.Buff;
             skill.targetType = SkillTargetType.AllEnemies;
             skill.fallbackTargetType = SkillTargetType.None;
-            skill.castRange = 0f;
+            skill.castRange = 2.6f;
             skill.areaRadius = 0f;
             skill.minTargetsToCast = 1;
             skill.allowsSelfCast = false;
@@ -2256,16 +2256,18 @@ namespace Fight.Editor
             ApplyBerserkerUltimateBaseConfiguration(skill);
 
             ResetUltimateDecision(skill);
-            skill.ultimateDecision.targetingType = UltimateTargetingType.Self;
+            skill.ultimateDecision.targetingType = UltimateTargetingType.CurrentTargetOnly;
             skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.SelfLowHealth;
             skill.ultimateDecision.primaryCondition.healthPercentThreshold = 0.65f;
             skill.ultimateDecision.secondaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;
             skill.ultimateDecision.secondaryCondition.searchRadius = 3.2f;
             skill.ultimateDecision.secondaryCondition.requiredUnitCount = 2;
             skill.ultimateDecision.combineMode = UltimateConditionCombineMode.PrimaryOnly;
-            skill.ultimateDecision.fallback.fallbackType = UltimateFallbackType.LowerPrimaryThreshold;
+            skill.ultimateDecision.fallback.fallbackType = UltimateFallbackType.AlternatePrimaryCondition;
             skill.ultimateDecision.fallback.triggerAfterSeconds = 45f;
-            skill.ultimateDecision.fallback.overrideHealthPercentThreshold = 1f;
+            skill.ultimateDecision.fallback.alternatePrimaryCondition.conditionType = UltimateConditionType.TargetIsHighValue;
+            skill.ultimateDecision.fallback.alternatePrimaryCondition.highValueTargetType = HighValueTargetType.None;
+            skill.ultimateDecision.fallback.alternatePrimaryCondition.requireTargetInCastRange = true;
             EditorUtility.SetDirty(skill);
             return skill;
         }
@@ -2772,11 +2774,17 @@ namespace Fight.Editor
                 skill.ultimateDecision.fallback = new UltimateFallbackData();
             }
 
+            if (skill.ultimateDecision.fallback.alternatePrimaryCondition == null)
+            {
+                skill.ultimateDecision.fallback.alternatePrimaryCondition = new UltimateConditionData();
+            }
+
             skill.ultimateDecision.targetingType = UltimateTargetingType.UseSkillTargetType;
             skill.ultimateDecision.combineMode = UltimateConditionCombineMode.PrimaryOnly;
 
             ResetUltimateCondition(skill.ultimateDecision.primaryCondition);
             ResetUltimateCondition(skill.ultimateDecision.secondaryCondition);
+            ResetUltimateCondition(skill.ultimateDecision.fallback.alternatePrimaryCondition);
 
             skill.ultimateDecision.fallback.fallbackType = UltimateFallbackType.None;
             skill.ultimateDecision.fallback.triggerAfterSeconds = 0f;
