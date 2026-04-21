@@ -119,7 +119,9 @@ MonoBehaviour:
   temporaryOverride:
     durationSeconds: 6
     lifestealRatio: 0.35
-    visualScaleMultiplier: 1.25
+    visualScaleMultiplier: 1.4
+    visualTintColor: {r: 1, g: 0.34, b: 0.34, a: 1}
+    visualTintStrength: 0.6
   targetIndicatorVfxPrefab: {fileID: 0}
   castImpactVfxPrefab: {fileID: 0}
   castImpactVfxLocalOffset: {x: 0, y: 0, z: 0}

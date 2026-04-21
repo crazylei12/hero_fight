@@ -407,13 +407,15 @@ namespace Fight.Battle
             SkillData skill,
             bool isActive,
             float lifestealRatio,
-            float visualScaleMultiplier)
+            float visualScaleMultiplier,
+            float visualTintStrength)
         {
             Hero = hero;
             Skill = skill;
             IsActive = isActive;
             LifestealRatio = lifestealRatio;
             VisualScaleMultiplier = visualScaleMultiplier;
+            VisualTintStrength = visualTintStrength;
         }
 
         public RuntimeHero Hero { get; }
@@ -425,6 +427,8 @@ namespace Fight.Battle
         public float LifestealRatio { get; }
 
         public float VisualScaleMultiplier { get; }
+
+        public float VisualTintStrength { get; }
     }
 
     public sealed class ReactiveGuardTriggeredEvent : IBattleEvent

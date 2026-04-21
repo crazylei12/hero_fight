@@ -63,6 +63,7 @@ namespace Fight.Battle
             var previousTemporarySkill = hero.CurrentTemporaryOverrideSourceSkill;
             var previousLifestealRatio = QuantizeModifierValue(hero.CurrentLifestealRatio);
             var previousVisualScaleMultiplier = QuantizeModifierValue(hero.CurrentVisualScaleMultiplier);
+            var previousVisualTintStrength = QuantizeModifierValue(hero.CurrentVisualTintStrength);
 
             hero.Tick(
                 deltaTime,
@@ -75,7 +76,8 @@ namespace Fight.Battle
                 previousPassiveAttackPowerBonus,
                 previousTemporarySkill,
                 previousLifestealRatio,
-                previousVisualScaleMultiplier);
+                previousVisualScaleMultiplier,
+                previousVisualTintStrength);
 
             if (hero.IsDead)
             {
@@ -451,7 +453,8 @@ namespace Fight.Battle
             float previousPassiveAttackPowerBonus,
             SkillData previousTemporarySkill,
             float previousLifestealRatio,
-            float previousVisualScaleMultiplier)
+            float previousVisualScaleMultiplier,
+            float previousVisualTintStrength)
         {
             if (context?.EventBus == null || hero == null)
             {
@@ -473,10 +476,12 @@ namespace Fight.Battle
             var currentTemporarySkill = hero.CurrentTemporaryOverrideSourceSkill;
             var currentLifestealRatio = QuantizeModifierValue(hero.CurrentLifestealRatio);
             var currentVisualScaleMultiplier = QuantizeModifierValue(hero.CurrentVisualScaleMultiplier);
+            var currentVisualTintStrength = QuantizeModifierValue(hero.CurrentVisualTintStrength);
             var temporaryStateChanged =
                 previousTemporarySkill != currentTemporarySkill
                 || !Mathf.Approximately(previousLifestealRatio, currentLifestealRatio)
-                || !Mathf.Approximately(previousVisualScaleMultiplier, currentVisualScaleMultiplier);
+                || !Mathf.Approximately(previousVisualScaleMultiplier, currentVisualScaleMultiplier)
+                || !Mathf.Approximately(previousVisualTintStrength, currentVisualTintStrength);
 
             if (!temporaryStateChanged)
             {
@@ -486,25 +491,30 @@ namespace Fight.Battle
             if (previousTemporarySkill != null
                 && (currentTemporarySkill != previousTemporarySkill
                     || currentLifestealRatio <= Mathf.Epsilon
-                    && currentVisualScaleMultiplier <= 1f + Mathf.Epsilon))
+                    && currentVisualScaleMultiplier <= 1f + Mathf.Epsilon
+                    && currentVisualTintStrength <= Mathf.Epsilon))
             {
                 context.EventBus.Publish(new SkillTemporaryOverrideChangedEvent(
                     hero,
                     previousTemporarySkill,
                     false,
                     0f,
-                    1f));
+                    1f,
+                    0f));
             }
 
             if (currentTemporarySkill != null
-                && (currentLifestealRatio > Mathf.Epsilon || currentVisualScaleMultiplier > 1f + Mathf.Epsilon))
+                && (currentLifestealRatio > Mathf.Epsilon
+                    || currentVisualScaleMultiplier > 1f + Mathf.Epsilon
+                    || currentVisualTintStrength > Mathf.Epsilon))
             {
                 context.EventBus.Publish(new SkillTemporaryOverrideChangedEvent(
                     hero,
                     currentTemporarySkill,
                     true,
                     currentLifestealRatio,
-                    currentVisualScaleMultiplier));
+                    currentVisualScaleMultiplier,
+                    currentVisualTintStrength));
             }
         }
 
