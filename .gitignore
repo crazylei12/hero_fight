@@ -13,6 +13,7 @@ Thumbs.db
 /.publish_snapshot_*/
 /plugin/
 *.unitypackage
+/trimmed_projects/
 
 # Unity generated folders and local outputs
 /game/[Ll]ibrary/
