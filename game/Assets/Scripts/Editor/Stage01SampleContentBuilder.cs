@@ -39,6 +39,9 @@ namespace Fight.Editor
         private const string MonkHeroAssetPath = HeroesRootFolder + "/support_003_monk/Monk.asset";
         private const string MonkActiveSkillAssetPath = SkillsRootFolder + "/support_003_monk/Renewing Pulse.asset";
         private const string MonkUltimateSkillAssetPath = SkillsRootFolder + "/support_003_monk/Guardian Mantra.asset";
+        private const string SandemperorHeroAssetPath = HeroesRootFolder + "/mage_003_sandemperor/Sandemperor.asset";
+        private const string SandemperorActiveSkillAssetPath = SkillsRootFolder + "/mage_003_sandemperor/Raise Sandguard.asset";
+        private const string SandemperorUltimateSkillAssetPath = SkillsRootFolder + "/mage_003_sandemperor/Imperial Encirclement.asset";
         private const string MonkActiveImpactVfxPrefabPath = "Assets/Prefabs/VFX/Skills/MonkRenewingPulseBurst.prefab";
         private const string AssassinPrefabPath = "Assets/Prefabs/Heroes/assassin_001_shadowstep/Shadowstep.prefab";
         private const string TidefinPrefabPath = "Assets/Prefabs/Heroes/assassin_002_tidefin/Tidefin.prefab";
@@ -198,6 +201,23 @@ namespace Fight.Editor
                 ConfigureFrostmageUltimate(frostmageUltimateSkill, overwriteExistingContent, frostmageUltimateExisted),
                 overwriteExistingContent,
                 HeroTag.Ranged, HeroTag.Control, HeroTag.AreaDamage);
+
+            var sandemperorActive = CreateSandemperorActiveSkill(overwriteExistingContent);
+            var sandemperorUltimateSkill = CreateSandemperorUltimateSkill(overwriteExistingContent, out var sandemperorUltimateExisted);
+
+            var sandemperor = CreateHero(
+                "mage_003_sandemperor",
+                "Sandemperor",
+                HeroClass.Mage,
+                300f, 38f, 10f, 1f / 1.10f, 3.7f, 0.05f, 1.5f, ScaleRangedHeroDistance(5.8666667f),
+                sandemperorActive,
+                ConfigureSandemperorUltimate(sandemperorUltimateSkill, overwriteExistingContent, sandemperorUltimateExisted),
+                overwriteExistingContent,
+                out var sandemperorHeroExisted,
+                HeroTag.Ranged, HeroTag.SustainedDamage, HeroTag.AreaDamage);
+            ConfigureSandemperorBasicAttack(sandemperor, overwriteExistingContent, sandemperorHeroExisted);
+            EnsureHeroSkillReferences(sandemperor, sandemperorActive, sandemperorUltimateSkill);
+            EnsureHeroBattlePrefabReference(sandemperor, LoadBattlePrefab("mage_003_sandemperor", HeroClass.Mage));
 
             CreateArchivedMageFireboltSkill(overwriteExistingContent);
 
@@ -362,7 +382,7 @@ namespace Fight.Editor
             EnsureHeroSkillReferences(venomshooter, venomshooterActive, venomshooterUltimateSkill);
             EnsureHeroBattlePrefabReference(venomshooter, LoadBattlePrefab("marksman_003_venomshooter", HeroClass.Marksman));
 
-            CreateHeroCatalog(warrior, bladesman, mage, frostmage, assassin, tidefin, tank, shieldwarden, support, windchime, monk, marksman, rifleman, venomshooter);
+            CreateHeroCatalog(warrior, bladesman, mage, frostmage, sandemperor, assassin, tidefin, tank, shieldwarden, support, windchime, monk, marksman, rifleman, venomshooter);
 
             var battleInput = CreateBattleInput(
                 "Stage01DemoBattleInput",
@@ -473,9 +493,14 @@ namespace Fight.Editor
             var monkActiveSkill = AssetDatabase.LoadAssetAtPath<SkillData>(MonkActiveSkillAssetPath);
             var monkUltimateSkill = AssetDatabase.LoadAssetAtPath<SkillData>(MonkUltimateSkillAssetPath);
             var monkBattlePrefab = LoadBattlePrefab("support_003_monk", HeroClass.Support);
+            var sandemperorHero = AssetDatabase.LoadAssetAtPath<HeroDefinition>(SandemperorHeroAssetPath);
+            var sandemperorActiveSkill = AssetDatabase.LoadAssetAtPath<SkillData>(SandemperorActiveSkillAssetPath);
+            var sandemperorUltimateSkill = AssetDatabase.LoadAssetAtPath<SkillData>(SandemperorUltimateSkillAssetPath);
+            var sandemperorBattlePrefab = LoadBattlePrefab("mage_003_sandemperor", HeroClass.Mage);
             var catalogContainsBladesman = CatalogContainsHero(heroCatalog, "warrior_002_bladesman");
             var catalogContainsWindchime = CatalogContainsHero(heroCatalog, "support_002_windchime");
             var catalogContainsMonk = CatalogContainsHero(heroCatalog, "support_003_monk");
+            var catalogContainsSandemperor = CatalogContainsHero(heroCatalog, "mage_003_sandemperor");
             var bladesmanReferencesValid = HeroHasExpectedSkillReferences(bladesmanHero, bladesmanActiveSkill, bladesmanUltimateSkill);
             var bladesmanBattlePrefabValid = HeroHasExpectedBattlePrefab(bladesmanHero, bladesmanBattlePrefab);
             var bladesmanActiveImpactVfxValid = SkillHasExpectedCastImpactVfxPresentation(
@@ -489,6 +514,8 @@ namespace Fight.Editor
             var windchimeBattlePrefabValid = HeroHasExpectedBattlePrefab(windchimeHero, windchimeBattlePrefab);
             var monkReferencesValid = HeroHasExpectedSkillReferences(monkHero, monkActiveSkill, monkUltimateSkill);
             var monkBattlePrefabValid = monkBattlePrefab == null || HeroHasExpectedBattlePrefab(monkHero, monkBattlePrefab);
+            var sandemperorReferencesValid = HeroHasExpectedSkillReferences(sandemperorHero, sandemperorActiveSkill, sandemperorUltimateSkill);
+            var sandemperorBattlePrefabValid = sandemperorBattlePrefab == null || HeroHasExpectedBattlePrefab(sandemperorHero, sandemperorBattlePrefab);
             var monkActiveImpactVfxValid = SkillHasExpectedCastImpactVfxPresentation(
                 monkActiveSkill,
                 AssetDatabase.LoadAssetAtPath<GameObject>(MonkActiveImpactVfxPrefabPath),
@@ -515,9 +542,13 @@ namespace Fight.Editor
                 || monkHero == null
                 || monkActiveSkill == null
                 || monkUltimateSkill == null
+                || sandemperorHero == null
+                || sandemperorActiveSkill == null
+                || sandemperorUltimateSkill == null
                 || !catalogContainsBladesman
                 || !catalogContainsWindchime
                 || !catalogContainsMonk
+                || !catalogContainsSandemperor
                 || !bladesmanReferencesValid
                 || !bladesmanBattlePrefabValid
                 || !bladesmanActiveImpactVfxValid
@@ -525,6 +556,8 @@ namespace Fight.Editor
                 || !windchimeBattlePrefabValid
                 || !monkReferencesValid
                 || !monkBattlePrefabValid
+                || !sandemperorReferencesValid
+                || !sandemperorBattlePrefabValid
                 || !monkActiveImpactVfxValid;
         }
 
@@ -1083,6 +1116,7 @@ namespace Fight.Editor
             {
                 "mage_001_firemage" => AssetDatabase.LoadAssetAtPath<GameObject>(FireMageProjectilePrefabPath),
                 "mage_002_frostmage" => AssetDatabase.LoadAssetAtPath<GameObject>(FrostMageProjectilePrefabPath),
+                "mage_003_sandemperor" => AssetDatabase.LoadAssetAtPath<GameObject>(FireMageProjectilePrefabPath),
                 "marksman_001_longshot" => AssetDatabase.LoadAssetAtPath<GameObject>(LongshotProjectilePrefabPath),
                 "marksman_002_rifleman" => AssetDatabase.LoadAssetAtPath<GameObject>(RiflemanProjectilePrefabPath),
                 "marksman_003_venomshooter" => AssetDatabase.LoadAssetAtPath<GameObject>(LongshotProjectilePrefabPath),
@@ -1093,6 +1127,7 @@ namespace Fight.Editor
             hero.visualConfig.projectileAlignToMovement =
                 heroId == "mage_001_firemage"
                 || heroId == "mage_002_frostmage"
+                || heroId == "mage_003_sandemperor"
                 || heroId == "marksman_001_longshot"
                 || heroId == "marksman_002_rifleman"
                 || heroId == "marksman_003_venomshooter"
@@ -1113,6 +1148,7 @@ namespace Fight.Editor
                 "assassin_002_tidefin" => TidefinPrefabPath,
                 "mage_001_firemage" => FireMagePrefabPath,
                 "mage_002_frostmage" => FrostMagePrefabPath,
+                "mage_003_sandemperor" => FireMagePrefabPath,
                 "marksman_001_longshot" => MarksmanPrefabPath,
                 "marksman_002_rifleman" => RiflemanPrefabPath,
                 "marksman_003_venomshooter" => MarksmanPrefabPath,
@@ -1784,6 +1820,101 @@ namespace Fight.Editor
             return skill;
         }
 
+        private static SkillData CreateSandemperorActiveSkill(bool overwriteExistingContent)
+        {
+            var skill = CreateSkill(
+                "skill_sandemperor_active_raisesandguard",
+                "Raise Sandguard",
+                SkillSlotType.ActiveSkill,
+                SkillType.Buff,
+                SkillTargetType.CurrentEnemyTarget,
+                ScaleRangedHeroDistance(6f),
+                0f,
+                0f,
+                4f,
+                1,
+                overwriteExistingContent,
+                out var existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.description = "Stage-01 demo skill: deploys a sandguard near the current basic-attack target. Sandguards only strike when Sandemperor basic-attacks.";
+            skill.skillType = SkillType.Buff;
+            skill.targetType = SkillTargetType.CurrentEnemyTarget;
+            skill.fallbackTargetType = SkillTargetType.None;
+            skill.castRange = ScaleRangedHeroDistance(6f);
+            skill.areaRadius = 0f;
+            skill.cooldownSeconds = 4f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+            AddDeployableProxyEffect(
+                skill,
+                0.55f,
+                ScaleRangedHeroDistance(1.7333333f),
+                12f,
+                5,
+                DeployableProxySpawnMode.AroundTarget,
+                1.2f,
+                DeployableProxyTriggerMode.OnOwnerBasicAttack,
+                true,
+                false);
+            ResetActionSequence(skill);
+            ResetUltimateDecision(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateSandemperorUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
+        {
+            var skill = CreateSkill(
+                "skill_sandemperor_ultimate_imperialencirclement",
+                "Imperial Encirclement",
+                SkillSlotType.Ultimate,
+                SkillType.Buff,
+                SkillTargetType.AllEnemies,
+                0f,
+                0f,
+                0f,
+                0f,
+                1,
+                overwriteExistingContent,
+                out existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.description = "Stage-01 demo skill: instantly rebuilds the sandguard line around every living enemy and triggers one opening strike.";
+            skill.skillType = SkillType.Buff;
+            skill.targetType = SkillTargetType.AllEnemies;
+            skill.fallbackTargetType = SkillTargetType.None;
+            skill.castRange = 0f;
+            skill.areaRadius = 0f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+            AddDeployableProxyEffect(
+                skill,
+                0.55f,
+                ScaleRangedHeroDistance(1.7333333f),
+                5f,
+                5,
+                DeployableProxySpawnMode.AroundTarget,
+                1.2f,
+                DeployableProxyTriggerMode.OnOwnerBasicAttack,
+                true,
+                true);
+            ResetActionSequence(skill);
+            ResetUltimateDecision(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
         private static SkillData CreateArchivedMageFireboltSkill(bool overwriteExistingContent)
         {
             var assetPath = $"{SkillsRootFolder}/Archive/Firebolt Burst.asset";
@@ -2148,6 +2279,35 @@ namespace Fight.Editor
             return effect;
         }
 
+        private static SkillEffectData AddDeployableProxyEffect(
+            SkillData skill,
+            float powerMultiplier,
+            float strikeRadius,
+            float durationSeconds,
+            int maxCount,
+            DeployableProxySpawnMode spawnMode,
+            float spawnOffsetDistance,
+            DeployableProxyTriggerMode triggerMode,
+            bool replaceOldestWhenLimitReached,
+            bool immediateStrikeOnSpawn)
+        {
+            var effect = new SkillEffectData
+            {
+                effectType = SkillEffectType.CreateDeployableProxy,
+                powerMultiplier = powerMultiplier,
+                durationSeconds = durationSeconds,
+                deployableProxyStrikeRadius = strikeRadius,
+                deployableProxySpawnMode = spawnMode,
+                deployableProxySpawnOffsetDistance = spawnOffsetDistance,
+                deployableProxyTriggerMode = triggerMode,
+                deployableProxyMaxCount = maxCount,
+                deployableProxyReplaceOldestWhenLimitReached = replaceOldestWhenLimitReached,
+                deployableProxyImmediateStrikeOnSpawn = immediateStrikeOnSpawn,
+            };
+            skill.effects.Add(effect);
+            return effect;
+        }
+
         private static StatusEffectData CreateVenomshooterPoisonStatus()
         {
             return new StatusEffectData
@@ -2344,6 +2504,27 @@ namespace Fight.Editor
             hero.basicAttack.onHitStatusEffects.Clear();
             hero.basicAttack.onHitStatusEffects.Add(CreateVenomshooterPoisonStatus());
             hero.debugNotes = "Stage-01 demo hero for Marksman. Venomshooter validates same-source poison stack pooling, cross-source poison-theme reading, and chained on-kill area follow-up effects.";
+            EditorUtility.SetDirty(hero);
+        }
+
+        private static void ConfigureSandemperorBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (hero == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return;
+            }
+
+            hero.basicAttack.damageMultiplier = 0.8f;
+            hero.basicAttack.attackInterval = 1.10f;
+            hero.basicAttack.rangeOverride = ScaleRangedHeroDistance(5.8666667f);
+            hero.basicAttack.usesProjectile = true;
+            hero.basicAttack.projectileSpeed = 14f;
+            hero.basicAttack.effectType = BasicAttackEffectType.Damage;
+            hero.basicAttack.targetType = BasicAttackTargetType.NearestEnemy;
+            hero.basicAttack.targetPrioritySearchRadius = 0f;
+            EnsureBasicAttackStatusList(hero.basicAttack);
+            hero.basicAttack.onHitStatusEffects.Clear();
+            hero.debugNotes = "Stage-01 demo hero for Mage. Sandemperor validates fixed deployable proxies that only strike off the owner's basic-attack cadence.";
             EditorUtility.SetDirty(hero);
         }
 
@@ -2592,6 +2773,32 @@ namespace Fight.Editor
             skill.ultimateDecision.primaryCondition.searchRadius = skill.areaRadius;
             skill.ultimateDecision.primaryCondition.requiredUnitCount = 3;
             ApplyCountFallback(skill, 30f, 2, 45f, 1);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData ConfigureSandemperorUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.skillType = SkillType.Buff;
+            skill.targetType = SkillTargetType.AllEnemies;
+            skill.fallbackTargetType = SkillTargetType.None;
+            skill.castRange = 0f;
+            skill.areaRadius = 0f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+
+            ResetUltimateDecision(skill);
+            skill.ultimateDecision.targetingType = UltimateTargetingType.UseSkillTargetType;
+            skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;
+            skill.ultimateDecision.primaryCondition.searchRadius = Stage01ArenaSpec.FullMapTargetingRangeWorldUnits;
+            skill.ultimateDecision.primaryCondition.requiredUnitCount = 4;
+            skill.ultimateDecision.combineMode = UltimateConditionCombineMode.PrimaryOnly;
+            ApplyCountFallback(skill, 30f, 3, 45f, 2);
             EditorUtility.SetDirty(skill);
             return skill;
         }
@@ -3647,6 +3854,8 @@ namespace Fight.Editor
                 "skill_rifleman_ultimate_fraggrenade" => "marksman_002_rifleman",
                 "skill_venomshooter_active_poisonmist" => "marksman_003_venomshooter",
                 "skill_venomshooter_ultimate_venomdetonation" => "marksman_003_venomshooter",
+                "skill_sandemperor_active_raisesandguard" => "mage_003_sandemperor",
+                "skill_sandemperor_ultimate_imperialencirclement" => "mage_003_sandemperor",
                 _ => null,
             };
         }
