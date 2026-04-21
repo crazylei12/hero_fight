@@ -1,4 +1,5 @@
 using System.IO;
+using Fight.Data;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -7,23 +8,16 @@ namespace Fight.Editor
 {
     public static class MonkVfxPrefabBuilder
     {
-        private const string BuildMenuPath = "Fight/Stage 01/Build Monk Guardian Mantra VFX Prefab";
+        private const string BuildMenuPath = "Fight/Stage 01/Build Monk Guardian Mantra Bubble VFX";
         private const string GeneratedArtFolder = "Assets/Art/VFX/Generated";
         private const string PrefabsRootFolder = "Assets/Prefabs/VFX";
         private const string SkillPrefabsFolder = PrefabsRootFolder + "/Skills";
         private const string BuilderScriptAssetPath = "Assets/Scripts/Editor/MonkVfxPrefabBuilder.cs";
         private const string SoftCircleSpritePath = GeneratedArtFolder + "/vfx_soft_circle.png";
-        private const string GuardianMantraBurstPrefabPath = SkillPrefabsFolder + "/MonkGuardianMantraBurst.prefab";
-        private const string ShieldGoldSourcePrefabPath = "Assets/Lana Studio/Casual RPG VFX/Prefabs/Shields/Shield_gold.prefab";
-        private const string LightBuffSourcePrefabPath = "Assets/Hun0FX/FX/BuffnDebuff_vol1/FX_Buff_01_light.prefab";
-
-        private static readonly Quaternion TopDownRotation = Quaternion.Euler(90f, 0f, 0f);
-        private static readonly Color ShieldRingStartMinColor = new Color(0.88f, 0.66f, 0.18f, 0.24f);
-        private static readonly Color ShieldRingStartMaxColor = new Color(1f, 0.92f, 0.52f, 0.66f);
-        private static readonly Color ShieldFieldStartMinColor = new Color(0.94f, 0.78f, 0.28f, 0.10f);
-        private static readonly Color ShieldFieldStartMaxColor = new Color(1f, 0.95f, 0.78f, 0.32f);
-        private static readonly Color HolyLightStartMinColor = new Color(1f, 0.86f, 0.42f, 0.12f);
-        private static readonly Color HolyLightStartMaxColor = new Color(1f, 0.98f, 0.88f, 0.36f);
+        private const string GuardianMantraImpactPrefabPath = SkillPrefabsFolder + "/MonkGuardianMantraBubbleImpact.prefab";
+        private const string MonkUltimateSkillAssetPath = "Assets/Data/Stage01Demo/Skills/support_003_monk/Guardian Mantra.asset";
+        private const string BubbleLoopSourcePrefabPath = "Assets/Super Pixel Effects Pack 2/Prefabs/fx2_bubble_large_green_loop.prefab";
+        private static readonly Vector3 GuardianMantraLocalOffset = new Vector3(0f, 0.02f, 0f);
         private static bool autoBuildScheduled;
 
         [InitializeOnLoadMethod]
@@ -46,11 +40,12 @@ namespace Fight.Editor
             EnsureFolder(SkillPrefabsFolder);
 
             var softCircleSprite = EnsureSoftCircleSprite();
-            BuildGuardianMantraBurstPrefab(softCircleSprite);
+            BuildGuardianMantraImpactPrefab(softCircleSprite);
+            SyncStage01DemoAssets();
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            Debug.Log("Monk Guardian Mantra VFX prefab rebuilt.");
+            Debug.Log("Monk Guardian Mantra bubble VFX rebuilt.");
         }
 
         public static void BuildMonkGuardianMantraVfxPrefabBatch()
@@ -76,264 +71,115 @@ namespace Fight.Editor
             BuildMonkGuardianMantraVfxPrefab();
         }
 
-        private static void BuildGuardianMantraBurstPrefab(Sprite softCircleSprite)
+        private static void BuildGuardianMantraImpactPrefab(Sprite softCircleSprite)
         {
-            var shieldGoldPrefab = LoadRequiredAsset<GameObject>(ShieldGoldSourcePrefabPath);
-            var lightBuffPrefab = LoadRequiredAsset<GameObject>(LightBuffSourcePrefabPath);
+            var bubbleLoopPrefab = LoadRequiredAsset<GameObject>(BubbleLoopSourcePrefabPath);
 
-            var root = new GameObject("MonkGuardianMantraBurst");
+            var root = new GameObject("MonkGuardianMantraBubbleImpact");
             root.AddComponent<SortingGroup>();
 
             CreateSprite(
                 root.transform,
-                "RearHalo",
+                "GroundGlow",
                 softCircleSprite,
-                new Color(0.98f, 0.80f, 0.30f, 0.10f),
-                -22,
-                new Vector3(0f, -0.02f, 0f),
-                new Vector3(1.28f, 1.16f, 1f));
+                new Color(0.30f, 0.92f, 0.62f, 0.08f),
+                -8,
+                new Vector3(0f, -0.01f, 0f),
+                new Vector3(0.96f, 0.78f, 1f));
             CreateSprite(
                 root.transform,
-                "GroundHalo",
+                "GroundCore",
                 softCircleSprite,
-                new Color(1f, 0.90f, 0.52f, 0.16f),
-                -18,
-                Vector3.zero,
-                new Vector3(1.02f, 0.94f, 1f));
-            CreateSprite(
+                new Color(0.76f, 1f, 0.90f, 0.09f),
+                -4,
+                new Vector3(0f, 0.01f, 0f),
+                new Vector3(0.54f, 0.42f, 1f));
+
+            var bubbleBack = InstantiateNestedPrefab(bubbleLoopPrefab, root.transform, "BubbleBack");
+            ConfigureBubbleInstance(
+                bubbleBack,
+                new Vector3(0f, 0.03f, 0f),
+                new Vector3(1.16f, 0.94f, 1f),
+                new Color(0.44f, 1f, 0.74f, 0.34f),
+                6);
+
+            var bubbleCore = InstantiateNestedPrefab(bubbleLoopPrefab, root.transform, "BubbleCore");
+            ConfigureBubbleInstance(
+                bubbleCore,
+                new Vector3(0f, 0.04f, 0f),
+                new Vector3(0.92f, 0.76f, 1f),
+                new Color(0.80f, 1f, 0.92f, 0.72f),
+                12);
+
+            var topHighlight = CreateSprite(
                 root.transform,
-                "CoreHalo",
+                "TopHighlight",
                 softCircleSprite,
-                new Color(1f, 0.97f, 0.78f, 0.18f),
-                -14,
-                new Vector3(0f, 0.02f, 0f),
-                new Vector3(0.62f, 0.56f, 1f));
-            CreateSprite(
-                root.transform,
-                "EdgeAura",
-                softCircleSprite,
-                new Color(1f, 0.96f, 0.84f, 0.08f),
-                -12,
-                Vector3.zero,
-                new Vector3(1.16f, 1.06f, 1f));
+                new Color(0.90f, 1f, 0.96f, 0.10f),
+                16,
+                new Vector3(0f, 0.20f, 0f),
+                new Vector3(0.28f, 0.10f, 1f));
+            topHighlight.transform.localRotation = Quaternion.Euler(0f, 0f, 4f);
 
-            var frontSweep = CreateSprite(
-                root.transform,
-                "FrontSweep",
-                softCircleSprite,
-                new Color(1f, 0.92f, 0.58f, 0.10f),
-                -10,
-                new Vector3(0f, 0.28f, 0f),
-                new Vector3(0.52f, 0.13f, 1f));
-            frontSweep.transform.localRotation = Quaternion.Euler(0f, 0f, 10f);
-
-            var rearSweep = CreateSprite(
-                root.transform,
-                "RearSweep",
-                softCircleSprite,
-                new Color(1f, 0.92f, 0.58f, 0.10f),
-                -10,
-                new Vector3(0f, -0.28f, 0f),
-                new Vector3(0.52f, 0.13f, 1f));
-            rearSweep.transform.localRotation = Quaternion.Euler(0f, 0f, -10f);
-
-            var leftSweep = CreateSprite(
-                root.transform,
-                "LeftSweep",
-                softCircleSprite,
-                new Color(0.98f, 0.86f, 0.42f, 0.08f),
-                -10,
-                new Vector3(-0.28f, 0f, 0f),
-                new Vector3(0.15f, 0.44f, 1f));
-            leftSweep.transform.localRotation = Quaternion.Euler(0f, 0f, 18f);
-
-            var rightSweep = CreateSprite(
-                root.transform,
-                "RightSweep",
-                softCircleSprite,
-                new Color(0.98f, 0.86f, 0.42f, 0.08f),
-                -10,
-                new Vector3(0.28f, 0f, 0f),
-                new Vector3(0.15f, 0.44f, 1f));
-            rightSweep.transform.localRotation = Quaternion.Euler(0f, 0f, -18f);
-
-            var goldShield = InstantiateNestedPrefab(shieldGoldPrefab, root.transform, "GoldShield");
-            goldShield.transform.localPosition = new Vector3(0f, 0.02f, 0f);
-            goldShield.transform.localScale = Vector3.one * 0.58f;
-            goldShield.transform.localRotation = TopDownRotation;
-            DisableChild(goldShield.transform, "shield_AB");
-            DisableChild(goldShield.transform, "shield_add");
-            ConfigureParticleSystems(goldShield, loop: false, prewarm: false, durationCap: 1.05f, simulationSpeedFloor: 1.08f);
-            RetintShieldParticleSystems(goldShield);
-            OffsetRendererOrders(goldShield, 8);
-
-            var holyLight = InstantiateNestedPrefab(lightBuffPrefab, root.transform, "HolyLight");
-            holyLight.transform.localPosition = new Vector3(0f, 0.04f, 0f);
-            holyLight.transform.localScale = Vector3.one * 0.18f;
-            ConfigureParticleSystems(holyLight, loop: false, prewarm: false, durationCap: 1.1f, simulationSpeedFloor: 1.14f);
-            RetintHolyLightParticleSystems(holyLight);
-            OffsetRendererOrders(holyLight, 18);
-
-            SavePrefab(root, GuardianMantraBurstPrefabPath);
+            SavePrefab(root, GuardianMantraImpactPrefabPath);
         }
 
-        private static void DisableChild(Transform root, string childName)
+        private static void ConfigureBubbleInstance(
+            GameObject instance,
+            Vector3 localPosition,
+            Vector3 localScale,
+            Color tint,
+            int baseOrder)
         {
-            var child = FindChildRecursive(root, childName);
-            if (child != null)
-            {
-                child.gameObject.SetActive(false);
-            }
-        }
-
-        private static Transform FindChildRecursive(Transform root, string childName)
-        {
-            if (root == null || string.IsNullOrWhiteSpace(childName))
-            {
-                return null;
-            }
-
-            if (root.name == childName)
-            {
-                return root;
-            }
-
-            for (var i = 0; i < root.childCount; i++)
-            {
-                var result = FindChildRecursive(root.GetChild(i), childName);
-                if (result != null)
-                {
-                    return result;
-                }
-            }
-
-            return null;
-        }
-
-        private static void ConfigureParticleSystems(
-            GameObject root,
-            bool loop,
-            bool prewarm,
-            float durationCap,
-            float simulationSpeedFloor)
-        {
-            if (root == null)
+            if (instance == null)
             {
                 return;
             }
 
-            var particleSystems = root.GetComponentsInChildren<ParticleSystem>(true);
-            for (var i = 0; i < particleSystems.Length; i++)
-            {
-                var particleSystem = particleSystems[i];
-                if (particleSystem == null)
-                {
-                    continue;
-                }
+            instance.transform.localPosition = localPosition;
+            instance.transform.localScale = localScale;
+            instance.transform.localRotation = Quaternion.identity;
 
-                var main = particleSystem.main;
-                main.loop = loop;
-                main.prewarm = loop && prewarm;
-                main.scalingMode = ParticleSystemScalingMode.Hierarchy;
-                main.duration = Mathf.Min(main.duration, durationCap);
-                main.simulationSpeed = Mathf.Max(main.simulationSpeed, simulationSpeedFloor);
+            var spriteRenderers = instance.GetComponentsInChildren<SpriteRenderer>(true);
+            for (var i = 0; i < spriteRenderers.Length; i++)
+            {
+                if (spriteRenderers[i] != null)
+                {
+                    spriteRenderers[i].color = tint;
+                }
             }
+
+            OffsetRendererOrders(instance, baseOrder);
         }
 
-        private static void RetintShieldParticleSystems(GameObject root)
+        private static void SyncStage01DemoAssets()
         {
-            if (root == null)
+            var impactPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(GuardianMantraImpactPrefabPath);
+            var ultimateSkill = AssetDatabase.LoadAssetAtPath<SkillData>(MonkUltimateSkillAssetPath);
+            if (impactPrefab == null || ultimateSkill == null)
             {
                 return;
             }
 
-            var particleSystems = root.GetComponentsInChildren<ParticleSystem>(true);
-            for (var i = 0; i < particleSystems.Length; i++)
-            {
-                var particleSystem = particleSystems[i];
-                if (particleSystem == null)
-                {
-                    continue;
-                }
-
-                var particleName = particleSystem.gameObject.name;
-                var main = particleSystem.main;
-                if (particleName == "circle" || particleName == "stroke")
-                {
-                    main.startColor = new ParticleSystem.MinMaxGradient(ShieldRingStartMinColor, ShieldRingStartMaxColor);
-                    ApplyLifetimeGradient(
-                        particleSystem,
-                        new Color(1f, 1f, 1f, 0f),
-                        new Color(1f, 0.92f, 0.58f, 0.36f),
-                        new Color(0.92f, 0.74f, 0.18f, 0f));
-                }
-                else
-                {
-                    main.startColor = new ParticleSystem.MinMaxGradient(ShieldFieldStartMinColor, ShieldFieldStartMaxColor);
-                    ApplyLifetimeGradient(
-                        particleSystem,
-                        new Color(1f, 1f, 1f, 0f),
-                        new Color(1f, 0.96f, 0.84f, 0.20f),
-                        new Color(0.96f, 0.82f, 0.38f, 0f));
-                }
-            }
-        }
-
-        private static void RetintHolyLightParticleSystems(GameObject root)
-        {
-            if (root == null)
+            if (ultimateSkill.castImpactVfxPrefab == impactPrefab
+                && ultimateSkill.castImpactVfxLocalOffset == GuardianMantraLocalOffset
+                && ultimateSkill.castImpactVfxEulerAngles == Vector3.zero
+                && ultimateSkill.castImpactVfxScaleMultiplier == Vector3.one
+                && !ultimateSkill.castImpactVfxAlignToTargetDirection
+                && ultimateSkill.castImpactVfxScaleWithSkillArea
+                && Mathf.Approximately(ultimateSkill.castImpactVfxAreaDiameterScaleMultiplier, 0.18f))
             {
                 return;
             }
 
-            var particleSystems = root.GetComponentsInChildren<ParticleSystem>(true);
-            for (var i = 0; i < particleSystems.Length; i++)
-            {
-                var particleSystem = particleSystems[i];
-                if (particleSystem == null)
-                {
-                    continue;
-                }
-
-                var main = particleSystem.main;
-                main.startColor = new ParticleSystem.MinMaxGradient(HolyLightStartMinColor, HolyLightStartMaxColor);
-                ApplyLifetimeGradient(
-                    particleSystem,
-                    new Color(1f, 1f, 1f, 0f),
-                    new Color(1f, 0.96f, 0.74f, 0.24f),
-                    new Color(1f, 0.86f, 0.32f, 0f));
-            }
-        }
-
-        private static void ApplyLifetimeGradient(
-            ParticleSystem particleSystem,
-            Color startColor,
-            Color midColor,
-            Color endColor)
-        {
-            if (particleSystem == null)
-            {
-                return;
-            }
-
-            var colorOverLifetime = particleSystem.colorOverLifetime;
-            colorOverLifetime.enabled = true;
-
-            var gradient = new Gradient();
-            gradient.SetKeys(
-                new[]
-                {
-                    new GradientColorKey(startColor, 0f),
-                    new GradientColorKey(midColor, 0.35f),
-                    new GradientColorKey(endColor, 1f),
-                },
-                new[]
-                {
-                    new GradientAlphaKey(startColor.a, 0f),
-                    new GradientAlphaKey(midColor.a, 0.35f),
-                    new GradientAlphaKey(endColor.a, 1f),
-                });
-            colorOverLifetime.color = gradient;
+            ultimateSkill.castImpactVfxPrefab = impactPrefab;
+            ultimateSkill.castImpactVfxLocalOffset = GuardianMantraLocalOffset;
+            ultimateSkill.castImpactVfxEulerAngles = Vector3.zero;
+            ultimateSkill.castImpactVfxScaleMultiplier = Vector3.one;
+            ultimateSkill.castImpactVfxAlignToTargetDirection = false;
+            ultimateSkill.castImpactVfxScaleWithSkillArea = true;
+            ultimateSkill.castImpactVfxAreaDiameterScaleMultiplier = 0.18f;
+            EditorUtility.SetDirty(ultimateSkill);
         }
 
         private static Sprite EnsureSoftCircleSprite()
@@ -495,14 +341,13 @@ namespace Fight.Editor
             return GetLatestTimestampUtc(
                     BuilderScriptAssetPath,
                     SoftCircleSpritePath,
-                    ShieldGoldSourcePrefabPath,
-                    LightBuffSourcePrefabPath)
-                > GetLatestTimestampUtc(GuardianMantraBurstPrefabPath);
+                    BubbleLoopSourcePrefabPath)
+                > GetLatestTimestampUtc(GuardianMantraImpactPrefabPath);
         }
 
         private static bool AllOutputAssetsExist()
         {
-            return AssetDatabase.LoadAssetAtPath<GameObject>(GuardianMantraBurstPrefabPath) != null;
+            return AssetDatabase.LoadAssetAtPath<GameObject>(GuardianMantraImpactPrefabPath) != null;
         }
 
         private static System.DateTime GetLatestTimestampUtc(params string[] assetPaths)
