@@ -49,6 +49,12 @@ namespace Fight.UI.Flow
 
         public static bool HasBattleTemplate => GetDefaultBattleTemplate() != null;
 
+        public static void RefreshHeroCatalog()
+        {
+            defaultHeroCatalog = null;
+            heroCatalog = BuildHeroCatalog();
+        }
+
         public static void EnsureSelectionsInitialized()
         {
             if (IsSelectionReady(blueSelection) && IsSelectionReady(redSelection))

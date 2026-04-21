@@ -23,6 +23,7 @@ namespace Fight.UI.Flow
 
         private void Awake()
         {
+            GameFlowState.RefreshHeroCatalog();
             GameFlowState.EnsureSelectionsInitialized();
             GameFlowState.ClearBattleResult();
         }
