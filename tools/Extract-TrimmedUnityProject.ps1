@@ -127,6 +127,13 @@ New-Item -ItemType Directory -Path $script:OutputRoot -Force | Out-Null
 Copy-Item -LiteralPath (Join-Path $script:SourceRoot "Packages") -Destination (Join-Path $script:OutputRoot "Packages") -Recurse -Force
 Copy-Item -LiteralPath (Join-Path $script:SourceRoot "ProjectSettings") -Destination (Join-Path $script:OutputRoot "ProjectSettings") -Recurse -Force
 
+$graphicsSettingsPath = Join-Path $script:OutputRoot "ProjectSettings\\GraphicsSettings.asset"
+if (Test-Path -LiteralPath $graphicsSettingsPath) {
+    $graphicsSettingsContent = Get-Content -LiteralPath $graphicsSettingsPath -Raw
+    $graphicsSettingsContent = $graphicsSettingsContent -replace "(?ms)^  m_RenderPipelineGlobalSettingsMap:\r?\n(?:    .*\r?\n)+", "  m_RenderPipelineGlobalSettingsMap: {}`r`n"
+    Set-Content -LiteralPath $graphicsSettingsPath -Value $graphicsSettingsContent
+}
+
 $script:TextAssetExtensions = @(
     ".anim",
     ".asmdef",
@@ -199,8 +206,7 @@ foreach ($seedDirectory in $seedDirectories) {
 }
 
 $seedFiles = @(
-    "Assets\\Resources\\DOTweenSettings.asset",
-    "Assets\\UniversalRenderPipelineGlobalSettings.asset"
+    "Assets\\Resources\\DOTweenSettings.asset"
 )
 
 foreach ($seedFile in $seedFiles) {
@@ -230,6 +236,23 @@ while ($script:ParseQueue.Count -gt 0) {
         }
 
         Add-AssetToCopySet -RelativePath $guidToPath[$guid]
+    }
+}
+
+$excludedAssetPaths = @(
+    "Assets\\DefaultVolumeProfile.asset",
+    "Assets\\UniversalRenderPipelineGlobalSettings.asset"
+)
+
+foreach ($excludedAssetPath in $excludedAssetPaths) {
+    $outputAssetPath = Join-Path $script:OutputRoot $excludedAssetPath
+    if (Test-Path -LiteralPath $outputAssetPath) {
+        Remove-Item -LiteralPath $outputAssetPath -Force
+    }
+
+    $outputMetaPath = "$outputAssetPath.meta"
+    if (Test-Path -LiteralPath $outputMetaPath) {
+        Remove-Item -LiteralPath $outputMetaPath -Force
     }
 }
 
