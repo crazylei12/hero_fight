@@ -87,19 +87,24 @@ namespace Fight.Editor
         public static void OpenMainMenuScene()
         {
             EnsureDemoContent();
-            EditorSceneManager.OpenScene(MainMenuScenePath, OpenSceneMode.Single);
+            OpenSceneForCurrentEditorState(MainMenuScenePath);
         }
 
         [MenuItem(OpenBattleMenuPath)]
         public static void OpenBattleScene()
         {
             EnsureDemoContent();
-            EditorSceneManager.OpenScene(BattleScenePath, OpenSceneMode.Single);
+            OpenSceneForCurrentEditorState(BattleScenePath);
         }
 
         [MenuItem(OverwriteDemoContentMenuPath)]
         public static void RegenerateDemoContentFromDefaults()
         {
+            if (!CanMutateDemoContent(showDialog: true))
+            {
+                return;
+            }
+
             if (!EditorUtility.DisplayDialog(
                     "Overwrite Existing Tuning",
                     "This action will overwrite existing hero and skill tuning back to the demo defaults. Continue?",
@@ -115,7 +120,7 @@ namespace Fight.Editor
         [InitializeOnLoadMethod]
         private static void ScheduleAutoEnsureDemoContentIfNeeded()
         {
-            if (Application.isBatchMode || autoEnsureScheduled)
+            if (Application.isBatchMode || autoEnsureScheduled || EditorApplication.isPlayingOrWillChangePlaymode)
             {
                 return;
             }
@@ -126,6 +131,11 @@ namespace Fight.Editor
 
         public static void GenerateDemoContent()
         {
+            if (!CanMutateDemoContent(showDialog: false))
+            {
+                return;
+            }
+
             GenerateDemoContentInternal(overwriteExistingContent: false, showCompletionDialog: false);
         }
 
@@ -439,6 +449,11 @@ namespace Fight.Editor
 
         public static void GenerateDemoContentForBuild()
         {
+            if (!CanMutateDemoContent(showDialog: false))
+            {
+                throw new InvalidOperationException("Stage-01 demo content generation cannot run while Unity is in Play Mode.");
+            }
+
             GenerateDemoContentInternal(overwriteExistingContent: false, showCompletionDialog: false);
             EnsureDemoContentValidationPassed(logFailures: true);
         }
@@ -452,6 +467,11 @@ namespace Fight.Editor
         private static void TryAutoEnsureDemoContentIfNeeded()
         {
             autoEnsureScheduled = false;
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                return;
+            }
+
             if (EditorApplication.isCompiling || EditorApplication.isUpdating)
             {
                 ScheduleAutoEnsureDemoContentIfNeeded();
@@ -466,11 +486,53 @@ namespace Fight.Editor
 
         private static void EnsureDemoContent()
         {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                return;
+            }
+
             // Do not gate this behind one-time bootstrap checks. Demo content generation is
             // intentionally non-destructive when overwriteExistingContent is false, so we can
             // safely resync new sample assets and catalog entries before opening scenes.
             GenerateDemoContent();
             ValidateDemoContentConsistency(logFailures: true);
+        }
+
+        private static bool CanMutateDemoContent(bool showDialog)
+        {
+            if (!EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                return true;
+            }
+
+            const string message = "Exit Play Mode before regenerating or resyncing stage-01 demo content.";
+            if (showDialog && !Application.isBatchMode)
+            {
+                EditorUtility.DisplayDialog("Stage 01", message, "OK");
+            }
+            else
+            {
+                Debug.LogWarning(message);
+            }
+
+            return false;
+        }
+
+        private static void OpenSceneForCurrentEditorState(string scenePath)
+        {
+            if (EditorApplication.isPlaying)
+            {
+                SceneManager.LoadScene(Path.GetFileNameWithoutExtension(scenePath));
+                return;
+            }
+
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                Debug.LogWarning($"Skipped opening scene '{scenePath}' while Unity is switching play mode.");
+                return;
+            }
+
+            EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
         }
 
         private static void EnsureDemoContentValidationPassed(bool logFailures)
@@ -4100,7 +4162,6 @@ namespace Fight.Editor
                 overwriteExistingContent,
                 useDevelopmentBootstrap: false,
                 fallbackResourcesPath: "Stage01Demo/Stage01DemoBattleInput");
-            EditorSceneManager.OpenScene(BattleScenePath, OpenSceneMode.Single);
             AddScenesToBuildSettings();
         }
 
