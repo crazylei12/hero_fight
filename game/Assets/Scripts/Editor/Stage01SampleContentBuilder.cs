@@ -43,6 +43,7 @@ namespace Fight.Editor
         private const string SandemperorActiveSkillAssetPath = SkillsRootFolder + "/mage_003_sandemperor/Raise Sandguard.asset";
         private const string SandemperorUltimateSkillAssetPath = SkillsRootFolder + "/mage_003_sandemperor/Imperial Encirclement.asset";
         private const string MonkActiveImpactVfxPrefabPath = "Assets/Prefabs/VFX/Skills/MonkRenewingPulseBurst.prefab";
+        private const string MonkUltimateImpactVfxPrefabPath = "Assets/Prefabs/VFX/Skills/MonkGuardianMantraBubbleImpact.prefab";
         private const string AssassinPrefabPath = "Assets/Prefabs/Heroes/assassin_001_shadowstep/Shadowstep.prefab";
         private const string TidefinPrefabPath = "Assets/Prefabs/Heroes/assassin_002_tidefin/Tidefin.prefab";
         private const string MarksmanPrefabPath = "Assets/Prefabs/Heroes/marksman_001_longshot/Longshot.prefab";
@@ -338,6 +339,15 @@ namespace Fight.Editor
                 false,
                 true,
                 1f);
+            EnsureSkillCastImpactVfxPresentation(
+                monkUltimateSkill,
+                AssetDatabase.LoadAssetAtPath<GameObject>(MonkUltimateImpactVfxPrefabPath),
+                new Vector3(0f, 0.02f, 0f),
+                Vector3.zero,
+                Vector3.one,
+                false,
+                true,
+                0.18f);
 
             var marksmanActive = CreateLongshotActiveSkill(overwriteExistingContent);
             var marksmanUltimateSkill = CreateLongshotUltimateSkill(overwriteExistingContent, out var marksmanUltimateExisted);
