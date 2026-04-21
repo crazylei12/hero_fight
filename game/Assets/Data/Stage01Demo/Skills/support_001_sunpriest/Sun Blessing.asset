@@ -16,12 +16,16 @@ MonoBehaviour:
   displayName: Sun Blessing
   description: 'Stage-01 demo skill: persistent allied healing field.'
   slotType: 1
+  activationMode: 0
   skillType: 6
   targetType: 4
   preferredEnemyHeroClass: 2
   fallbackTargetType: 1
   targetPrioritySearchRadius: 0
   targetPriorityRequiredUnitCount: 1
+  passiveSkill:
+    missingHealthAttackPowerRatio: 0
+    maxAttackPowerBonus: 0
   castRange: 9
   areaRadius: 7.5
   cooldownSeconds: 0
@@ -30,12 +34,29 @@ MonoBehaviour:
   - effectType: 4
     targetMode: 0
     powerMultiplier: 4.8
+    statusStackQueryEffectType: 0
+    statusStackQueryThemeKey: 
+    minimumRequiredStatusStacks: 0
+    bonusPowerMultiplierPerStatusStack: 0
     radiusOverride: 7.5
     durationSeconds: 5
     tickIntervalSeconds: 1
     followCaster: 0
     persistentAreaPulseEffectType: 2
     persistentAreaTargetType: 1
+    triggerFollowUpAreaOnTargetDeath: 0
+    followUpAreaRadius: 0
+    followUpAreaPowerMultiplier: 0
+    followUpAreaStatusEffects: []
+    followUpAreaCanChain: 1
+    followUpAreaLimitTriggerOncePerUnitPerExecution: 1
+    deployableProxySpawnMode: 0
+    deployableProxyTriggerMode: 0
+    deployableProxyStrikeRadius: 0
+    deployableProxySpawnOffsetDistance: 0
+    deployableProxyMaxCount: 0
+    deployableProxyReplaceOldestWhenLimitReached: 1
+    deployableProxyImmediateStrikeOnSpawn: 0
     forcedMovementDirection: 0
     forcedMovementDistance: 0
     forcedMovementDurationSeconds: 0
@@ -74,6 +95,12 @@ MonoBehaviour:
     temporarySkillCastRangeOverride: 0
     targetRefreshMode: 1
     interruptFlags: 3
+  temporaryOverride:
+    durationSeconds: 0
+    lifestealRatio: 0
+    visualScaleMultiplier: 1
+    visualTintColor: {r: 1, g: 1, b: 1, a: 1}
+    visualTintStrength: 0
   targetIndicatorVfxPrefab: {fileID: 0}
   castImpactVfxPrefab: {fileID: 0}
   castImpactVfxLocalOffset: {x: 0, y: 0, z: 0}
@@ -103,6 +130,9 @@ MonoBehaviour:
       durationSeconds: 0
       highValueTargetType: 0
       heroClassFilter: 2
+      statusEffectTypeFilter: 0
+      statusThemeKey: 
+      minimumStatusStacks: 1
       requireTargetInCastRange: 1
     secondaryCondition:
       conditionType: 2
@@ -112,6 +142,9 @@ MonoBehaviour:
       durationSeconds: 0
       highValueTargetType: 0
       heroClassFilter: 2
+      statusEffectTypeFilter: 0
+      statusThemeKey: 
+      minimumStatusStacks: 1
       requireTargetInCastRange: 1
     fallback:
       fallbackType: 1
@@ -121,4 +154,16 @@ MonoBehaviour:
       secondaryTriggerAfterSeconds: 45
       secondaryOverrideRequiredUnitCount: 0
       secondaryOverrideHealthPercentThreshold: 0.85
+      alternatePrimaryCondition:
+        conditionType: 0
+        searchRadius: 0
+        requiredUnitCount: 1
+        healthPercentThreshold: 1
+        durationSeconds: 0
+        highValueTargetType: 0
+        heroClassFilter: 2
+        statusEffectTypeFilter: 0
+        statusThemeKey: 
+        minimumStatusStacks: 1
+        requireTargetInCastRange: 1
     combineMode: 1
