@@ -59,10 +59,23 @@ namespace Fight.Battle
 
         private static void TickHero(BattleContext context, RuntimeHero hero, float deltaTime, BattleManager battleManager)
         {
+            var previousPassiveAttackPowerBonus = QuantizeModifierValue(hero.PassiveAttackPowerBonusMultiplier);
+            var previousTemporarySkill = hero.CurrentTemporaryOverrideSourceSkill;
+            var previousLifestealRatio = QuantizeModifierValue(hero.CurrentLifestealRatio);
+            var previousVisualScaleMultiplier = QuantizeModifierValue(hero.CurrentVisualScaleMultiplier);
+
             hero.Tick(
                 deltaTime,
                 status => ResolvePeriodicStatusTick(context, hero, status, battleManager),
                 status => PublishStatusRemovedEvent(context, hero, status));
+
+            PublishSkillModifierEvents(
+                context,
+                hero,
+                previousPassiveAttackPowerBonus,
+                previousTemporarySkill,
+                previousLifestealRatio,
+                previousVisualScaleMultiplier);
 
             if (hero.IsDead)
             {
@@ -432,5 +445,72 @@ namespace Fight.Battle
                 status.AppliedBy));
         }
 
+        private static void PublishSkillModifierEvents(
+            BattleContext context,
+            RuntimeHero hero,
+            float previousPassiveAttackPowerBonus,
+            SkillData previousTemporarySkill,
+            float previousLifestealRatio,
+            float previousVisualScaleMultiplier)
+        {
+            if (context?.EventBus == null || hero == null)
+            {
+                return;
+            }
+
+            var passiveSkill = hero.Definition?.activeSkill;
+            var currentPassiveAttackPowerBonus = QuantizeModifierValue(hero.PassiveAttackPowerBonusMultiplier);
+            if (passiveSkill != null
+                && passiveSkill.activationMode == SkillActivationMode.Passive
+                && !Mathf.Approximately(previousPassiveAttackPowerBonus, currentPassiveAttackPowerBonus))
+            {
+                context.EventBus.Publish(new PassiveSkillValueChangedEvent(
+                    hero,
+                    passiveSkill,
+                    currentPassiveAttackPowerBonus));
+            }
+
+            var currentTemporarySkill = hero.CurrentTemporaryOverrideSourceSkill;
+            var currentLifestealRatio = QuantizeModifierValue(hero.CurrentLifestealRatio);
+            var currentVisualScaleMultiplier = QuantizeModifierValue(hero.CurrentVisualScaleMultiplier);
+            var temporaryStateChanged =
+                previousTemporarySkill != currentTemporarySkill
+                || !Mathf.Approximately(previousLifestealRatio, currentLifestealRatio)
+                || !Mathf.Approximately(previousVisualScaleMultiplier, currentVisualScaleMultiplier);
+
+            if (!temporaryStateChanged)
+            {
+                return;
+            }
+
+            if (previousTemporarySkill != null
+                && (currentTemporarySkill != previousTemporarySkill
+                    || currentLifestealRatio <= Mathf.Epsilon
+                    && currentVisualScaleMultiplier <= 1f + Mathf.Epsilon))
+            {
+                context.EventBus.Publish(new SkillTemporaryOverrideChangedEvent(
+                    hero,
+                    previousTemporarySkill,
+                    false,
+                    0f,
+                    1f));
+            }
+
+            if (currentTemporarySkill != null
+                && (currentLifestealRatio > Mathf.Epsilon || currentVisualScaleMultiplier > 1f + Mathf.Epsilon))
+            {
+                context.EventBus.Publish(new SkillTemporaryOverrideChangedEvent(
+                    hero,
+                    currentTemporarySkill,
+                    true,
+                    currentLifestealRatio,
+                    currentVisualScaleMultiplier));
+            }
+        }
+
+        private static float QuantizeModifierValue(float value)
+        {
+            return Mathf.Round(value * 100f) * 0.01f;
+        }
     }
 }

@@ -178,6 +178,20 @@ namespace Fight.Editor
                 new Vector3(0.18f, 0.18f, 1f),
                 true);
 
+            var berserkerActive = CreateBerserkerActiveSkill(overwriteExistingContent);
+            var berserkerUltimate = CreateBerserkerUltimateSkill(overwriteExistingContent, out var berserkerUltimateExisted);
+            var berserker = CreateHero(
+                "warrior_003_berserker",
+                "Berserker",
+                HeroClass.Warrior,
+                440f, 42f, 18f, 1f, 4.45f, 0.08f, 1.6f, 1.85f,
+                berserkerActive,
+                ConfigureBerserkerUltimate(berserkerUltimate, overwriteExistingContent, berserkerUltimateExisted),
+                overwriteExistingContent,
+                HeroTag.Melee, HeroTag.SustainedDamage, HeroTag.Buff);
+            EnsureHeroSkillReferences(berserker, berserkerActive, berserkerUltimate);
+            EnsureHeroBattlePrefabReference(berserker, LoadBattlePrefab("warrior_003_berserker", HeroClass.Warrior));
+
             var mageUltimateSkill = CreateSkill("skill_mage_ultimate_meteor", "Meteor Fall", SkillSlotType.Ultimate, SkillType.AreaDamage, SkillTargetType.Self, 0f, ScaleRangedHeroDistance(6f), 3.3f, 0f, 3, overwriteExistingContent, out var mageUltimateExisted);
 
             var mage = CreateHero(
@@ -382,7 +396,7 @@ namespace Fight.Editor
             EnsureHeroSkillReferences(venomshooter, venomshooterActive, venomshooterUltimateSkill);
             EnsureHeroBattlePrefabReference(venomshooter, LoadBattlePrefab("marksman_003_venomshooter", HeroClass.Marksman));
 
-            CreateHeroCatalog(warrior, bladesman, mage, frostmage, sandemperor, assassin, tidefin, tank, shieldwarden, support, windchime, monk, marksman, rifleman, venomshooter);
+            CreateHeroCatalog(warrior, bladesman, berserker, mage, frostmage, sandemperor, assassin, tidefin, tank, shieldwarden, support, windchime, monk, marksman, rifleman, venomshooter);
 
             var battleInput = CreateBattleInput(
                 "Stage01DemoBattleInput",
@@ -1226,6 +1240,7 @@ namespace Fight.Editor
             skill.displayName = displayName;
             skill.description = $"Stage-01 demo skill: {displayName}";
             skill.slotType = slotType;
+            skill.activationMode = SkillActivationMode.Active;
             skill.skillType = skillType;
             skill.targetType = targetType;
             skill.preferredEnemyHeroClass = HeroClass.Assassin;
@@ -1240,6 +1255,8 @@ namespace Fight.Editor
             skill.allowsSelfCast = targetType == SkillTargetType.Self || targetType == SkillTargetType.AllAllies;
             ResetReactiveGuard(skill);
             ResetActionSequence(skill);
+            ResetPassiveSkillData(skill);
+            ResetTemporaryOverride(skill);
             skill.castImpactVfxPrefab = null;
             skill.castImpactVfxLocalOffset = Vector3.zero;
             skill.castImpactVfxEulerAngles = Vector3.zero;
@@ -2163,6 +2180,134 @@ namespace Fight.Editor
             return skill;
         }
 
+        private static SkillData CreateBerserkerActiveSkill(bool overwriteExistingContent)
+        {
+            var skill = CreateSkill(
+                "skill_berserker_active_bloodfury",
+                "Bloodfury",
+                SkillSlotType.ActiveSkill,
+                SkillType.Buff,
+                SkillTargetType.Self,
+                0f,
+                0f,
+                0f,
+                0f,
+                1,
+                overwriteExistingContent,
+                out var existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.description = "Stage-01 demo passive skill: missing health increases attack power.";
+            skill.activationMode = SkillActivationMode.Passive;
+            skill.skillType = SkillType.Buff;
+            skill.targetType = SkillTargetType.Self;
+            skill.fallbackTargetType = SkillTargetType.None;
+            skill.castRange = 0f;
+            skill.areaRadius = 0f;
+            skill.cooldownSeconds = 0f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = true;
+            skill.effects.Clear();
+            skill.passiveSkill.missingHealthAttackPowerRatio = 0.6f;
+            skill.passiveSkill.maxAttackPowerBonus = 0.6f;
+            ResetTemporaryOverride(skill);
+            ResetUltimateDecision(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateBerserkerUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
+        {
+            var skill = CreateSkill(
+                "skill_berserker_ultimate_titanrage",
+                "Titan Rage",
+                SkillSlotType.Ultimate,
+                SkillType.Buff,
+                SkillTargetType.Self,
+                0f,
+                0f,
+                0f,
+                0f,
+                1,
+                overwriteExistingContent,
+                out existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            ApplyBerserkerUltimateBaseConfiguration(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData ConfigureBerserkerUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            ApplyBerserkerUltimateBaseConfiguration(skill);
+
+            ResetUltimateDecision(skill);
+            skill.ultimateDecision.targetingType = UltimateTargetingType.Self;
+            skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.SelfLowHealth;
+            skill.ultimateDecision.primaryCondition.healthPercentThreshold = 0.65f;
+            skill.ultimateDecision.secondaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;
+            skill.ultimateDecision.secondaryCondition.searchRadius = 3.2f;
+            skill.ultimateDecision.secondaryCondition.requiredUnitCount = 2;
+            skill.ultimateDecision.combineMode = UltimateConditionCombineMode.PrimaryOnly;
+            skill.ultimateDecision.fallback.fallbackType = UltimateFallbackType.LowerPrimaryThreshold;
+            skill.ultimateDecision.fallback.triggerAfterSeconds = 45f;
+            skill.ultimateDecision.fallback.overrideHealthPercentThreshold = 1f;
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static void ApplyBerserkerUltimateBaseConfiguration(SkillData skill)
+        {
+            skill.activationMode = SkillActivationMode.Active;
+            skill.skillType = SkillType.Buff;
+            skill.targetType = SkillTargetType.Self;
+            skill.fallbackTargetType = SkillTargetType.None;
+            skill.castRange = 0f;
+            skill.areaRadius = 0f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = true;
+            skill.effects.Clear();
+            ResetPassiveSkillData(skill);
+
+            var selfBuffEffect = AddApplyStatusEffectsEffect(skill);
+            selfBuffEffect.targetMode = SkillEffectTargetMode.Caster;
+            selfBuffEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.AttackPowerModifier,
+                durationSeconds = 6f,
+                magnitude = 0.25f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+            selfBuffEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.AttackSpeedModifier,
+                durationSeconds = 6f,
+                magnitude = 0.4f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
+            skill.temporaryOverride.durationSeconds = 6f;
+            skill.temporaryOverride.lifestealRatio = 0.35f;
+            skill.temporaryOverride.visualScaleMultiplier = 1.25f;
+            skill.description = "Stage-01 demo skill: enter a short frenzy with bonus damage, attack speed, lifesteal, and visual growth.";
+        }
+
         private static void AddDefaultEffectsForSkill(SkillData skill, float powerMultiplier)
         {
             switch (skill.skillType)
@@ -2667,6 +2812,39 @@ namespace Fight.Editor
             skill.actionSequence.targetRefreshMode = CombatActionSequenceTargetRefreshMode.RefreshOnInvalid;
             skill.actionSequence.interruptFlags =
                 CombatActionSequenceInterruptFlags.HardControl | CombatActionSequenceInterruptFlags.ForcedMovement;
+        }
+
+        private static void ResetPassiveSkillData(SkillData skill)
+        {
+            if (skill == null)
+            {
+                return;
+            }
+
+            if (skill.passiveSkill == null)
+            {
+                skill.passiveSkill = new PassiveSkillData();
+            }
+
+            skill.passiveSkill.missingHealthAttackPowerRatio = 0f;
+            skill.passiveSkill.maxAttackPowerBonus = 0f;
+        }
+
+        private static void ResetTemporaryOverride(SkillData skill)
+        {
+            if (skill == null)
+            {
+                return;
+            }
+
+            if (skill.temporaryOverride == null)
+            {
+                skill.temporaryOverride = new SkillTemporaryOverrideData();
+            }
+
+            skill.temporaryOverride.durationSeconds = 0f;
+            skill.temporaryOverride.lifestealRatio = 0f;
+            skill.temporaryOverride.visualScaleMultiplier = 1f;
         }
 
         private static void ResetReactiveGuard(SkillData skill)
@@ -3860,6 +4038,8 @@ namespace Fight.Editor
                 "skill_venomshooter_ultimate_venomdetonation" => "marksman_003_venomshooter",
                 "skill_sandemperor_active_raisesandguard" => "mage_003_sandemperor",
                 "skill_sandemperor_ultimate_imperialencirclement" => "mage_003_sandemperor",
+                "skill_berserker_active_bloodfury" => "warrior_003_berserker",
+                "skill_berserker_ultimate_titanrage" => "warrior_003_berserker",
                 _ => null,
             };
         }

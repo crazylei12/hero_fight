@@ -85,6 +85,12 @@ namespace Fight.Battle
                 case ForcedMovementAppliedEvent forcedMovementApplied:
                     AddLog(FormatForcedMovementLog(forcedMovementApplied));
                     break;
+                case PassiveSkillValueChangedEvent passiveSkillChanged:
+                    AddLog(FormatPassiveSkillValueChangedLog(passiveSkillChanged));
+                    break;
+                case SkillTemporaryOverrideChangedEvent temporaryOverrideChanged:
+                    AddLog(FormatSkillTemporaryOverrideChangedLog(temporaryOverrideChanged));
+                    break;
                 case ReactiveGuardTriggeredEvent reactiveGuardTriggered:
                     AddLog(FormatReactiveGuardLog(reactiveGuardTriggered));
                     break;
@@ -187,6 +193,25 @@ namespace Fight.Battle
             var sourceName = FormatHeroLabel(forcedMovementApplied.Source, "Unknown");
             var skillName = forcedMovementApplied.SourceSkill != null ? forcedMovementApplied.SourceSkill.displayName : "Unknown Effect";
             return $"{sourceName} displaced {FormatHeroLabel(forcedMovementApplied.Target)} via {skillName} from ({forcedMovementApplied.StartPosition.x:0.0}, {forcedMovementApplied.StartPosition.z:0.0}) to ({forcedMovementApplied.Destination.x:0.0}, {forcedMovementApplied.Destination.z:0.0}), duration {forcedMovementApplied.DurationSeconds:0.00}s, peak height {forcedMovementApplied.PeakHeight:0.##}.";
+        }
+
+        private static string FormatPassiveSkillValueChangedLog(PassiveSkillValueChangedEvent passiveSkillChanged)
+        {
+            var heroName = FormatHeroLabel(passiveSkillChanged.Hero, "Unknown");
+            var skillName = passiveSkillChanged.Skill != null ? passiveSkillChanged.Skill.displayName : "Passive Skill";
+            return $"{heroName}'s {skillName} updated attack bonus to {passiveSkillChanged.AttackPowerBonusMultiplier * 100f:0.#}%.";
+        }
+
+        private static string FormatSkillTemporaryOverrideChangedLog(SkillTemporaryOverrideChangedEvent temporaryOverrideChanged)
+        {
+            var heroName = FormatHeroLabel(temporaryOverrideChanged.Hero, "Unknown");
+            var skillName = temporaryOverrideChanged.Skill != null ? temporaryOverrideChanged.Skill.displayName : "Skill Override";
+            if (!temporaryOverrideChanged.IsActive)
+            {
+                return $"{heroName}'s {skillName} temporary override ended.";
+            }
+
+            return $"{heroName}'s {skillName} temporary override active: lifesteal {temporaryOverrideChanged.LifestealRatio * 100f:0.#}%, visual scale {temporaryOverrideChanged.VisualScaleMultiplier:0.##}x.";
         }
 
         private static string FormatReactiveGuardLog(ReactiveGuardTriggeredEvent reactiveGuardTriggered)

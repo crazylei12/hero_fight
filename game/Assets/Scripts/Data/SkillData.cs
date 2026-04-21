@@ -13,12 +13,16 @@ namespace Fight.Data
 
         [Header("Core")]
         public SkillSlotType slotType = SkillSlotType.ActiveSkill;
+        public SkillActivationMode activationMode = SkillActivationMode.Active;
         public SkillType skillType = SkillType.SingleTargetDamage;
         public SkillTargetType targetType = SkillTargetType.NearestEnemy;
         public HeroClass preferredEnemyHeroClass = HeroClass.Assassin;
         public SkillTargetType fallbackTargetType = SkillTargetType.NearestEnemy;
         [Min(0f)] public float targetPrioritySearchRadius = 0f;
         [Min(1)] public int targetPriorityRequiredUnitCount = 1;
+
+        [Header("Passive")]
+        public PassiveSkillData passiveSkill = new PassiveSkillData();
 
         [Header("Numbers")]
         [Min(0.1f)] public float castRange = 4f;
@@ -33,6 +37,9 @@ namespace Fight.Data
 
         [Header("Action Sequence")]
         public CombatActionSequenceData actionSequence = new CombatActionSequenceData();
+
+        [Header("Temporary Overrides")]
+        public SkillTemporaryOverrideData temporaryOverride = new SkillTemporaryOverrideData();
 
         [Header("Presentation")]
         public GameObject targetIndicatorVfxPrefab;

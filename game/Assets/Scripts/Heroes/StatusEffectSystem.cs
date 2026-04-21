@@ -81,26 +81,29 @@ namespace Fight.Heroes
             return baseValue * GetMultiplier(hero, effectType);
         }
 
-        public static float GetMultiplier(RuntimeHero hero, StatusEffectType effectType)
+        public static float GetTotalMagnitude(RuntimeHero hero, StatusEffectType effectType)
         {
             if (hero == null)
             {
-                return 1f;
+                return 0f;
             }
 
-            var multiplier = 1f;
+            var magnitude = 0f;
             var statuses = hero.MutableStatusEffects;
             for (var i = 0; i < statuses.Count; i++)
             {
-                if (statuses[i].EffectType != effectType)
+                if (statuses[i].EffectType == effectType)
                 {
-                    continue;
+                    magnitude += statuses[i].Magnitude;
                 }
-
-                multiplier += statuses[i].Magnitude;
             }
 
-            return Mathf.Max(0.1f, multiplier);
+            return magnitude;
+        }
+
+        public static float GetMultiplier(RuntimeHero hero, StatusEffectType effectType)
+        {
+            return Mathf.Max(0.1f, 1f + GetTotalMagnitude(hero, effectType));
         }
 
         public static bool HasStatus(RuntimeHero hero, StatusEffectType effectType)

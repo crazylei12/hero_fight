@@ -384,6 +384,49 @@ namespace Fight.Battle
         public SkillData SourceSkill { get; }
     }
 
+    public sealed class PassiveSkillValueChangedEvent : IBattleEvent
+    {
+        public PassiveSkillValueChangedEvent(RuntimeHero hero, SkillData skill, float attackPowerBonusMultiplier)
+        {
+            Hero = hero;
+            Skill = skill;
+            AttackPowerBonusMultiplier = attackPowerBonusMultiplier;
+        }
+
+        public RuntimeHero Hero { get; }
+
+        public SkillData Skill { get; }
+
+        public float AttackPowerBonusMultiplier { get; }
+    }
+
+    public sealed class SkillTemporaryOverrideChangedEvent : IBattleEvent
+    {
+        public SkillTemporaryOverrideChangedEvent(
+            RuntimeHero hero,
+            SkillData skill,
+            bool isActive,
+            float lifestealRatio,
+            float visualScaleMultiplier)
+        {
+            Hero = hero;
+            Skill = skill;
+            IsActive = isActive;
+            LifestealRatio = lifestealRatio;
+            VisualScaleMultiplier = visualScaleMultiplier;
+        }
+
+        public RuntimeHero Hero { get; }
+
+        public SkillData Skill { get; }
+
+        public bool IsActive { get; }
+
+        public float LifestealRatio { get; }
+
+        public float VisualScaleMultiplier { get; }
+    }
+
     public sealed class ReactiveGuardTriggeredEvent : IBattleEvent
     {
         public ReactiveGuardTriggeredEvent(RuntimeHero caster, RuntimeHero protectedHero, SkillData sourceSkill, int affectedTargetCount)
