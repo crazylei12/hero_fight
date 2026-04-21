@@ -70,7 +70,8 @@ namespace Fight.Editor
         private const string SunpriestProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/SunpriestBasicAttackProjectile.prefab";
         private const string SunpriestUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/SunpriestSunBlessingField.prefab";
         private const string WindchimeUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/WindchimeStillwindDomainField.prefab";
-        private const string VenomshooterPoisonStackGroupKey = "venomshooter_poison";
+        private const string PoisonStatusThemeKey = "poison";
+        private const string VenomshooterPoisonStackGroupKey = "venomshooter_poison_pool";
         private static bool autoEnsureScheduled;
 
         private static float ScaleRangedHeroDistance(float value)
@@ -1559,7 +1560,7 @@ namespace Fight.Editor
             var detonation = AddDamageEffect(skill, 0f);
             detonation.targetMode = SkillEffectTargetMode.SkillTargets;
             detonation.statusStackQueryEffectType = StatusEffectType.DamageOverTime;
-            detonation.statusStackQueryGroupKey = VenomshooterPoisonStackGroupKey;
+            detonation.statusStackQueryThemeKey = PoisonStatusThemeKey;
             detonation.minimumRequiredStatusStacks = 1;
             detonation.bonusPowerMultiplierPerStatusStack = 1.5f;
             detonation.triggerFollowUpAreaOnTargetDeath = true;
@@ -2158,6 +2159,7 @@ namespace Fight.Editor
                 tickIntervalSeconds = 1f,
                 maxStacks = 5,
                 stackGroupKey = VenomshooterPoisonStackGroupKey,
+                statusThemeKey = PoisonStatusThemeKey,
                 refreshDurationOnReapply = true,
             };
         }
@@ -2341,7 +2343,7 @@ namespace Fight.Editor
             EnsureBasicAttackStatusList(hero.basicAttack);
             hero.basicAttack.onHitStatusEffects.Clear();
             hero.basicAttack.onHitStatusEffects.Add(CreateVenomshooterPoisonStatus());
-            hero.debugNotes = "Stage-01 demo hero for Marksman. Venomshooter validates shared poison stacking, poison-count scaling, and chained on-kill area follow-up effects.";
+            hero.debugNotes = "Stage-01 demo hero for Marksman. Venomshooter validates same-source poison stack pooling, cross-source poison-theme reading, and chained on-kill area follow-up effects.";
             EditorUtility.SetDirty(hero);
         }
 
@@ -2520,7 +2522,7 @@ namespace Fight.Editor
             condition.highValueTargetType = HighValueTargetType.None;
             condition.heroClassFilter = HeroClass.Assassin;
             condition.statusEffectTypeFilter = StatusEffectType.None;
-            condition.statusStackGroupKey = string.Empty;
+            condition.statusThemeKey = string.Empty;
             condition.minimumStatusStacks = 1;
             condition.requireTargetInCastRange = true;
         }
@@ -2883,14 +2885,14 @@ namespace Fight.Editor
             skill.ultimateDecision.primaryCondition.searchRadius = Stage01ArenaSpec.FullMapTargetingRangeWorldUnits;
             skill.ultimateDecision.primaryCondition.requiredUnitCount = 3;
             skill.ultimateDecision.primaryCondition.statusEffectTypeFilter = StatusEffectType.DamageOverTime;
-            skill.ultimateDecision.primaryCondition.statusStackGroupKey = VenomshooterPoisonStackGroupKey;
+            skill.ultimateDecision.primaryCondition.statusThemeKey = PoisonStatusThemeKey;
             skill.ultimateDecision.primaryCondition.minimumStatusStacks = 1;
             skill.ultimateDecision.secondaryCondition.conditionType = UltimateConditionType.EnemyLowHealthWithStatusInRange;
             skill.ultimateDecision.secondaryCondition.searchRadius = Stage01ArenaSpec.FullMapTargetingRangeWorldUnits;
             skill.ultimateDecision.secondaryCondition.requiredUnitCount = 2;
             skill.ultimateDecision.secondaryCondition.healthPercentThreshold = 0.5f;
             skill.ultimateDecision.secondaryCondition.statusEffectTypeFilter = StatusEffectType.DamageOverTime;
-            skill.ultimateDecision.secondaryCondition.statusStackGroupKey = VenomshooterPoisonStackGroupKey;
+            skill.ultimateDecision.secondaryCondition.statusThemeKey = PoisonStatusThemeKey;
             skill.ultimateDecision.secondaryCondition.minimumStatusStacks = 1;
             ApplyCountFallback(skill, 30f, 2, 45f, 1);
             EditorUtility.SetDirty(skill);

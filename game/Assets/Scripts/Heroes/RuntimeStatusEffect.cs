@@ -17,6 +17,7 @@ namespace Fight.Heroes
             BaseMagnitude = data.magnitude;
             SourceAttackPowerMultiplier = Mathf.Max(0f, data.sourceAttackPowerMultiplier);
             StackGroupKey = data.stackGroupKey ?? string.Empty;
+            StatusThemeKey = data.statusThemeKey ?? string.Empty;
             Magnitude = ResolveMagnitude(data, target, source ?? appliedBy);
             ActiveSkillCooldownCapSeconds = Mathf.Max(0f, data.activeSkillCooldownCapSeconds);
             TickIntervalSeconds = Mathf.Max(0.1f, data.tickIntervalSeconds);
@@ -53,6 +54,8 @@ namespace Fight.Heroes
         public bool RefreshDurationOnReapply { get; }
 
         public string StackGroupKey { get; private set; }
+
+        public string StatusThemeKey { get; private set; }
 
         public RuntimeHero Source { get; private set; }
 
@@ -94,6 +97,7 @@ namespace Fight.Heroes
             BaseMagnitude = data.magnitude;
             SourceAttackPowerMultiplier = Mathf.Max(0f, data.sourceAttackPowerMultiplier);
             StackGroupKey = data.stackGroupKey ?? string.Empty;
+            StatusThemeKey = data.statusThemeKey ?? string.Empty;
             if (refreshMagnitude)
             {
                 Magnitude = ResolveMagnitude(data, target, source ?? appliedBy);

@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Fight.Data
 {
@@ -16,7 +17,8 @@ namespace Fight.Data
         public HighValueTargetType highValueTargetType = HighValueTargetType.None;
         public HeroClass heroClassFilter = HeroClass.Assassin;
         public StatusEffectType statusEffectTypeFilter = StatusEffectType.None;
-        public string statusStackGroupKey = string.Empty;
+        [FormerlySerializedAs("statusStackGroupKey")]
+        public string statusThemeKey = string.Empty;
         [Min(1)] public int minimumStatusStacks = 1;
         public bool requireTargetInCastRange = true;
     }

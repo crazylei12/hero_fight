@@ -956,11 +956,11 @@ namespace Fight.Battle
                     break;
                 case UltimateConditionType.EnemyWithStatusInRange:
                     var statusEnemyCount = CountUnitsWithStatusInRange(context, caster, primaryTarget, searchRadius, condition);
-                    summary = $"{label}={condition.conditionType} measured={statusEnemyCount} required={requiredUnitCount} radius={searchRadius:0.##} status={condition.statusEffectTypeFilter} group={FormatStatusGroupLabel(condition.statusStackGroupKey)} minStacks={Mathf.Max(1, condition.minimumStatusStacks)} pass={pass}";
+                    summary = $"{label}={condition.conditionType} measured={statusEnemyCount} required={requiredUnitCount} radius={searchRadius:0.##} status={condition.statusEffectTypeFilter} theme={FormatStatusThemeLabel(condition.statusThemeKey)} minStacks={Mathf.Max(1, condition.minimumStatusStacks)} pass={pass}";
                     break;
                 case UltimateConditionType.EnemyLowHealthWithStatusInRange:
                     var lowHealthStatusEnemyCount = CountLowHealthUnitsWithStatusInRange(context, caster, primaryTarget, searchRadius, healthThreshold, condition);
-                    summary = $"{label}={condition.conditionType} measured={lowHealthStatusEnemyCount} required={requiredUnitCount} radius={searchRadius:0.##} threshold={healthThreshold:0.00} status={condition.statusEffectTypeFilter} group={FormatStatusGroupLabel(condition.statusStackGroupKey)} minStacks={Mathf.Max(1, condition.minimumStatusStacks)} pass={pass}";
+                    summary = $"{label}={condition.conditionType} measured={lowHealthStatusEnemyCount} required={requiredUnitCount} radius={searchRadius:0.##} threshold={healthThreshold:0.00} status={condition.statusEffectTypeFilter} theme={FormatStatusThemeLabel(condition.statusThemeKey)} minStacks={Mathf.Max(1, condition.minimumStatusStacks)} pass={pass}";
                     break;
                 case UltimateConditionType.AllyLowHealthInRange:
                     var lowHealthAllyCount = CountLowHealthUnitsInRange(context, caster, primaryTarget, searchRadius, includeAllies: true, healthThreshold);
@@ -1612,7 +1612,7 @@ namespace Fight.Battle
                 if (StatusEffectSystem.GetStatusStackCount(
                         candidate,
                         condition.statusEffectTypeFilter,
-                        condition.statusStackGroupKey) < Mathf.Max(1, condition.minimumStatusStacks))
+                        condition.statusThemeKey) < Mathf.Max(1, condition.minimumStatusStacks))
                 {
                     continue;
                 }
@@ -1666,9 +1666,9 @@ namespace Fight.Battle
                 : 1f;
         }
 
-        private static string FormatStatusGroupLabel(string stackGroupKey)
+        private static string FormatStatusThemeLabel(string statusThemeKey)
         {
-            return string.IsNullOrWhiteSpace(stackGroupKey) ? "any" : stackGroupKey;
+            return string.IsNullOrWhiteSpace(statusThemeKey) ? "any" : statusThemeKey;
         }
 
         private static bool IsHighValueTarget(RuntimeHero target, RuntimeHero caster, SkillData skill, UltimateConditionData condition)
@@ -2525,7 +2525,7 @@ namespace Fight.Battle
             return StatusEffectSystem.GetStatusStackCount(
                 target,
                 effect.statusStackQueryEffectType,
-                effect.statusStackQueryGroupKey);
+                effect.statusStackQueryThemeKey);
         }
 
         private static bool MeetsStatusStackRequirement(SkillEffectData effect, int statusStackCount)

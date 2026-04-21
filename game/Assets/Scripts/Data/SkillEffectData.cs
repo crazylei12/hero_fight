@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Fight.Data
 {
@@ -44,7 +45,8 @@ namespace Fight.Data
         public SkillEffectTargetMode targetMode = SkillEffectTargetMode.SkillTargets;
         [Min(0f)] public float powerMultiplier = 1f;
         public StatusEffectType statusStackQueryEffectType = StatusEffectType.None;
-        public string statusStackQueryGroupKey = string.Empty;
+        [FormerlySerializedAs("statusStackQueryGroupKey")]
+        public string statusStackQueryThemeKey = string.Empty;
         [Min(0)] public int minimumRequiredStatusStacks = 0;
         [Min(0f)] public float bonusPowerMultiplierPerStatusStack = 0f;
         [Min(0f)] public float radiusOverride = 0f;
