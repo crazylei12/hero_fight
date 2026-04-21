@@ -677,6 +677,13 @@ namespace Fight.Editor
                 parts.Add($"位移方向:{FormatEnum(effect.forcedMovementDirection)}");
             }
 
+            if (effect.effectType == SkillEffectType.CreateDeployableProxy)
+            {
+                parts.Add($"触发:{FormatEnum(effect.deployableProxyTriggerMode)}");
+                parts.Add($"半径:{FormatFloat(effect.deployableProxyStrikeRadius)}");
+                parts.Add($"上限:{effect.deployableProxyMaxCount}");
+            }
+
             return string.Join(" / ", parts);
         }
 
@@ -944,6 +951,7 @@ namespace Fight.Editor
                     SkillEffectType.RepositionNearPrimaryTarget => "位移到主目标附近",
                     SkillEffectType.CreatePersistentArea => "创建持续区域",
                     SkillEffectType.ApplyForcedMovement => "施加强制位移",
+                    SkillEffectType.CreateDeployableProxy => "创建部署物代理",
                     _ => value.ToString(),
                 },
                 SkillEffectTargetMode skillEffectTargetMode => skillEffectTargetMode switch

@@ -8,5 +8,6 @@ namespace Fight.Data
         RepositionNearPrimaryTarget = 3,
         CreatePersistentArea = 4,
         ApplyForcedMovement = 5,
+        CreateDeployableProxy = 6,
     }
 }

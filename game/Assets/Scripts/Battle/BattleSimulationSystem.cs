@@ -19,6 +19,7 @@ namespace Fight.Battle
 
             BattleBasicAttackSystem.TickProjectiles(context, deltaTime, battleManager);
             TickSkillAreas(context, deltaTime, battleManager);
+            BattleDeployableProxySystem.Tick(context, deltaTime);
 
             for (var i = 0; i < context.Heroes.Count; i++)
             {

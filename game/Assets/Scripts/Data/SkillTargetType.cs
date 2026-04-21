@@ -17,5 +17,6 @@ namespace Fight.Data
         ThreatenedRangedAlly = 12,
         ThreatenedRangedAllyOrEnemyDensestAnchor = 13,
         ThreatenedAlly = 14,
+        CurrentEnemyTarget = 15,
     }
 }

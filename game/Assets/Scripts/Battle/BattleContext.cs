@@ -102,6 +102,7 @@ namespace Fight.Battle
             Heroes = heroes;
             Projectiles = new List<RuntimeBasicAttackProjectile>();
             SkillAreas = new List<RuntimeSkillArea>();
+            DeployableProxies = new List<RuntimeDeployableProxy>();
             DelayedSkillEffects = new List<RuntimeDelayedSkillEffect>();
             ReactiveGuards = new List<RuntimeReactiveGuard>();
         }
@@ -121,6 +122,8 @@ namespace Fight.Battle
         public List<RuntimeBasicAttackProjectile> Projectiles { get; }
 
         public List<RuntimeSkillArea> SkillAreas { get; }
+
+        public List<RuntimeDeployableProxy> DeployableProxies { get; }
 
         public List<RuntimeDelayedSkillEffect> DelayedSkillEffects { get; }
 

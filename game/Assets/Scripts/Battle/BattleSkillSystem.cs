@@ -521,6 +521,8 @@ namespace Fight.Battle
                     return FindFirstGlobalTeamTarget(context.Heroes, caster, skill, includeAllies: false);
                 case SkillTargetType.NearestEnemy:
                     return SelectCurrentOrNearestEnemyTarget(context, caster, skill, effectiveCastRange);
+                case SkillTargetType.CurrentEnemyTarget:
+                    return SelectCurrentEnemyTarget(context, caster, skill, effectiveCastRange);
                 case SkillTargetType.LowestHealthEnemy:
                     return FindLowestHealth(context.Heroes, caster, skill, includeAllies: false, effectiveCastRange);
                 case SkillTargetType.LowestHealthAlly:
@@ -625,6 +627,25 @@ namespace Fight.Battle
             }
 
             return BattleAiDirector.SelectNearestEnemyTarget(context.Heroes, caster, effectiveCastRange);
+        }
+
+        private static RuntimeHero SelectCurrentEnemyTarget(
+            BattleContext context,
+            RuntimeHero caster,
+            SkillData skill,
+            float effectiveCastRange)
+        {
+            if (context == null || caster == null || skill == null)
+            {
+                return null;
+            }
+
+            var currentTarget = caster.CurrentTarget;
+            return currentTarget != null
+                && IsValidTargetForSkill(skill, caster, currentTarget)
+                && IsPrimaryTargetStillValidForCastRange(skill, caster, currentTarget, effectiveCastRange)
+                ? currentTarget
+                : null;
         }
 
         private static List<RuntimeHero> CollectTargets(BattleContext context, RuntimeHero caster, SkillData skill, RuntimeHero primaryTarget)
@@ -831,6 +852,7 @@ namespace Fight.Battle
                 case SkillTargetType.ThreatenedAlly:
                     return candidate.Side == caster.Side && candidate != caster;
                 case SkillTargetType.AllEnemies:
+                case SkillTargetType.CurrentEnemyTarget:
                     return candidate.Side != caster.Side;
                 case SkillTargetType.ThreatenedRangedAllyOrEnemyDensestAnchor:
                     return true;
@@ -2101,6 +2123,9 @@ namespace Fight.Battle
                 case SkillEffectType.CreatePersistentArea:
                     CreatePersistentSkillArea(context, caster, skill, effect, primaryTarget);
                     break;
+                case SkillEffectType.CreateDeployableProxy:
+                    CreateDeployableProxies(context, caster, skill, effect, effectTargets, battleManager);
+                    break;
             }
         }
 
@@ -2311,6 +2336,23 @@ namespace Fight.Battle
             var area = new RuntimeSkillArea(caster, skill, effect, initialCenter);
             context.SkillAreas.Add(area);
             context.EventBus.Publish(new SkillAreaCreatedEvent(caster, skill, area));
+        }
+
+        private static void CreateDeployableProxies(
+            BattleContext context,
+            RuntimeHero caster,
+            SkillData skill,
+            SkillEffectData effect,
+            List<RuntimeHero> effectTargets,
+            BattleManager battleManager)
+        {
+            BattleDeployableProxySystem.CreateDeployableProxies(
+                context,
+                caster,
+                skill,
+                effect,
+                effectTargets,
+                battleManager);
         }
 
         private static List<RuntimeHero> CollectAreaTargets(BattleContext context, RuntimeHero caster, Vector3 center, SkillData skill, SkillEffectData effect)

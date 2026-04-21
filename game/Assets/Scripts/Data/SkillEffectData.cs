@@ -25,6 +25,18 @@ namespace Fight.Data
         TowardSource = 1,
     }
 
+    public enum DeployableProxySpawnMode
+    {
+        AtTargetPosition = 0,
+        AroundTarget = 1,
+    }
+
+    public enum DeployableProxyTriggerMode
+    {
+        None = 0,
+        OnOwnerBasicAttack = 1,
+    }
+
     public enum SkillEffectTargetMode
     {
         SkillTargets = 0,
@@ -61,6 +73,13 @@ namespace Fight.Data
         public List<StatusEffectData> followUpAreaStatusEffects = new List<StatusEffectData>();
         public bool followUpAreaCanChain = true;
         public bool followUpAreaLimitTriggerOncePerUnitPerExecution = true;
+        public DeployableProxySpawnMode deployableProxySpawnMode = DeployableProxySpawnMode.AtTargetPosition;
+        public DeployableProxyTriggerMode deployableProxyTriggerMode = DeployableProxyTriggerMode.None;
+        [Min(0f)] public float deployableProxyStrikeRadius = 0f;
+        [Min(0f)] public float deployableProxySpawnOffsetDistance = 0f;
+        [Min(0)] public int deployableProxyMaxCount = 0;
+        public bool deployableProxyReplaceOldestWhenLimitReached = true;
+        public bool deployableProxyImmediateStrikeOnSpawn;
         public ForcedMovementDirectionMode forcedMovementDirection = ForcedMovementDirectionMode.AwayFromSource;
         [Min(0f)] public float forcedMovementDistance = 0f;
         [Min(0f)] public float forcedMovementDurationSeconds = 0f;

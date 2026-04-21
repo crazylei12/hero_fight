@@ -115,6 +115,11 @@ namespace Fight.Battle
                     context.RandomService,
                     basicAttack.damageMultiplier);
 
+            if (effectType == BasicAttackEffectType.Damage)
+            {
+                BattleDeployableProxySystem.TriggerOwnerBasicAttackProxies(context, attacker, target, battleManager);
+            }
+
             if (basicAttack.usesProjectile)
             {
                 LaunchProjectile(context, attacker, target, impactAmount, effectType);
