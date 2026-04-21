@@ -370,7 +370,7 @@ namespace Fight.UI
             var blinkRevealScale = hero.IsDead
                 ? 1f
                 : Mathf.Lerp(blinkRevealStartScale, 1f, blinkRevealProgress);
-            view.VisualRoot.localScale = Vector3.one * ((hero.IsDead ? 0.82f : 1f) * blinkRevealScale);
+            view.VisualRoot.localScale = Vector3.one * ((hero.IsDead ? 0.82f : 1f) * blinkRevealScale * hero.CurrentVisualScaleMultiplier);
 
             if (view.Body != null)
             {

@@ -172,6 +172,11 @@ namespace Fight.Battle
 
         private static bool TryCastActiveSkill(BattleContext context, RuntimeHero caster, SkillData skill, BattleManager battleManager)
         {
+            if (skill == null || skill.activationMode != SkillActivationMode.Active)
+            {
+                return false;
+            }
+
             return TryCastSpecificSkill(context, caster, skill, battleManager, requireHighValueCast: false);
         }
 
@@ -182,7 +187,9 @@ namespace Fight.Battle
                 return false;
             }
 
-            if (skill.slotType != SkillSlotType.Ultimate || !caster.CanUseUltimate())
+            if (skill.activationMode != SkillActivationMode.Active
+                || skill.slotType != SkillSlotType.Ultimate
+                || !caster.CanUseUltimate())
             {
                 return false;
             }
@@ -353,6 +360,11 @@ namespace Fight.Battle
         private static bool TryCastSpecificSkill(BattleContext context, RuntimeHero caster, SkillData skill, BattleManager battleManager, bool requireHighValueCast)
         {
             if (skill == null)
+            {
+                return false;
+            }
+
+            if (skill.activationMode != SkillActivationMode.Active)
             {
                 return false;
             }
@@ -1893,6 +1905,8 @@ namespace Fight.Battle
                 return;
             }
 
+            ApplyTemporarySkillOverride(caster, skill);
+
             if (skill.effects != null && skill.effects.Count > 0)
             {
                 var resolutionState = CreateSkillEffectResolutionState(skill, caster, primaryTarget);
@@ -1928,6 +1942,18 @@ namespace Fight.Battle
             {
                 BattleCombatActionSequenceSystem.TryStartSequence(caster, skill, primaryTarget);
             }
+        }
+
+        private static void ApplyTemporarySkillOverride(RuntimeHero caster, SkillData skill)
+        {
+            if (caster == null
+                || skill == null
+                || skill.activationMode != SkillActivationMode.Active)
+            {
+                return;
+            }
+
+            caster.ApplyTemporarySkillOverride(skill);
         }
 
         private static List<RuntimeHero> CopyAliveTargets(IReadOnlyList<RuntimeHero> targets)

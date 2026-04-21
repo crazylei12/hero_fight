@@ -17,7 +17,7 @@ namespace Fight.Battle
             DamageSourceKind sourceKind,
             SkillData sourceSkill = null)
         {
-            return ApplyResolvedDamageInternal(
+            var actualDamage = ApplyResolvedDamageInternal(
                 context,
                 battleManager,
                 attacker,
@@ -26,6 +26,8 @@ namespace Fight.Battle
                 sourceKind,
                 sourceSkill,
                 allowDamageShare: true);
+            TryApplyLifesteal(context, attacker, actualDamage);
+            return actualDamage;
         }
 
         private static float ApplyResolvedDamageInternal(
@@ -187,6 +189,37 @@ namespace Fight.Battle
             }
 
             target.RecordThreat(source, context.Clock.ElapsedTimeSeconds);
+        }
+
+        private static void TryApplyLifesteal(BattleContext context, RuntimeHero attacker, float actualDamage)
+        {
+            if (context == null
+                || attacker == null
+                || actualDamage <= Mathf.Epsilon)
+            {
+                return;
+            }
+
+            var lifestealRatio = attacker.CurrentLifestealRatio;
+            if (lifestealRatio <= Mathf.Epsilon)
+            {
+                return;
+            }
+
+            var healAmount = actualDamage * lifestealRatio;
+            var actualHeal = attacker.ApplyHealing(healAmount);
+            if (actualHeal <= Mathf.Epsilon)
+            {
+                return;
+            }
+
+            BattleStatsSystem.RecordHealingContribution(context, attacker, attacker, actualHeal);
+            context.EventBus?.Publish(new HealAppliedEvent(
+                attacker,
+                attacker,
+                actualHeal,
+                attacker.CurrentTemporaryOverrideSourceSkill,
+                attacker.CurrentHealth));
         }
     }
 }

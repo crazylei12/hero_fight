@@ -66,6 +66,37 @@ namespace Fight.Heroes
     {
         private const float DefaultKnockUpVisualPeakHeight = 0.72f;
 
+        private sealed class RuntimeSkillTemporaryOverride
+        {
+            public RuntimeSkillTemporaryOverride(SkillData sourceSkill, SkillTemporaryOverrideData definition)
+            {
+                SourceSkill = sourceSkill;
+                Refresh(definition);
+            }
+
+            public SkillData SourceSkill { get; }
+
+            public float RemainingDurationSeconds { get; private set; }
+
+            public float LifestealRatio { get; private set; }
+
+            public float VisualScaleMultiplier { get; private set; }
+
+            public void Refresh(SkillTemporaryOverrideData definition)
+            {
+                RemainingDurationSeconds = definition != null ? Mathf.Max(0f, definition.durationSeconds) : 0f;
+                LifestealRatio = definition != null ? Mathf.Max(0f, definition.lifestealRatio) : 0f;
+                VisualScaleMultiplier = definition != null ? Mathf.Max(1f, definition.visualScaleMultiplier) : 1f;
+            }
+
+            public void Tick(float deltaTime)
+            {
+                RemainingDurationSeconds = Mathf.Max(0f, RemainingDurationSeconds - Mathf.Max(0f, deltaTime));
+            }
+
+            public bool IsExpired => RemainingDurationSeconds <= Mathf.Epsilon;
+        }
+
         private sealed class RuntimeContributionRecord
         {
             public RuntimeContributionRecord(RuntimeHero contributor, float timeSeconds)
@@ -186,7 +217,20 @@ namespace Fight.Heroes
 
         public float MoveSpeed => Definition != null ? StatusEffectSystem.GetModifiedStat(this, Definition.baseStats.moveSpeed, StatusEffectType.MoveSpeedModifier) : 0f;
 
-        public float AttackPower => Definition != null ? StatusEffectSystem.GetModifiedStat(this, Definition.baseStats.attackPower, StatusEffectType.AttackPowerModifier) : 0f;
+        public float AttackPower
+        {
+            get
+            {
+                if (Definition == null)
+                {
+                    return 0f;
+                }
+
+                var totalModifierDelta = StatusEffectSystem.GetTotalMagnitude(this, StatusEffectType.AttackPowerModifier)
+                    + PassiveAttackPowerBonusMultiplier;
+                return Definition.baseStats.attackPower * Mathf.Max(0.1f, 1f + totalModifierDelta);
+            }
+        }
 
         public float Defense => Definition != null ? StatusEffectSystem.GetModifiedStat(this, Definition.baseStats.defense, StatusEffectType.DefenseModifier) : 0f;
 
@@ -251,7 +295,16 @@ namespace Fight.Heroes
 
         public bool HasPendingCombatAction => pendingCombatAction != null;
 
+        public float PassiveAttackPowerBonusMultiplier => GetPassiveAttackPowerBonusMultiplier();
+
+        public float CurrentLifestealRatio => GetCurrentLifestealRatio();
+
+        public float CurrentVisualScaleMultiplier => GetCurrentVisualScaleMultiplier();
+
+        public SkillData CurrentTemporaryOverrideSourceSkill => GetCurrentTemporaryOverrideSourceSkill();
+
         private readonly List<RuntimeStatusEffect> activeStatusEffects = new List<RuntimeStatusEffect>();
+        private readonly List<RuntimeSkillTemporaryOverride> activeTemporarySkillOverrides = new List<RuntimeSkillTemporaryOverride>();
         private readonly List<RuntimeContributionRecord> recentHostileContributors = new List<RuntimeContributionRecord>();
         private readonly List<RuntimeContributionRecord> recentSupportContributors = new List<RuntimeContributionRecord>();
         private RuntimeForcedMovement activeForcedMovement;
@@ -278,6 +331,7 @@ namespace Fight.Heroes
             VisualHeightOffset = 0f;
             activeForcedMovement = null;
             forcedMovementInterruptTicksRemaining = 0;
+            activeTemporarySkillOverrides.Clear();
             ClearThreatTracking();
             ClearContributionHistory();
         }
@@ -339,6 +393,7 @@ namespace Fight.Heroes
             StatusEffectSystem.Tick(this, deltaTime, onPeriodicStatusTick, onExpiredStatus);
             UpdateStatusDrivenVisualHeightOffset();
             ClampActiveSkillCooldownToStatusCap();
+            TickTemporarySkillOverrides(deltaTime);
             if (HasHardControl)
             {
                 ClearCombatActionState();
@@ -612,6 +667,7 @@ namespace Fight.Heroes
             StatusEffectSystem.ClearStatuses(this, onRemovedStatus);
             ClearThreatTracking();
             ClearContributionHistory();
+            activeTemporarySkillOverrides.Clear();
         }
 
         public bool ReadyToRevive()
@@ -670,7 +726,11 @@ namespace Fight.Heroes
 
         public bool CanUseActiveSkill()
         {
-            return Definition != null && Definition.activeSkill != null && ActiveSkillCooldownRemainingSeconds <= 0f && CanCastSkills;
+            return Definition != null
+                && Definition.activeSkill != null
+                && Definition.activeSkill.activationMode == SkillActivationMode.Active
+                && ActiveSkillCooldownRemainingSeconds <= 0f
+                && CanCastSkills;
         }
 
         public bool CanUseUltimate()
@@ -688,6 +748,31 @@ namespace Fight.Heroes
             }
 
             HasCastUltimate = true;
+        }
+
+        public void ApplyTemporarySkillOverride(SkillData sourceSkill)
+        {
+            var definition = sourceSkill?.temporaryOverride;
+            if (sourceSkill == null
+                || definition == null
+                || !definition.HasAnyOverride)
+            {
+                return;
+            }
+
+            for (var i = 0; i < activeTemporarySkillOverrides.Count; i++)
+            {
+                var runtimeOverride = activeTemporarySkillOverrides[i];
+                if (runtimeOverride == null || runtimeOverride.SourceSkill != sourceSkill)
+                {
+                    continue;
+                }
+
+                runtimeOverride.Refresh(definition);
+                return;
+            }
+
+            activeTemporarySkillOverrides.Add(new RuntimeSkillTemporaryOverride(sourceSkill, definition));
         }
 
         public void InitializeUltimateDecisionSchedule(float firstCheckTimeSeconds)
@@ -875,6 +960,103 @@ namespace Fight.Heroes
         private void RegisterForcedMovementInterrupt()
         {
             forcedMovementInterruptTicksRemaining = 2;
+        }
+
+        private void TickTemporarySkillOverrides(float deltaTime)
+        {
+            for (var i = activeTemporarySkillOverrides.Count - 1; i >= 0; i--)
+            {
+                var runtimeOverride = activeTemporarySkillOverrides[i];
+                if (runtimeOverride == null)
+                {
+                    activeTemporarySkillOverrides.RemoveAt(i);
+                    continue;
+                }
+
+                runtimeOverride.Tick(deltaTime);
+                if (runtimeOverride.IsExpired)
+                {
+                    activeTemporarySkillOverrides.RemoveAt(i);
+                }
+            }
+        }
+
+        private float GetPassiveAttackPowerBonusMultiplier()
+        {
+            var passiveSkill = Definition?.activeSkill;
+            var passiveData = passiveSkill?.passiveSkill;
+            if (passiveSkill == null
+                || passiveSkill.activationMode != SkillActivationMode.Passive
+                || passiveData == null
+                || !passiveData.HasMissingHealthAttackPowerBonus
+                || IsDead)
+            {
+                return 0f;
+            }
+
+            var maxHealth = MaxHealth;
+            if (maxHealth <= Mathf.Epsilon)
+            {
+                return 0f;
+            }
+
+            var missingHealthRatio = 1f - Mathf.Clamp01(CurrentHealth / maxHealth);
+            return Mathf.Min(
+                Mathf.Max(0f, passiveData.maxAttackPowerBonus),
+                missingHealthRatio * Mathf.Max(0f, passiveData.missingHealthAttackPowerRatio));
+        }
+
+        private float GetCurrentLifestealRatio()
+        {
+            var totalRatio = 0f;
+            for (var i = 0; i < activeTemporarySkillOverrides.Count; i++)
+            {
+                if (activeTemporarySkillOverrides[i] != null)
+                {
+                    totalRatio += Mathf.Max(0f, activeTemporarySkillOverrides[i].LifestealRatio);
+                }
+            }
+
+            return Mathf.Max(0f, totalRatio);
+        }
+
+        private float GetCurrentVisualScaleMultiplier()
+        {
+            var bestScaleMultiplier = 1f;
+            for (var i = 0; i < activeTemporarySkillOverrides.Count; i++)
+            {
+                if (activeTemporarySkillOverrides[i] == null)
+                {
+                    continue;
+                }
+
+                bestScaleMultiplier = Mathf.Max(
+                    bestScaleMultiplier,
+                    Mathf.Max(1f, activeTemporarySkillOverrides[i].VisualScaleMultiplier));
+            }
+
+            return bestScaleMultiplier;
+        }
+
+        private SkillData GetCurrentTemporaryOverrideSourceSkill()
+        {
+            RuntimeSkillTemporaryOverride bestOverride = null;
+            for (var i = 0; i < activeTemporarySkillOverrides.Count; i++)
+            {
+                var runtimeOverride = activeTemporarySkillOverrides[i];
+                if (runtimeOverride == null)
+                {
+                    continue;
+                }
+
+                if (bestOverride == null
+                    || runtimeOverride.RemainingDurationSeconds > bestOverride.RemainingDurationSeconds)
+                {
+                    bestOverride = runtimeOverride;
+                }
+            }
+
+            return bestOverride?.SourceSkill;
         }
 
         private void ClampActiveSkillCooldownToStatusCap()
