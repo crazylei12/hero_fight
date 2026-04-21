@@ -112,7 +112,14 @@ if (-not (Test-StartsWithPath -Candidate $script:OutputRoot -Prefix $allowedOutp
 }
 
 if (Test-Path -LiteralPath $script:OutputRoot) {
-    Remove-Item -LiteralPath $script:OutputRoot -Recurse -Force
+    try {
+        Remove-Item -LiteralPath $script:OutputRoot -Recurse -Force
+    }
+    catch {
+        $fallbackOutputRoot = "{0}_{1}" -f $script:OutputRoot, (Get-Date -Format "yyyyMMdd_HHmmss")
+        Write-Warning "Could not replace existing output folder, likely because Unity is holding it open. Writing to $fallbackOutputRoot instead."
+        $script:OutputRoot = $fallbackOutputRoot
+    }
 }
 
 New-Item -ItemType Directory -Path $script:OutputRoot -Force | Out-Null
@@ -179,7 +186,12 @@ $seedDirectories = @(
     "Assets\\Resources\\Stage01Demo",
     "Assets\\Resources\\UI\\BattleHud",
     "Assets\\Plugins\\Demigiant\\DemiLib",
-    "Assets\\Plugins\\Demigiant\\DOTween"
+    "Assets\\Plugins\\Demigiant\\DOTween",
+    "Assets\\HeroEditor4D\\Common\\Scripts\\Data",
+    "Assets\\HeroEditor4D\\Common\\Scripts\\Enums",
+    "Assets\\HeroEditor4D\\Common\\SimpleColorPicker",
+    "Assets\\HeroEditor4D\\InventorySystem",
+    "Assets\\FantasyMonsters\\Common\\Scripts"
 )
 
 foreach ($seedDirectory in $seedDirectories) {
