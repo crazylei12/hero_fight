@@ -474,6 +474,10 @@ namespace Fight.Battle
                     return caster.CurrentTarget != null && !caster.CurrentTarget.IsDead
                         ? caster.CurrentTarget
                         : SelectPrimaryTarget(context, caster, skill);
+                case UltimateTargetingType.CurrentTargetOnly:
+                    return caster.CurrentTarget != null && !caster.CurrentTarget.IsDead
+                        ? caster.CurrentTarget
+                        : null;
                 case UltimateTargetingType.LowestHealthEnemyInRange:
                     return FindLowestHealth(context.Heroes, caster, skill, includeAllies: false, effectiveCastRange);
                 case UltimateTargetingType.LowestHealthAllyInRange:
@@ -917,28 +921,62 @@ namespace Fight.Battle
                 decision.fallback,
                 affectedTargets,
                 "primary");
+            var fallbackPrimaryTrace = EvaluateFallbackPrimaryConditionTrace(
+                context,
+                caster,
+                skill,
+                primaryTarget,
+                decision.fallback);
             var hasSecondaryCondition = decision.secondaryCondition != null
                 && decision.secondaryCondition.conditionType != UltimateConditionType.None;
             var secondaryTrace = hasSecondaryCondition
                 ? EvaluateUltimateConditionTrace(context, caster, skill, primaryTarget, decision.secondaryCondition, decision.fallback, affectedTargets, "secondary")
                 : new UltimateConditionTrace(false, true, "secondary=none");
 
-            var finalPass = primaryTrace.Passed;
+            var primaryGatePassed = primaryTrace.Passed || fallbackPrimaryTrace.Passed;
+            var finalPass = primaryGatePassed;
             if (decision.combineMode != UltimateConditionCombineMode.PrimaryOnly && hasSecondaryCondition)
             {
                 finalPass = decision.combineMode switch
                 {
-                    UltimateConditionCombineMode.AllMustPass => primaryTrace.Passed && secondaryTrace.Passed,
-                    UltimateConditionCombineMode.AnyPass => primaryTrace.Passed || secondaryTrace.Passed,
-                    _ => primaryTrace.Passed,
+                    UltimateConditionCombineMode.AllMustPass => primaryGatePassed && secondaryTrace.Passed,
+                    UltimateConditionCombineMode.AnyPass => primaryGatePassed || secondaryTrace.Passed,
+                    _ => primaryGatePassed,
                 };
             }
 
             var secondarySuffix = decision.combineMode == UltimateConditionCombineMode.PrimaryOnly && hasSecondaryCondition
                 ? " bonusOnly=true"
                 : string.Empty;
-            var summary = $"combine={decision.combineMode} fallbackStage={fallbackStage}; {primaryTrace.Summary}; {secondaryTrace.Summary}{secondarySuffix}; finalPass={finalPass}";
+            var summary = $"combine={decision.combineMode} fallbackStage={fallbackStage}; {primaryTrace.Summary}; {fallbackPrimaryTrace.Summary}; {secondaryTrace.Summary}{secondarySuffix}; finalPass={finalPass}";
             return new UltimateDecisionTrace(finalPass, fallbackStage, summary);
+        }
+
+        private static UltimateConditionTrace EvaluateFallbackPrimaryConditionTrace(
+            BattleContext context,
+            RuntimeHero caster,
+            SkillData skill,
+            RuntimeHero primaryTarget,
+            UltimateFallbackData fallback)
+        {
+            if (fallback == null
+                || fallback.fallbackType != UltimateFallbackType.AlternatePrimaryCondition
+                || GetActiveFallbackStage(context, fallback) <= 0
+                || fallback.alternatePrimaryCondition == null
+                || fallback.alternatePrimaryCondition.conditionType == UltimateConditionType.None)
+            {
+                return new UltimateConditionTrace(false, false, "fallbackPrimary=none");
+            }
+
+            return EvaluateUltimateConditionTrace(
+                context,
+                caster,
+                skill,
+                primaryTarget,
+                fallback.alternatePrimaryCondition,
+                null,
+                null,
+                "fallbackPrimary");
         }
 
         private static UltimateConditionTrace EvaluateUltimateConditionTrace(
@@ -1412,7 +1450,7 @@ namespace Fight.Battle
 
         private static int GetActiveFallbackStage(BattleContext context, UltimateFallbackData fallback)
         {
-            if (context?.Clock == null || fallback == null || fallback.fallbackType != UltimateFallbackType.LowerPrimaryThreshold)
+            if (context?.Clock == null || fallback == null || fallback.fallbackType == UltimateFallbackType.None)
             {
                 return 0;
             }

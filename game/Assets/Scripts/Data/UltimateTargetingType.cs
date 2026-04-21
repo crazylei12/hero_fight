@@ -8,5 +8,6 @@ namespace Fight.Data
         LowestHealthAllyInRange = 3,
         EnemyDensestPosition = 4,
         Self = 5,
+        CurrentTargetOnly = 6,
     }
 }

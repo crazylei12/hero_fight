@@ -4,5 +4,6 @@ namespace Fight.Data
     {
         None = 0,
         LowerPrimaryThreshold = 1,
+        AlternatePrimaryCondition = 2,
     }
 }
