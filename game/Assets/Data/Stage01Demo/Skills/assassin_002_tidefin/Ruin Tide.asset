@@ -43,14 +43,14 @@ MonoBehaviour:
     statusEffects:
     - effectType: 2
       durationSeconds: 5
-      magnitude: -0.2
+      magnitude: -0.3
       activeSkillCooldownCapSeconds: 0
       tickIntervalSeconds: 1
       maxStacks: 1
       refreshDurationOnReapply: 1
     - effectType: 3
       durationSeconds: 5
-      magnitude: -0.2
+      magnitude: -0.3
       activeSkillCooldownCapSeconds: 0
       tickIntervalSeconds: 1
       maxStacks: 1

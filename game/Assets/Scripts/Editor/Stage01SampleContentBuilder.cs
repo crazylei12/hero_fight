@@ -175,7 +175,7 @@ namespace Fight.Editor
                 new Vector3(0.18f, 0.18f, 1f),
                 true);
 
-            var mageUltimateSkill = CreateSkill("skill_mage_ultimate_meteor", "Meteor Fall", SkillSlotType.Ultimate, SkillType.AreaDamage, SkillTargetType.Self, 0f, ScaleRangedHeroDistance(6f), 0.55f, 0f, 3, overwriteExistingContent, out var mageUltimateExisted);
+            var mageUltimateSkill = CreateSkill("skill_mage_ultimate_meteor", "Meteor Fall", SkillSlotType.Ultimate, SkillType.AreaDamage, SkillTargetType.Self, 0f, ScaleRangedHeroDistance(6f), 3.3f, 0f, 3, overwriteExistingContent, out var mageUltimateExisted);
 
             var mage = CreateHero(
                 "mage_001_firemage",
@@ -232,7 +232,7 @@ namespace Fight.Editor
             ConfigureTidefinBasicAttack(tidefin, overwriteExistingContent, tidefinHeroExisted);
 
             var tankActive = CreateIronwallActiveSkill(overwriteExistingContent);
-            var tankUltimateSkill = CreateBuffSkill("skill_tank_ultimate_ironoath", "Iron Oath", SkillSlotType.Ultimate, SkillTargetType.AllAllies, 6f, 6f, 1f, 0f, StatusEffectType.DefenseModifier, 8f, 2f, overwriteExistingContent, out var tankUltimateExisted);
+            var tankUltimateSkill = CreateBuffSkill("skill_tank_ultimate_ironoath", "Iron Oath", SkillSlotType.Ultimate, SkillTargetType.AllAllies, 6f, 6f, 1f, 0f, StatusEffectType.DefenseModifier, 8f, 2.5f, overwriteExistingContent, out var tankUltimateExisted);
 
             var tank = CreateHero(
                 "tank_001_ironwall",
@@ -722,7 +722,7 @@ namespace Fight.Editor
                     }
 
                     ReportFloatMismatch(issues, "Monk ultimate shield durationSeconds", shieldStatus.durationSeconds, 5f);
-                    ReportFloatMismatch(issues, "Monk ultimate shield magnitude", shieldStatus.magnitude, 85f);
+                    ReportFloatMismatch(issues, "Monk ultimate shield magnitude", shieldStatus.magnitude, 130f);
 
                     if (shieldStatus.maxStacks != 1)
                     {
@@ -1479,7 +1479,7 @@ namespace Fight.Editor
             skill.minTargetsToCast = 1;
             skill.allowsSelfCast = false;
             skill.effects.Clear();
-            AddPersistentAreaEffect(skill, PersistentAreaPulseEffectType.DirectDamage, PersistentAreaTargetType.Enemies, 4f, skill.areaRadius, 0.45f, 0.45f, false);
+            AddPersistentAreaEffect(skill, PersistentAreaPulseEffectType.DirectDamage, PersistentAreaTargetType.Enemies, 7f, skill.areaRadius, 0.45f, 0.45f, false);
             skill.description = "Stage-01 demo skill: Frag Grenade";
             ResetActionSequence(skill);
             EditorUtility.SetDirty(skill);
@@ -1562,10 +1562,10 @@ namespace Fight.Editor
             detonation.statusStackQueryEffectType = StatusEffectType.DamageOverTime;
             detonation.statusStackQueryThemeKey = PoisonStatusThemeKey;
             detonation.minimumRequiredStatusStacks = 1;
-            detonation.bonusPowerMultiplierPerStatusStack = 1.5f;
+            detonation.bonusPowerMultiplierPerStatusStack = 1.8f;
             detonation.triggerFollowUpAreaOnTargetDeath = true;
             detonation.followUpAreaRadius = 3.4f;
-            detonation.followUpAreaPowerMultiplier = 1.5f;
+            detonation.followUpAreaPowerMultiplier = 1.8f;
             detonation.followUpAreaCanChain = true;
             detonation.followUpAreaLimitTriggerOncePerUnitPerExecution = true;
             AddVenomshooterPoisonStacks(detonation.followUpAreaStatusEffects, 2);
@@ -1611,7 +1611,7 @@ namespace Fight.Editor
             {
                 effectType = StatusEffectType.AttackPowerModifier,
                 durationSeconds = 5f,
-                magnitude = -0.2f,
+                magnitude = -0.3f,
                 maxStacks = 1,
                 refreshDurationOnReapply = true,
             });
@@ -1619,7 +1619,7 @@ namespace Fight.Editor
             {
                 effectType = StatusEffectType.DefenseModifier,
                 durationSeconds = 5f,
-                magnitude = -0.2f,
+                magnitude = -0.3f,
                 maxStacks = 1,
                 refreshDurationOnReapply = true,
             });
@@ -1738,7 +1738,7 @@ namespace Fight.Editor
                 SkillTargetType.DensestEnemyArea,
                 ScaleRangedHeroDistance(7f),
                 ScaleRangedHeroDistance(5.5f),
-                0.35f,
+                2.7f,
                 0f,
                 1,
                 overwriteExistingContent,
@@ -1765,7 +1765,7 @@ namespace Fight.Editor
                 skill,
                 PersistentAreaPulseEffectType.DirectDamage,
                 PersistentAreaTargetType.Enemies,
-                0.35f,
+                2.7f,
                 skill.areaRadius,
                 5f,
                 1f,
@@ -1886,7 +1886,7 @@ namespace Fight.Editor
                 SkillTargetType.Self,
                 0f,
                 5f,
-                1.8f,
+                8f,
                 0f,
                 1,
                 overwriteExistingContent,
@@ -1903,7 +1903,7 @@ namespace Fight.Editor
             skill.areaRadius = 5f;
             skill.allowsSelfCast = true;
 
-            var damageEffect = AddDamageEffect(skill, 1.8f);
+            var damageEffect = AddDamageEffect(skill, 8f);
             damageEffect.targetMode = SkillEffectTargetMode.EnemiesInRadiusAroundCaster;
             damageEffect.radiusOverride = skill.areaRadius;
 
@@ -2010,7 +2010,7 @@ namespace Fight.Editor
 
             AddRepositionEffect(skill, 0.22f, 0f, 16f);
 
-            var pathDamageEffect = AddDamageEffect(skill, 5f);
+            var pathDamageEffect = AddDamageEffect(skill, 8f);
             pathDamageEffect.targetMode = SkillEffectTargetMode.DashPathEnemies;
             pathDamageEffect.radiusOverride = 4f;
 
@@ -2398,7 +2398,7 @@ namespace Fight.Editor
                 SkillTargetType.LowestHealthAlly,
                 ScaleRangedHeroDistance(6f),
                 ScaleRangedHeroDistance(5f),
-                0.65f,
+                4.8f,
                 0f,
                 2,
                 overwriteExistingContent,
@@ -2418,7 +2418,7 @@ namespace Fight.Editor
             skill.persistentAreaVfxScaleMultiplier = 1f;
             skill.persistentAreaVfxEulerAngles = Vector3.zero;
             skill.skillAreaPresentationType = SkillAreaPresentationType.None;
-            AddPersistentAreaEffect(skill, PersistentAreaPulseEffectType.DirectHeal, PersistentAreaTargetType.Allies, 0.65f, skill.areaRadius, 5f, 1f, false);
+            AddPersistentAreaEffect(skill, PersistentAreaPulseEffectType.DirectHeal, PersistentAreaTargetType.Allies, 4.8f, skill.areaRadius, 5f, 1f, false);
             ResetUltimateDecision(skill);
             EditorUtility.SetDirty(skill);
             return skill;
@@ -2564,7 +2564,7 @@ namespace Fight.Editor
             skill.persistentAreaVfxEulerAngles = Vector3.zero;
             skill.skillAreaPresentationType = SkillAreaPresentationType.None;
             skill.effects.Clear();
-            AddPersistentAreaEffect(skill, PersistentAreaPulseEffectType.DirectDamage, PersistentAreaTargetType.Enemies, 0.55f, skill.areaRadius, 5f, 1f, false);
+            AddPersistentAreaEffect(skill, PersistentAreaPulseEffectType.DirectDamage, PersistentAreaTargetType.Enemies, 3.3f, skill.areaRadius, 5f, 1f, false);
 
             skill.ultimateDecision.targetingType = UltimateTargetingType.Self;
             skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;
@@ -2706,7 +2706,7 @@ namespace Fight.Editor
             {
                 effectType = StatusEffectType.Shield,
                 durationSeconds = 5f,
-                magnitude = 85f,
+                magnitude = 130f,
                 maxStacks = 1,
                 refreshDurationOnReapply = true,
             });
@@ -2735,7 +2735,7 @@ namespace Fight.Editor
             {
                 effectType = StatusEffectType.DefenseModifier,
                 durationSeconds = 8f,
-                magnitude = 2f,
+                magnitude = 2.5f,
                 maxStacks = 1,
                 refreshDurationOnReapply = true,
             });
@@ -2954,7 +2954,7 @@ namespace Fight.Editor
             {
                 effectType = StatusEffectType.Shield,
                 durationSeconds = 4f,
-                magnitude = 70f,
+                magnitude = 90f,
                 maxStacks = 1,
                 refreshDurationOnReapply = true,
             });

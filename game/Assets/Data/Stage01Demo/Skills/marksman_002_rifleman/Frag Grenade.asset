@@ -29,7 +29,7 @@ MonoBehaviour:
   effects:
   - effectType: 4
     targetMode: 0
-    powerMultiplier: 4
+    powerMultiplier: 7
     radiusOverride: 6
     durationSeconds: 0.45
     tickIntervalSeconds: 0.45
