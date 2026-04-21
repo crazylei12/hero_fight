@@ -954,6 +954,14 @@ namespace Fight.Battle
                     var lowHealthEnemyCount = CountLowHealthUnitsInRange(context, caster, primaryTarget, searchRadius, includeAllies: false, healthThreshold);
                     summary = $"{label}={condition.conditionType} measured={lowHealthEnemyCount} required={requiredUnitCount} radius={searchRadius:0.##} threshold={healthThreshold:0.00} pass={pass}";
                     break;
+                case UltimateConditionType.EnemyWithStatusInRange:
+                    var statusEnemyCount = CountUnitsWithStatusInRange(context, caster, primaryTarget, searchRadius, condition);
+                    summary = $"{label}={condition.conditionType} measured={statusEnemyCount} required={requiredUnitCount} radius={searchRadius:0.##} status={condition.statusEffectTypeFilter} group={FormatStatusGroupLabel(condition.statusStackGroupKey)} minStacks={Mathf.Max(1, condition.minimumStatusStacks)} pass={pass}";
+                    break;
+                case UltimateConditionType.EnemyLowHealthWithStatusInRange:
+                    var lowHealthStatusEnemyCount = CountLowHealthUnitsWithStatusInRange(context, caster, primaryTarget, searchRadius, healthThreshold, condition);
+                    summary = $"{label}={condition.conditionType} measured={lowHealthStatusEnemyCount} required={requiredUnitCount} radius={searchRadius:0.##} threshold={healthThreshold:0.00} status={condition.statusEffectTypeFilter} group={FormatStatusGroupLabel(condition.statusStackGroupKey)} minStacks={Mathf.Max(1, condition.minimumStatusStacks)} pass={pass}";
+                    break;
                 case UltimateConditionType.AllyLowHealthInRange:
                     var lowHealthAllyCount = CountLowHealthUnitsInRange(context, caster, primaryTarget, searchRadius, includeAllies: true, healthThreshold);
                     summary = $"{label}={condition.conditionType} measured={lowHealthAllyCount} required={requiredUnitCount} radius={searchRadius:0.##} threshold={healthThreshold:0.00} pass={pass}";
@@ -1023,6 +1031,10 @@ namespace Fight.Battle
                     return CountUnitsInRange(context, caster, primaryTarget, searchRadius, countAllies: true) >= requiredUnitCount;
                 case UltimateConditionType.EnemyLowHealthInRange:
                     return CountLowHealthUnitsInRange(context, caster, primaryTarget, searchRadius, includeAllies: false, healthThreshold) >= requiredUnitCount;
+                case UltimateConditionType.EnemyWithStatusInRange:
+                    return CountUnitsWithStatusInRange(context, caster, primaryTarget, searchRadius, condition) >= requiredUnitCount;
+                case UltimateConditionType.EnemyLowHealthWithStatusInRange:
+                    return CountLowHealthUnitsWithStatusInRange(context, caster, primaryTarget, searchRadius, healthThreshold, condition) >= requiredUnitCount;
                 case UltimateConditionType.AllyLowHealthInRange:
                     return CountLowHealthUnitsInRange(context, caster, primaryTarget, searchRadius, includeAllies: true, healthThreshold) >= requiredUnitCount;
                 case UltimateConditionType.EnemyCountInDashPath:
@@ -1096,6 +1108,8 @@ namespace Fight.Battle
                 case UltimateConditionType.EnemyCountInRange:
                 case UltimateConditionType.AllyCountInRange:
                 case UltimateConditionType.EnemyLowHealthInRange:
+                case UltimateConditionType.EnemyWithStatusInRange:
+                case UltimateConditionType.EnemyLowHealthWithStatusInRange:
                 case UltimateConditionType.AllyLowHealthInRange:
                 case UltimateConditionType.EnemyHeroClassInRange:
                 case UltimateConditionType.EnemyCountInDashPath:
@@ -1309,6 +1323,8 @@ namespace Fight.Battle
                     : CountUnitsInRange(context, caster, primaryTarget, searchRadius, countAllies: false),
                 UltimateConditionType.AllyCountInRange => CountUnitsInRange(context, caster, primaryTarget, searchRadius, countAllies: true),
                 UltimateConditionType.EnemyLowHealthInRange => CountLowHealthUnitsInRange(context, caster, primaryTarget, searchRadius, includeAllies: false, healthThreshold),
+                UltimateConditionType.EnemyWithStatusInRange => CountUnitsWithStatusInRange(context, caster, primaryTarget, searchRadius, condition),
+                UltimateConditionType.EnemyLowHealthWithStatusInRange => CountLowHealthUnitsWithStatusInRange(context, caster, primaryTarget, searchRadius, healthThreshold, condition),
                 UltimateConditionType.AllyLowHealthInRange => CountLowHealthUnitsInRange(context, caster, primaryTarget, searchRadius, includeAllies: true, healthThreshold),
                 UltimateConditionType.EnemyHeroClassInRange => CountUnitsOfHeroClassInRange(context, caster, primaryTarget, searchRadius, condition.heroClassFilter),
                 UltimateConditionType.EnemyCountInDashPath => CountDashPathTargets(context, caster, skill, primaryTarget),
@@ -1521,6 +1537,92 @@ namespace Fight.Battle
             return count;
         }
 
+        private static int CountUnitsWithStatusInRange(
+            BattleContext context,
+            RuntimeHero caster,
+            RuntimeHero primaryTarget,
+            float searchRadius,
+            UltimateConditionData condition)
+        {
+            return CountUnitsMatchingStatusCondition(
+                context,
+                caster,
+                primaryTarget,
+                searchRadius,
+                condition,
+                requireLowHealth: false,
+                healthPercentThreshold: 1f);
+        }
+
+        private static int CountLowHealthUnitsWithStatusInRange(
+            BattleContext context,
+            RuntimeHero caster,
+            RuntimeHero primaryTarget,
+            float searchRadius,
+            float healthPercentThreshold,
+            UltimateConditionData condition)
+        {
+            return CountUnitsMatchingStatusCondition(
+                context,
+                caster,
+                primaryTarget,
+                searchRadius,
+                condition,
+                requireLowHealth: true,
+                healthPercentThreshold);
+        }
+
+        private static int CountUnitsMatchingStatusCondition(
+            BattleContext context,
+            RuntimeHero caster,
+            RuntimeHero primaryTarget,
+            float searchRadius,
+            UltimateConditionData condition,
+            bool requireLowHealth,
+            float healthPercentThreshold)
+        {
+            if (context?.Heroes == null
+                || caster == null
+                || condition == null
+                || condition.statusEffectTypeFilter == StatusEffectType.None)
+            {
+                return 0;
+            }
+
+            var center = GetSearchCenter(caster, primaryTarget);
+            var count = 0;
+            for (var i = 0; i < context.Heroes.Count; i++)
+            {
+                var candidate = context.Heroes[i];
+                if (candidate == null || candidate.IsDead || candidate.Side == caster.Side)
+                {
+                    continue;
+                }
+
+                if (Vector3.Distance(candidate.CurrentPosition, center) > searchRadius)
+                {
+                    continue;
+                }
+
+                if (requireLowHealth && GetHealthRatio(candidate) > healthPercentThreshold)
+                {
+                    continue;
+                }
+
+                if (StatusEffectSystem.GetStatusStackCount(
+                        candidate,
+                        condition.statusEffectTypeFilter,
+                        condition.statusStackGroupKey) < Mathf.Max(1, condition.minimumStatusStacks))
+                {
+                    continue;
+                }
+
+                count++;
+            }
+
+            return count;
+        }
+
         private static int CountUnitsOfHeroClassInRange(
             BattleContext context,
             RuntimeHero caster,
@@ -1562,6 +1664,11 @@ namespace Fight.Battle
             return hero != null && hero.MaxHealth > 0f
                 ? hero.CurrentHealth / hero.MaxHealth
                 : 1f;
+        }
+
+        private static string FormatStatusGroupLabel(string stackGroupKey)
+        {
+            return string.IsNullOrWhiteSpace(stackGroupKey) ? "any" : stackGroupKey;
         }
 
         private static bool IsHighValueTarget(RuntimeHero target, RuntimeHero caster, SkillData skill, UltimateConditionData condition)
@@ -2102,7 +2209,7 @@ namespace Fight.Battle
         {
             for (var i = 0; i < targets.Count; i++)
             {
-                ApplyStatuses(context, caster, sourceSkill, effect, targets[i]);
+                ApplyStatuses(context, caster, sourceSkill, effect?.statusEffects, targets[i]);
             }
         }
 
@@ -2144,16 +2251,21 @@ namespace Fight.Battle
             }
         }
 
-        private static void ApplyStatuses(BattleContext context, RuntimeHero caster, SkillData sourceSkill, SkillEffectData effect, RuntimeHero target)
+        private static void ApplyStatuses(
+            BattleContext context,
+            RuntimeHero caster,
+            SkillData sourceSkill,
+            IReadOnlyList<StatusEffectData> statuses,
+            RuntimeHero target)
         {
-            if (effect == null || effect.statusEffects == null)
+            if (statuses == null || target == null || target.IsDead)
             {
                 return;
             }
 
-            for (var i = 0; i < effect.statusEffects.Count; i++)
+            for (var i = 0; i < statuses.Count; i++)
             {
-                var status = effect.statusEffects[i];
+                var status = statuses[i];
                 if (status == null)
                 {
                     continue;
@@ -2180,7 +2292,7 @@ namespace Fight.Battle
                     target,
                     status.effectType,
                     status.durationSeconds,
-                    status.magnitude,
+                    appliedStatus?.Magnitude ?? status.magnitude,
                     sourceSkill,
                     appliedStatus?.AppliedBy ?? caster));
             }
@@ -2236,16 +2348,30 @@ namespace Fight.Battle
             BattleManager battleManager,
             DamageSourceKind damageSourceKind = DamageSourceKind.Skill)
         {
+            HashSet<string> followUpTriggeredUnitIds = null;
             for (var i = 0; i < targets.Count; i++)
             {
                 var target = targets[i];
+                if (target == null || target.IsDead)
+                {
+                    continue;
+                }
+
+                var statusStackCount = GetQueriedStatusStackCount(effect, target);
+                if (!MeetsStatusStackRequirement(effect, statusStackCount))
+                {
+                    continue;
+                }
+
+                var damageMultiplier = GetResolvedDamagePowerMultiplier(effect, statusStackCount);
+                var targetPosition = target.CurrentPosition;
                 var damage = DamageResolver.ResolveDamage(
                     caster.AttackPower,
                     caster.CriticalChance,
                     caster.CriticalDamageMultiplier,
                     target.Defense,
                     context.RandomService,
-                    effect.powerMultiplier);
+                    damageMultiplier);
                 var actualDamage = BattleDamageSystem.ApplyResolvedDamage(
                     context,
                     battleManager,
@@ -2256,16 +2382,170 @@ namespace Fight.Battle
                     skill);
                 if (actualDamage <= 0f)
                 {
-                    ApplyStatuses(context, caster, skill, effect, target);
+                    ApplyStatuses(context, caster, skill, effect?.statusEffects, target);
                     continue;
                 }
 
                 if (!target.IsDead && target.CurrentHealth > 0f)
                 {
-                    ApplyStatuses(context, caster, skill, effect, target);
+                    ApplyStatuses(context, caster, skill, effect?.statusEffects, target);
                     continue;
                 }
+
+                TryTriggerDeathFollowUpArea(
+                    context,
+                    caster,
+                    skill,
+                    effect,
+                    target,
+                    targetPosition,
+                    battleManager,
+                    followUpTriggeredUnitIds ??= new HashSet<string>());
             }
+        }
+
+        private static void TryTriggerDeathFollowUpArea(
+            BattleContext context,
+            RuntimeHero caster,
+            SkillData skill,
+            SkillEffectData effect,
+            RuntimeHero deadTarget,
+            Vector3 origin,
+            BattleManager battleManager,
+            HashSet<string> followUpTriggeredUnitIds)
+        {
+            if (context == null
+                || caster == null
+                || skill == null
+                || effect == null
+                || deadTarget == null
+                || !deadTarget.IsDead
+                || !effect.triggerFollowUpAreaOnTargetDeath)
+            {
+                return;
+            }
+
+            if (effect.followUpAreaLimitTriggerOncePerUnitPerExecution
+                && (followUpTriggeredUnitIds == null || !followUpTriggeredUnitIds.Add(deadTarget.RuntimeId)))
+            {
+                return;
+            }
+
+            var followUpTargets = CollectFollowUpAreaTargets(context, caster, origin, effect);
+            for (var i = 0; i < followUpTargets.Count; i++)
+            {
+                var followUpTarget = followUpTargets[i];
+                if (followUpTarget == null || followUpTarget.IsDead)
+                {
+                    continue;
+                }
+
+                var followUpTargetPosition = followUpTarget.CurrentPosition;
+                if (effect.followUpAreaPowerMultiplier > Mathf.Epsilon)
+                {
+                    var followUpDamage = DamageResolver.ResolveDamage(
+                        caster.AttackPower,
+                        caster.CriticalChance,
+                        caster.CriticalDamageMultiplier,
+                        followUpTarget.Defense,
+                        context.RandomService,
+                        effect.followUpAreaPowerMultiplier);
+                    BattleDamageSystem.ApplyResolvedDamage(
+                        context,
+                        battleManager,
+                        caster,
+                        followUpTarget,
+                        followUpDamage,
+                        DamageSourceKind.Skill,
+                        skill);
+                }
+
+                if (!followUpTarget.IsDead)
+                {
+                    ApplyStatuses(context, caster, skill, effect.followUpAreaStatusEffects, followUpTarget);
+                    continue;
+                }
+
+                if (!effect.followUpAreaCanChain)
+                {
+                    continue;
+                }
+
+                TryTriggerDeathFollowUpArea(
+                    context,
+                    caster,
+                    skill,
+                    effect,
+                    followUpTarget,
+                    followUpTargetPosition,
+                    battleManager,
+                    followUpTriggeredUnitIds);
+            }
+        }
+
+        private static List<RuntimeHero> CollectFollowUpAreaTargets(
+            BattleContext context,
+            RuntimeHero caster,
+            Vector3 origin,
+            SkillEffectData effect)
+        {
+            var results = new List<RuntimeHero>();
+            if (context?.Heroes == null || caster == null || effect == null)
+            {
+                return results;
+            }
+
+            var radius = Mathf.Max(0f, effect.followUpAreaRadius);
+            for (var i = 0; i < context.Heroes.Count; i++)
+            {
+                var candidate = context.Heroes[i];
+                if (candidate == null || candidate.IsDead || candidate.Side == caster.Side)
+                {
+                    continue;
+                }
+
+                if (Vector3.Distance(candidate.CurrentPosition, origin) <= radius)
+                {
+                    results.Add(candidate);
+                }
+            }
+
+            return results;
+        }
+
+        private static int GetQueriedStatusStackCount(SkillEffectData effect, RuntimeHero target)
+        {
+            if (effect == null
+                || target == null
+                || effect.statusStackQueryEffectType == StatusEffectType.None)
+            {
+                return 0;
+            }
+
+            return StatusEffectSystem.GetStatusStackCount(
+                target,
+                effect.statusStackQueryEffectType,
+                effect.statusStackQueryGroupKey);
+        }
+
+        private static bool MeetsStatusStackRequirement(SkillEffectData effect, int statusStackCount)
+        {
+            if (effect == null || effect.statusStackQueryEffectType == StatusEffectType.None)
+            {
+                return true;
+            }
+
+            return statusStackCount >= Mathf.Max(0, effect.minimumRequiredStatusStacks);
+        }
+
+        private static float GetResolvedDamagePowerMultiplier(SkillEffectData effect, int statusStackCount)
+        {
+            if (effect == null)
+            {
+                return 0f;
+            }
+
+            return Mathf.Max(0f, effect.powerMultiplier + effect.bonusPowerMultiplierPerStatusStack * Mathf.Max(0, statusStackCount));
         }
 
         private static float GetEffectRadius(SkillData skill, SkillEffectData effect)

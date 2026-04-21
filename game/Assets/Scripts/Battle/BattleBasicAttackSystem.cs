@@ -239,7 +239,7 @@ namespace Fight.Battle
                     target,
                     status.effectType,
                     status.durationSeconds,
-                    status.magnitude,
+                    appliedStatus?.Magnitude ?? status.magnitude,
                     null,
                     appliedStatus?.AppliedBy ?? attacker));
             }

@@ -280,7 +280,7 @@ namespace Fight.Heroes
             {
                 if (data.refreshDurationOnReapply && refreshTarget != null)
                 {
-                    refreshTarget.Refresh(data, source, sourceSkill, appliedBy, ShouldRefreshMagnitudeOnReapply(data.effectType));
+                    refreshTarget.Refresh(data, hero, source, sourceSkill, appliedBy, ShouldRefreshMagnitudeOnReapply(data.effectType));
                     appliedStatus = refreshTarget;
                     return true;
                 }
@@ -288,7 +288,7 @@ namespace Fight.Heroes
                 return false;
             }
 
-            appliedStatus = new RuntimeStatusEffect(data, source, sourceSkill, appliedBy);
+            appliedStatus = new RuntimeStatusEffect(data, hero, source, sourceSkill, appliedBy);
             statuses.Add(appliedStatus);
             return true;
         }
@@ -424,6 +424,13 @@ namespace Fight.Heroes
                 return false;
             }
 
+            var stackGroupKey = data.stackGroupKey ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(status.StackGroupKey) || !string.IsNullOrWhiteSpace(stackGroupKey))
+            {
+                return !string.IsNullOrWhiteSpace(stackGroupKey)
+                    && string.Equals(status.StackGroupKey, stackGroupKey, StringComparison.Ordinal);
+            }
+
             if (!UsesSourceScopedStackGroups(definition))
             {
                 return true;
@@ -437,9 +444,25 @@ namespace Fight.Heroes
 
             return status.Source == source
                 && status.SourceSkill == sourceSkill
-                && Approximately(status.Magnitude, data.magnitude)
+                && Approximately(status.BaseMagnitude, data.magnitude)
+                && Approximately(status.SourceAttackPowerMultiplier, Mathf.Max(0f, data.sourceAttackPowerMultiplier))
                 && Approximately(status.ActiveSkillCooldownCapSeconds, Mathf.Max(0f, data.activeSkillCooldownCapSeconds))
                 && Approximately(status.TickIntervalSeconds, Mathf.Max(0.1f, data.tickIntervalSeconds));
+        }
+
+        private static bool MatchesStatusQuery(RuntimeStatusEffect status, StatusEffectType effectType, string stackGroupKey)
+        {
+            if (status == null || status.EffectType != effectType)
+            {
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(stackGroupKey))
+            {
+                return true;
+            }
+
+            return string.Equals(status.StackGroupKey, stackGroupKey, StringComparison.Ordinal);
         }
 
         private static bool UsesSourceScopedStackGroups(StatusEffectDefinition definition)
@@ -482,6 +505,26 @@ namespace Fight.Heroes
             }
 
             return false;
+        }
+
+        public static int GetStatusStackCount(RuntimeHero hero, StatusEffectType effectType, string stackGroupKey = null)
+        {
+            if (hero == null || effectType == StatusEffectType.None)
+            {
+                return 0;
+            }
+
+            var count = 0;
+            var statuses = hero.MutableStatusEffects;
+            for (var i = 0; i < statuses.Count; i++)
+            {
+                if (MatchesStatusQuery(statuses[i], effectType, stackGroupKey))
+                {
+                    count++;
+                }
+            }
+
+            return count;
         }
 
         private static bool IsValidForcedTargetSource(RuntimeHero hero, RuntimeStatusEffect status)

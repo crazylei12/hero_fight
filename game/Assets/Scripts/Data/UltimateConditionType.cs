@@ -12,5 +12,7 @@ namespace Fight.Data
         InCombatDuration = 7,
         EnemyHeroClassInRange = 8,
         EnemyCountInDashPath = 9,
+        EnemyWithStatusInRange = 10,
+        EnemyLowHealthWithStatusInRange = 11,
     }
 }

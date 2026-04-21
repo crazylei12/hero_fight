@@ -1,3 +1,4 @@
+using Fight.Core;
 using Fight.Data;
 using UnityEngine;
 
@@ -7,13 +8,16 @@ namespace Fight.Heroes
     {
         private int pendingTickCount;
 
-        public RuntimeStatusEffect(StatusEffectData data, RuntimeHero source = null, SkillData sourceSkill = null, RuntimeHero appliedBy = null)
+        public RuntimeStatusEffect(StatusEffectData data, RuntimeHero target, RuntimeHero source = null, SkillData sourceSkill = null, RuntimeHero appliedBy = null)
         {
             EffectType = data.effectType;
             Definition = StatusEffectCatalog.Get(data.effectType);
             TotalDurationSeconds = Mathf.Max(0f, data.durationSeconds);
             RemainingDurationSeconds = TotalDurationSeconds;
-            Magnitude = data.magnitude;
+            BaseMagnitude = data.magnitude;
+            SourceAttackPowerMultiplier = Mathf.Max(0f, data.sourceAttackPowerMultiplier);
+            StackGroupKey = data.stackGroupKey ?? string.Empty;
+            Magnitude = ResolveMagnitude(data, target, source ?? appliedBy);
             ActiveSkillCooldownCapSeconds = Mathf.Max(0f, data.activeSkillCooldownCapSeconds);
             TickIntervalSeconds = Mathf.Max(0.1f, data.tickIntervalSeconds);
             TimeUntilNextTickSeconds = TickIntervalSeconds;
@@ -34,6 +38,10 @@ namespace Fight.Heroes
 
         public float Magnitude { get; private set; }
 
+        public float BaseMagnitude { get; private set; }
+
+        public float SourceAttackPowerMultiplier { get; private set; }
+
         public float ActiveSkillCooldownCapSeconds { get; private set; }
 
         public float TickIntervalSeconds { get; private set; }
@@ -43,6 +51,8 @@ namespace Fight.Heroes
         public int MaxStacks { get; }
 
         public bool RefreshDurationOnReapply { get; }
+
+        public string StackGroupKey { get; private set; }
 
         public RuntimeHero Source { get; private set; }
 
@@ -75,15 +85,18 @@ namespace Fight.Heroes
             return result;
         }
 
-        public void Refresh(StatusEffectData data, RuntimeHero source, SkillData sourceSkill, RuntimeHero appliedBy, bool refreshMagnitude = true)
+        public void Refresh(StatusEffectData data, RuntimeHero target, RuntimeHero source, SkillData sourceSkill, RuntimeHero appliedBy, bool refreshMagnitude = true)
         {
             var previousTickIntervalSeconds = TickIntervalSeconds;
             var previousTimeUntilNextTickSeconds = TimeUntilNextTickSeconds;
             TotalDurationSeconds = Mathf.Max(0f, data.durationSeconds);
             RemainingDurationSeconds = TotalDurationSeconds;
+            BaseMagnitude = data.magnitude;
+            SourceAttackPowerMultiplier = Mathf.Max(0f, data.sourceAttackPowerMultiplier);
+            StackGroupKey = data.stackGroupKey ?? string.Empty;
             if (refreshMagnitude)
             {
-                Magnitude = data.magnitude;
+                Magnitude = ResolveMagnitude(data, target, source ?? appliedBy);
             }
 
             ActiveSkillCooldownCapSeconds = Mathf.Max(0f, data.activeSkillCooldownCapSeconds);
@@ -137,5 +150,34 @@ namespace Fight.Heroes
         }
 
         public bool IsExpired => RemainingDurationSeconds <= 0f;
+
+        private static float ResolveMagnitude(StatusEffectData data, RuntimeHero target, RuntimeHero snapshotSource)
+        {
+            if (data == null)
+            {
+                return 0f;
+            }
+
+            var baseMagnitude = data.magnitude;
+            var attackPowerMultiplier = Mathf.Max(0f, data.sourceAttackPowerMultiplier);
+            if (attackPowerMultiplier <= Mathf.Epsilon || snapshotSource == null)
+            {
+                return baseMagnitude;
+            }
+
+            if (data.effectType == StatusEffectType.DamageOverTime)
+            {
+                var targetDefense = target != null ? target.Defense : 0f;
+                return baseMagnitude + DamageResolver.ResolveDamage(
+                    snapshotSource.AttackPower,
+                    0f,
+                    1f,
+                    targetDefense,
+                    randomService: null,
+                    attackPowerMultiplier);
+            }
+
+            return baseMagnitude + attackPowerMultiplier * Mathf.Max(0f, snapshotSource.AttackPower);
+        }
     }
 }
