@@ -194,6 +194,9 @@ $seedDirectories = @(
     "Assets\\Resources\\UI\\BattleHud",
     "Assets\\Plugins\\Demigiant\\DemiLib",
     "Assets\\Plugins\\Demigiant\\DOTween",
+    "Assets\\HeroEditor4D\\Common\\Scripts\\CharacterScripts",
+    "Assets\\HeroEditor4D\\Common\\Scripts\\Collections",
+    "Assets\\HeroEditor4D\\Common\\Scripts\\Common",
     "Assets\\HeroEditor4D\\Common\\Scripts\\Data",
     "Assets\\HeroEditor4D\\Common\\Scripts\\Enums",
     "Assets\\HeroEditor4D\\Common\\SimpleColorPicker",
@@ -241,7 +244,8 @@ while ($script:ParseQueue.Count -gt 0) {
 
 $excludedAssetPaths = @(
     "Assets\\DefaultVolumeProfile.asset",
-    "Assets\\UniversalRenderPipelineGlobalSettings.asset"
+    "Assets\\UniversalRenderPipelineGlobalSettings.asset",
+    "Assets\\Piloto Studio\\Shaders_Reforged\\UberFXSG.shadergraph"
 )
 
 foreach ($excludedAssetPath in $excludedAssetPaths) {
