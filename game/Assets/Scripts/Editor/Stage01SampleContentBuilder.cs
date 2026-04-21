@@ -108,17 +108,7 @@ namespace Fight.Editor
                 return;
             }
 
-            GenerateDemoContentInternal(overwriteExistingContent: true);
-            AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();
-
-            if (!Application.isBatchMode)
-            {
-                EditorUtility.DisplayDialog(
-                    "Stage 01",
-                    "Demo content regenerated from defaults and existing tuning was overwritten.",
-                    "OK");
-            }
+            GenerateDemoContentInternal(overwriteExistingContent: true, showCompletionDialog: true);
         }
 
         [InitializeOnLoadMethod]
@@ -135,10 +125,10 @@ namespace Fight.Editor
 
         public static void GenerateDemoContent()
         {
-            GenerateDemoContentInternal(overwriteExistingContent: false);
+            GenerateDemoContentInternal(overwriteExistingContent: false, showCompletionDialog: false);
         }
 
-        private static void GenerateDemoContentInternal(bool overwriteExistingContent)
+        private static void GenerateDemoContentInternal(bool overwriteExistingContent, bool showCompletionDialog)
         {
             EnsureFolders();
 
@@ -428,7 +418,7 @@ namespace Fight.Editor
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            if (!Application.isBatchMode)
+            if (showCompletionDialog && !Application.isBatchMode)
             {
                 var message = overwriteExistingContent
                     ? "Demo content regenerated and existing tuning was overwritten.\nUse Fight/Play/Open Main Menu for the formal flow, or Fight/Dev/Open Battle Scene for direct battle scene access."
@@ -439,9 +429,7 @@ namespace Fight.Editor
 
         public static void GenerateDemoContentForBuild()
         {
-            GenerateDemoContentInternal(overwriteExistingContent: false);
-            AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();
+            GenerateDemoContentInternal(overwriteExistingContent: false, showCompletionDialog: false);
             EnsureDemoContentValidationPassed(logFailures: true);
         }
 
@@ -460,119 +448,19 @@ namespace Fight.Editor
                 return;
             }
 
-            if (NeedsDemoContentBootstrap())
-            {
-                GenerateDemoContent();
-                AssetDatabase.SaveAssets();
-                AssetDatabase.Refresh();
-                Debug.Log("Stage-01 demo content synchronized.");
-            }
-
+            // Always run the non-overwrite ensure pass so newly added sample heroes and skills
+            // get materialized in older projects even when the original bootstrap already exists.
+            GenerateDemoContent();
             ValidateDemoContentConsistency(logFailures: true);
         }
 
         private static void EnsureDemoContent()
         {
-            if (!NeedsDemoContentBootstrap())
-            {
-                ValidateDemoContentConsistency(logFailures: true);
-                return;
-            }
-
+            // Do not gate this behind one-time bootstrap checks. Demo content generation is
+            // intentionally non-destructive when overwriteExistingContent is false, so we can
+            // safely resync new sample assets and catalog entries before opening scenes.
             GenerateDemoContent();
-            AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();
             ValidateDemoContentConsistency(logFailures: true);
-        }
-
-        private static bool NeedsDemoContentBootstrap()
-        {
-            var hasMainMenuScene = AssetDatabase.LoadAssetAtPath<SceneAsset>(MainMenuScenePath) != null;
-            var hasHeroSelectScene = AssetDatabase.LoadAssetAtPath<SceneAsset>(HeroSelectScenePath) != null;
-            var hasBattleScene = AssetDatabase.LoadAssetAtPath<SceneAsset>(BattleScenePath) != null;
-            var hasResultScene = AssetDatabase.LoadAssetAtPath<SceneAsset>(ResultScenePath) != null;
-            var hasBasicAttackOnlyScene = AssetDatabase.LoadAssetAtPath<SceneAsset>(BasicAttackOnlyBattleScenePath) != null;
-            var hasDefaultBattleInput = AssetDatabase.LoadAssetAtPath<BattleInputConfig>(DefaultBattleInputAssetPath) != null;
-            var heroCatalog = AssetDatabase.LoadAssetAtPath<HeroCatalogData>(DefaultHeroCatalogAssetPath);
-            var bladesmanHero = AssetDatabase.LoadAssetAtPath<HeroDefinition>(BladesmanHeroAssetPath);
-            var bladesmanActiveSkill = AssetDatabase.LoadAssetAtPath<SkillData>(BladesmanActiveSkillAssetPath);
-            var bladesmanUltimateSkill = AssetDatabase.LoadAssetAtPath<SkillData>(BladesmanUltimateSkillAssetPath);
-            var bladesmanBattlePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(BladesmanPrefabPath);
-            var bladesmanActiveImpactVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(BladesmanActiveImpactVfxPrefabPath);
-            var windchimeHero = AssetDatabase.LoadAssetAtPath<HeroDefinition>(WindchimeHeroAssetPath);
-            var windchimeActiveSkill = AssetDatabase.LoadAssetAtPath<SkillData>(WindchimeActiveSkillAssetPath);
-            var windchimeUltimateSkill = AssetDatabase.LoadAssetAtPath<SkillData>(WindchimeUltimateSkillAssetPath);
-            var windchimeBattlePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(WindchimePrefabPath);
-            var monkHero = AssetDatabase.LoadAssetAtPath<HeroDefinition>(MonkHeroAssetPath);
-            var monkActiveSkill = AssetDatabase.LoadAssetAtPath<SkillData>(MonkActiveSkillAssetPath);
-            var monkUltimateSkill = AssetDatabase.LoadAssetAtPath<SkillData>(MonkUltimateSkillAssetPath);
-            var monkBattlePrefab = LoadBattlePrefab("support_003_monk", HeroClass.Support);
-            var sandemperorHero = AssetDatabase.LoadAssetAtPath<HeroDefinition>(SandemperorHeroAssetPath);
-            var sandemperorActiveSkill = AssetDatabase.LoadAssetAtPath<SkillData>(SandemperorActiveSkillAssetPath);
-            var sandemperorUltimateSkill = AssetDatabase.LoadAssetAtPath<SkillData>(SandemperorUltimateSkillAssetPath);
-            var sandemperorBattlePrefab = LoadBattlePrefab("mage_003_sandemperor", HeroClass.Mage);
-            var catalogContainsBladesman = CatalogContainsHero(heroCatalog, "warrior_002_bladesman");
-            var catalogContainsWindchime = CatalogContainsHero(heroCatalog, "support_002_windchime");
-            var catalogContainsMonk = CatalogContainsHero(heroCatalog, "support_003_monk");
-            var catalogContainsSandemperor = CatalogContainsHero(heroCatalog, "mage_003_sandemperor");
-            var bladesmanReferencesValid = HeroHasExpectedSkillReferences(bladesmanHero, bladesmanActiveSkill, bladesmanUltimateSkill);
-            var bladesmanBattlePrefabValid = HeroHasExpectedBattlePrefab(bladesmanHero, bladesmanBattlePrefab);
-            var bladesmanActiveImpactVfxValid = SkillHasExpectedCastImpactVfxPresentation(
-                bladesmanActiveSkill,
-                bladesmanActiveImpactVfxPrefab,
-                new Vector3(0f, 0.12f, 0f),
-                new Vector3(0f, 0f, -90f),
-                new Vector3(0.18f, 0.18f, 1f),
-                true);
-            var windchimeReferencesValid = HeroHasExpectedSkillReferences(windchimeHero, windchimeActiveSkill, windchimeUltimateSkill);
-            var windchimeBattlePrefabValid = HeroHasExpectedBattlePrefab(windchimeHero, windchimeBattlePrefab);
-            var monkReferencesValid = HeroHasExpectedSkillReferences(monkHero, monkActiveSkill, monkUltimateSkill);
-            var monkBattlePrefabValid = monkBattlePrefab == null || HeroHasExpectedBattlePrefab(monkHero, monkBattlePrefab);
-            var sandemperorReferencesValid = HeroHasExpectedSkillReferences(sandemperorHero, sandemperorActiveSkill, sandemperorUltimateSkill);
-            var sandemperorBattlePrefabValid = sandemperorBattlePrefab == null || HeroHasExpectedBattlePrefab(sandemperorHero, sandemperorBattlePrefab);
-            var monkActiveImpactVfxValid = SkillHasExpectedCastImpactVfxPresentation(
-                monkActiveSkill,
-                AssetDatabase.LoadAssetAtPath<GameObject>(MonkActiveImpactVfxPrefabPath),
-                Vector3.zero,
-                Vector3.zero,
-                Vector3.one,
-                false,
-                true,
-                1f);
-
-            return !hasMainMenuScene
-                || !hasHeroSelectScene
-                || !hasBattleScene
-                || !hasResultScene
-                || !hasBasicAttackOnlyScene
-                || !hasDefaultBattleInput
-                || heroCatalog == null
-                || bladesmanHero == null
-                || bladesmanActiveSkill == null
-                || bladesmanUltimateSkill == null
-                || windchimeHero == null
-                || windchimeActiveSkill == null
-                || windchimeUltimateSkill == null
-                || monkHero == null
-                || monkActiveSkill == null
-                || monkUltimateSkill == null
-                || sandemperorHero == null
-                || sandemperorActiveSkill == null
-                || sandemperorUltimateSkill == null
-                || !catalogContainsBladesman
-                || !catalogContainsWindchime
-                || !catalogContainsMonk
-                || !catalogContainsSandemperor
-                || !bladesmanReferencesValid
-                || !bladesmanBattlePrefabValid
-                || !bladesmanActiveImpactVfxValid
-                || !windchimeReferencesValid
-                || !windchimeBattlePrefabValid
-                || !monkReferencesValid
-                || !monkBattlePrefabValid
-                || !sandemperorReferencesValid
-                || !sandemperorBattlePrefabValid
-                || !monkActiveImpactVfxValid;
         }
 
         private static void EnsureDemoContentValidationPassed(bool logFailures)
@@ -592,6 +480,7 @@ namespace Fight.Editor
             var monkActiveSkill = AssetDatabase.LoadAssetAtPath<SkillData>(MonkActiveSkillAssetPath);
             var monkUltimateSkill = AssetDatabase.LoadAssetAtPath<SkillData>(MonkUltimateSkillAssetPath);
 
+            CollectHeroCatalogValidationIssues(issues);
             CollectMonkValidationIssues(issues, monkHero, monkActiveSkill, monkUltimateSkill);
 
             if (issues.Count == 0)
@@ -605,6 +494,74 @@ namespace Fight.Editor
             }
 
             return false;
+        }
+
+        private static void CollectHeroCatalogValidationIssues(List<string> issues)
+        {
+            if (issues == null)
+            {
+                return;
+            }
+
+            var catalog = AssetDatabase.LoadAssetAtPath<HeroCatalogData>(DefaultHeroCatalogAssetPath);
+            if (catalog == null)
+            {
+                issues.Add("Hero catalog asset is missing.");
+                return;
+            }
+
+            if (catalog.heroes == null)
+            {
+                issues.Add("Hero catalog hero list is missing.");
+                return;
+            }
+
+            var expectedHeroIds = new HashSet<string>(StringComparer.Ordinal);
+            var heroGuids = AssetDatabase.FindAssets("t:HeroDefinition", new[] { HeroesRootFolder });
+            for (var i = 0; i < heroGuids.Length; i++)
+            {
+                var heroPath = AssetDatabase.GUIDToAssetPath(heroGuids[i]);
+                var hero = AssetDatabase.LoadAssetAtPath<HeroDefinition>(heroPath);
+                if (hero == null)
+                {
+                    continue;
+                }
+
+                var heroId = string.IsNullOrWhiteSpace(hero.heroId) ? hero.name : hero.heroId;
+                if (!expectedHeroIds.Add(heroId))
+                {
+                    issues.Add($"Duplicate hero asset id detected under demo heroes: {heroId} ({heroPath}).");
+                    continue;
+                }
+
+                if (!CatalogContainsHero(catalog, heroId))
+                {
+                    issues.Add($"Hero catalog is missing demo hero '{heroId}' ({heroPath}).");
+                }
+            }
+
+            var catalogHeroIds = new HashSet<string>(StringComparer.Ordinal);
+            for (var i = 0; i < catalog.heroes.Count; i++)
+            {
+                var hero = catalog.heroes[i];
+                if (hero == null)
+                {
+                    issues.Add($"Hero catalog contains a null entry at index {i}.");
+                    continue;
+                }
+
+                var heroId = string.IsNullOrWhiteSpace(hero.heroId) ? hero.name : hero.heroId;
+                if (!catalogHeroIds.Add(heroId))
+                {
+                    issues.Add($"Hero catalog contains duplicate hero '{heroId}'.");
+                    continue;
+                }
+
+                if (!expectedHeroIds.Contains(heroId))
+                {
+                    issues.Add($"Hero catalog references '{heroId}' but no matching demo hero asset exists under {HeroesRootFolder}.");
+                }
+            }
         }
 
         private static void CollectMonkValidationIssues(List<string> issues, HeroDefinition monkHero, SkillData monkActiveSkill, SkillData monkUltimateSkill)
@@ -3962,23 +3919,53 @@ namespace Fight.Editor
         private static HeroCatalogData CreateHeroCatalog(params HeroDefinition[] heroes)
         {
             var catalog = LoadOrCreateAsset<HeroCatalogData>(DefaultHeroCatalogAssetPath);
-            catalog.heroes.Clear();
+            var desiredHeroes = new List<HeroDefinition>();
             if (heroes != null)
             {
                 for (var i = 0; i < heroes.Length; i++)
                 {
                     var hero = heroes[i];
-                    if (hero == null || catalog.heroes.Contains(hero))
+                    if (hero == null || desiredHeroes.Contains(hero))
                     {
                         continue;
                     }
 
-                    catalog.heroes.Add(hero);
+                    desiredHeroes.Add(hero);
                 }
             }
 
+            if (HasSameHeroCatalogEntries(catalog.heroes, desiredHeroes))
+            {
+                return catalog;
+            }
+
+            catalog.heroes.Clear();
+            catalog.heroes.AddRange(desiredHeroes);
             EditorUtility.SetDirty(catalog);
             return catalog;
+        }
+
+        private static bool HasSameHeroCatalogEntries(IList<HeroDefinition> existingHeroes, IList<HeroDefinition> desiredHeroes)
+        {
+            if (ReferenceEquals(existingHeroes, desiredHeroes))
+            {
+                return true;
+            }
+
+            if (existingHeroes == null || desiredHeroes == null || existingHeroes.Count != desiredHeroes.Count)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < existingHeroes.Count; i++)
+            {
+                if (existingHeroes[i] != desiredHeroes[i])
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private static string GetHeroAssetPath(string heroId, string displayName)
