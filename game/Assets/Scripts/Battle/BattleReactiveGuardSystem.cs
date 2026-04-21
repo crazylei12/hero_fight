@@ -193,7 +193,7 @@ namespace Fight.Battle
                         target,
                         status.effectType,
                         status.durationSeconds,
-                        status.magnitude,
+                        appliedStatus?.Magnitude ?? status.magnitude,
                         guard.SourceSkill,
                         appliedStatus?.AppliedBy ?? guard.ProtectedHero));
 

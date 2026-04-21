@@ -70,6 +70,7 @@ namespace Fight.Editor
         private const string SunpriestProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/SunpriestBasicAttackProjectile.prefab";
         private const string SunpriestUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/SunpriestSunBlessingField.prefab";
         private const string WindchimeUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/WindchimeStillwindDomainField.prefab";
+        private const string VenomshooterPoisonStackGroupKey = "venomshooter_poison";
         private static bool autoEnsureScheduled;
 
         private static float ScaleRangedHeroDistance(float value)
@@ -343,7 +344,24 @@ namespace Fight.Editor
                 HeroTag.Ranged, HeroTag.SustainedDamage, HeroTag.AreaDamage);
             ConfigureRiflemanBasicAttack(rifleman, overwriteExistingContent, riflemanHeroExisted);
 
-            CreateHeroCatalog(warrior, bladesman, mage, frostmage, assassin, tidefin, tank, shieldwarden, support, windchime, monk, marksman, rifleman);
+            var venomshooterActive = CreateVenomshooterActiveSkill(overwriteExistingContent);
+            var venomshooterUltimateSkill = CreateVenomshooterUltimateSkill(overwriteExistingContent, out var venomshooterUltimateExisted);
+
+            var venomshooter = CreateHero(
+                "marksman_003_venomshooter",
+                "Venomshooter",
+                HeroClass.Marksman,
+                295f, 32f, 8f, 1f / 0.9f, 3.8f, 0.14f, 1.75f, ScaleRangedHeroDistance(6f),
+                venomshooterActive,
+                ConfigureVenomshooterUltimate(venomshooterUltimateSkill, overwriteExistingContent, venomshooterUltimateExisted),
+                overwriteExistingContent,
+                out var venomshooterHeroExisted,
+                HeroTag.Ranged, HeroTag.SustainedDamage, HeroTag.AreaDamage);
+            ConfigureVenomshooterBasicAttack(venomshooter, overwriteExistingContent, venomshooterHeroExisted);
+            EnsureHeroSkillReferences(venomshooter, venomshooterActive, venomshooterUltimateSkill);
+            EnsureHeroBattlePrefabReference(venomshooter, LoadBattlePrefab("marksman_003_venomshooter", HeroClass.Marksman));
+
+            CreateHeroCatalog(warrior, bladesman, mage, frostmage, assassin, tidefin, tank, shieldwarden, support, windchime, monk, marksman, rifleman, venomshooter);
 
             var battleInput = CreateBattleInput(
                 "Stage01DemoBattleInput",
@@ -1066,6 +1084,7 @@ namespace Fight.Editor
                 "mage_002_frostmage" => AssetDatabase.LoadAssetAtPath<GameObject>(FrostMageProjectilePrefabPath),
                 "marksman_001_longshot" => AssetDatabase.LoadAssetAtPath<GameObject>(LongshotProjectilePrefabPath),
                 "marksman_002_rifleman" => AssetDatabase.LoadAssetAtPath<GameObject>(RiflemanProjectilePrefabPath),
+                "marksman_003_venomshooter" => AssetDatabase.LoadAssetAtPath<GameObject>(LongshotProjectilePrefabPath),
                 "support_001_sunpriest" => AssetDatabase.LoadAssetAtPath<GameObject>(SunpriestProjectilePrefabPath),
                 "support_002_windchime" => AssetDatabase.LoadAssetAtPath<GameObject>(SunpriestProjectilePrefabPath),
                 _ => null,
@@ -1075,6 +1094,7 @@ namespace Fight.Editor
                 || heroId == "mage_002_frostmage"
                 || heroId == "marksman_001_longshot"
                 || heroId == "marksman_002_rifleman"
+                || heroId == "marksman_003_venomshooter"
                 || heroId == "support_001_sunpriest"
                 || heroId == "support_002_windchime";
             hero.visualConfig.projectileEulerAngles = Vector3.zero;
@@ -1094,12 +1114,14 @@ namespace Fight.Editor
                 "mage_002_frostmage" => FrostMagePrefabPath,
                 "marksman_001_longshot" => MarksmanPrefabPath,
                 "marksman_002_rifleman" => RiflemanPrefabPath,
+                "marksman_003_venomshooter" => MarksmanPrefabPath,
                 "support_002_windchime" => WindchimePrefabPath,
                 "support_003_monk" => MonkPrefabPath,
                 "warrior_002_bladesman" => BladesmanPrefabPath,
                 "tank_002_shieldwarden" => ShieldwardenPrefabPath,
                 _ => heroClass switch
                 {
+                    HeroClass.Marksman => MarksmanPrefabPath,
                     HeroClass.Support => SupportPrefabPath,
                     HeroClass.Warrior => WarriorPrefabPath,
                     HeroClass.Mage => FireMagePrefabPath,
@@ -1459,6 +1481,97 @@ namespace Fight.Editor
             AddPersistentAreaEffect(skill, PersistentAreaPulseEffectType.DirectDamage, PersistentAreaTargetType.Enemies, 4f, skill.areaRadius, 0.45f, 0.45f, false);
             skill.description = "Stage-01 demo skill: Frag Grenade";
             ResetActionSequence(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateVenomshooterActiveSkill(bool overwriteExistingContent)
+        {
+            var skill = CreateSkill(
+                "skill_venomshooter_active_poisonmist",
+                "Poison Mist",
+                SkillSlotType.ActiveSkill,
+                SkillType.AreaDamage,
+                SkillTargetType.DensestEnemyArea,
+                ScaleRangedHeroDistance(6.133333f),
+                ScaleRangedHeroDistance(2.4f),
+                0f,
+                6f,
+                1,
+                overwriteExistingContent,
+                out var existedBefore);
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.skillType = SkillType.AreaDamage;
+            skill.targetType = SkillTargetType.DensestEnemyArea;
+            skill.fallbackTargetType = SkillTargetType.NearestEnemy;
+            skill.castRange = ScaleRangedHeroDistance(6.133333f);
+            skill.areaRadius = ScaleRangedHeroDistance(2.4f);
+            skill.cooldownSeconds = 6f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+
+            var poisonEffect = AddApplyStatusEffectsEffect(skill);
+            poisonEffect.targetMode = SkillEffectTargetMode.EnemiesInRadiusAroundPrimaryTarget;
+            poisonEffect.radiusOverride = skill.areaRadius;
+            AddVenomshooterPoisonStacks(poisonEffect.statusEffects, 3);
+
+            skill.description = "Stage-01 demo skill: ranged poison field that rapidly seeds 3 poison stacks across a clustered enemy group.";
+            ResetActionSequence(skill);
+            ResetUltimateDecision(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateVenomshooterUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
+        {
+            var skill = CreateSkill(
+                "skill_venomshooter_ultimate_venomdetonation",
+                "Venom Detonation",
+                SkillSlotType.Ultimate,
+                SkillType.AreaDamage,
+                SkillTargetType.AllEnemies,
+                0f,
+                0f,
+                0f,
+                0f,
+                1,
+                overwriteExistingContent,
+                out existedBefore);
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.skillType = SkillType.AreaDamage;
+            skill.targetType = SkillTargetType.AllEnemies;
+            skill.fallbackTargetType = SkillTargetType.None;
+            skill.castRange = 0f;
+            skill.areaRadius = 0f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+
+            var detonation = AddDamageEffect(skill, 0f);
+            detonation.targetMode = SkillEffectTargetMode.SkillTargets;
+            detonation.statusStackQueryEffectType = StatusEffectType.DamageOverTime;
+            detonation.statusStackQueryGroupKey = VenomshooterPoisonStackGroupKey;
+            detonation.minimumRequiredStatusStacks = 1;
+            detonation.bonusPowerMultiplierPerStatusStack = 1.5f;
+            detonation.triggerFollowUpAreaOnTargetDeath = true;
+            detonation.followUpAreaRadius = 3.4f;
+            detonation.followUpAreaPowerMultiplier = 1.5f;
+            detonation.followUpAreaCanChain = true;
+            detonation.followUpAreaLimitTriggerOncePerUnitPerExecution = true;
+            AddVenomshooterPoisonStacks(detonation.followUpAreaStatusEffects, 2);
+
+            skill.description = "Stage-01 demo skill: detonates existing poison on all enemies, then chains corpse explosions that re-spread poison.";
+            ResetActionSequence(skill);
+            ResetUltimateDecision(skill);
             EditorUtility.SetDirty(skill);
             return skill;
         }
@@ -2034,6 +2147,34 @@ namespace Fight.Editor
             return effect;
         }
 
+        private static StatusEffectData CreateVenomshooterPoisonStatus()
+        {
+            return new StatusEffectData
+            {
+                effectType = StatusEffectType.DamageOverTime,
+                durationSeconds = 4f,
+                magnitude = 0f,
+                sourceAttackPowerMultiplier = 0.3f,
+                tickIntervalSeconds = 1f,
+                maxStacks = 5,
+                stackGroupKey = VenomshooterPoisonStackGroupKey,
+                refreshDurationOnReapply = true,
+            };
+        }
+
+        private static void AddVenomshooterPoisonStacks(ICollection<StatusEffectData> statuses, int stackCount)
+        {
+            if (statuses == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < Mathf.Max(0, stackCount); i++)
+            {
+                statuses.Add(CreateVenomshooterPoisonStatus());
+            }
+        }
+
         private static void ConfigureSupportBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
         {
             if (hero == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
@@ -2180,6 +2321,27 @@ namespace Fight.Editor
             hero.basicAttack.effectType = BasicAttackEffectType.Damage;
             hero.basicAttack.targetType = BasicAttackTargetType.NearestEnemy;
             hero.debugNotes = "Stage-01 demo hero for Marksman. Rifleman validates heavy single-shot pacing plus burst-fire sequence and delayed grenade payoff.";
+            EditorUtility.SetDirty(hero);
+        }
+
+        private static void ConfigureVenomshooterBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (hero == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return;
+            }
+
+            hero.basicAttack.damageMultiplier = 0.6f;
+            hero.basicAttack.attackInterval = 0.9f;
+            hero.basicAttack.rangeOverride = ScaleRangedHeroDistance(6f);
+            hero.basicAttack.usesProjectile = true;
+            hero.basicAttack.projectileSpeed = 15f;
+            hero.basicAttack.effectType = BasicAttackEffectType.Damage;
+            hero.basicAttack.targetType = BasicAttackTargetType.NearestEnemy;
+            EnsureBasicAttackStatusList(hero.basicAttack);
+            hero.basicAttack.onHitStatusEffects.Clear();
+            hero.basicAttack.onHitStatusEffects.Add(CreateVenomshooterPoisonStatus());
+            hero.debugNotes = "Stage-01 demo hero for Marksman. Venomshooter validates shared poison stacking, poison-count scaling, and chained on-kill area follow-up effects.";
             EditorUtility.SetDirty(hero);
         }
 
@@ -2357,6 +2519,9 @@ namespace Fight.Editor
             condition.durationSeconds = 0f;
             condition.highValueTargetType = HighValueTargetType.None;
             condition.heroClassFilter = HeroClass.Assassin;
+            condition.statusEffectTypeFilter = StatusEffectType.None;
+            condition.statusStackGroupKey = string.Empty;
+            condition.minimumStatusStacks = 1;
             condition.requireTargetInCastRange = true;
         }
 
@@ -2692,6 +2857,42 @@ namespace Fight.Editor
             skill.ultimateDecision.fallback.fallbackType = UltimateFallbackType.LowerPrimaryThreshold;
             skill.ultimateDecision.fallback.triggerAfterSeconds = 40f;
             skill.ultimateDecision.fallback.overrideHealthPercentThreshold = 1f;
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData ConfigureVenomshooterUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.skillType = SkillType.AreaDamage;
+            skill.targetType = SkillTargetType.AllEnemies;
+            skill.fallbackTargetType = SkillTargetType.None;
+            skill.castRange = 0f;
+            skill.areaRadius = 0f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+
+            ResetUltimateDecision(skill);
+            skill.ultimateDecision.targetingType = UltimateTargetingType.UseSkillTargetType;
+            skill.ultimateDecision.combineMode = UltimateConditionCombineMode.AnyPass;
+            skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.EnemyWithStatusInRange;
+            skill.ultimateDecision.primaryCondition.searchRadius = Stage01ArenaSpec.FullMapTargetingRangeWorldUnits;
+            skill.ultimateDecision.primaryCondition.requiredUnitCount = 3;
+            skill.ultimateDecision.primaryCondition.statusEffectTypeFilter = StatusEffectType.DamageOverTime;
+            skill.ultimateDecision.primaryCondition.statusStackGroupKey = VenomshooterPoisonStackGroupKey;
+            skill.ultimateDecision.primaryCondition.minimumStatusStacks = 1;
+            skill.ultimateDecision.secondaryCondition.conditionType = UltimateConditionType.EnemyLowHealthWithStatusInRange;
+            skill.ultimateDecision.secondaryCondition.searchRadius = Stage01ArenaSpec.FullMapTargetingRangeWorldUnits;
+            skill.ultimateDecision.secondaryCondition.requiredUnitCount = 2;
+            skill.ultimateDecision.secondaryCondition.healthPercentThreshold = 0.5f;
+            skill.ultimateDecision.secondaryCondition.statusEffectTypeFilter = StatusEffectType.DamageOverTime;
+            skill.ultimateDecision.secondaryCondition.statusStackGroupKey = VenomshooterPoisonStackGroupKey;
+            skill.ultimateDecision.secondaryCondition.minimumStatusStacks = 1;
+            ApplyCountFallback(skill, 30f, 2, 45f, 1);
             EditorUtility.SetDirty(skill);
             return skill;
         }
@@ -3442,6 +3643,8 @@ namespace Fight.Editor
                 "skill_monk_ultimate_guardianmantra" => "support_003_monk",
                 "skill_rifleman_active_burstfire" => "marksman_002_rifleman",
                 "skill_rifleman_ultimate_fraggrenade" => "marksman_002_rifleman",
+                "skill_venomshooter_active_poisonmist" => "marksman_003_venomshooter",
+                "skill_venomshooter_ultimate_venomdetonation" => "marksman_003_venomshooter",
                 _ => null,
             };
         }
