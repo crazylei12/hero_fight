@@ -2349,6 +2349,7 @@ namespace Fight.Battle
             DamageSourceKind damageSourceKind = DamageSourceKind.Skill)
         {
             HashSet<string> followUpTriggeredUnitIds = null;
+            List<KeyValuePair<RuntimeHero, Vector3>> queuedDeathFollowUps = null;
             for (var i = 0; i < targets.Count; i++)
             {
                 var target = targets[i];
@@ -2392,15 +2393,34 @@ namespace Fight.Battle
                     continue;
                 }
 
+                if (effect == null || !effect.triggerFollowUpAreaOnTargetDeath)
+                {
+                    continue;
+                }
+
+                queuedDeathFollowUps ??= new List<KeyValuePair<RuntimeHero, Vector3>>();
+                queuedDeathFollowUps.Add(new KeyValuePair<RuntimeHero, Vector3>(target, targetPosition));
+            }
+
+            if (queuedDeathFollowUps == null)
+            {
+                return;
+            }
+
+            // All initial targets should finish their base hit resolution before any kill-triggered follow-up area can interfere.
+            followUpTriggeredUnitIds ??= new HashSet<string>();
+            for (var i = 0; i < queuedDeathFollowUps.Count; i++)
+            {
+                var queuedFollowUp = queuedDeathFollowUps[i];
                 TryTriggerDeathFollowUpArea(
                     context,
                     caster,
                     skill,
                     effect,
-                    target,
-                    targetPosition,
+                    queuedFollowUp.Key,
+                    queuedFollowUp.Value,
                     battleManager,
-                    followUpTriggeredUnitIds ??= new HashSet<string>());
+                    followUpTriggeredUnitIds);
             }
         }
 

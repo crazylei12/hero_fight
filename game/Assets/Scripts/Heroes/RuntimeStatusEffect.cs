@@ -18,7 +18,7 @@ namespace Fight.Heroes
             SourceAttackPowerMultiplier = Mathf.Max(0f, data.sourceAttackPowerMultiplier);
             StackGroupKey = data.stackGroupKey ?? string.Empty;
             StatusThemeKey = data.statusThemeKey ?? string.Empty;
-            Magnitude = ResolveMagnitude(data, target, source ?? appliedBy);
+            Magnitude = ResolveMagnitude(data, source ?? appliedBy);
             ActiveSkillCooldownCapSeconds = Mathf.Max(0f, data.activeSkillCooldownCapSeconds);
             TickIntervalSeconds = Mathf.Max(0.1f, data.tickIntervalSeconds);
             TimeUntilNextTickSeconds = TickIntervalSeconds;
@@ -100,7 +100,7 @@ namespace Fight.Heroes
             StatusThemeKey = data.statusThemeKey ?? string.Empty;
             if (refreshMagnitude)
             {
-                Magnitude = ResolveMagnitude(data, target, source ?? appliedBy);
+                Magnitude = ResolveMagnitude(data, source ?? appliedBy);
             }
 
             ActiveSkillCooldownCapSeconds = Mathf.Max(0f, data.activeSkillCooldownCapSeconds);
@@ -155,7 +155,7 @@ namespace Fight.Heroes
 
         public bool IsExpired => RemainingDurationSeconds <= 0f;
 
-        private static float ResolveMagnitude(StatusEffectData data, RuntimeHero target, RuntimeHero snapshotSource)
+        private static float ResolveMagnitude(StatusEffectData data, RuntimeHero snapshotSource)
         {
             if (data == null)
             {
@@ -167,18 +167,6 @@ namespace Fight.Heroes
             if (attackPowerMultiplier <= Mathf.Epsilon || snapshotSource == null)
             {
                 return baseMagnitude;
-            }
-
-            if (data.effectType == StatusEffectType.DamageOverTime)
-            {
-                var targetDefense = target != null ? target.Defense : 0f;
-                return baseMagnitude + DamageResolver.ResolveDamage(
-                    snapshotSource.AttackPower,
-                    0f,
-                    1f,
-                    targetDefense,
-                    randomService: null,
-                    attackPowerMultiplier);
             }
 
             return baseMagnitude + attackPowerMultiplier * Mathf.Max(0f, snapshotSource.AttackPower);
