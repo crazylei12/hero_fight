@@ -229,6 +229,41 @@ namespace Fight.Battle
         public int AffectedTargetCount { get; }
     }
 
+    public sealed class RadialSweepResolvedEvent : IBattleEvent
+    {
+        public RadialSweepResolvedEvent(
+            RuntimeHero caster,
+            SkillData skill,
+            string sweepId,
+            RadialSweepDirectionMode direction,
+            Vector3 center,
+            float maxRadius,
+            int hitCount)
+        {
+            Caster = caster;
+            Skill = skill;
+            SweepId = sweepId ?? string.Empty;
+            Direction = direction;
+            Center = center;
+            MaxRadius = maxRadius;
+            HitCount = hitCount;
+        }
+
+        public RuntimeHero Caster { get; }
+
+        public SkillData Skill { get; }
+
+        public string SweepId { get; }
+
+        public RadialSweepDirectionMode Direction { get; }
+
+        public Vector3 Center { get; }
+
+        public float MaxRadius { get; }
+
+        public int HitCount { get; }
+    }
+
     public sealed class DamageAppliedEvent : IBattleEvent
     {
         public DamageAppliedEvent(
@@ -384,20 +419,33 @@ namespace Fight.Battle
         public SkillData SourceSkill { get; }
     }
 
+    public enum PassiveSkillValueType
+    {
+        AttackPower = 0,
+        Defense = 1,
+    }
+
     public sealed class PassiveSkillValueChangedEvent : IBattleEvent
     {
-        public PassiveSkillValueChangedEvent(RuntimeHero hero, SkillData skill, float attackPowerBonusMultiplier)
+        public PassiveSkillValueChangedEvent(
+            RuntimeHero hero,
+            SkillData skill,
+            PassiveSkillValueType valueType,
+            float modifierMultiplier)
         {
             Hero = hero;
             Skill = skill;
-            AttackPowerBonusMultiplier = attackPowerBonusMultiplier;
+            ValueType = valueType;
+            ModifierMultiplier = modifierMultiplier;
         }
 
         public RuntimeHero Hero { get; }
 
         public SkillData Skill { get; }
 
-        public float AttackPowerBonusMultiplier { get; }
+        public PassiveSkillValueType ValueType { get; }
+
+        public float ModifierMultiplier { get; }
     }
 
     public sealed class SkillTemporaryOverrideChangedEvent : IBattleEvent

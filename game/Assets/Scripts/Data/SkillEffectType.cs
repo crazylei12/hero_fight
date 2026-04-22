@@ -9,5 +9,6 @@ namespace Fight.Data
         CreatePersistentArea = 4,
         ApplyForcedMovement = 5,
         CreateDeployableProxy = 6,
+        CreateRadialSweep = 7,
     }
 }

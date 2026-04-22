@@ -25,6 +25,12 @@ namespace Fight.Data
         TowardSource = 1,
     }
 
+    public enum RadialSweepDirectionMode
+    {
+        Outward = 0,
+        Inward = 1,
+    }
+
     public enum DeployableProxySpawnMode
     {
         AtTargetPosition = 0,
@@ -84,6 +90,9 @@ namespace Fight.Data
         [Min(0f)] public float forcedMovementDistance = 0f;
         [Min(0f)] public float forcedMovementDurationSeconds = 0f;
         [Min(0f)] public float forcedMovementPeakHeight = 0f;
+        public RadialSweepDirectionMode radialSweepDirection = RadialSweepDirectionMode.Outward;
+        [Min(0f)] public float radialSweepStartDelaySeconds = 0f;
+        [Min(0f)] public float radialSweepRingWidth = 1f;
         public List<StatusEffectData> statusEffects = new List<StatusEffectData>();
     }
 }

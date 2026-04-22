@@ -1849,6 +1849,49 @@ namespace Fight.Battle
             }
         }
 
+        public static void TickRadialSweeps(BattleContext context, float deltaTime, BattleManager battleManager)
+        {
+            if (context?.RadialSweeps == null || battleManager == null)
+            {
+                return;
+            }
+
+            for (var i = context.RadialSweeps.Count - 1; i >= 0; i--)
+            {
+                var sweep = context.RadialSweeps[i];
+                if (sweep == null)
+                {
+                    context.RadialSweeps.RemoveAt(i);
+                    continue;
+                }
+
+                if (sweep.Advance(deltaTime, out var segmentInnerRadius, out var segmentOuterRadius))
+                {
+                    ResolveRadialSweepStep(
+                        context,
+                        sweep,
+                        segmentInnerRadius,
+                        segmentOuterRadius,
+                        battleManager);
+                }
+
+                if (!sweep.IsComplete)
+                {
+                    continue;
+                }
+
+                context.RadialSweeps.RemoveAt(i);
+                context.EventBus?.Publish(new RadialSweepResolvedEvent(
+                    sweep.Caster,
+                    sweep.Skill,
+                    sweep.SweepId,
+                    sweep.Direction,
+                    sweep.Center,
+                    sweep.MaxRadius,
+                    sweep.HitCount));
+            }
+        }
+
         private static void BeginSkillCast(BattleContext context, RuntimeHero caster, SkillData skill, RuntimeHero primaryTarget, List<RuntimeHero> affectedTargets, BattleManager battleManager)
         {
             QueueSkillCast(
@@ -2034,7 +2077,27 @@ namespace Fight.Battle
 
             for (var i = 0; i < skill.effects.Count; i++)
             {
-                var effectTargets = ResolveEffectTargets(context, caster, skill, primaryTarget, affectedTargets, skill.effects[i], resolutionState);
+                var effect = skill.effects[i];
+                if (effect == null)
+                {
+                    continue;
+                }
+
+                if (effect.effectType == SkillEffectType.CreateRadialSweep)
+                {
+                    var radialSweepTargets = CollectPotentialRadialSweepTargets(context, caster, skill, primaryTarget, effect);
+                    for (var j = 0; j < radialSweepTargets.Count; j++)
+                    {
+                        if (radialSweepTargets[j] != null)
+                        {
+                            uniqueTargetIds.Add(radialSweepTargets[j].RuntimeId);
+                        }
+                    }
+
+                    continue;
+                }
+
+                var effectTargets = ResolveEffectTargets(context, caster, skill, primaryTarget, affectedTargets, effect, resolutionState);
                 for (var j = 0; j < effectTargets.Count; j++)
                 {
                     var target = effectTargets[j];
@@ -2164,6 +2227,12 @@ namespace Fight.Battle
             SkillEffectResolutionState resolutionState,
             BattleManager battleManager)
         {
+            if (effect?.effectType == SkillEffectType.CreateRadialSweep)
+            {
+                CreateRadialSweep(context, caster, skill, effect, primaryTarget);
+                return;
+            }
+
             var effectTargets = ResolveEffectTargets(context, caster, skill, primaryTarget, affectedTargets, effect, resolutionState);
             switch (effect.effectType)
             {
@@ -2403,6 +2472,22 @@ namespace Fight.Battle
             context.EventBus.Publish(new SkillAreaCreatedEvent(caster, skill, area));
         }
 
+        private static void CreateRadialSweep(
+            BattleContext context,
+            RuntimeHero caster,
+            SkillData skill,
+            SkillEffectData effect,
+            RuntimeHero primaryTarget)
+        {
+            if (context?.RadialSweeps == null || caster == null || skill == null || effect == null)
+            {
+                return;
+            }
+
+            var center = ResolveRadialSweepCenter(caster, primaryTarget, effect);
+            context.RadialSweeps.Add(new RuntimeRadialSweep(caster, skill, effect, center));
+        }
+
         private static void CreateDeployableProxies(
             BattleContext context,
             RuntimeHero caster,
@@ -2640,6 +2725,89 @@ namespace Fight.Battle
             return results;
         }
 
+        private static List<RuntimeHero> CollectPotentialRadialSweepTargets(
+            BattleContext context,
+            RuntimeHero caster,
+            SkillData skill,
+            RuntimeHero primaryTarget,
+            SkillEffectData effect)
+        {
+            var results = new List<RuntimeHero>();
+            if (context == null || caster == null || effect == null)
+            {
+                return results;
+            }
+
+            var center = ResolveRadialSweepCenter(caster, primaryTarget, effect);
+            var radius = GetEffectRadius(skill, effect);
+            for (var i = 0; i < context.Heroes.Count; i++)
+            {
+                var candidate = context.Heroes[i];
+                if (!IsValidRadialSweepTarget(caster, candidate, effect))
+                {
+                    continue;
+                }
+
+                if (Vector3.Distance(candidate.CurrentPosition, center) <= radius)
+                {
+                    results.Add(candidate);
+                }
+            }
+
+            return results;
+        }
+
+        private static void ResolveRadialSweepStep(
+            BattleContext context,
+            RuntimeRadialSweep sweep,
+            float segmentInnerRadius,
+            float segmentOuterRadius,
+            BattleManager battleManager)
+        {
+            if (context == null || sweep?.Caster == null || sweep.Skill == null || sweep.Effect == null)
+            {
+                return;
+            }
+
+            var targets = new List<RuntimeHero>(1);
+            for (var i = 0; i < context.Heroes.Count; i++)
+            {
+                var candidate = context.Heroes[i];
+                if (!IsValidRadialSweepTarget(sweep.Caster, candidate, sweep.Effect))
+                {
+                    continue;
+                }
+
+                var distanceToCenter = Vector3.Distance(candidate.CurrentPosition, sweep.Center);
+                if (distanceToCenter < segmentInnerRadius || distanceToCenter > segmentOuterRadius)
+                {
+                    continue;
+                }
+
+                if (!sweep.TryRegisterHit(candidate))
+                {
+                    continue;
+                }
+
+                targets.Clear();
+                targets.Add(candidate);
+                ApplyDamageToTargets(context, sweep.Caster, sweep.Skill, sweep.Effect, targets, battleManager);
+            }
+        }
+
+        private static Vector3 ResolveRadialSweepCenter(RuntimeHero caster, RuntimeHero primaryTarget, SkillEffectData effect)
+        {
+            var anchor = effect != null && effect.targetMode == SkillEffectTargetMode.PrimaryTarget && primaryTarget != null
+                ? primaryTarget.CurrentPosition
+                : caster != null
+                    ? caster.CurrentPosition
+                    : primaryTarget != null
+                        ? primaryTarget.CurrentPosition
+                        : Vector3.zero;
+            anchor.y = 0f;
+            return Stage01ArenaSpec.ClampPosition(anchor);
+        }
+
         private static int GetQueriedStatusStackCount(SkillEffectData effect, RuntimeHero target)
         {
             if (effect == null
@@ -2797,6 +2965,21 @@ namespace Fight.Battle
         private static bool IsValidPersistentAreaTarget(RuntimeHero caster, RuntimeHero candidate, SkillEffectData effect)
         {
             if (caster == null || candidate == null || effect == null)
+            {
+                return false;
+            }
+
+            return effect.persistentAreaTargetType switch
+            {
+                PersistentAreaTargetType.Allies => candidate.Side == caster.Side,
+                PersistentAreaTargetType.Both => true,
+                _ => candidate.Side != caster.Side,
+            };
+        }
+
+        private static bool IsValidRadialSweepTarget(RuntimeHero caster, RuntimeHero candidate, SkillEffectData effect)
+        {
+            if (caster == null || candidate == null || effect == null || candidate.IsDead)
             {
                 return false;
             }

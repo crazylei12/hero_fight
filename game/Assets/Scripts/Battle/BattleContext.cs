@@ -23,7 +23,6 @@ namespace Fight.Battle
 
         public bool HasDashPath { get; }
     }
-
     public sealed class RuntimeDelayedSkillEffect
     {
         private readonly List<RuntimeHero> affectedTargets = new List<RuntimeHero>();
@@ -102,6 +101,7 @@ namespace Fight.Battle
             Heroes = heroes;
             Projectiles = new List<RuntimeBasicAttackProjectile>();
             SkillAreas = new List<RuntimeSkillArea>();
+            RadialSweeps = new List<RuntimeRadialSweep>();
             DeployableProxies = new List<RuntimeDeployableProxy>();
             DelayedSkillEffects = new List<RuntimeDelayedSkillEffect>();
             ReactiveGuards = new List<RuntimeReactiveGuard>();
@@ -122,6 +122,8 @@ namespace Fight.Battle
         public List<RuntimeBasicAttackProjectile> Projectiles { get; }
 
         public List<RuntimeSkillArea> SkillAreas { get; }
+
+        public List<RuntimeRadialSweep> RadialSweeps { get; }
 
         public List<RuntimeDeployableProxy> DeployableProxies { get; }
 
