@@ -267,6 +267,21 @@ namespace Fight.Editor
                 HeroTag.Melee, HeroTag.Dive, HeroTag.Control);
             ConfigureTidefinBasicAttack(tidefin, overwriteExistingContent, tidefinHeroExisted);
 
+            var butcherActive = CreateButcherActiveSkill(overwriteExistingContent);
+            var butcherUltimateSkill = CreateButcherUltimateSkill(overwriteExistingContent, out var butcherUltimateExisted);
+
+            var butcher = CreateHero(
+                "assassin_003_butcher",
+                "Butcher",
+                HeroClass.Assassin,
+                360f, 36f, 16f, 1f / 0.91f, 4.6f, 0.1f, 1.6f, 1.4f,
+                butcherActive,
+                ConfigureButcherUltimate(butcherUltimateSkill, overwriteExistingContent, butcherUltimateExisted),
+                overwriteExistingContent,
+                out var butcherHeroExisted,
+                HeroTag.Melee, HeroTag.Control, HeroTag.Dive);
+            ConfigureButcherBasicAttack(butcher, overwriteExistingContent, butcherHeroExisted);
+
             var tankActive = CreateIronwallActiveSkill(overwriteExistingContent);
             var tankUltimateSkill = CreateBuffSkill("skill_tank_ultimate_ironoath", "Iron Oath", SkillSlotType.Ultimate, SkillTargetType.AllAllies, 6f, 6f, 1f, 0f, StatusEffectType.DefenseModifier, 8f, 2.5f, overwriteExistingContent, out var tankUltimateExisted);
 
@@ -407,7 +422,7 @@ namespace Fight.Editor
             EnsureHeroSkillReferences(venomshooter, venomshooterActive, venomshooterUltimateSkill);
             EnsureHeroBattlePrefabReference(venomshooter, LoadBattlePrefab("marksman_003_venomshooter", HeroClass.Marksman));
 
-            CreateHeroCatalog(warrior, bladesman, berserker, mage, frostmage, sandemperor, assassin, tidefin, tank, shieldwarden, support, windchime, monk, marksman, rifleman, venomshooter);
+            CreateHeroCatalog(warrior, bladesman, berserker, mage, frostmage, sandemperor, assassin, tidefin, butcher, tank, shieldwarden, support, windchime, monk, marksman, rifleman, venomshooter);
 
             var battleInput = CreateBattleInput(
                 "Stage01DemoBattleInput",
@@ -1011,6 +1026,7 @@ namespace Fight.Editor
             {
                 "assassin_001_shadowstep" => AssassinPrefabPath,
                 "assassin_002_tidefin" => TidefinPrefabPath,
+                "assassin_003_butcher" => AssassinPrefabPath,
                 "mage_001_firemage" => FireMagePrefabPath,
                 "mage_002_frostmage" => FrostMagePrefabPath,
                 "mage_003_sandemperor" => FireMagePrefabPath,
@@ -1281,6 +1297,62 @@ namespace Fight.Editor
             return skill;
         }
 
+        private static SkillData CreateButcherActiveSkill(bool overwriteExistingContent)
+        {
+            var skill = CreateSkill(
+                "skill_butcher_active_gorehook",
+                "Gore Hook",
+                SkillSlotType.ActiveSkill,
+                SkillType.Buff,
+                SkillTargetType.BackmostEnemy,
+                Stage01ArenaSpec.FullMapTargetingRangeWorldUnits,
+                0f,
+                0f,
+                8f,
+                1,
+                overwriteExistingContent,
+                out var existedBefore);
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.skillType = SkillType.Buff;
+            skill.targetType = SkillTargetType.BackmostEnemy;
+            skill.fallbackTargetType = SkillTargetType.NearestEnemy;
+            skill.castRange = Stage01ArenaSpec.FullMapTargetingRangeWorldUnits;
+            skill.areaRadius = 0f;
+            skill.cooldownSeconds = 8f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+
+            var pullEffect = AddForcedMovementEffect(
+                skill,
+                Stage01ArenaSpec.FullMapTargetingRangeWorldUnits,
+                0.35f,
+                0f,
+                ForcedMovementDirectionMode.TowardSource);
+            pullEffect.targetMode = SkillEffectTargetMode.SkillTargets;
+
+            var statusEffect = AddApplyStatusEffectsEffect(skill);
+            statusEffect.targetMode = SkillEffectTargetMode.SkillTargets;
+            statusEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.HealTakenModifier,
+                durationSeconds = 4f,
+                magnitude = -1f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
+            skill.description = "Stage-01 demo skill: pulls the backmost enemy into melee range and applies 100% healing reduction.";
+            ResetActionSequence(skill);
+            ResetUltimateDecision(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
         private static SkillData CreateLongshotUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
         {
             var skill = CreateSkill(
@@ -1543,6 +1615,61 @@ namespace Fight.Editor
             skill.ultimateDecision.fallback.fallbackType = UltimateFallbackType.LowerPrimaryThreshold;
             skill.ultimateDecision.fallback.triggerAfterSeconds = 40f;
             skill.ultimateDecision.fallback.overrideRequiredUnitCount = 1;
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateButcherUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
+        {
+            var skill = CreateSkill(
+                "skill_butcher_ultimate_carnagereel",
+                "Carnage Reel",
+                SkillSlotType.Ultimate,
+                SkillType.Buff,
+                SkillTargetType.AllEnemies,
+                Stage01ArenaSpec.FullMapTargetingRangeWorldUnits,
+                0f,
+                0f,
+                0f,
+                1,
+                overwriteExistingContent,
+                out existedBefore);
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.skillType = SkillType.Buff;
+            skill.targetType = SkillTargetType.AllEnemies;
+            skill.fallbackTargetType = SkillTargetType.None;
+            skill.castRange = Stage01ArenaSpec.FullMapTargetingRangeWorldUnits;
+            skill.areaRadius = 0f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+
+            var pullEffect = AddForcedMovementEffect(
+                skill,
+                Stage01ArenaSpec.FullMapTargetingRangeWorldUnits,
+                0.45f,
+                0f,
+                ForcedMovementDirectionMode.TowardSource);
+            pullEffect.targetMode = SkillEffectTargetMode.SkillTargets;
+
+            var statusEffect = AddApplyStatusEffectsEffect(skill);
+            statusEffect.targetMode = SkillEffectTargetMode.SkillTargets;
+            statusEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.HealTakenModifier,
+                durationSeconds = 4f,
+                magnitude = -1f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
+            skill.description = "Stage-01 demo skill: yanks every enemy toward the caster and applies team-wide 100% healing reduction.";
+            ResetActionSequence(skill);
+            ResetUltimateDecision(skill);
             EditorUtility.SetDirty(skill);
             return skill;
         }
@@ -2431,6 +2558,27 @@ namespace Fight.Editor
             EditorUtility.SetDirty(hero);
         }
 
+        private static void ConfigureButcherBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (hero == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return;
+            }
+
+            hero.basicAttack.damageMultiplier = 1.05f;
+            hero.basicAttack.attackInterval = 0.91f;
+            hero.basicAttack.rangeOverride = 1.4f;
+            hero.basicAttack.usesProjectile = false;
+            hero.basicAttack.projectileSpeed = 0f;
+            hero.basicAttack.effectType = BasicAttackEffectType.Damage;
+            hero.basicAttack.targetType = BasicAttackTargetType.NearestEnemy;
+            hero.basicAttack.targetPrioritySearchRadius = 0f;
+            EnsureBasicAttackStatusList(hero.basicAttack);
+            hero.basicAttack.onHitStatusEffects.Clear();
+            hero.debugNotes = "Stage-01 demo hero for Assassin. Butcher validates pull-to-caster forced movement and target-side healing denial.";
+            EditorUtility.SetDirty(hero);
+        }
+
         private static void ConfigureBladesmanBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
         {
             if (hero == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
@@ -2878,6 +3026,28 @@ namespace Fight.Editor
             skill.ultimateDecision.fallback.secondaryTriggerAfterSeconds = 0f;
             skill.ultimateDecision.fallback.secondaryOverrideRequiredUnitCount = 0;
             skill.ultimateDecision.fallback.secondaryOverrideHealthPercentThreshold = -1f;
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData ConfigureButcherUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            ResetUltimateDecision(skill);
+            skill.ultimateDecision.targetingType = UltimateTargetingType.UseSkillTargetType;
+            skill.ultimateDecision.combineMode = UltimateConditionCombineMode.PrimaryOnly;
+            skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;
+            skill.ultimateDecision.primaryCondition.searchRadius = Stage01ArenaSpec.FullMapTargetingRangeWorldUnits;
+            skill.ultimateDecision.primaryCondition.requiredUnitCount = 3;
+            skill.ultimateDecision.secondaryCondition.conditionType = UltimateConditionType.EnemyLowHealthInRange;
+            skill.ultimateDecision.secondaryCondition.searchRadius = Stage01ArenaSpec.FullMapTargetingRangeWorldUnits;
+            skill.ultimateDecision.secondaryCondition.requiredUnitCount = 2;
+            skill.ultimateDecision.secondaryCondition.healthPercentThreshold = 0.7f;
+            ApplyCountFallback(skill, 40f, 2, 0f, 0);
             EditorUtility.SetDirty(skill);
             return skill;
         }
@@ -3920,6 +4090,8 @@ namespace Fight.Editor
                 "skill_frostmage_ultimate_blizzard" => "mage_002_frostmage",
                 "skill_tidefin_active_tidalpounce" => "assassin_002_tidefin",
                 "skill_tidefin_ultimate_ruintide" => "assassin_002_tidefin",
+                "skill_butcher_active_gorehook" => "assassin_003_butcher",
+                "skill_butcher_ultimate_carnagereel" => "assassin_003_butcher",
                 "skill_shieldwarden_active_wardenscall" => "tank_002_shieldwarden",
                 "skill_shieldwarden_ultimate_lastbastion" => "tank_002_shieldwarden",
                 "skill_windchime_active_echocanopy" => "support_002_windchime",

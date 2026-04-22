@@ -106,6 +106,11 @@ namespace Fight.Heroes
             return Mathf.Max(0.1f, 1f + GetTotalMagnitude(hero, effectType));
         }
 
+        public static float GetHealTakenMultiplier(RuntimeHero hero)
+        {
+            return Mathf.Max(0f, 1f + GetTotalMagnitude(hero, StatusEffectType.HealTakenModifier));
+        }
+
         public static bool HasStatus(RuntimeHero hero, StatusEffectType effectType)
         {
             if (hero == null)

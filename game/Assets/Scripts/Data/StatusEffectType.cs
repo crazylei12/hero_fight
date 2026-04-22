@@ -23,6 +23,7 @@ namespace Fight.Data
         Shield = 15,
         DamageShare = 16,
         Taunt = 17,
+        HealTakenModifier = 18,
     }
 
     [Flags]
@@ -94,6 +95,7 @@ namespace Fight.Data
         private static readonly StatusEffectDefinition DamageOverTime = new StatusEffectDefinition(StatusEffectType.DamageOverTime, StatusBehaviorFlags.Periodic);
         private static readonly StatusEffectDefinition Shield = new StatusEffectDefinition(StatusEffectType.Shield, StatusBehaviorFlags.None);
         private static readonly StatusEffectDefinition DamageShare = new StatusEffectDefinition(StatusEffectType.DamageShare, StatusBehaviorFlags.None);
+        private static readonly StatusEffectDefinition HealTakenModifier = new StatusEffectDefinition(StatusEffectType.HealTakenModifier, StatusBehaviorFlags.StatModifier);
         private static readonly StatusEffectDefinition Taunt = new StatusEffectDefinition(
             StatusEffectType.Taunt,
             StatusBehaviorFlags.BlocksSkillCasts | StatusBehaviorFlags.ForcesEnemyTarget);
@@ -118,6 +120,7 @@ namespace Fight.Data
                 StatusEffectType.DamageOverTime => DamageOverTime,
                 StatusEffectType.Shield => Shield,
                 StatusEffectType.DamageShare => DamageShare,
+                StatusEffectType.HealTakenModifier => HealTakenModifier,
                 StatusEffectType.Taunt => Taunt,
                 _ => None,
             };

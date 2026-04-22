@@ -692,6 +692,12 @@ namespace Fight.Heroes
                 return 0f;
             }
 
+            amount = Mathf.Max(0f, amount * StatusEffectSystem.GetHealTakenMultiplier(this));
+            if (amount <= 0f)
+            {
+                return 0f;
+            }
+
             var previousHealth = CurrentHealth;
             CurrentHealth = Mathf.Min(MaxHealth, CurrentHealth + amount);
             return CurrentHealth - previousHealth;

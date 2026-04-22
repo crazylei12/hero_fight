@@ -429,6 +429,7 @@ namespace Fight.Battle
         private static string FormatStatusMagnitude(StatusEffectType effectType, float magnitude)
         {
             return effectType == StatusEffectType.DamageShare
+                || effectType == StatusEffectType.HealTakenModifier
                 ? $"{magnitude * 100f:0.#}%"
                 : magnitude.ToString("0.##");
         }

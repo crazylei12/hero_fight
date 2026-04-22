@@ -8,6 +8,7 @@ namespace Fight.Battle
 {
     public static class BattleSkillSystem
     {
+        private const float TowardSourceStopDistance = 1.15f;
         private const float UltimateInitialLockoutSeconds = 6f;
         private const float UltimateDecisionIntervalSeconds = 0.75f;
         private const float UltimateDecisionJitterSeconds = 0.5f;
@@ -3264,10 +3265,32 @@ namespace Fight.Battle
 
         private static Vector3 GetForcedMovementDestination(RuntimeHero caster, RuntimeHero target, SkillEffectData effect, float distance)
         {
-            var direction = GetForcedMovementDirection(
-                caster,
-                target,
-                effect != null ? effect.forcedMovementDirection : ForcedMovementDirectionMode.AwayFromSource);
+            var directionMode = effect != null ? effect.forcedMovementDirection : ForcedMovementDirectionMode.AwayFromSource;
+            var direction = GetForcedMovementDirection(caster, target, directionMode);
+            if (target == null)
+            {
+                return Vector3.zero;
+            }
+
+            if (directionMode == ForcedMovementDirectionMode.TowardSource && caster != null)
+            {
+                var toSource = caster.CurrentPosition - target.CurrentPosition;
+                toSource.y = 0f;
+                var separation = toSource.magnitude;
+                if (separation <= Mathf.Epsilon)
+                {
+                    return Stage01ArenaSpec.ClampPosition(target.CurrentPosition);
+                }
+
+                var maxTravelDistance = Mathf.Max(0f, separation - TowardSourceStopDistance);
+                var towardTravelDistance = distance > Mathf.Epsilon
+                    ? Mathf.Min(distance, maxTravelDistance)
+                    : maxTravelDistance;
+                var towardDestination = target.CurrentPosition + direction * towardTravelDistance;
+                towardDestination.y = 0f;
+                return Stage01ArenaSpec.ClampPosition(towardDestination);
+            }
+
             var destination = target.CurrentPosition + direction * distance;
             destination.y = 0f;
             return Stage01ArenaSpec.ClampPosition(destination);
