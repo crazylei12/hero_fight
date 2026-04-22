@@ -15,7 +15,9 @@ namespace Fight.Battle
             RuntimeHero target,
             float damageAmount,
             DamageSourceKind sourceKind,
-            SkillData sourceSkill = null)
+            SkillData sourceSkill = null,
+            string sourceBasicAttackVariantKey = null,
+            RuntimeDeployableProxy sourceProxy = null)
         {
             var actualDamage = ApplyResolvedDamageInternal(
                 context,
@@ -25,6 +27,8 @@ namespace Fight.Battle
                 damageAmount,
                 sourceKind,
                 sourceSkill,
+                sourceBasicAttackVariantKey,
+                sourceProxy,
                 allowDamageShare: true);
             TryApplyLifesteal(context, attacker, actualDamage);
             return actualDamage;
@@ -38,6 +42,8 @@ namespace Fight.Battle
             float damageAmount,
             DamageSourceKind sourceKind,
             SkillData sourceSkill,
+            string sourceBasicAttackVariantKey,
+            RuntimeDeployableProxy sourceProxy,
             bool allowDamageShare)
         {
             if (context == null || battleManager == null || target == null || damageAmount <= 0f || target.IsDead || !target.CanReceiveDamage)
@@ -93,7 +99,9 @@ namespace Fight.Battle
                     target,
                     damageToTarget,
                     sourceKind,
-                    sourceSkill);
+                    sourceSkill,
+                    sourceBasicAttackVariantKey,
+                    sourceProxy);
             }
 
             if (damageShareTransfers == null || damageShareTransfers.Count == 0)
@@ -112,6 +120,8 @@ namespace Fight.Battle
                     transfer.DamageAmount,
                     DamageSourceKind.DamageShare,
                     sourceSkill,
+                    sourceBasicAttackVariantKey,
+                    sourceProxy,
                     allowDamageShare: false);
             }
 
@@ -125,7 +135,9 @@ namespace Fight.Battle
             RuntimeHero target,
             float damageAmount,
             DamageSourceKind sourceKind,
-            SkillData sourceSkill)
+            SkillData sourceSkill,
+            string sourceBasicAttackVariantKey,
+            RuntimeDeployableProxy sourceProxy)
         {
             if (context == null || battleManager == null || target == null || damageAmount <= 0f)
             {
@@ -145,7 +157,9 @@ namespace Fight.Battle
                 actualDamage,
                 sourceKind,
                 sourceSkill,
-                target.CurrentHealth));
+                target.CurrentHealth,
+                sourceBasicAttackVariantKey,
+                sourceProxy));
 
             if (!target.IsDead && target.CurrentHealth > 0f)
             {
@@ -154,7 +168,7 @@ namespace Fight.Battle
 
             BattleStatsSystem.ResolveAssists(context, target, attacker);
             var endedTemporaryOverrideSkill = target.CurrentTemporaryOverrideSourceSkill;
-            var endedTemporaryOverrideLifestealRatio = target.CurrentLifestealRatio;
+            var endedTemporaryOverrideLifestealRatio = target.CurrentTemporaryOverrideLifestealRatio;
             var endedTemporaryOverrideVisualScaleMultiplier = target.CurrentVisualScaleMultiplier;
             var endedTemporaryOverrideVisualTintStrength = target.CurrentVisualTintStrength;
             target.MarkDead(
@@ -281,7 +295,7 @@ namespace Fight.Battle
                 attacker,
                 attacker,
                 actualHeal,
-                attacker.CurrentTemporaryOverrideSourceSkill,
+                attacker.CurrentLifestealSourceSkill,
                 attacker.CurrentHealth));
         }
     }

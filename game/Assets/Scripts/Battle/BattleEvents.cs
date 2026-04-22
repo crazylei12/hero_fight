@@ -67,15 +67,18 @@ namespace Fight.Battle
 
     public sealed class AttackPerformedEvent : IBattleEvent
     {
-        public AttackPerformedEvent(RuntimeHero attacker, RuntimeHero target)
+        public AttackPerformedEvent(RuntimeHero attacker, RuntimeHero target, string variantKey = null)
         {
             Attacker = attacker;
             Target = target;
+            VariantKey = variantKey ?? string.Empty;
         }
 
         public RuntimeHero Attacker { get; }
 
         public RuntimeHero Target { get; }
+
+        public string VariantKey { get; }
     }
 
     public sealed class BasicAttackProjectileLaunchedEvent : IBattleEvent
@@ -272,7 +275,9 @@ namespace Fight.Battle
             float damageAmount,
             DamageSourceKind sourceKind = DamageSourceKind.Unknown,
             SkillData sourceSkill = null,
-            float remainingHealth = 0f)
+            float remainingHealth = 0f,
+            string sourceBasicAttackVariantKey = null,
+            RuntimeDeployableProxy sourceProxy = null)
         {
             Attacker = attacker;
             Target = target;
@@ -280,6 +285,8 @@ namespace Fight.Battle
             SourceKind = sourceKind;
             SourceSkill = sourceSkill;
             RemainingHealth = remainingHealth;
+            SourceBasicAttackVariantKey = sourceBasicAttackVariantKey ?? string.Empty;
+            SourceProxy = sourceProxy;
         }
 
         public RuntimeHero Attacker { get; }
@@ -293,6 +300,10 @@ namespace Fight.Battle
         public SkillData SourceSkill { get; }
 
         public float RemainingHealth { get; }
+
+        public string SourceBasicAttackVariantKey { get; }
+
+        public RuntimeDeployableProxy SourceProxy { get; }
     }
 
     public sealed class HealAppliedEvent : IBattleEvent
@@ -302,13 +313,17 @@ namespace Fight.Battle
             RuntimeHero target,
             float healAmount,
             SkillData sourceSkill = null,
-            float resultingHealth = 0f)
+            float resultingHealth = 0f,
+            string sourceBasicAttackVariantKey = null,
+            RuntimeDeployableProxy sourceProxy = null)
         {
             Caster = caster;
             Target = target;
             HealAmount = healAmount;
             SourceSkill = sourceSkill;
             ResultingHealth = resultingHealth;
+            SourceBasicAttackVariantKey = sourceBasicAttackVariantKey ?? string.Empty;
+            SourceProxy = sourceProxy;
         }
 
         public RuntimeHero Caster { get; }
@@ -320,6 +335,10 @@ namespace Fight.Battle
         public SkillData SourceSkill { get; }
 
         public float ResultingHealth { get; }
+
+        public string SourceBasicAttackVariantKey { get; }
+
+        public RuntimeDeployableProxy SourceProxy { get; }
     }
 
     public sealed class StatusAppliedEvent : IBattleEvent
@@ -423,6 +442,7 @@ namespace Fight.Battle
     {
         AttackPower = 0,
         Defense = 1,
+        Lifesteal = 2,
     }
 
     public sealed class PassiveSkillValueChangedEvent : IBattleEvent
@@ -523,6 +543,35 @@ namespace Fight.Battle
 
     public sealed class OvertimeStartedEvent : IBattleEvent
     {
+    }
+
+    public enum DeployableProxyRemovalReason
+    {
+        Expired = 0,
+        Replaced = 1,
+    }
+
+    public sealed class DeployableProxySpawnedEvent : IBattleEvent
+    {
+        public DeployableProxySpawnedEvent(RuntimeDeployableProxy proxy)
+        {
+            Proxy = proxy;
+        }
+
+        public RuntimeDeployableProxy Proxy { get; }
+    }
+
+    public sealed class DeployableProxyRemovedEvent : IBattleEvent
+    {
+        public DeployableProxyRemovedEvent(RuntimeDeployableProxy proxy, DeployableProxyRemovalReason reason)
+        {
+            Proxy = proxy;
+            Reason = reason;
+        }
+
+        public RuntimeDeployableProxy Proxy { get; }
+
+        public DeployableProxyRemovalReason Reason { get; }
     }
 
     public sealed class BattleEndedEvent : IBattleEvent

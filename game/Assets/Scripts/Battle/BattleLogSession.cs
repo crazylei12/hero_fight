@@ -47,10 +47,10 @@ namespace Fight.Battle
                     AddLog($"{FormatHeroLabel(targetChanged.Hero)} targets {FormatHeroLabel(targetChanged.Target)}.");
                     break;
                 case AttackPerformedEvent attackPerformed:
-                    AddLog($"{FormatHeroLabel(attackPerformed.Attacker)} started a basic attack on {FormatHeroLabel(attackPerformed.Target)}.");
+                    AddLog($"{FormatHeroLabel(attackPerformed.Attacker)} started basic attack [{FormatBasicAttackVariantLabel(attackPerformed.VariantKey)}] on {FormatHeroLabel(attackPerformed.Target)}.");
                     break;
                 case BasicAttackProjectileLaunchedEvent projectileLaunched:
-                    AddLog($"{FormatHeroLabel(projectileLaunched.Projectile.Attacker)} fired a projectile at {FormatHeroLabel(projectileLaunched.Projectile.Target)}.");
+                    AddLog(FormatBasicAttackProjectileLog(projectileLaunched.Projectile));
                     break;
                 case SkillCastEvent skillCast:
                     AddLog($"{FormatHeroLabel(skillCast.Caster)} started casting {skillCast.Skill.displayName} on {FormatHeroLabel(skillCast.PrimaryTarget, "area")} ({skillCast.AffectedTargetCount} target(s)).");
@@ -96,6 +96,12 @@ namespace Fight.Battle
                     break;
                 case ReactiveGuardTriggeredEvent reactiveGuardTriggered:
                     AddLog(FormatReactiveGuardLog(reactiveGuardTriggered));
+                    break;
+                case DeployableProxySpawnedEvent deployableProxySpawned:
+                    AddLog(FormatDeployableProxySpawnedLog(deployableProxySpawned));
+                    break;
+                case DeployableProxyRemovedEvent deployableProxyRemoved:
+                    AddLog(FormatDeployableProxyRemovedLog(deployableProxyRemoved));
                     break;
                 case UnitDiedEvent died:
                     AddLog($"{FormatHeroLabel(died.Victim)} was killed by {FormatHeroLabel(died.Killer)}.");
@@ -159,14 +165,57 @@ namespace Fight.Battle
             var sourceKindLabel = damageApplied.SourceKind == DamageSourceKind.DamageShare
                 ? "DamageShare"
                 : damageApplied.SourceKind.ToString();
-            return $"{attackerName} dealt {damageApplied.DamageAmount:0.0} to {FormatHeroLabel(damageApplied.Target)} via {skillName} [{sourceKindLabel}], target HP {Mathf.Max(0f, damageApplied.RemainingHealth):0.0}.";
+            var proxySuffix = damageApplied.SourceProxy != null ? $" via proxy {damageApplied.SourceProxy.ProxyId}" : string.Empty;
+            var variantSuffix = !string.IsNullOrWhiteSpace(damageApplied.SourceBasicAttackVariantKey)
+                ? $" variant={damageApplied.SourceBasicAttackVariantKey}"
+                : string.Empty;
+            return $"{attackerName} dealt {damageApplied.DamageAmount:0.0} to {FormatHeroLabel(damageApplied.Target)} via {skillName} [{sourceKindLabel}{variantSuffix}]{proxySuffix}, target HP {Mathf.Max(0f, damageApplied.RemainingHealth):0.0}.";
         }
 
         private static string FormatHealLog(HealAppliedEvent healApplied)
         {
             var casterName = FormatHeroLabel(healApplied.Caster, "Unknown");
             var skillName = healApplied.SourceSkill != null ? healApplied.SourceSkill.displayName : "Basic Attack";
-            return $"{casterName} healed {FormatHeroLabel(healApplied.Target)} for {healApplied.HealAmount:0.0} via {skillName}, target HP {Mathf.Max(0f, healApplied.ResultingHealth):0.0}.";
+            var proxySuffix = healApplied.SourceProxy != null ? $" via proxy {healApplied.SourceProxy.ProxyId}" : string.Empty;
+            var variantSuffix = !string.IsNullOrWhiteSpace(healApplied.SourceBasicAttackVariantKey)
+                ? $" variant={healApplied.SourceBasicAttackVariantKey}"
+                : string.Empty;
+            return $"{casterName} healed {FormatHeroLabel(healApplied.Target)} for {healApplied.HealAmount:0.0} via {skillName}{variantSuffix}{proxySuffix}, target HP {Mathf.Max(0f, healApplied.ResultingHealth):0.0}.";
+        }
+
+        private static string FormatBasicAttackProjectileLog(RuntimeBasicAttackProjectile projectile)
+        {
+            if (projectile == null)
+            {
+                return "Unknown basic-attack projectile launched.";
+            }
+
+            var proxySuffix = projectile.SourceProxy != null
+                ? $" from proxy {projectile.SourceProxy.ProxyId}"
+                : string.Empty;
+            return $"{FormatHeroLabel(projectile.Attacker)} fired [{FormatBasicAttackVariantLabel(projectile.VariantKey)}] projectile at {FormatHeroLabel(projectile.Target)}{proxySuffix}.";
+        }
+
+        private static string FormatDeployableProxySpawnedLog(DeployableProxySpawnedEvent deployableProxySpawned)
+        {
+            var proxy = deployableProxySpawned?.Proxy;
+            if (proxy == null)
+            {
+                return "Deployable proxy spawned.";
+            }
+
+            return $"{FormatHeroLabel(proxy.Owner)} spawned deployable proxy {proxy.ProxyId} at ({proxy.CurrentPosition.x:0.0}, {proxy.CurrentPosition.z:0.0}) for {proxy.TotalDurationSeconds:0.0}s.";
+        }
+
+        private static string FormatDeployableProxyRemovedLog(DeployableProxyRemovedEvent deployableProxyRemoved)
+        {
+            var proxy = deployableProxyRemoved?.Proxy;
+            if (proxy == null)
+            {
+                return "Deployable proxy removed.";
+            }
+
+            return $"{FormatHeroLabel(proxy.Owner)} lost deployable proxy {proxy.ProxyId} due to {deployableProxyRemoved.Reason}.";
         }
 
         private static string FormatStatusLog(StatusAppliedEvent statusApplied)
@@ -205,6 +254,7 @@ namespace Fight.Battle
             var valueLabel = passiveSkillChanged.ValueType switch
             {
                 PassiveSkillValueType.Defense => "defense bonus",
+                PassiveSkillValueType.Lifesteal => "lifesteal",
                 _ => "attack bonus",
             };
             return $"{heroName}'s {skillName} updated {valueLabel} to {passiveSkillChanged.ModifierMultiplier * 100f:0.#}%.";
@@ -448,6 +498,11 @@ namespace Fight.Battle
                 || effectType == StatusEffectType.HealTakenModifier
                 ? $"{magnitude * 100f:0.#}%"
                 : magnitude.ToString("0.##");
+        }
+
+        private static string FormatBasicAttackVariantLabel(string variantKey)
+        {
+            return string.IsNullOrWhiteSpace(variantKey) ? "default" : variantKey;
         }
     }
 }
