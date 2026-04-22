@@ -9,6 +9,10 @@ namespace Fight.Battle
     public static class BattleSkillSystem
     {
         private const float TowardSourceStopDistance = 1.15f;
+        private const float TowardSourceSpreadMinDistance = 1.2f;
+        private const float TowardSourceSpreadMaxDistance = 2.2f;
+        private const float TowardSourceSpreadRingStep = 0.35f;
+        private const float TowardSourceSpreadPositionTolerance = 0.05f;
         private const float UltimateInitialLockoutSeconds = 6f;
         private const float UltimateDecisionIntervalSeconds = 0.75f;
         private const float UltimateDecisionJitterSeconds = 0.5f;
@@ -2387,6 +2391,7 @@ namespace Fight.Battle
                 return;
             }
 
+            var spreadDestinations = ResolveTowardSourceSpreadDestinations(caster, effect, targets, distance);
             for (var i = 0; i < targets.Count; i++)
             {
                 var target = targets[i];
@@ -2396,7 +2401,9 @@ namespace Fight.Battle
                 }
 
                 var startPosition = target.CurrentPosition;
-                var destination = GetForcedMovementDestination(caster, target, effect, distance);
+                var destination = spreadDestinations.TryGetValue(target.RuntimeId, out var assignedDestination)
+                    ? assignedDestination
+                    : GetForcedMovementDestination(caster, target, effect, distance);
                 target.StartForcedMovement(destination, durationSeconds, peakHeight);
                 BattleStatsSystem.RecordForcedMovementContribution(context, caster, target);
                 context.EventBus.Publish(new ForcedMovementAppliedEvent(
@@ -2408,6 +2415,224 @@ namespace Fight.Battle
                     peakHeight,
                     sourceSkill));
             }
+        }
+
+        private static Dictionary<int, Vector3> ResolveTowardSourceSpreadDestinations(
+            RuntimeHero caster,
+            SkillEffectData effect,
+            List<RuntimeHero> targets,
+            float maxTravelDistance)
+        {
+            var results = new Dictionary<int, Vector3>();
+            if (caster == null
+                || effect == null
+                || effect.forcedMovementDirection != ForcedMovementDirectionMode.TowardSource
+                || targets == null)
+            {
+                return results;
+            }
+
+            var validTargets = new List<RuntimeHero>();
+            var seenTargetIds = new HashSet<int>();
+            for (var i = 0; i < targets.Count; i++)
+            {
+                var target = targets[i];
+                if (target == null || target.IsDead || !seenTargetIds.Add(target.RuntimeId))
+                {
+                    continue;
+                }
+
+                validTargets.Add(target);
+            }
+
+            if (validTargets.Count <= 1)
+            {
+                return results;
+            }
+
+            var anchor = caster.CurrentPosition;
+            anchor.y = 0f;
+            var candidates = BuildTowardSourceSpreadCandidates(anchor, validTargets.Count);
+            if (candidates.Count == 0)
+            {
+                return results;
+            }
+
+            validTargets.Sort((first, second) =>
+                GetTowardSourcePreferredAngle(anchor, first).CompareTo(GetTowardSourcePreferredAngle(anchor, second)));
+
+            var assignedPositions = new List<Vector3>(validTargets.Count);
+            for (var i = 0; i < validTargets.Count; i++)
+            {
+                var target = validTargets[i];
+                var bestCandidateIndex = FindBestTowardSourceSpreadCandidate(
+                    anchor,
+                    target,
+                    maxTravelDistance,
+                    candidates,
+                    assignedPositions);
+                if (bestCandidateIndex < 0)
+                {
+                    continue;
+                }
+
+                var destination = candidates[bestCandidateIndex];
+                candidates.RemoveAt(bestCandidateIndex);
+                assignedPositions.Add(destination);
+                results[target.RuntimeId] = destination;
+            }
+
+            return results;
+        }
+
+        private static List<Vector3> BuildTowardSourceSpreadCandidates(Vector3 anchor, int targetCount)
+        {
+            var results = new List<Vector3>();
+            var minimumSpacing = Mathf.Max(Stage01ArenaSpec.UnitMinimumSeparationWorldUnits, 0.8f);
+            for (var radius = TowardSourceSpreadMinDistance;
+                radius <= TowardSourceSpreadMaxDistance + Mathf.Epsilon;
+                radius += TowardSourceSpreadRingStep)
+            {
+                var circumference = Mathf.Max(minimumSpacing, Mathf.PI * 2f * radius);
+                var slotCount = Mathf.Max(targetCount * 2, Mathf.CeilToInt(circumference / minimumSpacing));
+                for (var slotIndex = 0; slotIndex < slotCount; slotIndex++)
+                {
+                    var angleDegrees = (360f * slotIndex) / slotCount;
+                    var candidate = anchor + GetPlanarDirection(angleDegrees) * radius;
+                    candidate.y = 0f;
+                    candidate = Stage01ArenaSpec.ClampPosition(candidate);
+                    candidate.y = 0f;
+                    var candidateRadius = Vector3.Distance(anchor, candidate);
+                    if (candidateRadius < TowardSourceSpreadMinDistance - TowardSourceSpreadPositionTolerance
+                        || candidateRadius > TowardSourceSpreadMaxDistance + TowardSourceSpreadPositionTolerance
+                        || ContainsNearbyPosition(results, candidate, TowardSourceSpreadPositionTolerance))
+                    {
+                        continue;
+                    }
+
+                    results.Add(candidate);
+                }
+            }
+
+            return results;
+        }
+
+        private static int FindBestTowardSourceSpreadCandidate(
+            Vector3 anchor,
+            RuntimeHero target,
+            float maxTravelDistance,
+            List<Vector3> candidates,
+            List<Vector3> assignedPositions)
+        {
+            var bestCandidateIndex = -1;
+            var bestScore = float.MaxValue;
+            var preferredAngle = GetTowardSourcePreferredAngle(anchor, target);
+            for (var i = 0; i < candidates.Count; i++)
+            {
+                var candidate = candidates[i];
+                if (!IsTowardSourceSpreadCandidateValid(anchor, target, candidate, maxTravelDistance, assignedPositions))
+                {
+                    continue;
+                }
+
+                var candidateAngle = GetPlanarAngleDegrees(candidate - anchor);
+                var angularPenalty = Mathf.Abs(Mathf.DeltaAngle(preferredAngle, candidateAngle));
+                var movementPenalty = Vector3.Distance(target.CurrentPosition, candidate) * 0.15f;
+                var radiusPenalty = Mathf.Abs(Vector3.Distance(anchor, candidate) - TowardSourceSpreadMinDistance) * 5f;
+                var score = angularPenalty + movementPenalty + radiusPenalty;
+                if (score < bestScore)
+                {
+                    bestScore = score;
+                    bestCandidateIndex = i;
+                }
+            }
+
+            return bestCandidateIndex;
+        }
+
+        private static bool IsTowardSourceSpreadCandidateValid(
+            Vector3 anchor,
+            RuntimeHero target,
+            Vector3 candidate,
+            float maxTravelDistance,
+            List<Vector3> assignedPositions)
+        {
+            if (target == null)
+            {
+                return false;
+            }
+
+            var currentSeparation = Vector3.Distance(anchor, target.CurrentPosition);
+            var candidateSeparation = Vector3.Distance(anchor, candidate);
+            if (candidateSeparation > currentSeparation + TowardSourceSpreadPositionTolerance)
+            {
+                return false;
+            }
+
+            if (maxTravelDistance > Mathf.Epsilon
+                && Vector3.Distance(target.CurrentPosition, candidate) > maxTravelDistance + TowardSourceSpreadPositionTolerance)
+            {
+                return false;
+            }
+
+            return !ContainsNearbyPosition(
+                assignedPositions,
+                candidate,
+                Mathf.Max(0.01f, Stage01ArenaSpec.UnitMinimumSeparationWorldUnits - TowardSourceSpreadPositionTolerance));
+        }
+
+        private static bool ContainsNearbyPosition(List<Vector3> positions, Vector3 candidate, float minimumDistance)
+        {
+            if (positions == null || positions.Count == 0)
+            {
+                return false;
+            }
+
+            var minimumDistanceSqr = minimumDistance * minimumDistance;
+            for (var i = 0; i < positions.Count; i++)
+            {
+                var offset = positions[i] - candidate;
+                offset.y = 0f;
+                if (offset.sqrMagnitude < minimumDistanceSqr)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static float GetTowardSourcePreferredAngle(Vector3 anchor, RuntimeHero target)
+        {
+            if (target == null)
+            {
+                return 0f;
+            }
+
+            var offset = target.CurrentPosition - anchor;
+            offset.y = 0f;
+            if (offset.sqrMagnitude <= Mathf.Epsilon)
+            {
+                return Mathf.Repeat(target.SlotIndex * 72f, 360f);
+            }
+
+            return GetPlanarAngleDegrees(offset);
+        }
+
+        private static float GetPlanarAngleDegrees(Vector3 offset)
+        {
+            if (offset.sqrMagnitude <= Mathf.Epsilon)
+            {
+                return 0f;
+            }
+
+            return Mathf.Repeat(Mathf.Atan2(offset.z, offset.x) * Mathf.Rad2Deg, 360f);
+        }
+
+        private static Vector3 GetPlanarDirection(float angleDegrees)
+        {
+            var radians = angleDegrees * Mathf.Deg2Rad;
+            return new Vector3(Mathf.Cos(radians), 0f, Mathf.Sin(radians));
         }
 
         private static void ApplyStatuses(
