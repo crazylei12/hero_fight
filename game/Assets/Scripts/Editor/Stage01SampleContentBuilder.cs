@@ -3343,9 +3343,9 @@ namespace Fight.Editor
                 "Twin Rite Totem",
                 SkillSlotType.Ultimate,
                 SkillType.Buff,
-                SkillTargetType.ThreatenedAlly,
-                ScaleRangedHeroDistance(9.5f),
-                ScaleRangedHeroDistance(4.5f),
+                SkillTargetType.Self,
+                0f,
+                0f,
                 0f,
                 0f,
                 1,
@@ -3357,14 +3357,14 @@ namespace Fight.Editor
                 return skill;
             }
 
-            skill.description = "Stage-01 demo skill: deploy a short-lived totem that rapidly repeats Shrinemaiden's alternating attack sequence.";
-            skill.targetType = SkillTargetType.ThreatenedAlly;
-            skill.fallbackTargetType = SkillTargetType.LowestHealthAlly;
-            skill.castRange = ScaleRangedHeroDistance(9.5f);
-            skill.areaRadius = ScaleRangedHeroDistance(4.5f);
+            skill.description = "Stage-01 demo skill: deploy a short-lived totem beside Shrinemaiden that rapidly repeats her alternating attack sequence across the full map.";
+            skill.targetType = SkillTargetType.Self;
+            skill.fallbackTargetType = SkillTargetType.None;
+            skill.castRange = 0f;
+            skill.areaRadius = 0f;
             skill.minTargetsToCast = 1;
             skill.allowsSelfCast = true;
-            skill.targetPrioritySearchRadius = skill.areaRadius;
+            skill.targetPrioritySearchRadius = 0f;
             skill.targetPriorityRequiredUnitCount = 1;
             skill.effects.Clear();
 
@@ -3374,31 +3374,27 @@ namespace Fight.Editor
                 strikeRadius: 0f,
                 durationSeconds: 6f,
                 maxCount: 1,
-                spawnMode: DeployableProxySpawnMode.AtTargetPosition,
-                spawnOffsetDistance: 0f,
+                spawnMode: DeployableProxySpawnMode.AroundTarget,
+                spawnOffsetDistance: 1.2f,
                 triggerMode: DeployableProxyTriggerMode.PeriodicBasicAttackSequence,
                 replaceOldestWhenLimitReached: true,
                 immediateStrikeOnSpawn: false);
             deployableEffect.targetMode = SkillEffectTargetMode.PrimaryTarget;
             deployableEffect.deployableProxyPowerMultiplierScale = 0.8f;
             deployableEffect.deployableProxyAttackIntervalSeconds = 0.5f;
-            deployableEffect.deployableProxyAttackRange = ScaleRangedHeroDistance(8.5f);
+            deployableEffect.deployableProxyAttackRange = Stage01ArenaSpec.FullMapTargetingRangeWorldUnits;
             deployableEffect.deployableProxyProjectileSpeedOverride = 16f;
             deployableEffect.deployableProxyStartingVariantIndex = 0;
 
             ResetUltimateDecision(skill);
-            skill.ultimateDecision.targetingType = UltimateTargetingType.UseSkillTargetType;
-            skill.ultimateDecision.combineMode = UltimateConditionCombineMode.AllMustPass;
-            skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.AllyLowHealthInRange;
-            skill.ultimateDecision.primaryCondition.searchRadius = 0.1f;
+            skill.ultimateDecision.targetingType = UltimateTargetingType.Self;
+            skill.ultimateDecision.combineMode = UltimateConditionCombineMode.PrimaryOnly;
+            skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;
+            skill.ultimateDecision.primaryCondition.searchRadius = Stage01ArenaSpec.FullMapTargetingRangeWorldUnits;
             skill.ultimateDecision.primaryCondition.requiredUnitCount = 1;
-            skill.ultimateDecision.primaryCondition.healthPercentThreshold = 0.7f;
-            skill.ultimateDecision.secondaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;
-            skill.ultimateDecision.secondaryCondition.searchRadius = skill.areaRadius;
-            skill.ultimateDecision.secondaryCondition.requiredUnitCount = 1;
-            skill.ultimateDecision.fallback.fallbackType = UltimateFallbackType.LowerPrimaryThreshold;
-            skill.ultimateDecision.fallback.triggerAfterSeconds = 45f;
-            skill.ultimateDecision.fallback.overrideHealthPercentThreshold = 1f;
+            skill.ultimateDecision.primaryCondition.healthPercentThreshold = 1f;
+            skill.ultimateDecision.secondaryCondition.conditionType = UltimateConditionType.None;
+            skill.ultimateDecision.fallback.fallbackType = UltimateFallbackType.None;
             EditorUtility.SetDirty(skill);
             return skill;
         }
