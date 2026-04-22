@@ -232,7 +232,9 @@ namespace Fight.Battle
         private static RuntimeHero FindLowestHealthEnemy(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange)
         {
             RuntimeHero best = null;
-            var bestRatio = float.MaxValue;
+            var lowestCurrentHealth = float.MaxValue;
+            var lowestRatio = float.MaxValue;
+            var farthestDistance = float.MinValue;
             for (var i = 0; i < heroes.Count; i++)
             {
                 var candidate = heroes[i];
@@ -248,12 +250,20 @@ namespace Fight.Battle
                 }
 
                 var ratio = candidate.MaxHealth > 0f ? candidate.CurrentHealth / candidate.MaxHealth : 1f;
-                if (ratio >= bestRatio)
+                if (!IsBetterLowestHealthEnemyCandidate(
+                        candidate.CurrentHealth,
+                        ratio,
+                        distance,
+                        lowestCurrentHealth,
+                        lowestRatio,
+                        farthestDistance))
                 {
                     continue;
                 }
 
-                bestRatio = ratio;
+                lowestCurrentHealth = candidate.CurrentHealth;
+                lowestRatio = ratio;
+                farthestDistance = distance;
                 best = candidate;
             }
 
@@ -585,6 +595,37 @@ namespace Fight.Battle
             }
 
             return distance < bestDistance;
+        }
+
+        private static bool IsBetterLowestHealthEnemyCandidate(
+            float currentHealth,
+            float healthRatio,
+            float distance,
+            float bestCurrentHealth,
+            float bestHealthRatio,
+            float bestDistance)
+        {
+            if (currentHealth < bestCurrentHealth - Mathf.Epsilon)
+            {
+                return true;
+            }
+
+            if (Mathf.Abs(currentHealth - bestCurrentHealth) > Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            if (healthRatio < bestHealthRatio - Mathf.Epsilon)
+            {
+                return true;
+            }
+
+            if (Mathf.Abs(healthRatio - bestHealthRatio) > Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            return distance > bestDistance + Mathf.Epsilon;
         }
 
         private static RuntimeHero FindNearestEnemyByHeroClass(
