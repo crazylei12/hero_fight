@@ -177,6 +177,7 @@ namespace Fight.Battle
                 case StatusEffectType.CriticalChanceModifier:
                 case StatusEffectType.CriticalDamageModifier:
                 case StatusEffectType.AttackRangeModifier:
+                case StatusEffectType.HealTakenModifier:
                     return status.magnitude < -Mathf.Epsilon;
                 default:
                     return false;
@@ -206,6 +207,7 @@ namespace Fight.Battle
                 case StatusEffectType.CriticalChanceModifier:
                 case StatusEffectType.CriticalDamageModifier:
                 case StatusEffectType.AttackRangeModifier:
+                case StatusEffectType.HealTakenModifier:
                     return status.magnitude > Mathf.Epsilon;
                 default:
                     return false;

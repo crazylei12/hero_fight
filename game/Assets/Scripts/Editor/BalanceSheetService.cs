@@ -1004,6 +1004,7 @@ namespace Fight.Editor
                     StatusEffectType.DamageOverTime => "持续伤害",
                     StatusEffectType.Shield => "护盾",
                     StatusEffectType.DamageShare => "分担伤害",
+                    StatusEffectType.HealTakenModifier => "受治疗率修正",
                     _ => value.ToString(),
                 },
                 _ => value.ToString(),
