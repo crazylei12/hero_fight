@@ -59,7 +59,6 @@ namespace Fight.Battle
             return TryResolveHeroAttack(
                 context,
                 attacker,
-                attacker != null ? attacker.CurrentTarget : null,
                 HeroWideFallbackSearchRange,
                 allowHealthyHealFallback: true,
                 out var target,
@@ -71,7 +70,6 @@ namespace Fight.Battle
         public static bool TryResolveHeroAttack(
             BattleContext context,
             RuntimeHero attacker,
-            RuntimeHero preferredEnemyTarget,
             float selectionRange,
             out RuntimeHero target,
             out ResolvedBasicAttack resolvedAttack)
@@ -79,7 +77,6 @@ namespace Fight.Battle
             return TryResolveHeroAttack(
                 context,
                 attacker,
-                preferredEnemyTarget,
                 selectionRange,
                 allowHealthyHealFallback: false,
                 out target,
@@ -280,7 +277,6 @@ namespace Fight.Battle
         private static bool TryResolveHeroAttack(
             BattleContext context,
             RuntimeHero attacker,
-            RuntimeHero preferredEnemyTarget,
             float selectionRange,
             bool allowHealthyHealFallback,
             out RuntimeHero target,
@@ -303,7 +299,6 @@ namespace Fight.Battle
                 attacker.GetClampedBasicAttackVariantIndex(),
                 selectionRange,
                 HeroWideFallbackSearchRange,
-                preferredEnemyTarget,
                 allowForcedEnemyTarget: true,
                 allowHealthyHealFallback,
                 projectileSpeedOverride: 0f,
@@ -321,7 +316,6 @@ namespace Fight.Battle
             int sequenceVariantIndex,
             float selectionRange,
             float missingTargetFallbackSearchRange,
-            RuntimeHero preferredEnemyTarget,
             bool allowForcedEnemyTarget,
             bool allowHealthyHealFallback,
             float projectileSpeedOverride,
@@ -358,7 +352,6 @@ namespace Fight.Battle
                     sourcePosition,
                     currentAttack,
                     selectionRange,
-                    preferredEnemyTarget,
                     allowForcedEnemyTarget,
                     allowHealthyHealFallback,
                     out target))
@@ -384,7 +377,6 @@ namespace Fight.Battle
                     sourcePosition,
                     currentAttack,
                     missingTargetFallbackSearchRange,
-                    preferredEnemyTarget,
                     allowForcedEnemyTarget))
             {
                 return false;
@@ -404,7 +396,6 @@ namespace Fight.Battle
                     sourcePosition,
                     fallbackAttack,
                     selectionRange,
-                    preferredEnemyTarget,
                     allowForcedEnemyTarget: false,
                     allowHealthyHealFallback,
                     out target))
@@ -450,7 +441,6 @@ namespace Fight.Battle
             Vector3 sourcePosition,
             ResolvedBasicAttack resolvedAttack,
             float selectionRange,
-            RuntimeHero preferredEnemyTarget,
             bool allowForcedEnemyTarget,
             bool allowHealthyHealFallback,
             out RuntimeHero target)
@@ -477,7 +467,6 @@ namespace Fight.Battle
                 sourcePosition,
                 resolvedAttack,
                 selectionRange,
-                preferredEnemyTarget,
                 allowHealthyHealFallback);
             return target != null && CanApplyEffectToTarget(target, resolvedAttack.EffectType);
         }
@@ -488,7 +477,6 @@ namespace Fight.Battle
             Vector3 sourcePosition,
             ResolvedBasicAttack resolvedAttack,
             float searchRange,
-            RuntimeHero preferredEnemyTarget,
             bool allowForcedEnemyTarget)
         {
             return TryResolveSelectionForAttack(
@@ -497,7 +485,6 @@ namespace Fight.Battle
                 sourcePosition,
                 resolvedAttack,
                 searchRange,
-                preferredEnemyTarget,
                 allowForcedEnemyTarget,
                 allowHealthyHealFallback: false,
                 out _);
@@ -509,7 +496,6 @@ namespace Fight.Battle
             Vector3 sourcePosition,
             ResolvedBasicAttack resolvedAttack,
             float selectionRange,
-            RuntimeHero preferredEnemyTarget,
             bool allowHealthyHealFallback)
         {
             if (context?.Heroes == null || attacker == null || resolvedAttack == null)
@@ -525,12 +511,6 @@ namespace Fight.Battle
                     sourcePosition,
                     selectionRange,
                     allowHealthyHealFallback),
-                BasicAttackTargetType.PreferredEnemy => SelectLockedPreferredEnemyTarget(
-                    context.Heroes,
-                    attacker,
-                    sourcePosition,
-                    selectionRange,
-                    preferredEnemyTarget),
                 BasicAttackTargetType.ThreateningEnemyNearRangedAlly => BattleAiDirector.SelectThreateningEnemyNearRangedAllyTarget(
                         context.Heroes,
                         attacker,
@@ -570,22 +550,6 @@ namespace Fight.Battle
             }
 
             return bestTarget;
-        }
-
-        private static RuntimeHero SelectLockedPreferredEnemyTarget(
-            System.Collections.Generic.IReadOnlyList<RuntimeHero> heroes,
-            RuntimeHero attacker,
-            Vector3 sourcePosition,
-            float selectionRange,
-            RuntimeHero preferredEnemyTarget)
-        {
-            if (IsPotentialEnemyTarget(attacker, preferredEnemyTarget)
-                && IsWithinRange(sourcePosition, preferredEnemyTarget, selectionRange))
-            {
-                return preferredEnemyTarget;
-            }
-
-            return SelectNearestEnemyTarget(heroes, attacker, sourcePosition, selectionRange);
         }
 
         private static RuntimeHero SelectLowestHealthAllyTarget(

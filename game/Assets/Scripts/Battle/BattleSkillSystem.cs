@@ -3247,7 +3247,7 @@ namespace Fight.Battle
         {
             return includeAllies
                 ? BattleAiDirector.SelectPreferredAllyTarget(heroes, caster, maxRange)
-                : BattleAiDirector.SelectPreferredEnemyTarget(heroes, caster, maxRange);
+                : BattleAiDirector.SelectDefaultOffensiveEnemyTarget(heroes, caster, maxRange);
         }
 
         private static RuntimeHero SelectThreatenedRangedAllyOrEnemyAnchor(
@@ -3619,7 +3619,7 @@ namespace Fight.Battle
                 best = candidate;
             }
 
-            return best ?? BattleAiDirector.SelectPreferredEnemyTarget(heroes, caster, maxRange);
+            return best ?? BattleAiDirector.SelectDefaultOffensiveEnemyTarget(heroes, caster, maxRange);
         }
 
         private static void ApplyDashReposition(

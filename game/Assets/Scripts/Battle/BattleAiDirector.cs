@@ -14,35 +14,14 @@ namespace Fight.Battle
         private const float RangedThreatUnsafeDistanceFactor = 0.45f;
         private const float RangedThreatUnsafeDistanceMinimum = 1.75f;
 
-        public static RuntimeHero SelectPreferredEnemyTarget(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange)
+        public static RuntimeHero SelectDefaultOffensiveEnemyTarget(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange)
         {
             return actor.Definition.heroClass switch
             {
-                HeroClass.Assassin => FindAssassinTarget(heroes, actor, maxRange),
                 HeroClass.Marksman => FindLowestHealthEnemy(heroes, actor, maxRange),
                 HeroClass.Mage => FindClusteredEnemy(heroes, actor, maxRange) ?? FindNearestEnemy(heroes, actor, maxRange),
                 _ => FindNearestEnemy(heroes, actor, maxRange),
             };
-        }
-
-        public static RuntimeHero SelectLockedPreferredEnemyTarget(
-            IReadOnlyList<RuntimeHero> heroes,
-            RuntimeHero actor,
-            RuntimeHero currentTarget,
-            float maxRange)
-        {
-            return IsLockedPreferredEnemyTargetValid(actor, currentTarget)
-                ? currentTarget
-                : SelectPreferredEnemyTarget(heroes, actor, maxRange);
-        }
-
-        public static bool IsLockedPreferredEnemyTargetValid(RuntimeHero actor, RuntimeHero currentTarget)
-        {
-            return actor != null
-                && currentTarget != null
-                && !currentTarget.IsDead
-                && currentTarget.Side != actor.Side
-                && currentTarget.CanBeDirectTargeted;
         }
 
         public static RuntimeHero SelectNearestEnemyTarget(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange)
@@ -604,11 +583,6 @@ namespace Fight.Battle
             }
 
             return distance < bestDistance;
-        }
-
-        private static RuntimeHero FindAssassinTarget(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange)
-        {
-            return FindBackmostEnemy(heroes, actor, maxRange) ?? FindNearestEnemy(heroes, actor, maxRange);
         }
 
         private static RuntimeHero FindNearestEnemyByHeroClass(
