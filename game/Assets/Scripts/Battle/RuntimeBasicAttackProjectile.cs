@@ -1,6 +1,7 @@
 using Fight.Heroes;
 using Fight.Data;
 using UnityEngine;
+using System.Collections.Generic;
 
 namespace Fight.Battle
 {
@@ -9,24 +10,34 @@ namespace Fight.Battle
         public RuntimeBasicAttackProjectile(
             string projectileId,
             RuntimeHero attacker,
+            RuntimeDeployableProxy sourceProxy,
             RuntimeHero target,
             Vector3 startPosition,
             float speed,
             float impactAmount,
-            BasicAttackEffectType effectType)
+            BasicAttackEffectType effectType,
+            string variantKey,
+            BasicAttackTargetType targetType,
+            IReadOnlyList<StatusEffectData> onHitStatusEffects)
         {
             ProjectileId = projectileId;
             Attacker = attacker;
+            SourceProxy = sourceProxy;
             Target = target;
             CurrentPosition = startPosition;
             Speed = Mathf.Max(0.01f, speed);
             ImpactAmount = Mathf.Max(0f, impactAmount);
             EffectType = effectType;
+            VariantKey = variantKey ?? string.Empty;
+            TargetType = targetType;
+            OnHitStatusEffects = onHitStatusEffects ?? System.Array.Empty<StatusEffectData>();
         }
 
         public string ProjectileId { get; }
 
         public RuntimeHero Attacker { get; }
+
+        public RuntimeDeployableProxy SourceProxy { get; }
 
         public RuntimeHero Target { get; }
 
@@ -37,5 +48,11 @@ namespace Fight.Battle
         public float ImpactAmount { get; }
 
         public BasicAttackEffectType EffectType { get; }
+
+        public string VariantKey { get; }
+
+        public BasicAttackTargetType TargetType { get; }
+
+        public IReadOnlyList<StatusEffectData> OnHitStatusEffects { get; }
     }
 }

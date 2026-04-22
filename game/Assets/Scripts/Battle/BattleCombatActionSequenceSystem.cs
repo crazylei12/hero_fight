@@ -79,8 +79,13 @@ namespace Fight.Battle
             RuntimeCombatActionSequence sequence,
             BattleManager battleManager)
         {
-            var target = ResolveBasicAttackTarget(context, actor, sequence);
-            if (target == null)
+            if (!BattleBasicAttackSystem.TryResolveHeroAttack(
+                    context,
+                    actor,
+                    sequence.PreferredTarget,
+                    actor.AttackRange,
+                    out var target,
+                    out var resolvedAttack))
             {
                 return false;
             }
@@ -90,6 +95,7 @@ namespace Fight.Battle
                 context,
                 actor,
                 target,
+                resolvedAttack,
                 battleManager,
                 sequence.WindupSeconds,
                 sequence.RecoverySeconds,
@@ -130,82 +136,6 @@ namespace Fight.Battle
                 sequence.RecoverySeconds,
                 battleManager);
             sequence.MarkExecutionQueued(primaryTarget);
-
-            return true;
-        }
-
-        private static RuntimeHero ResolveBasicAttackTarget(BattleContext context, RuntimeHero actor, RuntimeCombatActionSequence sequence)
-        {
-            if (context == null || actor?.Definition?.basicAttack == null)
-            {
-                return null;
-            }
-
-            if (TryResolveForcedBasicAttackTarget(actor, out var forcedTarget))
-            {
-                return forcedTarget;
-            }
-
-            var preferredTargetIsValid = IsValidBasicAttackTarget(actor, sequence.PreferredTarget);
-            if (sequence.TargetRefreshMode != CombatActionSequenceTargetRefreshMode.RefreshEveryIteration
-                && preferredTargetIsValid)
-            {
-                return sequence.PreferredTarget;
-            }
-
-            if (sequence.TargetRefreshMode == CombatActionSequenceTargetRefreshMode.KeepCurrentTarget)
-            {
-                return null;
-            }
-
-            var selected = actor.Definition.basicAttack.targetType switch
-            {
-                BasicAttackTargetType.LowestHealthAlly => BattleAiDirector.SelectPreferredAllyTarget(
-                    context.Heroes,
-                    actor,
-                    actor.AttackRange,
-                    allowHealthyFallback: true),
-                BasicAttackTargetType.PreferredEnemy => BattleAiDirector.SelectLockedPreferredEnemyTarget(
-                    context.Heroes,
-                    actor,
-                    sequence.PreferredTarget,
-                    actor.AttackRange),
-                _ => BattleAiDirector.SelectNearestEnemyTarget(context.Heroes, actor, actor.AttackRange),
-            };
-
-            return IsValidBasicAttackTarget(actor, selected)
-                ? selected
-                : null;
-        }
-
-        private static bool IsValidBasicAttackTarget(RuntimeHero actor, RuntimeHero target)
-        {
-            if (actor?.Definition?.basicAttack == null || target == null || target.IsDead || !target.CanBeDirectTargeted)
-            {
-                return false;
-            }
-
-            var targetMatches = actor.Definition.basicAttack.targetType switch
-            {
-                BasicAttackTargetType.LowestHealthAlly => target.Side == actor.Side,
-                BasicAttackTargetType.PreferredEnemy => target.Side != actor.Side,
-                _ => target.Side != actor.Side,
-            };
-            if (!targetMatches)
-            {
-                return false;
-            }
-
-            if (Vector3.Distance(actor.CurrentPosition, target.CurrentPosition) > actor.AttackRange)
-            {
-                return false;
-            }
-
-            if (actor.Definition.basicAttack.effectType == BasicAttackEffectType.Heal
-                && target.CurrentHealth >= target.MaxHealth - Mathf.Epsilon)
-            {
-                return false;
-            }
 
             return true;
         }
@@ -262,30 +192,7 @@ namespace Fight.Battle
                 return !actor.CanCastSkills;
             }
 
-            return actor.TryGetForcedEnemyTarget(out var forcedTarget)
-                && !IsValidBasicAttackTarget(actor, forcedTarget);
-        }
-
-        private static bool TryResolveForcedBasicAttackTarget(RuntimeHero actor, out RuntimeHero forcedTarget)
-        {
-            forcedTarget = null;
-            if (actor == null)
-            {
-                return false;
-            }
-
-            if (!actor.TryGetForcedEnemyTarget(out var resolvedForcedTarget))
-            {
-                return false;
-            }
-
-            if (!IsValidBasicAttackTarget(actor, resolvedForcedTarget))
-            {
-                return false;
-            }
-
-            forcedTarget = resolvedForcedTarget;
-            return true;
+            return false;
         }
     }
 }
