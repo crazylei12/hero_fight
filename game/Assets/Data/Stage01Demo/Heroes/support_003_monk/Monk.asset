@@ -34,7 +34,9 @@ MonoBehaviour:
     effectType: 0
     targetType: 0
     targetPrioritySearchRadius: 0
+    startingVariantIndex: 0
     onHitStatusEffects: []
+    variants: []
   activeSkill: {fileID: 11400000, guid: a0f1b42f6c2e4bdf8e4f6db2c86ff9b1, type: 2}
   ultimateSkill: {fileID: 11400000, guid: 45c63a44f39e49b1968d2a3888983adb, type: 2}
   aiTemplateId: support_default
@@ -50,6 +52,7 @@ MonoBehaviour:
     projectileEulerAngles: {x: 0, y: 0, z: 0}
     castVfxPrefab: {fileID: 0}
     hitVfxPrefab: {fileID: 0}
+    basicAttackVariantVisuals: []
     castSfx: {fileID: 0}
   debugNotes: Stage-01 demo hero for Support. Monk validates melee frontline sustain
     with self-centered burst healing and low-threshold team shielding.

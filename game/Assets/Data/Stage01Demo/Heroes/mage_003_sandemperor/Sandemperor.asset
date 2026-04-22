@@ -34,7 +34,9 @@ MonoBehaviour:
     effectType: 0
     targetType: 0
     targetPrioritySearchRadius: 0
+    startingVariantIndex: 0
     onHitStatusEffects: []
+    variants: []
   activeSkill: {fileID: 11400000, guid: 48d88dc6d09e460091f59ec59a6602e6, type: 2}
   ultimateSkill: {fileID: 11400000, guid: 72569ada70cd47a4bba8357c8c0826c8, type: 2}
   aiTemplateId: mage_default
@@ -50,5 +52,7 @@ MonoBehaviour:
     projectileEulerAngles: {x: 0, y: 0, z: 0}
     castVfxPrefab: {fileID: 0}
     hitVfxPrefab: {fileID: 0}
+    basicAttackVariantVisuals: []
     castSfx: {fileID: 0}
-  debugNotes: "Stage-01 demo hero for Mage. Sandemperor validates fixed deployable proxies that only strike off the owner's basic-attack cadence."
+  debugNotes: Stage-01 demo hero for Mage. Sandemperor validates fixed deployable
+    proxies that only strike off the owner's basic-attack cadence.

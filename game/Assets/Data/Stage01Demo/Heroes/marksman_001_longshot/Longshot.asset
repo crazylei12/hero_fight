@@ -34,7 +34,9 @@ MonoBehaviour:
     effectType: 0
     targetType: 0
     targetPrioritySearchRadius: 0
+    startingVariantIndex: 0
     onHitStatusEffects: []
+    variants: []
   activeSkill: {fileID: 11400000, guid: 440b9582223e6ae4588b77681abf091c, type: 2}
   ultimateSkill: {fileID: 11400000, guid: abc242b860bdb8f4f8872537594d63fd, type: 2}
   aiTemplateId: marksman_default
@@ -50,6 +52,7 @@ MonoBehaviour:
     projectileEulerAngles: {x: 0, y: 0, z: 0}
     castVfxPrefab: {fileID: 0}
     hitVfxPrefab: {fileID: 0}
+    basicAttackVariantVisuals: []
     castSfx: {fileID: 0}
   debugNotes: Stage-01 demo hero for Marksman. Longshot replaces the placeholder
     Focus Shot / Arrow Rain kit.

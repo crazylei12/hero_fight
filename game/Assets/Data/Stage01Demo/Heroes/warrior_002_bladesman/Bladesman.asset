@@ -34,7 +34,9 @@ MonoBehaviour:
     effectType: 0
     targetType: 0
     targetPrioritySearchRadius: 0
+    startingVariantIndex: 0
     onHitStatusEffects: []
+    variants: []
   activeSkill: {fileID: 11400000, guid: cea6d9469fff6854faf5286573072e00, type: 2}
   ultimateSkill: {fileID: 11400000, guid: 76255ddfecb3c5243a7b693c08d1a391, type: 2}
   aiTemplateId: warrior_default
@@ -50,6 +52,7 @@ MonoBehaviour:
     projectileEulerAngles: {x: 0, y: 0, z: 0}
     castVfxPrefab: {fileID: 0}
     hitVfxPrefab: {fileID: 0}
+    basicAttackVariantVisuals: []
     castSfx: {fileID: 0}
   debugNotes: Stage-01 demo hero for Warrior. Bladesman validates pre-damage defense
     shred and fixed-distance line-breaking dash damage.

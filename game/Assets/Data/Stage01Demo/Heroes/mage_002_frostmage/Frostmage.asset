@@ -34,7 +34,9 @@ MonoBehaviour:
     effectType: 0
     targetType: 0
     targetPrioritySearchRadius: 0
+    startingVariantIndex: 0
     onHitStatusEffects: []
+    variants: []
   activeSkill: {fileID: 11400000, guid: 54e09c0371ef718448cb59c6f5eb6a68, type: 2}
   ultimateSkill: {fileID: 11400000, guid: 7548039711a369b4aadb2efdfcd79180, type: 2}
   aiTemplateId: mage_default
@@ -50,5 +52,6 @@ MonoBehaviour:
     projectileEulerAngles: {x: 0, y: 0, z: 0}
     castVfxPrefab: {fileID: 0}
     hitVfxPrefab: {fileID: 0}
+    basicAttackVariantVisuals: []
     castSfx: {fileID: 0}
   debugNotes: Stage-01 demo hero for Mage.

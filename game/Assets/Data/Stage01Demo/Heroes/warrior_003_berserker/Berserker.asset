@@ -34,14 +34,16 @@ MonoBehaviour:
     effectType: 0
     targetType: 0
     targetPrioritySearchRadius: 0
+    startingVariantIndex: 0
     onHitStatusEffects: []
+    variants: []
   activeSkill: {fileID: 11400000, guid: d769703fadf9d2642b9692bb5268ae81, type: 2}
   ultimateSkill: {fileID: 11400000, guid: c40ff6d6ec9b43d4fa3ec8e507f2e707, type: 2}
   aiTemplateId: warrior_default
   usesSpecialLogic: 0
   specialLogicNotes: 
   visualConfig:
-    portrait: {fileID: 21300000, guid: 91d5ef89458beac4f9bd9a867cef7c07, type: 3}
+    portrait: {fileID: 21300000, guid: e45b24c0dae4f2549af5eae45f7eba14, type: 3}
     battlePrefab: {fileID: 7783934658414102309, guid: 5ff49e768d360f748a5c7c1f21bc1029, type: 3}
     animatorController: {fileID: 9100000, guid: c0fbc9a82051e94429aa17cc4b2f48e5, type: 2}
     battlePrefabFacesLeftByDefault: 0
@@ -50,5 +52,6 @@ MonoBehaviour:
     projectileEulerAngles: {x: 0, y: 0, z: 0}
     castVfxPrefab: {fileID: 0}
     hitVfxPrefab: {fileID: 0}
+    basicAttackVariantVisuals: []
     castSfx: {fileID: 0}
   debugNotes: Stage-01 demo hero for Warrior.

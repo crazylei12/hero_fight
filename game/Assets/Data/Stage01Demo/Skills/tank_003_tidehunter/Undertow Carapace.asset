@@ -27,9 +27,16 @@ MonoBehaviour:
   passiveSkill:
     missingHealthAttackPowerRatio: 0
     maxAttackPowerBonus: 0
+    lowHealthLifestealThreshold: 0
+    lowHealthLifestealRatio: 0
     recentDirectHostileSourceWindowSeconds: 1.5
     recentDirectHostileSourceDefenseBonusPerSource: 0.2
     maxDefenseBonus: 0.8
+    rejectExternalPositiveEffects: 0
+    killParticipationAttackPowerBonusPerStack: 0
+    killParticipationAttackSpeedBonusPerStack: 0
+    killParticipationHealPercentMaxHealth: 0
+    killParticipationMaxStacks: 0
   castRange: 0
   areaRadius: 0
   cooldownSeconds: 0

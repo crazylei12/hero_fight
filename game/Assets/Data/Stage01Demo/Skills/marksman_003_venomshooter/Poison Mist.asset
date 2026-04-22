@@ -14,14 +14,29 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_venomshooter_active_poisonmist
   displayName: Poison Mist
-  description: "Stage-01 demo skill: ranged poison field that rapidly seeds 3 poison stacks across a clustered enemy group."
+  description: 'Stage-01 demo skill: ranged poison field that rapidly seeds 3 poison
+    stacks across a clustered enemy group.'
   slotType: 0
+  activationMode: 0
   skillType: 1
   targetType: 3
   preferredEnemyHeroClass: 2
   fallbackTargetType: 1
   targetPrioritySearchRadius: 0
   targetPriorityRequiredUnitCount: 1
+  passiveSkill:
+    missingHealthAttackPowerRatio: 0
+    maxAttackPowerBonus: 0
+    lowHealthLifestealThreshold: 0
+    lowHealthLifestealRatio: 0
+    recentDirectHostileSourceWindowSeconds: 0
+    recentDirectHostileSourceDefenseBonusPerSource: 0
+    maxDefenseBonus: 0
+    rejectExternalPositiveEffects: 0
+    killParticipationAttackPowerBonusPerStack: 0
+    killParticipationAttackSpeedBonusPerStack: 0
+    killParticipationHealPercentMaxHealth: 0
+    killParticipationMaxStacks: 0
   castRange: 9.2
   areaRadius: 3.6
   cooldownSeconds: 6
@@ -53,10 +68,18 @@ MonoBehaviour:
     deployableProxyMaxCount: 0
     deployableProxyReplaceOldestWhenLimitReached: 1
     deployableProxyImmediateStrikeOnSpawn: 0
+    deployableProxyPowerMultiplierScale: 1
+    deployableProxyAttackIntervalSeconds: 0
+    deployableProxyAttackRange: 0
+    deployableProxyProjectileSpeedOverride: 0
+    deployableProxyStartingVariantIndex: 0
     forcedMovementDirection: 0
     forcedMovementDistance: 0
     forcedMovementDurationSeconds: 0
     forcedMovementPeakHeight: 0
+    radialSweepDirection: 0
+    radialSweepStartDelaySeconds: 0
+    radialSweepRingWidth: 1
     statusEffects:
     - effectType: 14
       durationSeconds: 4
@@ -121,6 +144,12 @@ MonoBehaviour:
     temporarySkillCastRangeOverride: 0
     targetRefreshMode: 1
     interruptFlags: 3
+  temporaryOverride:
+    durationSeconds: 0
+    lifestealRatio: 0
+    visualScaleMultiplier: 1
+    visualTintColor: {r: 1, g: 1, b: 1, a: 1}
+    visualTintStrength: 0
   targetIndicatorVfxPrefab: {fileID: 0}
   castImpactVfxPrefab: {fileID: 0}
   castImpactVfxLocalOffset: {x: 0, y: 0, z: 0}
@@ -174,4 +203,16 @@ MonoBehaviour:
       secondaryTriggerAfterSeconds: 0
       secondaryOverrideRequiredUnitCount: 0
       secondaryOverrideHealthPercentThreshold: -1
+      alternatePrimaryCondition:
+        conditionType: 0
+        searchRadius: 0
+        requiredUnitCount: 1
+        healthPercentThreshold: 1
+        durationSeconds: 0
+        highValueTargetType: 0
+        heroClassFilter: 2
+        statusEffectTypeFilter: 0
+        statusThemeKey: 
+        minimumStatusStacks: 1
+        requireTargetInCastRange: 1
     combineMode: 0

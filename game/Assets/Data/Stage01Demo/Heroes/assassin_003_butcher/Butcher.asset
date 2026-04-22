@@ -34,7 +34,9 @@ MonoBehaviour:
     effectType: 0
     targetType: 0
     targetPrioritySearchRadius: 0
+    startingVariantIndex: 0
     onHitStatusEffects: []
+    variants: []
   activeSkill: {fileID: 11400000, guid: 09647fa8414deb64cac11f74370feca1, type: 2}
   ultimateSkill: {fileID: 11400000, guid: 6cccee9a9ceb3014eb2bca3f5ed6bbca, type: 2}
   aiTemplateId: assassin_default
@@ -50,6 +52,7 @@ MonoBehaviour:
     projectileEulerAngles: {x: 0, y: 0, z: 0}
     castVfxPrefab: {fileID: 0}
     hitVfxPrefab: {fileID: 0}
+    basicAttackVariantVisuals: []
     castSfx: {fileID: 0}
   debugNotes: Stage-01 demo hero for Assassin. Butcher validates pull-to-caster forced
     movement and target-side healing denial.

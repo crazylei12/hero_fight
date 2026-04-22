@@ -32,6 +32,11 @@ MonoBehaviour:
     recentDirectHostileSourceWindowSeconds: 0
     recentDirectHostileSourceDefenseBonusPerSource: 0
     maxDefenseBonus: 0
+    rejectExternalPositiveEffects: 0
+    killParticipationAttackPowerBonusPerStack: 0
+    killParticipationAttackSpeedBonusPerStack: 0
+    killParticipationHealPercentMaxHealth: 0
+    killParticipationMaxStacks: 0
   castRange: 0
   areaRadius: 0
   cooldownSeconds: 0
@@ -41,7 +46,7 @@ MonoBehaviour:
     targetMode: 2
     powerMultiplier: 0
     statusStackQueryEffectType: 0
-    statusStackQueryThemeKey:
+    statusStackQueryThemeKey: 
     minimumRequiredStatusStacks: 0
     bonusPowerMultiplierPerStatusStack: 0
     radiusOverride: 0
@@ -145,7 +150,7 @@ MonoBehaviour:
       highValueTargetType: 0
       heroClassFilter: 2
       statusEffectTypeFilter: 0
-      statusThemeKey:
+      statusThemeKey: 
       minimumStatusStacks: 1
       requireTargetInCastRange: 1
     secondaryCondition:
@@ -157,7 +162,7 @@ MonoBehaviour:
       highValueTargetType: 0
       heroClassFilter: 2
       statusEffectTypeFilter: 0
-      statusThemeKey:
+      statusThemeKey: 
       minimumStatusStacks: 1
       requireTargetInCastRange: 1
     fallback:
@@ -177,7 +182,7 @@ MonoBehaviour:
         highValueTargetType: 0
         heroClassFilter: 2
         statusEffectTypeFilter: 0
-        statusThemeKey:
+        statusThemeKey: 
         minimumStatusStacks: 1
         requireTargetInCastRange: 1
     combineMode: 0

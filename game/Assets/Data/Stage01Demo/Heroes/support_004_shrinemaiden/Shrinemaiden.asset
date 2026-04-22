@@ -24,11 +24,11 @@ MonoBehaviour:
     moveSpeed: 4
     criticalChance: 0.05
     criticalDamageMultiplier: 1.5
-    attackRange: 12.299999
+    attackRange: 12.3
   basicAttack:
     damageMultiplier: 0.95
     attackInterval: 1.05
-    rangeOverride: 12.299999
+    rangeOverride: 12.3
     usesProjectile: 1
     projectileSpeed: 14
     effectType: 0
@@ -55,7 +55,7 @@ MonoBehaviour:
   ultimateSkill: {fileID: 11400000, guid: 77a68935814e71745acaf50ce02e8030, type: 2}
   aiTemplateId: support_default
   usesSpecialLogic: 0
-  specialLogicNotes:
+  specialLogicNotes: 
   visualConfig:
     portrait: {fileID: 21300000, guid: da914a8601e453a42859225de8466e27, type: 3}
     battlePrefab: {fileID: 3477065677140381507, guid: 373761dc888ee6d4999fcf64105545aa, type: 3}
