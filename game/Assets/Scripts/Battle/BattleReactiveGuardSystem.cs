@@ -257,6 +257,16 @@ namespace Fight.Battle
                 return;
             }
 
+            if (!guard.ProtectedHero.CanReceivePositiveEffectsFrom(guard.Caster))
+            {
+                context?.EventBus?.Publish(new PositiveEffectRejectedEvent(
+                    guard.Caster,
+                    guard.ProtectedHero,
+                    "Heal",
+                    guard.SourceSkill));
+                return;
+            }
+
             var actualHeal = guard.ProtectedHero.ApplyHealing(successfulKnockUpTargetCount * guard.HealProtectedHeroPerSuccessfulKnockUp);
             if (actualHeal <= 0f)
             {

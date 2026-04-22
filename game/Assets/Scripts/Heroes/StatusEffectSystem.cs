@@ -111,6 +111,54 @@ namespace Fight.Heroes
             return Mathf.Max(0f, 1f + GetTotalMagnitude(hero, StatusEffectType.HealTakenModifier));
         }
 
+        public static bool IsPositiveStatusEffect(StatusEffectData data)
+        {
+            if (data == null)
+            {
+                return false;
+            }
+
+            switch (data.effectType)
+            {
+                case StatusEffectType.HealOverTime:
+                case StatusEffectType.Shield:
+                case StatusEffectType.Invulnerable:
+                case StatusEffectType.Untargetable:
+                case StatusEffectType.DamageShare:
+                    return true;
+                case StatusEffectType.AttackPowerModifier:
+                case StatusEffectType.DefenseModifier:
+                case StatusEffectType.AttackSpeedModifier:
+                case StatusEffectType.MoveSpeedModifier:
+                case StatusEffectType.MaxHealthModifier:
+                case StatusEffectType.CriticalChanceModifier:
+                case StatusEffectType.CriticalDamageModifier:
+                case StatusEffectType.AttackRangeModifier:
+                case StatusEffectType.HealTakenModifier:
+                    return data.magnitude > Mathf.Epsilon;
+                default:
+                    return false;
+            }
+        }
+
+        public static bool HasPositiveStatusEffect(IReadOnlyList<StatusEffectData> statuses)
+        {
+            if (statuses == null)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < statuses.Count; i++)
+            {
+                if (IsPositiveStatusEffect(statuses[i]))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public static bool HasStatus(RuntimeHero hero, StatusEffectType effectType)
         {
             if (hero == null)

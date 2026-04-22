@@ -879,6 +879,11 @@ namespace Fight.Battle
 
         private static bool IsValidTargetForSkill(SkillData skill, RuntimeHero caster, RuntimeHero candidate)
         {
+            if (skill == null || caster == null || candidate == null)
+            {
+                return false;
+            }
+
             switch (skill.targetType)
             {
                 case SkillTargetType.Self:
@@ -888,11 +893,14 @@ namespace Fight.Battle
                 case SkillTargetType.ThreatenedRangedAlly:
                 case SkillTargetType.AllAllies:
                     return candidate.Side == caster.Side
+                        && !ShouldRejectPositiveSkillTarget(skill, caster, candidate)
                         && (skill.targetType != SkillTargetType.LowestHealthRangedAlly
                             && skill.targetType != SkillTargetType.ThreatenedRangedAlly
                             || IsRangedAlly(candidate, caster));
                 case SkillTargetType.ThreatenedAlly:
-                    return candidate.Side == caster.Side && (candidate != caster || skill.allowsSelfCast);
+                    return candidate.Side == caster.Side
+                        && !ShouldRejectPositiveSkillTarget(skill, caster, candidate)
+                        && (candidate != caster || skill.allowsSelfCast);
                 case SkillTargetType.AllEnemies:
                 case SkillTargetType.CurrentEnemyTarget:
                     return candidate.Side != caster.Side;
@@ -905,7 +913,7 @@ namespace Fight.Battle
             var targetAllies = skill.skillType == SkillType.SingleTargetHeal
                 || skill.skillType == SkillType.AreaHeal;
             return targetAllies
-                ? candidate.Side == caster.Side
+                ? candidate.Side == caster.Side && !ShouldRejectPositiveSkillTarget(skill, caster, candidate)
                 : candidate.Side != caster.Side;
         }
 
@@ -2202,18 +2210,18 @@ namespace Fight.Battle
                 case SkillEffectTargetMode.PrimaryTarget:
                     return CollectPrimaryEffectTarget(primaryTarget, caster);
                 case SkillEffectTargetMode.EnemiesInRadiusAroundCaster:
-                    return CollectUnitsInRadius(context, caster, caster.CurrentPosition, GetEffectRadius(skill, effect), includeAllies: false);
+                    return CollectUnitsInRadius(context, caster, caster.CurrentPosition, GetEffectRadius(skill, effect), includeAllies: false, effect);
                 case SkillEffectTargetMode.AlliesInRadiusAroundCaster:
-                    return CollectUnitsInRadius(context, caster, caster.CurrentPosition, GetEffectRadius(skill, effect), includeAllies: true);
+                    return CollectUnitsInRadius(context, caster, caster.CurrentPosition, GetEffectRadius(skill, effect), includeAllies: true, effect);
                 case SkillEffectTargetMode.OtherAlliesInRadiusAroundCaster:
-                    return CollectUnitsInRadius(context, caster, caster.CurrentPosition, GetEffectRadius(skill, effect), includeAllies: true, excludeCaster: true);
+                    return CollectUnitsInRadius(context, caster, caster.CurrentPosition, GetEffectRadius(skill, effect), includeAllies: true, effect, excludeCaster: true);
                 case SkillEffectTargetMode.EnemiesInRadiusAroundPrimaryTarget:
                     return primaryTarget != null
-                        ? CollectUnitsInRadius(context, caster, primaryTarget.CurrentPosition, GetEffectRadius(skill, effect), includeAllies: false)
+                        ? CollectUnitsInRadius(context, caster, primaryTarget.CurrentPosition, GetEffectRadius(skill, effect), includeAllies: false, effect)
                         : new List<RuntimeHero>();
                 case SkillEffectTargetMode.AlliesInRadiusAroundPrimaryTarget:
                     return primaryTarget != null
-                        ? CollectUnitsInRadius(context, caster, primaryTarget.CurrentPosition, GetEffectRadius(skill, effect), includeAllies: true)
+                        ? CollectUnitsInRadius(context, caster, primaryTarget.CurrentPosition, GetEffectRadius(skill, effect), includeAllies: true, effect)
                         : new List<RuntimeHero>();
                 case SkillEffectTargetMode.DashPathEnemies:
                     return CollectDashPathTargets(context, caster, skill, effect, resolutionState);
@@ -2377,6 +2385,12 @@ namespace Fight.Battle
             for (var i = 0; i < targets.Count; i++)
             {
                 var target = targets[i];
+                if (ShouldRejectPositiveSkillEffectTarget(effect, caster, target))
+                {
+                    PublishPositiveEffectRejected(context, caster, target, "Heal", skill);
+                    continue;
+                }
+
                 var amount = HealResolver.ResolveHealAmount(caster, effect.powerMultiplier);
                 var actualHeal = target.ApplyHealing(amount);
                 if (actualHeal <= 0f)
@@ -2676,6 +2690,12 @@ namespace Fight.Battle
                     continue;
                 }
 
+                if (ShouldRejectPositiveStatusTarget(caster, target, status))
+                {
+                    PublishPositiveEffectRejected(context, caster, target, status.effectType.ToString(), sourceSkill);
+                    continue;
+                }
+
                 var previousShield = status.effectType == StatusEffectType.Shield
                     ? StatusEffectSystem.GetTotalShield(target)
                     : 0f;
@@ -2764,6 +2784,11 @@ namespace Fight.Battle
                 }
 
                 if (!IsValidPersistentAreaTarget(caster, candidate, effect))
+                {
+                    continue;
+                }
+
+                if (ShouldRejectPositiveSkillEffectTarget(effect, caster, candidate))
                 {
                     continue;
                 }
@@ -3133,6 +3158,7 @@ namespace Fight.Battle
             Vector3 center,
             float radius,
             bool includeAllies,
+            SkillEffectData effect,
             bool excludeCaster = false)
         {
             var results = new List<RuntimeHero>();
@@ -3157,6 +3183,11 @@ namespace Fight.Battle
 
                 var isAlly = candidate.Side == caster.Side;
                 if (includeAllies != isAlly)
+                {
+                    continue;
+                }
+
+                if (ShouldRejectPositiveSkillEffectTarget(effect, caster, candidate))
                 {
                     continue;
                 }
@@ -3323,6 +3354,11 @@ namespace Fight.Battle
                 return false;
             }
 
+            if (candidate.Side == caster.Side && ShouldRejectPositiveSkillTarget(skill, caster, candidate))
+            {
+                return false;
+            }
+
             return !RequiresDirectTargetValidation(skill) || IsDirectTargetAllowed(skill, caster, candidate);
         }
 
@@ -3342,6 +3378,11 @@ namespace Fight.Battle
                 }
 
                 if (!includeAllies && candidate.Side == caster.Side)
+                {
+                    continue;
+                }
+
+                if (includeAllies && ShouldRejectPositiveSkillTarget(skill, caster, candidate))
                 {
                     continue;
                 }
@@ -3403,6 +3444,11 @@ namespace Fight.Battle
             if (candidate == caster && CanSkillTargetSelf(skill, caster))
             {
                 return true;
+            }
+
+            if (candidate.Side == caster.Side && ShouldRejectPositiveSkillTarget(skill, caster, candidate))
+            {
+                return false;
             }
 
             return candidate.CanBeDirectTargeted;
@@ -3481,7 +3527,7 @@ namespace Fight.Battle
             RuntimeHero best = null;
             var lowestCurrentHealth = float.MaxValue;
             var lowestRatio = float.MaxValue;
-            var nearestDistance = float.MaxValue;
+            var bestDistance = includeAllies ? float.MaxValue : float.MinValue;
             for (var i = 0; i < heroes.Count; i++)
             {
                 var candidate = heroes[i];
@@ -3514,24 +3560,26 @@ namespace Fight.Battle
                 var ratio = candidate.MaxHealth > 0f ? candidate.CurrentHealth / candidate.MaxHealth : 1f;
                 if (includeAllies)
                 {
-                    if (!IsBetterLowestAllyCandidate(candidate.CurrentHealth, ratio, distance, lowestCurrentHealth, lowestRatio, nearestDistance))
+                    if (!IsBetterLowestAllyCandidate(candidate.CurrentHealth, ratio, distance, lowestCurrentHealth, lowestRatio, bestDistance))
                     {
                         continue;
                     }
 
                     lowestCurrentHealth = candidate.CurrentHealth;
                     lowestRatio = ratio;
-                    nearestDistance = distance;
+                    bestDistance = distance;
                     best = candidate;
                     continue;
                 }
 
-                if (ratio >= lowestRatio)
+                if (!IsBetterLowestEnemyCandidate(candidate.CurrentHealth, ratio, distance, lowestCurrentHealth, lowestRatio, bestDistance))
                 {
                     continue;
                 }
 
+                lowestCurrentHealth = candidate.CurrentHealth;
                 lowestRatio = ratio;
+                bestDistance = distance;
                 best = candidate;
             }
 
@@ -3567,6 +3615,136 @@ namespace Fight.Battle
             }
 
             return distance < bestDistance;
+        }
+
+        private static bool IsBetterLowestEnemyCandidate(
+            float currentHealth,
+            float healthRatio,
+            float distance,
+            float bestCurrentHealth,
+            float bestHealthRatio,
+            float bestDistance)
+        {
+            if (currentHealth < bestCurrentHealth - Mathf.Epsilon)
+            {
+                return true;
+            }
+
+            if (Mathf.Abs(currentHealth - bestCurrentHealth) > Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            if (healthRatio < bestHealthRatio - Mathf.Epsilon)
+            {
+                return true;
+            }
+
+            if (Mathf.Abs(healthRatio - bestHealthRatio) > Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            return distance > bestDistance + Mathf.Epsilon;
+        }
+
+        private static bool ShouldRejectPositiveSkillTarget(SkillData skill, RuntimeHero caster, RuntimeHero candidate)
+        {
+            return skill != null
+                && caster != null
+                && candidate != null
+                && candidate != caster
+                && candidate.Side == caster.Side
+                && !candidate.CanReceivePositiveEffectsFrom(caster)
+                && SkillHasPositivePayload(skill);
+        }
+
+        private static bool ShouldRejectPositiveSkillEffectTarget(SkillEffectData effect, RuntimeHero caster, RuntimeHero candidate)
+        {
+            return effect != null
+                && caster != null
+                && candidate != null
+                && candidate != caster
+                && candidate.Side == caster.Side
+                && !candidate.CanReceivePositiveEffectsFrom(caster)
+                && EffectHasPositivePayload(effect);
+        }
+
+        private static bool ShouldRejectPositiveStatusTarget(RuntimeHero caster, RuntimeHero target, StatusEffectData status)
+        {
+            return caster != null
+                && target != null
+                && status != null
+                && caster != target
+                && caster.Side == target.Side
+                && !target.CanReceivePositiveEffectsFrom(caster)
+                && StatusEffectSystem.IsPositiveStatusEffect(status);
+        }
+
+        private static bool SkillHasPositivePayload(SkillData skill)
+        {
+            if (skill == null)
+            {
+                return false;
+            }
+
+            if (skill.skillType == SkillType.SingleTargetHeal
+                || skill.skillType == SkillType.AreaHeal
+                || skill.skillType == SkillType.Buff)
+            {
+                return true;
+            }
+
+            if (skill.effects == null)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < skill.effects.Count; i++)
+            {
+                if (EffectHasPositivePayload(skill.effects[i]))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool EffectHasPositivePayload(SkillEffectData effect)
+        {
+            if (effect == null)
+            {
+                return false;
+            }
+
+            if (effect.effectType == SkillEffectType.DirectHeal)
+            {
+                return true;
+            }
+
+            if (effect.effectType == SkillEffectType.ApplyStatusEffects)
+            {
+                return StatusEffectSystem.HasPositiveStatusEffect(effect.statusEffects);
+            }
+
+            if (effect.effectType != SkillEffectType.CreatePersistentArea)
+            {
+                return false;
+            }
+
+            return effect.persistentAreaTargetType != PersistentAreaTargetType.Enemies
+                && (effect.persistentAreaPulseEffectType == PersistentAreaPulseEffectType.DirectHeal
+                    || StatusEffectSystem.HasPositiveStatusEffect(effect.statusEffects));
+        }
+
+        private static void PublishPositiveEffectRejected(BattleContext context, RuntimeHero caster, RuntimeHero target, string effectLabel, SkillData sourceSkill)
+        {
+            context?.EventBus?.Publish(new PositiveEffectRejectedEvent(
+                caster,
+                target,
+                effectLabel,
+                sourceSkill));
         }
 
         private static bool IsRangedAlly(RuntimeHero candidate, RuntimeHero caster)

@@ -166,7 +166,7 @@ namespace Fight.Battle
                 return actualDamage;
             }
 
-            BattleStatsSystem.ResolveAssists(context, target, attacker);
+            var killParticipants = BattleStatsSystem.ResolveKillParticipants(context, target, attacker);
             var endedTemporaryOverrideSkill = target.CurrentTemporaryOverrideSourceSkill;
             var endedTemporaryOverrideLifestealRatio = target.CurrentTemporaryOverrideLifestealRatio;
             var endedTemporaryOverrideVisualScaleMultiplier = target.CurrentVisualScaleMultiplier;
@@ -189,6 +189,7 @@ namespace Fight.Battle
                 battleManager.RegisterKill(attacker.Side);
             }
 
+            ApplyKillParticipationRewards(context, killParticipants);
             return actualDamage;
         }
 
@@ -297,6 +298,47 @@ namespace Fight.Battle
                 actualHeal,
                 attacker.CurrentLifestealSourceSkill,
                 attacker.CurrentHealth));
+        }
+
+        private static void ApplyKillParticipationRewards(BattleContext context, IReadOnlyList<RuntimeHero> participants)
+        {
+            if (participants == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < participants.Count; i++)
+            {
+                var participant = participants[i];
+                if (participant == null)
+                {
+                    continue;
+                }
+
+                participant.ResolveKillParticipationRewards((skill, previousStackCount, currentStackCount, maxStacks, attackPowerBonusMultiplier, attackSpeedBonusMultiplier, healAmount) =>
+                {
+                    if (healAmount > Mathf.Epsilon)
+                    {
+                        BattleStatsSystem.RecordHealingContribution(context, participant, participant, healAmount);
+                        context?.EventBus?.Publish(new HealAppliedEvent(
+                            participant,
+                            participant,
+                            healAmount,
+                            skill,
+                            participant.CurrentHealth));
+                    }
+
+                    context?.EventBus?.Publish(new PassiveStackChangedEvent(
+                        participant,
+                        skill,
+                        previousStackCount,
+                        currentStackCount,
+                        maxStacks,
+                        attackPowerBonusMultiplier,
+                        attackSpeedBonusMultiplier,
+                        healAmount));
+                });
+            }
         }
     }
 }

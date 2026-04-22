@@ -285,6 +285,23 @@ namespace Fight.Editor
                 HeroTag.Melee, HeroTag.Control, HeroTag.Dive);
             ConfigureButcherBasicAttack(butcher, overwriteExistingContent, butcherHeroExisted);
 
+            var lonerActive = CreateLonerActiveSkill(overwriteExistingContent);
+            var lonerUltimateSkill = CreateLonerUltimateSkill(overwriteExistingContent, out _);
+
+            var loner = CreateHero(
+                "assassin_004_loner",
+                "Loner",
+                HeroClass.Assassin,
+                305f, 40f, 10f, 1f / 0.83f, 5.3f, 0.16f, 1.7f, 1.35f,
+                lonerActive,
+                lonerUltimateSkill,
+                overwriteExistingContent,
+                out var lonerHeroExisted,
+                HeroTag.Melee, HeroTag.Dive, HeroTag.SustainedDamage);
+            ConfigureLonerBasicAttack(loner, overwriteExistingContent, lonerHeroExisted);
+            EnsureHeroSkillReferences(loner, lonerActive, lonerUltimateSkill);
+            EnsureHeroBattlePrefabReference(loner, LoadBattlePrefab("assassin_004_loner", HeroClass.Assassin));
+
             var tankActive = CreateIronwallActiveSkill(overwriteExistingContent);
             var tankUltimateSkill = CreateBuffSkill("skill_tank_ultimate_ironoath", "Iron Oath", SkillSlotType.Ultimate, SkillTargetType.AllAllies, 6f, 6f, 1f, 0f, StatusEffectType.DefenseModifier, 8f, 2.5f, overwriteExistingContent, out var tankUltimateExisted);
 
@@ -459,7 +476,7 @@ namespace Fight.Editor
             EnsureHeroSkillReferences(venomshooter, venomshooterActive, venomshooterUltimateSkill);
             EnsureHeroBattlePrefabReference(venomshooter, LoadBattlePrefab("marksman_003_venomshooter", HeroClass.Marksman));
 
-            CreateHeroCatalog(warrior, bladesman, berserker, mage, frostmage, sandemperor, assassin, tidefin, butcher, tank, shieldwarden, tidehunter, support, windchime, monk, shrinemaiden, marksman, rifleman, venomshooter);
+            CreateHeroCatalog(warrior, bladesman, berserker, mage, frostmage, sandemperor, assassin, tidefin, butcher, loner, tank, shieldwarden, tidehunter, support, windchime, monk, shrinemaiden, marksman, rifleman, venomshooter);
 
             var battleInput = CreateBattleInput(
                 "Stage01DemoBattleInput",
@@ -1065,6 +1082,7 @@ namespace Fight.Editor
                 "assassin_001_shadowstep" => AssassinPrefabPath,
                 "assassin_002_tidefin" => TidefinPrefabPath,
                 "assassin_003_butcher" => AssassinPrefabPath,
+                "assassin_004_loner" => AssassinPrefabPath,
                 "mage_001_firemage" => FireMagePrefabPath,
                 "mage_002_frostmage" => FrostMagePrefabPath,
                 "mage_003_sandemperor" => FireMagePrefabPath,
@@ -1707,6 +1725,97 @@ namespace Fight.Editor
 
             skill.description = "Stage-01 demo skill: yanks every enemy toward the caster and applies team-wide 100% healing reduction.";
             ResetActionSequence(skill);
+            ResetUltimateDecision(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateLonerActiveSkill(bool overwriteExistingContent)
+        {
+            var skill = CreateSkill(
+                "skill_loner_active_lonepursuit",
+                "Lone Pursuit",
+                SkillSlotType.ActiveSkill,
+                SkillType.Dash,
+                SkillTargetType.LowestHealthEnemy,
+                Stage01ArenaSpec.FullMapTargetingRangeWorldUnits,
+                0f,
+                0f,
+                5.5f,
+                1,
+                overwriteExistingContent,
+                out var existedBefore);
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.skillType = SkillType.Dash;
+            skill.targetType = SkillTargetType.LowestHealthEnemy;
+            skill.fallbackTargetType = SkillTargetType.NearestEnemy;
+            skill.castRange = Stage01ArenaSpec.FullMapTargetingRangeWorldUnits;
+            skill.areaRadius = 0f;
+            skill.cooldownSeconds = 5.5f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+
+            var untargetableEffect = AddApplyStatusEffectsEffect(skill);
+            untargetableEffect.targetMode = SkillEffectTargetMode.Caster;
+            untargetableEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.Untargetable,
+                durationSeconds = 0.45f,
+                magnitude = 1f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
+            AddRepositionEffect(skill, 0.45f);
+            skill.description = "Stage-01 demo skill: briefly becomes untargetable, then dives the current lowest-health enemy without extra damage.";
+            ResetUltimateDecision(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateLonerUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
+        {
+            var skill = CreateSkill(
+                "skill_loner_ultimate_loneinstinct",
+                "Lone Instinct",
+                SkillSlotType.Ultimate,
+                SkillType.Buff,
+                SkillTargetType.Self,
+                0f,
+                0f,
+                0f,
+                0f,
+                1,
+                overwriteExistingContent,
+                out existedBefore);
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.activationMode = SkillActivationMode.Passive;
+            skill.skillType = SkillType.Buff;
+            skill.targetType = SkillTargetType.Self;
+            skill.fallbackTargetType = SkillTargetType.None;
+            skill.castRange = 0f;
+            skill.areaRadius = 0f;
+            skill.cooldownSeconds = 0f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = true;
+            skill.effects.Clear();
+            ResetPassiveSkillData(skill);
+            skill.passiveSkill.rejectExternalPositiveEffects = true;
+            skill.passiveSkill.killParticipationAttackPowerBonusPerStack = 0.08f;
+            skill.passiveSkill.killParticipationAttackSpeedBonusPerStack = 0.10f;
+            skill.passiveSkill.killParticipationHealPercentMaxHealth = 0.18f;
+            skill.passiveSkill.killParticipationMaxStacks = 5;
+            skill.description = "Stage-01 demo passive skill: rejects allied positive effects and snowballs attack power, attack speed, and self-healing on kill participation.";
+            ResetTemporaryOverride(skill);
             ResetUltimateDecision(skill);
             EditorUtility.SetDirty(skill);
             return skill;
@@ -2726,6 +2835,27 @@ namespace Fight.Editor
             EditorUtility.SetDirty(hero);
         }
 
+        private static void ConfigureLonerBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (hero == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return;
+            }
+
+            hero.basicAttack.damageMultiplier = 1f;
+            hero.basicAttack.attackInterval = 0.83f;
+            hero.basicAttack.rangeOverride = 1.35f;
+            hero.basicAttack.usesProjectile = false;
+            hero.basicAttack.projectileSpeed = 0f;
+            hero.basicAttack.effectType = BasicAttackEffectType.Damage;
+            hero.basicAttack.targetType = BasicAttackTargetType.NearestEnemy;
+            hero.basicAttack.targetPrioritySearchRadius = 0f;
+            EnsureBasicAttackStatusList(hero.basicAttack);
+            hero.basicAttack.onHitStatusEffects.Clear();
+            hero.debugNotes = "Stage-01 demo hero for Assassin. Loner validates lowest-health dive targeting, allied positive-effect rejection, and kill-participation passive stacking.";
+            EditorUtility.SetDirty(hero);
+        }
+
         private static void ConfigureBladesmanBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
         {
             if (hero == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
@@ -2990,6 +3120,11 @@ namespace Fight.Editor
             skill.passiveSkill.recentDirectHostileSourceWindowSeconds = 0f;
             skill.passiveSkill.recentDirectHostileSourceDefenseBonusPerSource = 0f;
             skill.passiveSkill.maxDefenseBonus = 0f;
+            skill.passiveSkill.rejectExternalPositiveEffects = false;
+            skill.passiveSkill.killParticipationAttackPowerBonusPerStack = 0f;
+            skill.passiveSkill.killParticipationAttackSpeedBonusPerStack = 0f;
+            skill.passiveSkill.killParticipationHealPercentMaxHealth = 0f;
+            skill.passiveSkill.killParticipationMaxStacks = 0;
         }
 
         private static void ResetTemporaryOverride(SkillData skill)
@@ -4504,6 +4639,8 @@ namespace Fight.Editor
                 "skill_tidefin_ultimate_ruintide" => "assassin_002_tidefin",
                 "skill_butcher_active_gorehook" => "assassin_003_butcher",
                 "skill_butcher_ultimate_carnagereel" => "assassin_003_butcher",
+                "skill_loner_active_lonepursuit" => "assassin_004_loner",
+                "skill_loner_ultimate_loneinstinct" => "assassin_004_loner",
                 "skill_shieldwarden_active_wardenscall" => "tank_002_shieldwarden",
                 "skill_shieldwarden_ultimate_lastbastion" => "tank_002_shieldwarden",
                 "skill_windchime_active_echocanopy" => "support_002_windchime",

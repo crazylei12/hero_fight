@@ -13,6 +13,11 @@ namespace Fight.Data
         [Min(0f)] public float recentDirectHostileSourceWindowSeconds = 0f;
         [Min(0f)] public float recentDirectHostileSourceDefenseBonusPerSource = 0f;
         [Min(0f)] public float maxDefenseBonus = 0f;
+        public bool rejectExternalPositiveEffects;
+        [Min(0f)] public float killParticipationAttackPowerBonusPerStack = 0f;
+        [Min(0f)] public float killParticipationAttackSpeedBonusPerStack = 0f;
+        [Range(0f, 1f)] public float killParticipationHealPercentMaxHealth = 0f;
+        [Min(0)] public int killParticipationMaxStacks = 0;
 
         public bool HasMissingHealthAttackPowerBonus =>
             missingHealthAttackPowerRatio > Mathf.Epsilon
@@ -26,5 +31,11 @@ namespace Fight.Data
             recentDirectHostileSourceWindowSeconds > Mathf.Epsilon
             && recentDirectHostileSourceDefenseBonusPerSource > Mathf.Epsilon
             && maxDefenseBonus > Mathf.Epsilon;
+
+        public bool HasKillParticipationTrigger =>
+            killParticipationMaxStacks > 0
+            && (killParticipationAttackPowerBonusPerStack > Mathf.Epsilon
+                || killParticipationAttackSpeedBonusPerStack > Mathf.Epsilon
+                || killParticipationHealPercentMaxHealth > Mathf.Epsilon);
     }
 }

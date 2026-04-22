@@ -91,6 +91,12 @@ namespace Fight.Battle
                 case PassiveSkillValueChangedEvent passiveSkillChanged:
                     AddLog(FormatPassiveSkillValueChangedLog(passiveSkillChanged));
                     break;
+                case PassiveStackChangedEvent passiveStackChanged:
+                    AddLog(FormatPassiveStackChangedLog(passiveStackChanged));
+                    break;
+                case PositiveEffectRejectedEvent positiveEffectRejected:
+                    AddLog(FormatPositiveEffectRejectedLog(positiveEffectRejected));
+                    break;
                 case SkillTemporaryOverrideChangedEvent temporaryOverrideChanged:
                     AddLog(FormatSkillTemporaryOverrideChangedLog(temporaryOverrideChanged));
                     break;
@@ -258,6 +264,32 @@ namespace Fight.Battle
                 _ => "attack bonus",
             };
             return $"{heroName}'s {skillName} updated {valueLabel} to {passiveSkillChanged.ModifierMultiplier * 100f:0.#}%.";
+        }
+
+        private static string FormatPassiveStackChangedLog(PassiveStackChangedEvent passiveStackChanged)
+        {
+            var heroName = FormatHeroLabel(passiveStackChanged.Hero, "Unknown");
+            var skillName = passiveStackChanged.Skill != null ? passiveStackChanged.Skill.displayName : "Passive Skill";
+            var maxStacksLabel = passiveStackChanged.MaxStacks > 0
+                ? passiveStackChanged.MaxStacks.ToString()
+                : "-";
+            var healLabel = passiveStackChanged.HealAmount > Mathf.Epsilon
+                ? $"{passiveStackChanged.HealAmount:0.0} heal"
+                : "no heal";
+            return $"{heroName}'s {skillName} triggered: stacks {passiveStackChanged.PreviousStackCount}->{passiveStackChanged.CurrentStackCount}/{maxStacksLabel}, attack bonus {passiveStackChanged.AttackPowerBonusMultiplier * 100f:0.#}%, attack speed bonus {passiveStackChanged.AttackSpeedBonusMultiplier * 100f:0.#}%, {healLabel}.";
+        }
+
+        private static string FormatPositiveEffectRejectedLog(PositiveEffectRejectedEvent positiveEffectRejected)
+        {
+            var sourceName = FormatHeroLabel(positiveEffectRejected.Source, "Unknown");
+            var targetName = FormatHeroLabel(positiveEffectRejected.Target, "Unknown");
+            var sourceLabel = positiveEffectRejected.SourceSkill != null
+                ? positiveEffectRejected.SourceSkill.displayName
+                : $"basic attack [{FormatBasicAttackVariantLabel(positiveEffectRejected.SourceBasicAttackVariantKey)}]";
+            var effectLabel = string.IsNullOrWhiteSpace(positiveEffectRejected.EffectLabel)
+                ? "positive effect"
+                : positiveEffectRejected.EffectLabel;
+            return $"{sourceName}'s {sourceLabel} could not apply {effectLabel} to {targetName} because the target rejects allied positive effects.";
         }
 
         private static string FormatRadialSweepResolvedLog(RadialSweepResolvedEvent radialSweepResolved)

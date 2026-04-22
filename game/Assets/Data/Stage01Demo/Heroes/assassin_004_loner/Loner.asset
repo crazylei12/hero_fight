@@ -1,0 +1,58 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 65b49e23d4a4cda45a9a11e1d7bacd97, type: 3}
+  m_Name: Loner
+  m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
+  heroId: assassin_004_loner
+  displayName: Loner
+  heroClass: 2
+  tags: 000000000500000003000000
+  baseStats:
+    maxHealth: 305
+    attackPower: 40
+    defense: 10
+    attackSpeed: 1.2048193
+    moveSpeed: 5.3
+    criticalChance: 0.16
+    criticalDamageMultiplier: 1.7
+    attackRange: 1.35
+  basicAttack:
+    damageMultiplier: 1
+    attackInterval: 0.83
+    rangeOverride: 1.35
+    usesProjectile: 0
+    projectileSpeed: 0
+    effectType: 0
+    targetType: 0
+    targetPrioritySearchRadius: 0
+    startingVariantIndex: 0
+    onHitStatusEffects: []
+    variants: []
+  activeSkill: {fileID: 11400000, guid: 1c4bc3c665707a84c886409782570bfe, type: 2}
+  ultimateSkill: {fileID: 11400000, guid: 07325815389d36242b5075173cbe94f6, type: 2}
+  aiTemplateId: assassin_default
+  usesSpecialLogic: 0
+  specialLogicNotes: 
+  visualConfig:
+    portrait: {fileID: 21300000, guid: 359efe92f7da4f44b8901c243d752682, type: 3}
+    battlePrefab: {fileID: 6942281271074320862, guid: 56818cfb00350d64b80b18f0e2d27211, type: 3}
+    animatorController: {fileID: 9100000, guid: c0fbc9a82051e94429aa17cc4b2f48e5, type: 2}
+    battlePrefabFacesLeftByDefault: 0
+    projectilePrefab: {fileID: 0}
+    projectileAlignToMovement: 0
+    projectileEulerAngles: {x: 0, y: 0, z: 0}
+    castVfxPrefab: {fileID: 0}
+    hitVfxPrefab: {fileID: 0}
+    basicAttackVariantVisuals: []
+    castSfx: {fileID: 0}
+  debugNotes: Stage-01 demo hero for Assassin. Loner validates lowest-health dive
+    targeting, allied positive-effect rejection, and kill-participation passive stacking.

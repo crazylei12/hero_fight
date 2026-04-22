@@ -468,6 +468,72 @@ namespace Fight.Battle
         public float ModifierMultiplier { get; }
     }
 
+    public sealed class PassiveStackChangedEvent : IBattleEvent
+    {
+        public PassiveStackChangedEvent(
+            RuntimeHero hero,
+            SkillData skill,
+            int previousStackCount,
+            int currentStackCount,
+            int maxStacks,
+            float attackPowerBonusMultiplier,
+            float attackSpeedBonusMultiplier,
+            float healAmount)
+        {
+            Hero = hero;
+            Skill = skill;
+            PreviousStackCount = previousStackCount;
+            CurrentStackCount = currentStackCount;
+            MaxStacks = maxStacks;
+            AttackPowerBonusMultiplier = attackPowerBonusMultiplier;
+            AttackSpeedBonusMultiplier = attackSpeedBonusMultiplier;
+            HealAmount = healAmount;
+        }
+
+        public RuntimeHero Hero { get; }
+
+        public SkillData Skill { get; }
+
+        public int PreviousStackCount { get; }
+
+        public int CurrentStackCount { get; }
+
+        public int MaxStacks { get; }
+
+        public float AttackPowerBonusMultiplier { get; }
+
+        public float AttackSpeedBonusMultiplier { get; }
+
+        public float HealAmount { get; }
+    }
+
+    public sealed class PositiveEffectRejectedEvent : IBattleEvent
+    {
+        public PositiveEffectRejectedEvent(
+            RuntimeHero source,
+            RuntimeHero target,
+            string effectLabel,
+            SkillData sourceSkill = null,
+            string sourceBasicAttackVariantKey = null)
+        {
+            Source = source;
+            Target = target;
+            EffectLabel = effectLabel ?? string.Empty;
+            SourceSkill = sourceSkill;
+            SourceBasicAttackVariantKey = sourceBasicAttackVariantKey ?? string.Empty;
+        }
+
+        public RuntimeHero Source { get; }
+
+        public RuntimeHero Target { get; }
+
+        public string EffectLabel { get; }
+
+        public SkillData SourceSkill { get; }
+
+        public string SourceBasicAttackVariantKey { get; }
+    }
+
     public sealed class SkillTemporaryOverrideChangedEvent : IBattleEvent
     {
         public SkillTemporaryOverrideChangedEvent(

@@ -873,7 +873,8 @@ namespace Fight.Battle
                 || actor == null
                 || candidate.IsDead
                 || candidate.Side != actor.Side
-                || !candidate.CanBeDirectTargeted)
+                || !candidate.CanBeDirectTargeted
+                || !candidate.CanReceivePositiveEffectsFrom(actor))
             {
                 return false;
             }
@@ -893,6 +894,7 @@ namespace Fight.Battle
                 || candidate.IsDead
                 || candidate.Side != actor.Side
                 || !candidate.CanBeDirectTargeted
+                || !candidate.CanReceivePositiveEffectsFrom(actor)
                 || !IsRangedHero(candidate))
             {
                 return false;

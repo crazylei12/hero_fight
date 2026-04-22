@@ -86,18 +86,21 @@ namespace Fight.Battle
             RegisterHostileContribution(context, source, target);
         }
 
-        public static void ResolveAssists(BattleContext context, RuntimeHero victim, RuntimeHero killer)
+        public static List<RuntimeHero> ResolveKillParticipants(BattleContext context, RuntimeHero victim, RuntimeHero killer)
         {
+            var participants = new List<RuntimeHero>();
             if (victim == null)
             {
-                return;
+                return participants;
             }
 
             if (context == null || killer == null || killer.Side == victim.Side)
             {
                 victim.ClearContributionHistory();
-                return;
+                return participants;
             }
+
+            participants.Add(killer);
 
             var battleTimeSeconds = GetBattleTimeSeconds(context);
             var offensiveContributors = new HashSet<RuntimeHero>();
@@ -135,9 +138,19 @@ namespace Fight.Battle
             foreach (var assister in assisters)
             {
                 assister?.MarkAssist();
+                if (assister != null)
+                {
+                    participants.Add(assister);
+                }
             }
 
             victim.ClearContributionHistory();
+            return participants;
+        }
+
+        public static void ResolveAssists(BattleContext context, RuntimeHero victim, RuntimeHero killer)
+        {
+            ResolveKillParticipants(context, victim, killer);
         }
 
         private static void RegisterHostileContribution(BattleContext context, RuntimeHero contributor, RuntimeHero target)
