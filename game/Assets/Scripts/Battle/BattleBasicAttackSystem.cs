@@ -21,7 +21,7 @@ namespace Fight.Battle
             for (var i = context.Projectiles.Count - 1; i >= 0; i--)
             {
                 var projectile = context.Projectiles[i];
-                if (!IsValidTarget(projectile.Attacker, projectile.Target, projectile.EffectType, projectile.TargetType))
+                if (!IsValidTarget(projectile.Attacker, projectile.Target, projectile.EffectType, projectile.TargetType, projectile.OnHitStatusEffects))
                 {
                     context.Projectiles.RemoveAt(i);
                     continue;
@@ -121,8 +121,8 @@ namespace Fight.Battle
                 return;
             }
 
-            if (!IsValidTarget(attacker, target, resolvedAttack.EffectType, resolvedAttack.TargetType)
-                || !CanExecuteAgainstTarget(target, resolvedAttack))
+            if (!IsValidTarget(attacker, target, resolvedAttack.EffectType, resolvedAttack.TargetType, resolvedAttack.OnHitStatusEffects)
+                || !CanExecuteAgainstTarget(attacker, target, resolvedAttack))
             {
                 return;
             }
@@ -145,8 +145,8 @@ namespace Fight.Battle
 
             var target = pendingAction.Target;
             var resolvedAttack = pendingAction.BasicAttack;
-            if (!IsValidTarget(attacker, target, resolvedAttack.EffectType, resolvedAttack.TargetType)
-                || !CanExecuteAgainstTarget(target, resolvedAttack))
+            if (!IsValidTarget(attacker, target, resolvedAttack.EffectType, resolvedAttack.TargetType, resolvedAttack.OnHitStatusEffects)
+                || !CanExecuteAgainstTarget(attacker, target, resolvedAttack))
             {
                 return;
             }
@@ -208,12 +208,11 @@ namespace Fight.Battle
                 proxy.GetClampedBasicAttackVariantIndex(),
                 proxy.AttackRange,
                 proxy.AttackRange,
-                preferredEnemyTarget: null,
-                allowForcedEnemyTarget: false,
-                allowHealthyHealFallback: true,
-                projectileSpeedOverride: proxy.ProjectileSpeed,
-                powerMultiplierScale: proxy.PowerMultiplierScale,
-                sourceProxy: proxy,
+                false,
+                true,
+                proxy.ProjectileSpeed,
+                proxy.PowerMultiplierScale,
+                proxy,
                 out target,
                 out resolvedAttack);
         }
@@ -234,8 +233,8 @@ namespace Fight.Battle
                 return;
             }
 
-            if (!IsValidTarget(proxy.Owner, target, resolvedAttack.EffectType, resolvedAttack.TargetType)
-                || !CanExecuteAgainstTarget(target, resolvedAttack))
+            if (!IsValidTarget(proxy.Owner, target, resolvedAttack.EffectType, resolvedAttack.TargetType, resolvedAttack.OnHitStatusEffects)
+                || !CanExecuteAgainstTarget(proxy.Owner, target, resolvedAttack))
             {
                 return;
             }
@@ -299,11 +298,11 @@ namespace Fight.Battle
                 attacker.GetClampedBasicAttackVariantIndex(),
                 selectionRange,
                 HeroWideFallbackSearchRange,
-                allowForcedEnemyTarget: true,
+                true,
                 allowHealthyHealFallback,
-                projectileSpeedOverride: 0f,
-                powerMultiplierScale: 1f,
-                sourceProxy: null,
+                0f,
+                1f,
+                null,
                 out target,
                 out resolvedAttack);
         }
@@ -453,9 +452,9 @@ namespace Fight.Battle
 
             if (allowForcedEnemyTarget
                 && attacker.TryGetForcedEnemyTarget(out var forcedTarget)
-                && IsValidTarget(attacker, forcedTarget, resolvedAttack.EffectType, resolvedAttack.TargetType)
+                && IsValidTarget(attacker, forcedTarget, resolvedAttack.EffectType, resolvedAttack.TargetType, resolvedAttack.OnHitStatusEffects)
                 && IsWithinRange(sourcePosition, forcedTarget, selectionRange)
-                && CanExecuteAgainstTarget(forcedTarget, resolvedAttack))
+                && CanExecuteAgainstTarget(attacker, forcedTarget, resolvedAttack))
             {
                 target = forcedTarget;
                 return true;
@@ -468,7 +467,7 @@ namespace Fight.Battle
                 resolvedAttack,
                 selectionRange,
                 allowHealthyHealFallback);
-            return target != null && CanExecuteAgainstTarget(target, resolvedAttack);
+            return target != null && CanExecuteAgainstTarget(attacker, target, resolvedAttack);
         }
 
         private static bool HasLegalTargetForAttack(
@@ -509,6 +508,7 @@ namespace Fight.Battle
                     context.Heroes,
                     attacker,
                     sourcePosition,
+                    resolvedAttack,
                     selectionRange,
                     allowHealthyHealFallback),
                 BasicAttackTargetType.ThreateningEnemyNearRangedAlly => BattleAiDirector.SelectThreateningEnemyNearRangedAllyTarget(
@@ -522,9 +522,14 @@ namespace Fight.Battle
             };
         }
 
-        private static bool CanExecuteAgainstTarget(RuntimeHero target, ResolvedBasicAttack resolvedAttack)
+        private static bool CanExecuteAgainstTarget(RuntimeHero attacker, RuntimeHero target, ResolvedBasicAttack resolvedAttack)
         {
             if (target == null || resolvedAttack == null)
+            {
+                return false;
+            }
+
+            if (ShouldRejectPositiveBasicAttackTarget(attacker, target, resolvedAttack.EffectType, resolvedAttack.OnHitStatusEffects))
             {
                 return false;
             }
@@ -574,6 +579,7 @@ namespace Fight.Battle
             System.Collections.Generic.IReadOnlyList<RuntimeHero> heroes,
             RuntimeHero attacker,
             Vector3 sourcePosition,
+            ResolvedBasicAttack resolvedAttack,
             float selectionRange,
             bool allowHealthyFallback)
         {
@@ -590,6 +596,11 @@ namespace Fight.Battle
                 var candidate = heroes[i];
                 if (!IsPotentialAllyTarget(attacker, candidate)
                     || !IsWithinRange(sourcePosition, candidate, selectionRange))
+                {
+                    continue;
+                }
+
+                if (ShouldRejectPositiveBasicAttackTarget(attacker, candidate, resolvedAttack.EffectType, resolvedAttack.OnHitStatusEffects))
                 {
                     continue;
                 }
@@ -724,23 +735,30 @@ namespace Fight.Battle
             string variantKey,
             BattleManager battleManager)
         {
-            if (!IsValidTarget(attacker, target, effectType, targetType))
+            if (!IsValidTarget(attacker, target, effectType, targetType, onHitStatusEffects))
             {
                 return;
             }
 
             if (effectType == BasicAttackEffectType.Heal)
             {
+                if (ShouldRejectPositiveBasicAttackTarget(attacker, target, effectType, onHitStatusEffects))
+                {
+                    PublishPositiveEffectRejected(context, attacker, target, "Heal", variantKey);
+                    ApplyOnHitStatuses(context, attacker, target, onHitStatusEffects, variantKey);
+                    return;
+                }
+
                 var actualHeal = target.ApplyHealing(impactAmount);
                 if (actualHeal <= 0f)
                 {
-                    ApplyOnHitStatuses(context, attacker, target, onHitStatusEffects);
+                    ApplyOnHitStatuses(context, attacker, target, onHitStatusEffects, variantKey);
                     return;
                 }
 
                 BattleStatsSystem.RecordHealingContribution(context, attacker, target, actualHeal);
                 context.EventBus.Publish(new HealAppliedEvent(attacker, target, actualHeal, null, target.CurrentHealth, variantKey, sourceProxy));
-                ApplyOnHitStatuses(context, attacker, target, onHitStatusEffects);
+                ApplyOnHitStatuses(context, attacker, target, onHitStatusEffects, variantKey);
                 return;
             }
 
@@ -756,11 +774,11 @@ namespace Fight.Battle
                 sourceProxy);
             if (actualDamage <= 0f)
             {
-                ApplyOnHitStatuses(context, attacker, target, onHitStatusEffects);
+                ApplyOnHitStatuses(context, attacker, target, onHitStatusEffects, variantKey);
                 return;
             }
 
-            ApplyOnHitStatuses(context, attacker, target, onHitStatusEffects);
+            ApplyOnHitStatuses(context, attacker, target, onHitStatusEffects, variantKey);
         }
 
         private static bool CanApplyEffectToTarget(RuntimeHero target, BasicAttackEffectType effectType)
@@ -778,7 +796,8 @@ namespace Fight.Battle
             RuntimeHero attacker,
             RuntimeHero target,
             BasicAttackEffectType effectType,
-            BasicAttackTargetType targetType)
+            BasicAttackTargetType targetType,
+            System.Collections.Generic.IReadOnlyList<StatusEffectData> onHitStatusEffects)
         {
             if (attacker == null || target == null || target.IsDead || !target.CanBeDirectTargeted)
             {
@@ -800,7 +819,8 @@ namespace Fight.Battle
             BattleContext context,
             RuntimeHero attacker,
             RuntimeHero target,
-            System.Collections.Generic.IReadOnlyList<StatusEffectData> onHitStatusEffects)
+            System.Collections.Generic.IReadOnlyList<StatusEffectData> onHitStatusEffects,
+            string variantKey)
         {
             if (context?.EventBus == null
                 || target == null
@@ -815,6 +835,12 @@ namespace Fight.Battle
                 var status = onHitStatusEffects[i];
                 if (status == null)
                 {
+                    continue;
+                }
+
+                if (ShouldRejectPositiveBasicAttackStatus(attacker, target, status))
+                {
+                    PublishPositiveEffectRejected(context, attacker, target, status.effectType.ToString(), variantKey);
                     continue;
                 }
 
@@ -843,6 +869,45 @@ namespace Fight.Battle
                     null,
                     appliedStatus?.AppliedBy ?? attacker));
             }
+        }
+
+        private static bool ShouldRejectPositiveBasicAttackTarget(
+            RuntimeHero attacker,
+            RuntimeHero target,
+            BasicAttackEffectType effectType,
+            System.Collections.Generic.IReadOnlyList<StatusEffectData> onHitStatusEffects)
+        {
+            if (attacker == null
+                || target == null
+                || attacker == target
+                || attacker.Side != target.Side
+                || target.CanReceivePositiveEffectsFrom(attacker))
+            {
+                return false;
+            }
+
+            return effectType == BasicAttackEffectType.Heal
+                || StatusEffectSystem.HasPositiveStatusEffect(onHitStatusEffects);
+        }
+
+        private static bool ShouldRejectPositiveBasicAttackStatus(RuntimeHero attacker, RuntimeHero target, StatusEffectData status)
+        {
+            return attacker != null
+                && target != null
+                && attacker != target
+                && attacker.Side == target.Side
+                && !target.CanReceivePositiveEffectsFrom(attacker)
+                && StatusEffectSystem.IsPositiveStatusEffect(status);
+        }
+
+        private static void PublishPositiveEffectRejected(BattleContext context, RuntimeHero attacker, RuntimeHero target, string effectLabel, string variantKey)
+        {
+            context?.EventBus?.Publish(new PositiveEffectRejectedEvent(
+                attacker,
+                target,
+                effectLabel,
+                null,
+                variantKey));
         }
     }
 }

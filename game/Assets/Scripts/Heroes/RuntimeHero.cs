@@ -126,6 +126,18 @@ namespace Fight.Heroes
             }
         }
 
+        private sealed class RuntimePassiveSkillState
+        {
+            public RuntimePassiveSkillState(SkillData sourceSkill)
+            {
+                SourceSkill = sourceSkill;
+            }
+
+            public SkillData SourceSkill { get; }
+
+            public int KillParticipationStacks { get; set; }
+        }
+
         public RuntimeHero(HeroDefinition definition, TeamSide side, Vector3 spawnPosition, int slotIndex)
         {
             Definition = definition;
@@ -297,7 +309,9 @@ namespace Fight.Heroes
                     return 1f;
                 }
 
-                var speedMultiplier = StatusEffectSystem.GetMultiplier(this, StatusEffectType.AttackSpeedModifier);
+                var speedMultiplier =
+                    StatusEffectSystem.GetMultiplier(this, StatusEffectType.AttackSpeedModifier)
+                    * Mathf.Max(0.1f, 1f + PassiveAttackSpeedBonusMultiplier);
                 var baseAttackSpeed = Mathf.Max(0.01f, Definition.baseStats.attackSpeed);
                 return 1f / (baseAttackSpeed * speedMultiplier);
             }
@@ -325,9 +339,13 @@ namespace Fight.Heroes
 
         public float PassiveAttackPowerBonusMultiplier => GetPassiveAttackPowerBonusMultiplier();
 
+        public float PassiveAttackSpeedBonusMultiplier => GetPassiveAttackSpeedBonusMultiplier();
+
         public float PassiveDefenseBonusMultiplier => GetPassiveDefenseBonusMultiplier();
 
         public float PassiveLifestealRatio => GetPassiveLifestealRatio();
+
+        public bool RejectsExternalPositiveEffects => GetRejectsExternalPositiveEffects();
 
         public float CurrentTemporaryOverrideLifestealRatio => GetCurrentTemporaryOverrideLifestealRatio();
 
@@ -348,6 +366,7 @@ namespace Fight.Heroes
         private readonly List<RuntimeContributionRecord> recentHostileContributors = new List<RuntimeContributionRecord>();
         private readonly List<RuntimeContributionRecord> recentDirectHostileDamageContributors = new List<RuntimeContributionRecord>();
         private readonly List<RuntimeContributionRecord> recentSupportContributors = new List<RuntimeContributionRecord>();
+        private readonly List<RuntimePassiveSkillState> passiveSkillStates = new List<RuntimePassiveSkillState>();
         private RuntimeForcedMovement activeForcedMovement;
         private RuntimeCombatActionSequence activeCombatActionSequence;
         private PendingCombatAction pendingCombatAction;
@@ -662,6 +681,56 @@ namespace Fight.Heroes
             Assists++;
         }
 
+        public bool CanReceivePositiveEffectsFrom(RuntimeHero source)
+        {
+            if (source == null || source == this)
+            {
+                return true;
+            }
+
+            if (source.Side != Side)
+            {
+                return true;
+            }
+
+            return !RejectsExternalPositiveEffects;
+        }
+
+        public void ResolveKillParticipationRewards(Action<SkillData, int, int, int, float, float, float> onResolved)
+        {
+            ForEachPassiveSkill((skill, passiveData) =>
+            {
+                if (passiveData == null || !passiveData.HasKillParticipationTrigger)
+                {
+                    return;
+                }
+
+                var state = GetOrCreatePassiveSkillState(skill);
+                var previousStackCount = state.KillParticipationStacks;
+                var maxStacks = Mathf.Max(0, passiveData.killParticipationMaxStacks);
+                if (state.KillParticipationStacks < maxStacks)
+                {
+                    state.KillParticipationStacks++;
+                }
+
+                var currentStackCount = state.KillParticipationStacks;
+                var actualHeal = 0f;
+                if (!IsDead && passiveData.killParticipationHealPercentMaxHealth > Mathf.Epsilon)
+                {
+                    actualHeal = ApplyHealing(MaxHealth * passiveData.killParticipationHealPercentMaxHealth);
+                }
+
+                onResolved?.Invoke(
+                    skill,
+                    previousStackCount,
+                    currentStackCount,
+                    maxStacks,
+                    currentStackCount * Mathf.Max(0f, passiveData.killParticipationAttackPowerBonusPerStack),
+                    currentStackCount * Mathf.Max(0f, passiveData.killParticipationAttackSpeedBonusPerStack),
+                    actualHeal);
+            });
+        }
+
         public void RegisterHostileContribution(RuntimeHero contributor, float timeSeconds)
         {
             RegisterContribution(recentHostileContributors, contributor, timeSeconds);
@@ -802,7 +871,11 @@ namespace Fight.Heroes
 
         public bool CanUseUltimate()
         {
-            return Definition != null && Definition.ultimateSkill != null && !HasCastUltimate && CanCastSkills;
+            return Definition != null
+                && Definition.ultimateSkill != null
+                && Definition.ultimateSkill.activationMode == SkillActivationMode.Active
+                && !HasCastUltimate
+                && CanCastSkills;
         }
 
         public void StartSkillCooldown(SkillSlotType slotType, float cooldownSeconds)
@@ -1089,80 +1162,135 @@ namespace Fight.Heroes
 
         private float GetPassiveAttackPowerBonusMultiplier()
         {
-            var passiveSkill = Definition?.activeSkill;
-            var passiveData = passiveSkill?.passiveSkill;
-            if (passiveSkill == null
-                || passiveSkill.activationMode != SkillActivationMode.Passive
-                || passiveData == null
-                || !passiveData.HasMissingHealthAttackPowerBonus
-                || IsDead)
+            var totalBonus = 0f;
+            ForEachPassiveSkill((skill, passiveData) =>
             {
-                return 0f;
-            }
+                if (passiveData == null)
+                {
+                    return;
+                }
 
-            var maxHealth = MaxHealth;
-            if (maxHealth <= Mathf.Epsilon)
-            {
-                return 0f;
-            }
+                if (!IsDead && passiveData.HasMissingHealthAttackPowerBonus)
+                {
+                    var maxHealth = MaxHealth;
+                    if (maxHealth > Mathf.Epsilon)
+                    {
+                        var missingHealthRatio = 1f - Mathf.Clamp01(CurrentHealth / maxHealth);
+                        totalBonus += Mathf.Min(
+                            Mathf.Max(0f, passiveData.maxAttackPowerBonus),
+                            missingHealthRatio * Mathf.Max(0f, passiveData.missingHealthAttackPowerRatio));
+                    }
+                }
 
-            var missingHealthRatio = 1f - Mathf.Clamp01(CurrentHealth / maxHealth);
-            return Mathf.Min(
-                Mathf.Max(0f, passiveData.maxAttackPowerBonus),
-                missingHealthRatio * Mathf.Max(0f, passiveData.missingHealthAttackPowerRatio));
+                if (!passiveData.HasKillParticipationTrigger)
+                {
+                    return;
+                }
+
+                var state = GetPassiveSkillState(skill);
+                if (state == null || state.KillParticipationStacks <= 0)
+                {
+                    return;
+                }
+
+                totalBonus += state.KillParticipationStacks * Mathf.Max(0f, passiveData.killParticipationAttackPowerBonusPerStack);
+            });
+            return totalBonus;
         }
 
         private float GetPassiveDefenseBonusMultiplier()
         {
-            var passiveSkill = Definition?.activeSkill;
-            var passiveData = passiveSkill?.passiveSkill;
-            if (passiveSkill == null
-                || passiveSkill.activationMode != SkillActivationMode.Passive
-                || passiveData == null
-                || !passiveData.HasRecentDirectHostileSourceDefenseBonus
-                || IsDead)
+            if (IsDead)
             {
                 return 0f;
             }
 
-            var hostileSourceCount = CountRecentDirectHostileDamageContributors(
-                passiveData.recentDirectHostileSourceWindowSeconds);
-            if (hostileSourceCount <= 0)
+            var totalBonus = 0f;
+            ForEachPassiveSkill((_, passiveData) =>
             {
-                return 0f;
-            }
+                if (passiveData == null || !passiveData.HasRecentDirectHostileSourceDefenseBonus)
+                {
+                    return;
+                }
 
-            return Mathf.Min(
-                Mathf.Max(0f, passiveData.maxDefenseBonus),
-                hostileSourceCount * Mathf.Max(0f, passiveData.recentDirectHostileSourceDefenseBonusPerSource));
+                var hostileSourceCount = CountRecentDirectHostileDamageContributors(
+                    passiveData.recentDirectHostileSourceWindowSeconds);
+                if (hostileSourceCount <= 0)
+                {
+                    return;
+                }
+
+                totalBonus += Mathf.Min(
+                    Mathf.Max(0f, passiveData.maxDefenseBonus),
+                    hostileSourceCount * Mathf.Max(0f, passiveData.recentDirectHostileSourceDefenseBonusPerSource));
+            });
+            return totalBonus;
         }
 
         private float GetPassiveLifestealRatio()
         {
-            var passiveSkill = Definition?.activeSkill;
-            var passiveData = passiveSkill?.passiveSkill;
-            if (passiveSkill == null
-                || passiveSkill.activationMode != SkillActivationMode.Passive
-                || passiveData == null
-                || !passiveData.HasLowHealthLifesteal
-                || IsDead)
+            if (IsDead)
             {
                 return 0f;
             }
 
-            var maxHealth = MaxHealth;
-            if (maxHealth <= Mathf.Epsilon)
+            var totalRatio = 0f;
+            ForEachPassiveSkill((_, passiveData) =>
             {
-                return 0f;
-            }
+                if (passiveData == null || !passiveData.HasLowHealthLifesteal)
+                {
+                    return;
+                }
 
-            var currentHealthRatio = Mathf.Clamp01(CurrentHealth / maxHealth);
-            if (currentHealthRatio >= Mathf.Clamp01(passiveData.lowHealthLifestealThreshold))
+                var maxHealth = MaxHealth;
+                if (maxHealth <= Mathf.Epsilon)
+                {
+                    return;
+                }
+
+                var currentHealthRatio = Mathf.Clamp01(CurrentHealth / maxHealth);
+                if (currentHealthRatio >= Mathf.Clamp01(passiveData.lowHealthLifestealThreshold))
+                {
+                    return;
+                }
+
+                totalRatio += Mathf.Max(0f, passiveData.lowHealthLifestealRatio);
+            });
+            return totalRatio;
+        }
+
+        private float GetPassiveAttackSpeedBonusMultiplier()
+        {
+            var totalBonus = 0f;
+            ForEachPassiveSkill((skill, passiveData) =>
             {
-                return 0f;
-            }
+                if (passiveData == null || !passiveData.HasKillParticipationTrigger)
+                {
+                    return;
+                }
 
-            return Mathf.Max(0f, passiveData.lowHealthLifestealRatio);
+                var state = GetPassiveSkillState(skill);
+                if (state == null || state.KillParticipationStacks <= 0)
+                {
+                    return;
+                }
+
+                totalBonus += state.KillParticipationStacks * Mathf.Max(0f, passiveData.killParticipationAttackSpeedBonusPerStack);
+            });
+            return totalBonus;
+        }
+
+        private bool GetRejectsExternalPositiveEffects()
+        {
+            var rejectsPositiveEffects = false;
+            ForEachPassiveSkill((_, passiveData) =>
+            {
+                if (passiveData != null && passiveData.rejectExternalPositiveEffects)
+                {
+                    rejectsPositiveEffects = true;
+                }
+            });
+            return rejectsPositiveEffects;
         }
 
         private int CountRecentDirectHostileDamageContributors(float recentWindowSeconds)
@@ -1303,6 +1431,68 @@ namespace Fight.Heroes
             return PassiveLifestealRatio > Mathf.Epsilon
                 ? Definition?.activeSkill
                 : null;
+        }
+
+        private void ForEachPassiveSkill(Action<SkillData, PassiveSkillData> visitor)
+        {
+            if (visitor == null)
+            {
+                return;
+            }
+
+            var activeSkill = Definition?.activeSkill;
+            if (activeSkill != null
+                && activeSkill.activationMode == SkillActivationMode.Passive
+                && activeSkill.passiveSkill != null)
+            {
+                visitor(activeSkill, activeSkill.passiveSkill);
+            }
+
+            var ultimateSkill = Definition?.ultimateSkill;
+            if (ultimateSkill != null
+                && ultimateSkill != activeSkill
+                && ultimateSkill.activationMode == SkillActivationMode.Passive
+                && ultimateSkill.passiveSkill != null)
+            {
+                visitor(ultimateSkill, ultimateSkill.passiveSkill);
+            }
+        }
+
+        private RuntimePassiveSkillState GetPassiveSkillState(SkillData sourceSkill)
+        {
+            if (sourceSkill == null)
+            {
+                return null;
+            }
+
+            for (var i = 0; i < passiveSkillStates.Count; i++)
+            {
+                var state = passiveSkillStates[i];
+                if (state != null && state.SourceSkill == sourceSkill)
+                {
+                    return state;
+                }
+            }
+
+            return null;
+        }
+
+        private RuntimePassiveSkillState GetOrCreatePassiveSkillState(SkillData sourceSkill)
+        {
+            if (sourceSkill == null)
+            {
+                return null;
+            }
+
+            var existingState = GetPassiveSkillState(sourceSkill);
+            if (existingState != null)
+            {
+                return existingState;
+            }
+
+            var state = new RuntimePassiveSkillState(sourceSkill);
+            passiveSkillStates.Add(state);
+            return state;
         }
 
         private void ClampActiveSkillCooldownToStatusCap()
