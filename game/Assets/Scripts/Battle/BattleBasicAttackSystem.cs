@@ -78,7 +78,7 @@ namespace Fight.Battle
                 context,
                 attacker,
                 selectionRange,
-                allowHealthyHealFallback: false,
+                allowHealthyHealFallback: true,
                 out target,
                 out resolvedAttack);
         }
@@ -122,7 +122,7 @@ namespace Fight.Battle
             }
 
             if (!IsValidTarget(attacker, target, resolvedAttack.EffectType, resolvedAttack.TargetType)
-                || !CanApplyEffectToTarget(target, resolvedAttack.EffectType))
+                || !CanExecuteAgainstTarget(target, resolvedAttack))
             {
                 return;
             }
@@ -146,7 +146,7 @@ namespace Fight.Battle
             var target = pendingAction.Target;
             var resolvedAttack = pendingAction.BasicAttack;
             if (!IsValidTarget(attacker, target, resolvedAttack.EffectType, resolvedAttack.TargetType)
-                || !CanApplyEffectToTarget(target, resolvedAttack.EffectType))
+                || !CanExecuteAgainstTarget(target, resolvedAttack))
             {
                 return;
             }
@@ -210,7 +210,7 @@ namespace Fight.Battle
                 proxy.AttackRange,
                 preferredEnemyTarget: null,
                 allowForcedEnemyTarget: false,
-                allowHealthyHealFallback: false,
+                allowHealthyHealFallback: true,
                 projectileSpeedOverride: proxy.ProjectileSpeed,
                 powerMultiplierScale: proxy.PowerMultiplierScale,
                 sourceProxy: proxy,
@@ -235,7 +235,7 @@ namespace Fight.Battle
             }
 
             if (!IsValidTarget(proxy.Owner, target, resolvedAttack.EffectType, resolvedAttack.TargetType)
-                || !CanApplyEffectToTarget(target, resolvedAttack.EffectType))
+                || !CanExecuteAgainstTarget(target, resolvedAttack))
             {
                 return;
             }
@@ -455,7 +455,7 @@ namespace Fight.Battle
                 && attacker.TryGetForcedEnemyTarget(out var forcedTarget)
                 && IsValidTarget(attacker, forcedTarget, resolvedAttack.EffectType, resolvedAttack.TargetType)
                 && IsWithinRange(sourcePosition, forcedTarget, selectionRange)
-                && CanApplyEffectToTarget(forcedTarget, resolvedAttack.EffectType))
+                && CanExecuteAgainstTarget(forcedTarget, resolvedAttack))
             {
                 target = forcedTarget;
                 return true;
@@ -468,7 +468,7 @@ namespace Fight.Battle
                 resolvedAttack,
                 selectionRange,
                 allowHealthyHealFallback);
-            return target != null && CanApplyEffectToTarget(target, resolvedAttack.EffectType);
+            return target != null && CanExecuteAgainstTarget(target, resolvedAttack);
         }
 
         private static bool HasLegalTargetForAttack(
@@ -520,6 +520,24 @@ namespace Fight.Battle
                     ?? SelectNearestEnemyTarget(context.Heroes, attacker, sourcePosition, selectionRange),
                 _ => SelectNearestEnemyTarget(context.Heroes, attacker, sourcePosition, selectionRange),
             };
+        }
+
+        private static bool CanExecuteAgainstTarget(RuntimeHero target, ResolvedBasicAttack resolvedAttack)
+        {
+            if (target == null || resolvedAttack == null)
+            {
+                return false;
+            }
+
+            return AllowsHealthyHealAnchor(resolvedAttack)
+                || CanApplyEffectToTarget(target, resolvedAttack.EffectType);
+        }
+
+        private static bool AllowsHealthyHealAnchor(ResolvedBasicAttack resolvedAttack)
+        {
+            return resolvedAttack != null
+                && resolvedAttack.EffectType == BasicAttackEffectType.Heal
+                && resolvedAttack.TargetType == BasicAttackTargetType.LowestHealthAlly;
         }
 
         private static RuntimeHero SelectNearestEnemyTarget(
@@ -706,7 +724,7 @@ namespace Fight.Battle
             string variantKey,
             BattleManager battleManager)
         {
-            if (!IsValidTarget(attacker, target, effectType, targetType) || !CanApplyEffectToTarget(target, effectType))
+            if (!IsValidTarget(attacker, target, effectType, targetType))
             {
                 return;
             }
@@ -716,6 +734,7 @@ namespace Fight.Battle
                 var actualHeal = target.ApplyHealing(impactAmount);
                 if (actualHeal <= 0f)
                 {
+                    ApplyOnHitStatuses(context, attacker, target, onHitStatusEffects);
                     return;
                 }
 

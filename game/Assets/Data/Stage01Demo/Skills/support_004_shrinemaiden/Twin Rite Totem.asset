@@ -14,15 +14,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_shrinemaiden_ultimate_twinritetotem
   displayName: Twin Rite Totem
-  description: 'Stage-01 demo skill: deploy a short-lived totem that rapidly repeats
-    Shrinemaiden''s alternating attack sequence.'
+  description: 'Stage-01 demo skill: deploy a short-lived totem beside Shrinemaiden
+    that rapidly repeats her alternating attack sequence across the full map.'
   slotType: 1
   activationMode: 0
   skillType: 3
-  targetType: 14
+  targetType: 5
   preferredEnemyHeroClass: 2
-  fallbackTargetType: 4
-  targetPrioritySearchRadius: 6.75
+  fallbackTargetType: 0
+  targetPrioritySearchRadius: 0
   targetPriorityRequiredUnitCount: 1
   passiveSkill:
     missingHealthAttackPowerRatio: 0
@@ -32,8 +32,8 @@ MonoBehaviour:
     recentDirectHostileSourceWindowSeconds: 0
     recentDirectHostileSourceDefenseBonusPerSource: 0
     maxDefenseBonus: 0
-  castRange: 14.25
-  areaRadius: 6.75
+  castRange: 0
+  areaRadius: 0
   cooldownSeconds: 0
   minTargetsToCast: 1
   effects:
@@ -56,16 +56,16 @@ MonoBehaviour:
     followUpAreaStatusEffects: []
     followUpAreaCanChain: 1
     followUpAreaLimitTriggerOncePerUnitPerExecution: 1
-    deployableProxySpawnMode: 0
+    deployableProxySpawnMode: 1
     deployableProxyTriggerMode: 2
     deployableProxyStrikeRadius: 0
-    deployableProxySpawnOffsetDistance: 0
+    deployableProxySpawnOffsetDistance: 1.2
     deployableProxyMaxCount: 1
     deployableProxyReplaceOldestWhenLimitReached: 1
     deployableProxyImmediateStrikeOnSpawn: 0
     deployableProxyPowerMultiplierScale: 0.8
     deployableProxyAttackIntervalSeconds: 0.5
-    deployableProxyAttackRange: 12.75
+    deployableProxyAttackRange: 56
     deployableProxyProjectileSpeedOverride: 16
     deployableProxyStartingVariantIndex: 0
     forcedMovementDirection: 0
@@ -135,12 +135,12 @@ MonoBehaviour:
   persistentAreaVfxEulerAngles: {x: 0, y: 0, z: 0}
   skillAreaPresentationType: 0
   ultimateDecision:
-    targetingType: 0
+    targetingType: 5
     primaryCondition:
-      conditionType: 4
-      searchRadius: 0.1
+      conditionType: 1
+      searchRadius: 56
       requiredUnitCount: 1
-      healthPercentThreshold: 0.7
+      healthPercentThreshold: 1
       durationSeconds: 0
       highValueTargetType: 0
       heroClassFilter: 2
@@ -149,8 +149,8 @@ MonoBehaviour:
       minimumStatusStacks: 1
       requireTargetInCastRange: 1
     secondaryCondition:
-      conditionType: 1
-      searchRadius: 6.75
+      conditionType: 0
+      searchRadius: 0
       requiredUnitCount: 1
       healthPercentThreshold: 1
       durationSeconds: 0
@@ -161,10 +161,10 @@ MonoBehaviour:
       minimumStatusStacks: 1
       requireTargetInCastRange: 1
     fallback:
-      fallbackType: 1
-      triggerAfterSeconds: 45
+      fallbackType: 0
+      triggerAfterSeconds: 0
       overrideRequiredUnitCount: 0
-      overrideHealthPercentThreshold: 1
+      overrideHealthPercentThreshold: -1
       secondaryTriggerAfterSeconds: 0
       secondaryOverrideRequiredUnitCount: 0
       secondaryOverrideHealthPercentThreshold: -1
@@ -180,4 +180,4 @@ MonoBehaviour:
         statusThemeKey:
         minimumStatusStacks: 1
         requireTargetInCastRange: 1
-    combineMode: 1
+    combineMode: 0

@@ -72,9 +72,10 @@ namespace Fight.Battle
             RuntimeHero actor,
             float maxRange,
             float threatRadius,
-            int requiredThreatCount = 1)
+            int requiredThreatCount = 1,
+            bool allowSelfTarget = false)
         {
-            return FindThreatenedAlly(heroes, actor, maxRange, threatRadius, requiredThreatCount);
+            return FindThreatenedAlly(heroes, actor, maxRange, threatRadius, requiredThreatCount, allowSelfTarget);
         }
 
         public static RuntimeHero SelectThreateningEnemyNearRangedAllyTarget(
@@ -459,7 +460,8 @@ namespace Fight.Battle
             RuntimeHero actor,
             float maxRange,
             float threatRadius,
-            int requiredThreatCount)
+            int requiredThreatCount,
+            bool allowSelfTarget)
         {
             RuntimeHero best = null;
             var bestThreatCount = 0;
@@ -470,7 +472,7 @@ namespace Fight.Battle
             for (var i = 0; i < heroes.Count; i++)
             {
                 var candidate = heroes[i];
-                if (!IsValidAllyCandidate(candidate, actor, maxRange))
+                if (!IsValidAllyCandidate(candidate, actor, maxRange, allowSelfTarget))
                 {
                     continue;
                 }
@@ -865,14 +867,18 @@ namespace Fight.Battle
             return count;
         }
 
-        private static bool IsValidAllyCandidate(RuntimeHero candidate, RuntimeHero actor, float maxRange)
+        private static bool IsValidAllyCandidate(RuntimeHero candidate, RuntimeHero actor, float maxRange, bool allowSelfTarget = false)
         {
             if (candidate == null
                 || actor == null
-                || candidate == actor
                 || candidate.IsDead
                 || candidate.Side != actor.Side
                 || !candidate.CanBeDirectTargeted)
+            {
+                return false;
+            }
+
+            if (candidate == actor && !allowSelfTarget)
             {
                 return false;
             }

@@ -577,7 +577,8 @@ namespace Fight.Battle
                         caster,
                         effectiveCastRange,
                         GetPrioritySearchRadius(skill),
-                        GetPriorityRequiredUnitCount(skill));
+                        GetPriorityRequiredUnitCount(skill),
+                        skill.allowsSelfCast);
                     if (threatenedAnyAlly != null || !allowFallbackForPriorityTarget)
                     {
                         return threatenedAnyAlly;
@@ -727,10 +728,20 @@ namespace Fight.Battle
                     continue;
                 }
 
+                if (candidate == primaryTarget)
+                {
+                    continue;
+                }
+
                 if (Vector3.Distance(candidate.CurrentPosition, primaryTarget.CurrentPosition) <= skill.areaRadius)
                 {
                     results.Add(candidate);
                 }
+            }
+
+            if (IsPrimaryTargetStillValid(skill, caster, primaryTarget))
+            {
+                results.Insert(0, primaryTarget);
             }
 
             return results;
@@ -799,10 +810,20 @@ namespace Fight.Battle
                     continue;
                 }
 
+                if (candidate == primaryTarget)
+                {
+                    continue;
+                }
+
                 if (Vector3.Distance(candidate.CurrentPosition, primaryTarget.CurrentPosition) <= skill.areaRadius)
                 {
                     results.Add(candidate);
                 }
+            }
+
+            if (IsPrimaryTargetStillValidForCastRange(skill, caster, primaryTarget, effectiveCastRange))
+            {
+                results.Insert(0, primaryTarget);
             }
 
             return results;
@@ -871,7 +892,7 @@ namespace Fight.Battle
                             && skill.targetType != SkillTargetType.ThreatenedRangedAlly
                             || IsRangedAlly(candidate, caster));
                 case SkillTargetType.ThreatenedAlly:
-                    return candidate.Side == caster.Side && candidate != caster;
+                    return candidate.Side == caster.Side && (candidate != caster || skill.allowsSelfCast);
                 case SkillTargetType.AllEnemies:
                 case SkillTargetType.CurrentEnemyTarget:
                     return candidate.Side != caster.Side;
@@ -3400,6 +3421,11 @@ namespace Fight.Battle
                 || skill.targetType == SkillTargetType.AllAllies)
             {
                 return true;
+            }
+
+            if (skill.targetType == SkillTargetType.ThreatenedAlly)
+            {
+                return skill.allowsSelfCast;
             }
 
             return skill.allowsSelfCast && IsValidTargetForSkill(skill, caster, caster);
