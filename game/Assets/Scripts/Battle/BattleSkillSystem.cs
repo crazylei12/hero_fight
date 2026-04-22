@@ -2417,13 +2417,13 @@ namespace Fight.Battle
             }
         }
 
-        private static Dictionary<int, Vector3> ResolveTowardSourceSpreadDestinations(
+        private static Dictionary<string, Vector3> ResolveTowardSourceSpreadDestinations(
             RuntimeHero caster,
             SkillEffectData effect,
             List<RuntimeHero> targets,
             float maxTravelDistance)
         {
-            var results = new Dictionary<int, Vector3>();
+            var results = new Dictionary<string, Vector3>();
             if (caster == null
                 || effect == null
                 || effect.forcedMovementDirection != ForcedMovementDirectionMode.TowardSource
@@ -2433,7 +2433,7 @@ namespace Fight.Battle
             }
 
             var validTargets = new List<RuntimeHero>();
-            var seenTargetIds = new HashSet<int>();
+            var seenTargetIds = new HashSet<string>();
             for (var i = 0; i < targets.Count; i++)
             {
                 var target = targets[i];

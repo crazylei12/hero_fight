@@ -41,6 +41,7 @@ namespace Fight.Data
     {
         None = 0,
         OnOwnerBasicAttack = 1,
+        PeriodicBasicAttackSequence = 2,
     }
 
     public enum SkillEffectTargetMode
@@ -86,6 +87,11 @@ namespace Fight.Data
         [Min(0)] public int deployableProxyMaxCount = 0;
         public bool deployableProxyReplaceOldestWhenLimitReached = true;
         public bool deployableProxyImmediateStrikeOnSpawn;
+        [Min(0f)] public float deployableProxyPowerMultiplierScale = 1f;
+        [Min(0f)] public float deployableProxyAttackIntervalSeconds = 0f;
+        [Min(0f)] public float deployableProxyAttackRange = 0f;
+        [Min(0f)] public float deployableProxyProjectileSpeedOverride = 0f;
+        [Min(0)] public int deployableProxyStartingVariantIndex = 0;
         public ForcedMovementDirectionMode forcedMovementDirection = ForcedMovementDirectionMode.AwayFromSource;
         [Min(0f)] public float forcedMovementDistance = 0f;
         [Min(0f)] public float forcedMovementDurationSeconds = 0f;

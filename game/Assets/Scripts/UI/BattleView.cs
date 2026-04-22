@@ -1642,7 +1642,7 @@ namespace Fight.UI
         private ProjectileViewState CreateProjectileView(RuntimeBasicAttackProjectile projectile)
         {
             var state = new ProjectileViewState();
-            var projectilePrefab = projectile?.Attacker?.Definition?.visualConfig?.projectilePrefab;
+            var projectilePrefab = ResolveBasicAttackProjectilePrefab(projectile);
 
             if (projectilePrefab != null)
             {
@@ -2274,7 +2274,13 @@ namespace Fight.UI
                 return;
             }
 
-            var healImpactPrefab = GetSharedHealImpactPrefab();
+            var healImpactPrefab = ResolveBasicAttackHitVfxPrefab(
+                healAppliedEvent.Caster,
+                healAppliedEvent.SourceBasicAttackVariantKey);
+            if (healImpactPrefab == null)
+            {
+                healImpactPrefab = GetSharedHealImpactPrefab();
+            }
             if (healImpactPrefab == null)
             {
                 healImpactPrefab = healAppliedEvent.Caster?.Definition?.visualConfig?.hitVfxPrefab;
@@ -2285,6 +2291,35 @@ namespace Fight.UI
             }
 
             SpawnTransientHeroVfx(targetView, healImpactPrefab, Vector3.zero, HealEventVfxSortOrderOffset, HealImpactTransientKey);
+        }
+
+        private static GameObject ResolveBasicAttackProjectilePrefab(RuntimeBasicAttackProjectile projectile)
+        {
+            var visualConfig = projectile?.Attacker?.Definition?.visualConfig;
+            if (visualConfig == null)
+            {
+                return null;
+            }
+
+            var variantVisual = visualConfig.FindBasicAttackVariantVisual(projectile.VariantKey);
+            if (variantVisual?.projectilePrefab != null)
+            {
+                return variantVisual.projectilePrefab;
+            }
+
+            return visualConfig.projectilePrefab;
+        }
+
+        private static GameObject ResolveBasicAttackHitVfxPrefab(RuntimeHero attacker, string variantKey)
+        {
+            var visualConfig = attacker?.Definition?.visualConfig;
+            if (visualConfig == null)
+            {
+                return null;
+            }
+
+            var variantVisual = visualConfig.FindBasicAttackVariantVisual(variantKey);
+            return variantVisual?.hitVfxPrefab;
         }
 
         private void PlaySkillTargetIndicatorVfx(SkillCastEvent skillCastEvent)

@@ -10,7 +10,7 @@ namespace Fight.Battle
     {
         private static int deployableProxySequence;
 
-        public static void Tick(BattleContext context, float deltaTime)
+        public static void Tick(BattleContext context, float deltaTime, BattleManager battleManager)
         {
             if (context?.DeployableProxies == null)
             {
@@ -27,8 +27,10 @@ namespace Fight.Battle
                 }
 
                 proxy.Tick(deltaTime);
+                TryFirePeriodicProxyAttack(context, proxy, battleManager);
                 if (proxy.IsExpired)
                 {
+                    context.EventBus?.Publish(new DeployableProxyRemovedEvent(proxy, DeployableProxyRemovalReason.Expired));
                     context.DeployableProxies.RemoveAt(i);
                 }
             }
@@ -75,6 +77,7 @@ namespace Fight.Battle
                 var spawnPosition = ResolveSpawnPosition(owner, anchorTarget, effect);
                 var proxy = new RuntimeDeployableProxy(owner, sourceSkill, effect, spawnPosition, deployableProxySequence++);
                 context.DeployableProxies.Add(proxy);
+                context.EventBus?.Publish(new DeployableProxySpawnedEvent(proxy));
 
                 if (effect.deployableProxyImmediateStrikeOnSpawn)
                 {
@@ -195,6 +198,12 @@ namespace Fight.Battle
             if (oldestIndex < 0)
             {
                 return false;
+            }
+
+            var removedProxy = context.DeployableProxies[oldestIndex];
+            if (removedProxy != null)
+            {
+                context.EventBus?.Publish(new DeployableProxyRemovedEvent(removedProxy, DeployableProxyRemovalReason.Replaced));
             }
 
             context.DeployableProxies.RemoveAt(oldestIndex);
@@ -323,7 +332,33 @@ namespace Fight.Battle
                 target,
                 damage,
                 sourceKind,
-                sourceSkill);
+                sourceSkill,
+                sourceBasicAttackVariantKey: string.Empty,
+                sourceProxy: proxy);
+        }
+
+        private static void TryFirePeriodicProxyAttack(
+            BattleContext context,
+            RuntimeDeployableProxy proxy,
+            BattleManager battleManager)
+        {
+            if (context == null
+                || proxy == null
+                || proxy.IsExpired
+                || proxy.Owner == null
+                || proxy.Owner.IsDead
+                || battleManager == null
+                || !proxy.TryConsumeReadyAttack())
+            {
+                return;
+            }
+
+            if (!BattleBasicAttackSystem.TryResolveProxyAttack(context, proxy, out var target, out var resolvedAttack))
+            {
+                return;
+            }
+
+            BattleBasicAttackSystem.FireProxyAttack(context, proxy, target, resolvedAttack, battleManager);
         }
     }
 }

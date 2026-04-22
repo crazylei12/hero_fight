@@ -19,6 +19,18 @@ namespace Fight.Data
     }
 
     [Serializable]
+    public class BasicAttackVariantData
+    {
+        public string variantKey = string.Empty;
+        public BasicAttackEffectType effectType = BasicAttackEffectType.Damage;
+        public BasicAttackTargetType targetType = BasicAttackTargetType.NearestEnemy;
+        [Min(0f)] public float powerMultiplier = 1f;
+        [Min(0f)] public float targetPrioritySearchRadius = 0f;
+        [Min(-1)] public int missingTargetFallbackVariantIndex = -1;
+        public List<StatusEffectData> onHitStatusEffects = new List<StatusEffectData>();
+    }
+
+    [Serializable]
     public class BasicAttackData
     {
         [Min(0.1f)] public float damageMultiplier = 1f;
@@ -30,6 +42,8 @@ namespace Fight.Data
         public BasicAttackEffectType effectType = BasicAttackEffectType.Damage;
         public BasicAttackTargetType targetType = BasicAttackTargetType.NearestEnemy;
         [Min(0f)] public float targetPrioritySearchRadius = 0f;
+        [Min(0)] public int startingVariantIndex = 0;
         public List<StatusEffectData> onHitStatusEffects = new List<StatusEffectData>();
+        public List<BasicAttackVariantData> variants = new List<BasicAttackVariantData>();
     }
 }
