@@ -32,7 +32,7 @@ MonoBehaviour:
     usesProjectile: 1
     projectileSpeed: 14
     effectType: 0
-    targetType: 3
+    targetType: 2
     targetPrioritySearchRadius: 4.5
     onHitStatusEffects:
     - effectType: 2

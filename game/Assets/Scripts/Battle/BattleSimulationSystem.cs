@@ -147,7 +147,6 @@ namespace Fight.Battle
             if (!BattleBasicAttackSystem.TryResolveHeroAttack(
                     context,
                     hero,
-                    hero.CurrentTarget,
                     hero.AttackRange,
                     out var resolvedTarget,
                     out var resolvedAttack))
