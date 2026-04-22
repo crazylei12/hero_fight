@@ -28,6 +28,7 @@ namespace Fight.Battle
 
             BattleReactiveGuardSystem.Tick(context, deltaTime);
             BattleSkillSystem.TickDelayedSkillEffects(context, deltaTime, battleManager);
+            BattleSkillSystem.TickRadialSweeps(context, deltaTime, battleManager);
             ResolveHeroMinimumSeparation(context);
         }
 
@@ -59,7 +60,9 @@ namespace Fight.Battle
 
         private static void TickHero(BattleContext context, RuntimeHero hero, float deltaTime, BattleManager battleManager)
         {
+            hero.SetBattleTimeSeconds(context?.Clock != null ? context.Clock.ElapsedTimeSeconds : 0f);
             var previousPassiveAttackPowerBonus = QuantizeModifierValue(hero.PassiveAttackPowerBonusMultiplier);
+            var previousPassiveDefenseBonus = QuantizeModifierValue(hero.PassiveDefenseBonusMultiplier);
             var previousTemporarySkill = hero.CurrentTemporaryOverrideSourceSkill;
             var previousLifestealRatio = QuantizeModifierValue(hero.CurrentLifestealRatio);
             var previousVisualScaleMultiplier = QuantizeModifierValue(hero.CurrentVisualScaleMultiplier);
@@ -74,6 +77,7 @@ namespace Fight.Battle
                 context,
                 hero,
                 previousPassiveAttackPowerBonus,
+                previousPassiveDefenseBonus,
                 previousTemporarySkill,
                 previousLifestealRatio,
                 previousVisualScaleMultiplier,
@@ -451,6 +455,7 @@ namespace Fight.Battle
             BattleContext context,
             RuntimeHero hero,
             float previousPassiveAttackPowerBonus,
+            float previousPassiveDefenseBonus,
             SkillData previousTemporarySkill,
             float previousLifestealRatio,
             float previousVisualScaleMultiplier,
@@ -463,6 +468,7 @@ namespace Fight.Battle
 
             var passiveSkill = hero.Definition?.activeSkill;
             var currentPassiveAttackPowerBonus = QuantizeModifierValue(hero.PassiveAttackPowerBonusMultiplier);
+            var currentPassiveDefenseBonus = QuantizeModifierValue(hero.PassiveDefenseBonusMultiplier);
             if (passiveSkill != null
                 && passiveSkill.activationMode == SkillActivationMode.Passive
                 && !Mathf.Approximately(previousPassiveAttackPowerBonus, currentPassiveAttackPowerBonus))
@@ -470,7 +476,19 @@ namespace Fight.Battle
                 context.EventBus.Publish(new PassiveSkillValueChangedEvent(
                     hero,
                     passiveSkill,
+                    PassiveSkillValueType.AttackPower,
                     currentPassiveAttackPowerBonus));
+            }
+
+            if (passiveSkill != null
+                && passiveSkill.activationMode == SkillActivationMode.Passive
+                && !Mathf.Approximately(previousPassiveDefenseBonus, currentPassiveDefenseBonus))
+            {
+                context.EventBus.Publish(new PassiveSkillValueChangedEvent(
+                    hero,
+                    passiveSkill,
+                    PassiveSkillValueType.Defense,
+                    currentPassiveDefenseBonus));
             }
 
             var currentTemporarySkill = hero.CurrentTemporaryOverrideSourceSkill;

@@ -684,6 +684,14 @@ namespace Fight.Editor
                 parts.Add($"上限:{effect.deployableProxyMaxCount}");
             }
 
+            if (effect.effectType == SkillEffectType.CreateRadialSweep)
+            {
+                parts.Add($"方向:{FormatEnum(effect.radialSweepDirection)}");
+                parts.Add($"阵营:{FormatEnum(effect.persistentAreaTargetType)}");
+                parts.Add($"延迟:{FormatFloat(effect.radialSweepStartDelaySeconds)}");
+                parts.Add($"波锋:{FormatFloat(effect.radialSweepRingWidth)}");
+            }
+
             return string.Join(" / ", parts);
         }
 
@@ -952,6 +960,7 @@ namespace Fight.Editor
                     SkillEffectType.CreatePersistentArea => "创建持续区域",
                     SkillEffectType.ApplyForcedMovement => "施加强制位移",
                     SkillEffectType.CreateDeployableProxy => "创建部署物代理",
+                    SkillEffectType.CreateRadialSweep => "创建径向扫波",
                     _ => value.ToString(),
                 },
                 SkillEffectTargetMode skillEffectTargetMode => skillEffectTargetMode switch
@@ -983,6 +992,12 @@ namespace Fight.Editor
                 {
                     ForcedMovementDirectionMode.AwayFromSource => "远离来源",
                     ForcedMovementDirectionMode.TowardSource => "拉向来源",
+                    _ => value.ToString(),
+                },
+                RadialSweepDirectionMode radialSweepDirectionMode => radialSweepDirectionMode switch
+                {
+                    RadialSweepDirectionMode.Outward => "向外",
+                    RadialSweepDirectionMode.Inward => "向内",
                     _ => value.ToString(),
                 },
                 StatusEffectType statusEffectType => statusEffectType switch

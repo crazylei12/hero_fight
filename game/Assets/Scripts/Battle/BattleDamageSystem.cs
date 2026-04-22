@@ -56,6 +56,7 @@ namespace Fight.Battle
             if (absorbedByShield > Mathf.Epsilon || remainingDamage > Mathf.Epsilon)
             {
                 RecordIncomingThreat(context, target, attacker);
+                RecordDirectHostileDamageContribution(context, target, attacker, sourceKind);
             }
 
             remainingDamage -= absorbedByShield;
@@ -231,6 +232,26 @@ namespace Fight.Battle
             }
 
             target.RecordThreat(source, context.Clock.ElapsedTimeSeconds);
+        }
+
+        private static void RecordDirectHostileDamageContribution(
+            BattleContext context,
+            RuntimeHero target,
+            RuntimeHero source,
+            DamageSourceKind sourceKind)
+        {
+            if (!IsDirectHostileDamageSourceKind(sourceKind))
+            {
+                return;
+            }
+
+            BattleStatsSystem.RecordDirectHostileDamageContribution(context, source, target);
+        }
+
+        private static bool IsDirectHostileDamageSourceKind(DamageSourceKind sourceKind)
+        {
+            return sourceKind != DamageSourceKind.StatusEffect
+                && sourceKind != DamageSourceKind.DamageShare;
         }
 
         private static void TryApplyLifesteal(BattleContext context, RuntimeHero attacker, float actualDamage)

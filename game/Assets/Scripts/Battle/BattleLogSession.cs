@@ -69,6 +69,9 @@ namespace Fight.Battle
                     var center = areaPulse.Area != null ? areaPulse.Area.CurrentCenter : Vector3.zero;
                     AddLog($"{FormatHeroLabel(areaPulse.Caster)}'s {areaPulse.Skill.displayName} pulse affected {areaPulse.AffectedTargetCount} target(s) at ({center.x:0.0}, {center.z:0.0}), area {areaPulse.Area?.AreaId ?? "unknown"}.");
                     break;
+                case RadialSweepResolvedEvent radialSweepResolved:
+                    AddLog(FormatRadialSweepResolvedLog(radialSweepResolved));
+                    break;
                 case DamageAppliedEvent damageApplied:
                     AddLog(FormatDamageLog(damageApplied));
                     break;
@@ -199,7 +202,20 @@ namespace Fight.Battle
         {
             var heroName = FormatHeroLabel(passiveSkillChanged.Hero, "Unknown");
             var skillName = passiveSkillChanged.Skill != null ? passiveSkillChanged.Skill.displayName : "Passive Skill";
-            return $"{heroName}'s {skillName} updated attack bonus to {passiveSkillChanged.AttackPowerBonusMultiplier * 100f:0.#}%.";
+            var valueLabel = passiveSkillChanged.ValueType switch
+            {
+                PassiveSkillValueType.Defense => "defense bonus",
+                _ => "attack bonus",
+            };
+            return $"{heroName}'s {skillName} updated {valueLabel} to {passiveSkillChanged.ModifierMultiplier * 100f:0.#}%.";
+        }
+
+        private static string FormatRadialSweepResolvedLog(RadialSweepResolvedEvent radialSweepResolved)
+        {
+            var casterName = FormatHeroLabel(radialSweepResolved.Caster, "Unknown");
+            var skillName = radialSweepResolved.Skill != null ? radialSweepResolved.Skill.displayName : "Radial Sweep";
+            var phaseLabel = radialSweepResolved.Direction == RadialSweepDirectionMode.Inward ? "inward" : "outward";
+            return $"{casterName}'s {skillName} {phaseLabel} sweep resolved at ({radialSweepResolved.Center.x:0.0}, {radialSweepResolved.Center.z:0.0}), radius {radialSweepResolved.MaxRadius:0.0}, hits {radialSweepResolved.HitCount} target(s), sweep {radialSweepResolved.SweepId}.";
         }
 
         private static string FormatSkillTemporaryOverrideChangedLog(SkillTemporaryOverrideChangedEvent temporaryOverrideChanged)

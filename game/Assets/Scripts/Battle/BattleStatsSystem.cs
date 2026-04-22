@@ -32,6 +32,16 @@ namespace Fight.Battle
             RegisterSupportContribution(context, source, target);
         }
 
+        public static void RecordDirectHostileDamageContribution(BattleContext context, RuntimeHero source, RuntimeHero target)
+        {
+            if (source == null || target == null || source.Side == target.Side)
+            {
+                return;
+            }
+
+            target.RegisterDirectHostileDamageContribution(source, GetBattleTimeSeconds(context));
+        }
+
         public static void RecordShieldContribution(BattleContext context, RuntimeHero source, RuntimeHero target, float amount)
         {
             if (target == null || amount <= 0f)

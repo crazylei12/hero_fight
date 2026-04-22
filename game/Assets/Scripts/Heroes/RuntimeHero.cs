@@ -171,6 +171,8 @@ namespace Fight.Heroes
 
         public float CombatEngagedSeconds { get; private set; }
 
+        public float CurrentBattleTimeSeconds { get; private set; }
+
         public IReadOnlyList<RuntimeStatusEffect> ActiveStatusEffects => activeStatusEffects;
 
         internal List<RuntimeStatusEffect> MutableStatusEffects => activeStatusEffects;
@@ -238,7 +240,20 @@ namespace Fight.Heroes
             }
         }
 
-        public float Defense => Definition != null ? StatusEffectSystem.GetModifiedStat(this, Definition.baseStats.defense, StatusEffectType.DefenseModifier) : 0f;
+        public float Defense
+        {
+            get
+            {
+                if (Definition == null)
+                {
+                    return 0f;
+                }
+
+                var totalModifierDelta = StatusEffectSystem.GetTotalMagnitude(this, StatusEffectType.DefenseModifier)
+                    + PassiveDefenseBonusMultiplier;
+                return Definition.baseStats.defense * Mathf.Max(0.1f, 1f + totalModifierDelta);
+            }
+        }
 
         public float CriticalChance
         {
@@ -303,6 +318,8 @@ namespace Fight.Heroes
 
         public float PassiveAttackPowerBonusMultiplier => GetPassiveAttackPowerBonusMultiplier();
 
+        public float PassiveDefenseBonusMultiplier => GetPassiveDefenseBonusMultiplier();
+
         public float CurrentLifestealRatio => GetCurrentLifestealRatio();
 
         public float CurrentVisualScaleMultiplier => GetCurrentVisualScaleMultiplier();
@@ -316,6 +333,7 @@ namespace Fight.Heroes
         private readonly List<RuntimeStatusEffect> activeStatusEffects = new List<RuntimeStatusEffect>();
         private readonly List<RuntimeSkillTemporaryOverride> activeTemporarySkillOverrides = new List<RuntimeSkillTemporaryOverride>();
         private readonly List<RuntimeContributionRecord> recentHostileContributors = new List<RuntimeContributionRecord>();
+        private readonly List<RuntimeContributionRecord> recentDirectHostileDamageContributors = new List<RuntimeContributionRecord>();
         private readonly List<RuntimeContributionRecord> recentSupportContributors = new List<RuntimeContributionRecord>();
         private RuntimeForcedMovement activeForcedMovement;
         private RuntimeCombatActionSequence activeCombatActionSequence;
@@ -329,6 +347,7 @@ namespace Fight.Heroes
             StatusEffectSystem.ClearStatuses(this);
             CurrentPosition = SpawnPosition;
             CurrentHealth = MaxHealth;
+            CurrentBattleTimeSeconds = 0f;
             RespawnRemainingSeconds = 0f;
             AttackCooldownRemainingSeconds = 0f;
             ClearCombatActionState();
@@ -459,6 +478,11 @@ namespace Fight.Heroes
         public void SetTarget(RuntimeHero target)
         {
             CurrentTarget = target;
+        }
+
+        public void SetBattleTimeSeconds(float battleTimeSeconds)
+        {
+            CurrentBattleTimeSeconds = Mathf.Max(0f, battleTimeSeconds);
         }
 
         public void RecordThreat(RuntimeHero source, float currentTimeSeconds)
@@ -622,6 +646,11 @@ namespace Fight.Heroes
             RegisterContribution(recentHostileContributors, contributor, timeSeconds);
         }
 
+        public void RegisterDirectHostileDamageContribution(RuntimeHero contributor, float timeSeconds)
+        {
+            RegisterContribution(recentDirectHostileDamageContributors, contributor, timeSeconds);
+        }
+
         public void RegisterSupportContribution(RuntimeHero contributor, float timeSeconds)
         {
             RegisterContribution(recentSupportContributors, contributor, timeSeconds);
@@ -658,6 +687,7 @@ namespace Fight.Heroes
         public void ClearContributionHistory()
         {
             recentHostileContributors.Clear();
+            recentDirectHostileDamageContributors.Clear();
             recentSupportContributors.Clear();
         }
 
@@ -1020,6 +1050,60 @@ namespace Fight.Heroes
             return Mathf.Min(
                 Mathf.Max(0f, passiveData.maxAttackPowerBonus),
                 missingHealthRatio * Mathf.Max(0f, passiveData.missingHealthAttackPowerRatio));
+        }
+
+        private float GetPassiveDefenseBonusMultiplier()
+        {
+            var passiveSkill = Definition?.activeSkill;
+            var passiveData = passiveSkill?.passiveSkill;
+            if (passiveSkill == null
+                || passiveSkill.activationMode != SkillActivationMode.Passive
+                || passiveData == null
+                || !passiveData.HasRecentDirectHostileSourceDefenseBonus
+                || IsDead)
+            {
+                return 0f;
+            }
+
+            var hostileSourceCount = CountRecentDirectHostileDamageContributors(
+                passiveData.recentDirectHostileSourceWindowSeconds);
+            if (hostileSourceCount <= 0)
+            {
+                return 0f;
+            }
+
+            return Mathf.Min(
+                Mathf.Max(0f, passiveData.maxDefenseBonus),
+                hostileSourceCount * Mathf.Max(0f, passiveData.recentDirectHostileSourceDefenseBonusPerSource));
+        }
+
+        private int CountRecentDirectHostileDamageContributors(float recentWindowSeconds)
+        {
+            if (recentWindowSeconds <= Mathf.Epsilon)
+            {
+                recentDirectHostileDamageContributors.Clear();
+                return 0;
+            }
+
+            var count = 0;
+            var cutoffTimeSeconds = Mathf.Max(0f, CurrentBattleTimeSeconds - recentWindowSeconds);
+            for (var i = recentDirectHostileDamageContributors.Count - 1; i >= 0; i--)
+            {
+                var record = recentDirectHostileDamageContributors[i];
+                if (record?.Contributor == null
+                    || record.Contributor.IsDead
+                    || record.Contributor == this
+                    || record.Contributor.Side == Side
+                    || record.LastContributionTimeSeconds < cutoffTimeSeconds)
+                {
+                    recentDirectHostileDamageContributors.RemoveAt(i);
+                    continue;
+                }
+
+                count++;
+            }
+
+            return count;
         }
 
         private float GetCurrentLifestealRatio()
