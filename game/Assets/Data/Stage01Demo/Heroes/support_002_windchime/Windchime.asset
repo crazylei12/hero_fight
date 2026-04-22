@@ -34,19 +34,24 @@ MonoBehaviour:
     effectType: 0
     targetType: 2
     targetPrioritySearchRadius: 4.5
+    startingVariantIndex: 0
     onHitStatusEffects:
     - effectType: 2
       durationSeconds: 3
       magnitude: -0.06
+      sourceAttackPowerMultiplier: 0
       activeSkillCooldownCapSeconds: 0
       tickIntervalSeconds: 1
       maxStacks: 3
+      stackGroupKey: 
+      statusThemeKey: 
       refreshDurationOnReapply: 1
+    variants: []
   activeSkill: {fileID: 11400000, guid: 1dee9414c715d2b4a899b0a516b775bd, type: 2}
   ultimateSkill: {fileID: 11400000, guid: 1272f820e75f2d046a22ca80d25bdff0, type: 2}
   aiTemplateId: support_default
   usesSpecialLogic: 0
-  specialLogicNotes:
+  specialLogicNotes: 
   visualConfig:
     portrait: {fileID: 21300000, guid: 264b852ccea74d44a9e3bf86a22a4844, type: 3}
     battlePrefab: {fileID: 3620924881796964255, guid: 5baa246449d341344b998e5b21529d4e, type: 3}
@@ -57,6 +62,7 @@ MonoBehaviour:
     projectileEulerAngles: {x: 0, y: 0, z: 0}
     castVfxPrefab: {fileID: 0}
     hitVfxPrefab: {fileID: 0}
+    basicAttackVariantVisuals: []
     castSfx: {fileID: 0}
   debugNotes: Stage-01 demo hero for Support. Windchime validates reactive backline
     protection, threatened-ranged target selection, and anti-dive area denial.

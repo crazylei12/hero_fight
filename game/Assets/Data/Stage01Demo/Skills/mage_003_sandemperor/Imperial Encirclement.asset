@@ -14,14 +14,29 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_sandemperor_ultimate_imperialencirclement
   displayName: Imperial Encirclement
-  description: "Stage-01 demo skill: instantly rebuilds the sandguard line around every living enemy and triggers one opening strike."
+  description: 'Stage-01 demo skill: instantly rebuilds the sandguard line around
+    every living enemy and triggers one opening strike.'
   slotType: 1
+  activationMode: 0
   skillType: 3
   targetType: 6
   preferredEnemyHeroClass: 2
   fallbackTargetType: 0
   targetPrioritySearchRadius: 0
   targetPriorityRequiredUnitCount: 1
+  passiveSkill:
+    missingHealthAttackPowerRatio: 0
+    maxAttackPowerBonus: 0
+    lowHealthLifestealThreshold: 0
+    lowHealthLifestealRatio: 0
+    recentDirectHostileSourceWindowSeconds: 0
+    recentDirectHostileSourceDefenseBonusPerSource: 0
+    maxDefenseBonus: 0
+    rejectExternalPositiveEffects: 0
+    killParticipationAttackPowerBonusPerStack: 0
+    killParticipationAttackSpeedBonusPerStack: 0
+    killParticipationHealPercentMaxHealth: 0
+    killParticipationMaxStacks: 0
   castRange: 0
   areaRadius: 0
   cooldownSeconds: 0
@@ -53,10 +68,18 @@ MonoBehaviour:
     deployableProxyMaxCount: 5
     deployableProxyReplaceOldestWhenLimitReached: 1
     deployableProxyImmediateStrikeOnSpawn: 1
+    deployableProxyPowerMultiplierScale: 1
+    deployableProxyAttackIntervalSeconds: 0
+    deployableProxyAttackRange: 0
+    deployableProxyProjectileSpeedOverride: 0
+    deployableProxyStartingVariantIndex: 0
     forcedMovementDirection: 0
     forcedMovementDistance: 0
     forcedMovementDurationSeconds: 0
     forcedMovementPeakHeight: 0
+    radialSweepDirection: 0
+    radialSweepStartDelaySeconds: 0
+    radialSweepRingWidth: 1
     statusEffects: []
   allowsSelfCast: 0
   reactiveGuard:
@@ -91,6 +114,12 @@ MonoBehaviour:
     temporarySkillCastRangeOverride: 0
     targetRefreshMode: 1
     interruptFlags: 3
+  temporaryOverride:
+    durationSeconds: 0
+    lifestealRatio: 0
+    visualScaleMultiplier: 1
+    visualTintColor: {r: 1, g: 1, b: 1, a: 1}
+    visualTintStrength: 0
   targetIndicatorVfxPrefab: {fileID: 0}
   castImpactVfxPrefab: {fileID: 0}
   castImpactVfxLocalOffset: {x: 0, y: 0, z: 0}
@@ -144,4 +173,16 @@ MonoBehaviour:
       secondaryTriggerAfterSeconds: 0
       secondaryOverrideRequiredUnitCount: 0
       secondaryOverrideHealthPercentThreshold: -1
+      alternatePrimaryCondition:
+        conditionType: 0
+        searchRadius: 0
+        requiredUnitCount: 1
+        healthPercentThreshold: 1
+        durationSeconds: 0
+        highValueTargetType: 0
+        heroClassFilter: 2
+        statusEffectTypeFilter: 0
+        statusThemeKey: 
+        minimumStatusStacks: 1
+        requireTargetInCastRange: 1
     combineMode: 0

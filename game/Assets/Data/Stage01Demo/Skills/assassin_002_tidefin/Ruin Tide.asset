@@ -16,12 +16,26 @@ MonoBehaviour:
   displayName: Ruin Tide
   description: 'Stage-01 demo skill: Ruin Tide'
   slotType: 1
+  activationMode: 0
   skillType: 3
   targetType: 5
   preferredEnemyHeroClass: 2
   fallbackTargetType: 1
   targetPrioritySearchRadius: 0
   targetPriorityRequiredUnitCount: 1
+  passiveSkill:
+    missingHealthAttackPowerRatio: 0
+    maxAttackPowerBonus: 0
+    lowHealthLifestealThreshold: 0
+    lowHealthLifestealRatio: 0
+    recentDirectHostileSourceWindowSeconds: 0
+    recentDirectHostileSourceDefenseBonusPerSource: 0
+    maxDefenseBonus: 0
+    rejectExternalPositiveEffects: 0
+    killParticipationAttackPowerBonusPerStack: 0
+    killParticipationAttackSpeedBonusPerStack: 0
+    killParticipationHealPercentMaxHealth: 0
+    killParticipationMaxStacks: 0
   castRange: 0
   areaRadius: 7
   cooldownSeconds: 0
@@ -30,30 +44,61 @@ MonoBehaviour:
   - effectType: 2
     targetMode: 3
     powerMultiplier: 1
+    statusStackQueryEffectType: 0
+    statusStackQueryThemeKey: 
+    minimumRequiredStatusStacks: 0
+    bonusPowerMultiplierPerStatusStack: 0
     radiusOverride: 4
     durationSeconds: 0
     tickIntervalSeconds: 1
     followCaster: 0
     persistentAreaPulseEffectType: 0
     persistentAreaTargetType: 0
+    triggerFollowUpAreaOnTargetDeath: 0
+    followUpAreaRadius: 0
+    followUpAreaPowerMultiplier: 0
+    followUpAreaStatusEffects: []
+    followUpAreaCanChain: 1
+    followUpAreaLimitTriggerOncePerUnitPerExecution: 1
+    deployableProxySpawnMode: 0
+    deployableProxyTriggerMode: 0
+    deployableProxyStrikeRadius: 0
+    deployableProxySpawnOffsetDistance: 0
+    deployableProxyMaxCount: 0
+    deployableProxyReplaceOldestWhenLimitReached: 1
+    deployableProxyImmediateStrikeOnSpawn: 0
+    deployableProxyPowerMultiplierScale: 1
+    deployableProxyAttackIntervalSeconds: 0
+    deployableProxyAttackRange: 0
+    deployableProxyProjectileSpeedOverride: 0
+    deployableProxyStartingVariantIndex: 0
     forcedMovementDirection: 0
     forcedMovementDistance: 0
     forcedMovementDurationSeconds: 0
     forcedMovementPeakHeight: 0
+    radialSweepDirection: 0
+    radialSweepStartDelaySeconds: 0
+    radialSweepRingWidth: 1
     statusEffects:
     - effectType: 2
       durationSeconds: 5
       magnitude: -0.3
+      sourceAttackPowerMultiplier: 0
       activeSkillCooldownCapSeconds: 0
       tickIntervalSeconds: 1
       maxStacks: 1
+      stackGroupKey: 
+      statusThemeKey: 
       refreshDurationOnReapply: 1
     - effectType: 3
       durationSeconds: 5
       magnitude: -0.3
+      sourceAttackPowerMultiplier: 0
       activeSkillCooldownCapSeconds: 0
       tickIntervalSeconds: 1
       maxStacks: 1
+      stackGroupKey: 
+      statusThemeKey: 
       refreshDurationOnReapply: 1
   allowsSelfCast: 1
   reactiveGuard:
@@ -88,12 +133,20 @@ MonoBehaviour:
     temporarySkillCastRangeOverride: 0
     targetRefreshMode: 1
     interruptFlags: 3
+  temporaryOverride:
+    durationSeconds: 0
+    lifestealRatio: 0
+    visualScaleMultiplier: 1
+    visualTintColor: {r: 1, g: 1, b: 1, a: 1}
+    visualTintStrength: 0
   targetIndicatorVfxPrefab: {fileID: 0}
   castImpactVfxPrefab: {fileID: 0}
   castImpactVfxLocalOffset: {x: 0, y: 0, z: 0}
   castImpactVfxEulerAngles: {x: 0, y: 0, z: 0}
   castImpactVfxScaleMultiplier: {x: 1, y: 1, z: 1}
   castImpactVfxAlignToTargetDirection: 0
+  castImpactVfxScaleWithSkillArea: 0
+  castImpactVfxAreaDiameterScaleMultiplier: 1
   castProjectileVfxPrefab: {fileID: 0}
   dashTravelVfxPrefab: {fileID: 0}
   dashTravelVfxLocalOffset: {x: 0, y: 0, z: 0}
@@ -115,6 +168,9 @@ MonoBehaviour:
       durationSeconds: 0
       highValueTargetType: 0
       heroClassFilter: 2
+      statusEffectTypeFilter: 0
+      statusThemeKey: 
+      minimumStatusStacks: 1
       requireTargetInCastRange: 1
     secondaryCondition:
       conditionType: 3
@@ -124,6 +180,9 @@ MonoBehaviour:
       durationSeconds: 0
       highValueTargetType: 0
       heroClassFilter: 2
+      statusEffectTypeFilter: 0
+      statusThemeKey: 
+      minimumStatusStacks: 1
       requireTargetInCastRange: 1
     fallback:
       fallbackType: 1
@@ -133,4 +192,16 @@ MonoBehaviour:
       secondaryTriggerAfterSeconds: 0
       secondaryOverrideRequiredUnitCount: 0
       secondaryOverrideHealthPercentThreshold: -1
+      alternatePrimaryCondition:
+        conditionType: 0
+        searchRadius: 0
+        requiredUnitCount: 1
+        healthPercentThreshold: 1
+        durationSeconds: 0
+        highValueTargetType: 0
+        heroClassFilter: 2
+        statusEffectTypeFilter: 0
+        statusThemeKey: 
+        minimumStatusStacks: 1
+        requireTargetInCastRange: 1
     combineMode: 2

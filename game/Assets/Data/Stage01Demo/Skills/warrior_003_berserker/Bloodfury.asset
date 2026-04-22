@@ -29,6 +29,14 @@ MonoBehaviour:
     maxAttackPowerBonus: 0.6
     lowHealthLifestealThreshold: 0.4
     lowHealthLifestealRatio: 0.35
+    recentDirectHostileSourceWindowSeconds: 0
+    recentDirectHostileSourceDefenseBonusPerSource: 0
+    maxDefenseBonus: 0
+    rejectExternalPositiveEffects: 0
+    killParticipationAttackPowerBonusPerStack: 0
+    killParticipationAttackSpeedBonusPerStack: 0
+    killParticipationHealPercentMaxHealth: 0
+    killParticipationMaxStacks: 0
   castRange: 0
   areaRadius: 0
   cooldownSeconds: 0
@@ -71,6 +79,8 @@ MonoBehaviour:
     durationSeconds: 0
     lifestealRatio: 0
     visualScaleMultiplier: 1
+    visualTintColor: {r: 1, g: 1, b: 1, a: 1}
+    visualTintStrength: 0
   targetIndicatorVfxPrefab: {fileID: 0}
   castImpactVfxPrefab: {fileID: 0}
   castImpactVfxLocalOffset: {x: 0, y: 0, z: 0}

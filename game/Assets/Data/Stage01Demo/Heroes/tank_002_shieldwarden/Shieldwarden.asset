@@ -34,7 +34,9 @@ MonoBehaviour:
     effectType: 0
     targetType: 0
     targetPrioritySearchRadius: 0
+    startingVariantIndex: 0
     onHitStatusEffects: []
+    variants: []
   activeSkill: {fileID: 11400000, guid: bd122f1945584e24b5808b92f78381b8, type: 2}
   ultimateSkill: {fileID: 11400000, guid: 022efefb1ee444c0892d7ed9f7654739, type: 2}
   aiTemplateId: tank_default
@@ -50,5 +52,6 @@ MonoBehaviour:
     projectileEulerAngles: {x: 0, y: 0, z: 0}
     castVfxPrefab: {fileID: 0}
     hitVfxPrefab: {fileID: 0}
+    basicAttackVariantVisuals: []
     castSfx: {fileID: 0}
   debugNotes: Stage-01 demo hero for Tank.

@@ -20,7 +20,7 @@ MonoBehaviour:
     maxHealth: 295
     attackPower: 32
     defense: 8
-    attackSpeed: 1.1111112
+    attackSpeed: 1.111111
     moveSpeed: 3.8
     criticalChance: 0.14
     criticalDamageMultiplier: 1.75
@@ -34,6 +34,7 @@ MonoBehaviour:
     effectType: 0
     targetType: 0
     targetPrioritySearchRadius: 0
+    startingVariantIndex: 0
     onHitStatusEffects:
     - effectType: 14
       durationSeconds: 4
@@ -45,6 +46,7 @@ MonoBehaviour:
       stackGroupKey: venomshooter_poison_pool
       statusThemeKey: poison
       refreshDurationOnReapply: 1
+    variants: []
   activeSkill: {fileID: 11400000, guid: fa297ae391d348d5b5c3e3c40ff4e42d, type: 2}
   ultimateSkill: {fileID: 11400000, guid: 25181a82d2294c14b197ee8c920e6c63, type: 2}
   aiTemplateId: marksman_default
@@ -60,5 +62,8 @@ MonoBehaviour:
     projectileEulerAngles: {x: 0, y: 0, z: 0}
     castVfxPrefab: {fileID: 0}
     hitVfxPrefab: {fileID: 0}
+    basicAttackVariantVisuals: []
     castSfx: {fileID: 0}
-  debugNotes: "Stage-01 demo hero for Marksman. Venomshooter validates same-source poison stack pooling, cross-source poison-theme reading, and chained on-kill area follow-up effects."
+  debugNotes: Stage-01 demo hero for Marksman. Venomshooter validates same-source
+    poison stack pooling, cross-source poison-theme reading, and chained on-kill
+    area follow-up effects.
