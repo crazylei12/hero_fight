@@ -39,6 +39,9 @@ namespace Fight.Editor
         private const string MonkHeroAssetPath = HeroesRootFolder + "/support_003_monk/Monk.asset";
         private const string MonkActiveSkillAssetPath = SkillsRootFolder + "/support_003_monk/Renewing Pulse.asset";
         private const string MonkUltimateSkillAssetPath = SkillsRootFolder + "/support_003_monk/Guardian Mantra.asset";
+        private const string ShrinemaidenHeroAssetPath = HeroesRootFolder + "/support_004_shrinemaiden/Shrinemaiden.asset";
+        private const string ShrinemaidenActiveSkillAssetPath = SkillsRootFolder + "/support_004_shrinemaiden/Prayer Bloom.asset";
+        private const string ShrinemaidenUltimateSkillAssetPath = SkillsRootFolder + "/support_004_shrinemaiden/Twin Rite Totem.asset";
         private const string SandemperorHeroAssetPath = HeroesRootFolder + "/mage_003_sandemperor/Sandemperor.asset";
         private const string SandemperorActiveSkillAssetPath = SkillsRootFolder + "/mage_003_sandemperor/Raise Sandguard.asset";
         private const string SandemperorUltimateSkillAssetPath = SkillsRootFolder + "/mage_003_sandemperor/Imperial Encirclement.asset";
@@ -392,6 +395,23 @@ namespace Fight.Editor
                 true,
                 0.18f);
 
+            var shrinemaidenActive = CreateShrinemaidenActiveSkill(overwriteExistingContent);
+            var shrinemaidenUltimateSkill = CreateShrinemaidenUltimateSkill(overwriteExistingContent, out _);
+
+            var shrinemaiden = CreateHero(
+                "support_004_shrinemaiden",
+                "Shrinemaiden",
+                HeroClass.Support,
+                310f, 24f, 10f, 1f / 1.05f, 4f, 0.05f, 1.5f, ScaleRangedHeroDistance(8.2f),
+                shrinemaidenActive,
+                shrinemaidenUltimateSkill,
+                overwriteExistingContent,
+                out var shrinemaidenHeroExisted,
+                HeroTag.Ranged, HeroTag.Heal, HeroTag.AreaDamage);
+            ConfigureShrinemaidenBasicAttack(shrinemaiden, overwriteExistingContent, shrinemaidenHeroExisted);
+            EnsureHeroSkillReferences(shrinemaiden, shrinemaidenActive, shrinemaidenUltimateSkill);
+            EnsureHeroBattlePrefabReference(shrinemaiden, LoadBattlePrefab("support_004_shrinemaiden", HeroClass.Support));
+
             var marksmanActive = CreateLongshotActiveSkill(overwriteExistingContent);
             var marksmanUltimateSkill = CreateLongshotUltimateSkill(overwriteExistingContent, out var marksmanUltimateExisted);
 
@@ -439,7 +459,7 @@ namespace Fight.Editor
             EnsureHeroSkillReferences(venomshooter, venomshooterActive, venomshooterUltimateSkill);
             EnsureHeroBattlePrefabReference(venomshooter, LoadBattlePrefab("marksman_003_venomshooter", HeroClass.Marksman));
 
-            CreateHeroCatalog(warrior, bladesman, berserker, mage, frostmage, sandemperor, assassin, tidefin, butcher, tank, shieldwarden, tidehunter, support, windchime, monk, marksman, rifleman, venomshooter);
+            CreateHeroCatalog(warrior, bladesman, berserker, mage, frostmage, sandemperor, assassin, tidefin, butcher, tank, shieldwarden, tidehunter, support, windchime, monk, shrinemaiden, marksman, rifleman, venomshooter);
 
             var battleInput = CreateBattleInput(
                 "Stage01DemoBattleInput",
@@ -1019,6 +1039,7 @@ namespace Fight.Editor
                 "marksman_003_venomshooter" => AssetDatabase.LoadAssetAtPath<GameObject>(LongshotProjectilePrefabPath),
                 "support_001_sunpriest" => AssetDatabase.LoadAssetAtPath<GameObject>(SunpriestProjectilePrefabPath),
                 "support_002_windchime" => AssetDatabase.LoadAssetAtPath<GameObject>(SunpriestProjectilePrefabPath),
+                "support_004_shrinemaiden" => AssetDatabase.LoadAssetAtPath<GameObject>(FrostMageProjectilePrefabPath),
                 _ => null,
             };
             hero.visualConfig.projectileAlignToMovement =
@@ -1029,9 +1050,11 @@ namespace Fight.Editor
                 || heroId == "marksman_002_rifleman"
                 || heroId == "marksman_003_venomshooter"
                 || heroId == "support_001_sunpriest"
-                || heroId == "support_002_windchime";
+                || heroId == "support_002_windchime"
+                || heroId == "support_004_shrinemaiden";
             hero.visualConfig.projectileEulerAngles = Vector3.zero;
             hero.visualConfig.hitVfxPrefab = null;
+            hero.visualConfig.basicAttackVariantVisuals = Array.Empty<BasicAttackVariantVisualConfig>();
             HeroPortraitSyncUtility.TryAssignPortraitFromPrefabFolder(hero);
             EditorUtility.SetDirty(hero);
             return hero;
@@ -2197,7 +2220,6 @@ namespace Fight.Editor
                 return skill;
             }
 
-            skill.description = "Stage-01 demo passive skill: missing health increases attack power.";
             skill.activationMode = SkillActivationMode.Passive;
             skill.skillType = SkillType.Buff;
             skill.targetType = SkillTargetType.Self;
@@ -2208,8 +2230,12 @@ namespace Fight.Editor
             skill.minTargetsToCast = 1;
             skill.allowsSelfCast = true;
             skill.effects.Clear();
+            ResetPassiveSkillData(skill);
+            skill.description = "Stage-01 demo passive skill: missing health increases attack power, and falling below 40% HP grants lifesteal.";
             skill.passiveSkill.missingHealthAttackPowerRatio = 0.6f;
             skill.passiveSkill.maxAttackPowerBonus = 0.6f;
+            skill.passiveSkill.lowHealthLifestealThreshold = 0.4f;
+            skill.passiveSkill.lowHealthLifestealRatio = 0.35f;
             ResetTemporaryOverride(skill);
             ResetUltimateDecision(skill);
             EditorUtility.SetDirty(skill);
@@ -2299,13 +2325,30 @@ namespace Fight.Editor
                 maxStacks = 1,
                 refreshDurationOnReapply = true,
             });
+            selfBuffEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.MoveSpeedModifier,
+                durationSeconds = 6f,
+                magnitude = 0.25f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+            selfBuffEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.DefenseModifier,
+                durationSeconds = 6f,
+                magnitude = 0.25f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
 
+            ResetTemporaryOverride(skill);
             skill.temporaryOverride.durationSeconds = 6f;
-            skill.temporaryOverride.lifestealRatio = 0.35f;
+            skill.temporaryOverride.lifestealRatio = 0f;
             skill.temporaryOverride.visualScaleMultiplier = 1.4f;
             skill.temporaryOverride.visualTintColor = new Color(1f, 0.34f, 0.34f, 1f);
             skill.temporaryOverride.visualTintStrength = 0.6f;
-            skill.description = "Stage-01 demo skill: enter a short frenzy with bonus damage, attack speed, lifesteal, visual growth, and a red rage tint.";
+            skill.description = "Stage-01 demo skill: enter a short frenzy with bonus damage, attack speed, move speed, defense, visual growth, and a red rage tint.";
         }
 
         private static void AddDefaultEffectsForSkill(SkillData skill, float powerMultiplier)
@@ -2570,6 +2613,69 @@ namespace Fight.Editor
             EnsureBasicAttackStatusList(hero.basicAttack);
             hero.basicAttack.onHitStatusEffects.Clear();
             hero.debugNotes = "Stage-01 demo hero for Support. Monk validates melee frontline sustain with self-centered burst healing and low-threshold team shielding.";
+            EditorUtility.SetDirty(hero);
+        }
+
+        private static void ConfigureShrinemaidenBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (hero == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return;
+            }
+
+            hero.basicAttack.damageMultiplier = 0.95f;
+            hero.basicAttack.attackInterval = 1.05f;
+            hero.basicAttack.rangeOverride = ScaleRangedHeroDistance(8.2f);
+            hero.basicAttack.usesProjectile = true;
+            hero.basicAttack.projectileSpeed = 14f;
+            hero.basicAttack.effectType = BasicAttackEffectType.Damage;
+            hero.basicAttack.targetType = BasicAttackTargetType.NearestEnemy;
+            hero.basicAttack.targetPrioritySearchRadius = 0f;
+            hero.basicAttack.startingVariantIndex = 0;
+            EnsureBasicAttackStatusList(hero.basicAttack);
+            hero.basicAttack.variants.Clear();
+            hero.basicAttack.onHitStatusEffects.Clear();
+            hero.basicAttack.variants.Add(new BasicAttackVariantData
+            {
+                variantKey = "attack_damage",
+                effectType = BasicAttackEffectType.Damage,
+                targetType = BasicAttackTargetType.NearestEnemy,
+                powerMultiplier = 0.95f,
+                targetPrioritySearchRadius = 0f,
+                missingTargetFallbackVariantIndex = 1,
+                onHitStatusEffects = new List<StatusEffectData>(),
+            });
+            hero.basicAttack.variants.Add(new BasicAttackVariantData
+            {
+                variantKey = "attack_heal",
+                effectType = BasicAttackEffectType.Heal,
+                targetType = BasicAttackTargetType.LowestHealthAlly,
+                powerMultiplier = 0.9f,
+                targetPrioritySearchRadius = 0f,
+                missingTargetFallbackVariantIndex = -1,
+                onHitStatusEffects = new List<StatusEffectData>(),
+            });
+
+            hero.visualConfig ??= new HeroVisualConfig();
+            hero.visualConfig.projectilePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(FrostMageProjectilePrefabPath);
+            hero.visualConfig.projectileAlignToMovement = true;
+            hero.visualConfig.projectileEulerAngles = Vector3.zero;
+            hero.visualConfig.basicAttackVariantVisuals = new[]
+            {
+                new BasicAttackVariantVisualConfig
+                {
+                    variantKey = "attack_damage",
+                    projectilePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(FrostMageProjectilePrefabPath),
+                    hitVfxPrefab = null,
+                },
+                new BasicAttackVariantVisualConfig
+                {
+                    variantKey = "attack_heal",
+                    projectilePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(SunpriestProjectilePrefabPath),
+                    hitVfxPrefab = null,
+                },
+            };
+            hero.debugNotes = "Stage-01 demo hero for Support. Shrinemaiden validates alternating damage/heal projectile basic attacks, missing-enemy fallback healing, and periodic deployable proxy attack sequences.";
             EditorUtility.SetDirty(hero);
         }
 
@@ -2881,6 +2987,8 @@ namespace Fight.Editor
 
             skill.passiveSkill.missingHealthAttackPowerRatio = 0f;
             skill.passiveSkill.maxAttackPowerBonus = 0f;
+            skill.passiveSkill.lowHealthLifestealThreshold = 0f;
+            skill.passiveSkill.lowHealthLifestealRatio = 0f;
             skill.passiveSkill.recentDirectHostileSourceWindowSeconds = 0f;
             skill.passiveSkill.recentDirectHostileSourceDefenseBonusPerSource = 0f;
             skill.passiveSkill.maxDefenseBonus = 0f;
@@ -3181,6 +3289,118 @@ namespace Fight.Editor
             });
 
             ResetUltimateDecision(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateShrinemaidenActiveSkill(bool overwriteExistingContent)
+        {
+            var skill = CreateSkill(
+                "skill_shrinemaiden_active_prayerbloom",
+                "Prayer Bloom",
+                SkillSlotType.ActiveSkill,
+                SkillType.SingleTargetHeal,
+                SkillTargetType.ThreatenedAlly,
+                ScaleRangedHeroDistance(9f),
+                ScaleRangedHeroDistance(3.6f),
+                1.35f,
+                8f,
+                1,
+                overwriteExistingContent,
+                out var existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.description = "Stage-01 demo skill: burst-heal one ally, then damage nearby enemies around that anchor.";
+            skill.targetType = SkillTargetType.ThreatenedAlly;
+            skill.fallbackTargetType = SkillTargetType.LowestHealthAlly;
+            skill.castRange = ScaleRangedHeroDistance(9f);
+            skill.areaRadius = ScaleRangedHeroDistance(3.6f);
+            skill.cooldownSeconds = 8f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = true;
+            skill.targetPrioritySearchRadius = skill.areaRadius;
+            skill.targetPriorityRequiredUnitCount = 1;
+            skill.effects.Clear();
+
+            var healEffect = AddHealEffect(skill, 1.35f);
+            healEffect.targetMode = SkillEffectTargetMode.PrimaryTarget;
+
+            var damageEffect = AddDamageEffect(skill, 1f);
+            damageEffect.targetMode = SkillEffectTargetMode.EnemiesInRadiusAroundPrimaryTarget;
+            damageEffect.radiusOverride = skill.areaRadius;
+
+            ResetUltimateDecision(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateShrinemaidenUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
+        {
+            var skill = CreateSkill(
+                "skill_shrinemaiden_ultimate_twinritetotem",
+                "Twin Rite Totem",
+                SkillSlotType.Ultimate,
+                SkillType.Buff,
+                SkillTargetType.ThreatenedAlly,
+                ScaleRangedHeroDistance(9.5f),
+                ScaleRangedHeroDistance(4.5f),
+                0f,
+                0f,
+                1,
+                overwriteExistingContent,
+                out existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.description = "Stage-01 demo skill: deploy a short-lived totem that rapidly repeats Shrinemaiden's alternating attack sequence.";
+            skill.targetType = SkillTargetType.ThreatenedAlly;
+            skill.fallbackTargetType = SkillTargetType.LowestHealthAlly;
+            skill.castRange = ScaleRangedHeroDistance(9.5f);
+            skill.areaRadius = ScaleRangedHeroDistance(4.5f);
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = true;
+            skill.targetPrioritySearchRadius = skill.areaRadius;
+            skill.targetPriorityRequiredUnitCount = 1;
+            skill.effects.Clear();
+
+            var deployableEffect = AddDeployableProxyEffect(
+                skill,
+                powerMultiplier: 0f,
+                strikeRadius: 0f,
+                durationSeconds: 6f,
+                maxCount: 1,
+                spawnMode: DeployableProxySpawnMode.AtTargetPosition,
+                spawnOffsetDistance: 0f,
+                triggerMode: DeployableProxyTriggerMode.PeriodicBasicAttackSequence,
+                replaceOldestWhenLimitReached: true,
+                immediateStrikeOnSpawn: false);
+            deployableEffect.targetMode = SkillEffectTargetMode.PrimaryTarget;
+            deployableEffect.deployableProxyPowerMultiplierScale = 0.8f;
+            deployableEffect.deployableProxyAttackIntervalSeconds = 0.5f;
+            deployableEffect.deployableProxyAttackRange = ScaleRangedHeroDistance(8.5f);
+            deployableEffect.deployableProxyProjectileSpeedOverride = 16f;
+            deployableEffect.deployableProxyStartingVariantIndex = 0;
+
+            ResetUltimateDecision(skill);
+            skill.ultimateDecision.targetingType = UltimateTargetingType.UseSkillTargetType;
+            skill.ultimateDecision.combineMode = UltimateConditionCombineMode.AllMustPass;
+            skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.AllyLowHealthInRange;
+            skill.ultimateDecision.primaryCondition.searchRadius = 0.1f;
+            skill.ultimateDecision.primaryCondition.requiredUnitCount = 1;
+            skill.ultimateDecision.primaryCondition.healthPercentThreshold = 0.7f;
+            skill.ultimateDecision.secondaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;
+            skill.ultimateDecision.secondaryCondition.searchRadius = skill.areaRadius;
+            skill.ultimateDecision.secondaryCondition.requiredUnitCount = 1;
+            skill.ultimateDecision.fallback.fallbackType = UltimateFallbackType.LowerPrimaryThreshold;
+            skill.ultimateDecision.fallback.triggerAfterSeconds = 45f;
+            skill.ultimateDecision.fallback.overrideHealthPercentThreshold = 1f;
             EditorUtility.SetDirty(skill);
             return skill;
         }
@@ -4100,9 +4320,19 @@ namespace Fight.Editor
 
         private static void EnsureBasicAttackStatusList(BasicAttackData basicAttack)
         {
-            if (basicAttack != null && basicAttack.onHitStatusEffects == null)
+            if (basicAttack == null)
             {
-                basicAttack.onHitStatusEffects = new System.Collections.Generic.List<StatusEffectData>();
+                return;
+            }
+
+            if (basicAttack.onHitStatusEffects == null)
+            {
+                basicAttack.onHitStatusEffects = new List<StatusEffectData>();
+            }
+
+            if (basicAttack.variants == null)
+            {
+                basicAttack.variants = new List<BasicAttackVariantData>();
             }
         }
 
@@ -4286,6 +4516,8 @@ namespace Fight.Editor
                 "skill_windchime_ultimate_stillwinddomain" => "support_002_windchime",
                 "skill_monk_active_renewingpulse" => "support_003_monk",
                 "skill_monk_ultimate_guardianmantra" => "support_003_monk",
+                "skill_shrinemaiden_active_prayerbloom" => "support_004_shrinemaiden",
+                "skill_shrinemaiden_ultimate_twinritetotem" => "support_004_shrinemaiden",
                 "skill_rifleman_active_burstfire" => "marksman_002_rifleman",
                 "skill_rifleman_ultimate_fraggrenade" => "marksman_002_rifleman",
                 "skill_venomshooter_active_poisonmist" => "marksman_003_venomshooter",

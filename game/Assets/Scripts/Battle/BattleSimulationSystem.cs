@@ -19,7 +19,7 @@ namespace Fight.Battle
 
             BattleBasicAttackSystem.TickProjectiles(context, deltaTime, battleManager);
             TickSkillAreas(context, deltaTime, battleManager);
-            BattleDeployableProxySystem.Tick(context, deltaTime);
+            BattleDeployableProxySystem.Tick(context, deltaTime, battleManager);
 
             for (var i = 0; i < context.Heroes.Count; i++)
             {
@@ -63,8 +63,9 @@ namespace Fight.Battle
             hero.SetBattleTimeSeconds(context?.Clock != null ? context.Clock.ElapsedTimeSeconds : 0f);
             var previousPassiveAttackPowerBonus = QuantizeModifierValue(hero.PassiveAttackPowerBonusMultiplier);
             var previousPassiveDefenseBonus = QuantizeModifierValue(hero.PassiveDefenseBonusMultiplier);
+            var previousPassiveLifestealRatio = QuantizeModifierValue(hero.PassiveLifestealRatio);
             var previousTemporarySkill = hero.CurrentTemporaryOverrideSourceSkill;
-            var previousLifestealRatio = QuantizeModifierValue(hero.CurrentLifestealRatio);
+            var previousTemporaryLifestealRatio = QuantizeModifierValue(hero.CurrentTemporaryOverrideLifestealRatio);
             var previousVisualScaleMultiplier = QuantizeModifierValue(hero.CurrentVisualScaleMultiplier);
             var previousVisualTintStrength = QuantizeModifierValue(hero.CurrentVisualTintStrength);
 
@@ -78,8 +79,9 @@ namespace Fight.Battle
                 hero,
                 previousPassiveAttackPowerBonus,
                 previousPassiveDefenseBonus,
+                previousPassiveLifestealRatio,
                 previousTemporarySkill,
-                previousLifestealRatio,
+                previousTemporaryLifestealRatio,
                 previousVisualScaleMultiplier,
                 previousVisualTintStrength);
 
@@ -142,12 +144,24 @@ namespace Fight.Battle
                 return;
             }
 
-            if (!ShouldPerformBasicAttack(hero, currentTarget))
+            if (!BattleBasicAttackSystem.TryResolveHeroAttack(
+                    context,
+                    hero,
+                    hero.CurrentTarget,
+                    hero.AttackRange,
+                    out var resolvedTarget,
+                    out var resolvedAttack))
             {
                 return;
             }
 
-            BattleBasicAttackSystem.BeginAttack(context, hero, currentTarget, battleManager);
+            if (resolvedTarget != hero.CurrentTarget)
+            {
+                hero.SetTarget(resolvedTarget);
+                context.EventBus.Publish(new TargetChangedEvent(hero, resolvedTarget));
+            }
+
+            BattleBasicAttackSystem.BeginAttack(context, hero, resolvedTarget, resolvedAttack, battleManager);
         }
 
         private static void ResolvePendingCombatAction(BattleContext context, RuntimeHero hero, PendingCombatAction pendingAction, BattleManager battleManager)
@@ -160,7 +174,7 @@ namespace Fight.Battle
             switch (pendingAction.ActionType)
             {
                 case CombatActionType.BasicAttack:
-                    BattleBasicAttackSystem.ResolvePendingAttack(context, hero, pendingAction.Target, battleManager);
+                    BattleBasicAttackSystem.ResolvePendingAttack(context, hero, pendingAction, battleManager);
                     break;
                 case CombatActionType.SkillCast:
                     BattleSkillSystem.ResolvePendingSkillCast(context, hero, pendingAction, battleManager);
@@ -211,48 +225,7 @@ namespace Fight.Battle
 
         private static RuntimeHero SelectPreferredBasicAttackTarget(BattleContext context, RuntimeHero hero)
         {
-            if (context == null || hero?.Definition == null)
-            {
-                return null;
-            }
-
-            if (hero.TryGetForcedEnemyTarget(out var forcedTarget))
-            {
-                return forcedTarget;
-            }
-
-            return hero.Definition.basicAttack.targetType switch
-            {
-                BasicAttackTargetType.LowestHealthAlly => BattleAiDirector.SelectPreferredAllyTarget(context.Heroes, hero, 999f, allowHealthyFallback: true),
-                BasicAttackTargetType.PreferredEnemy => BattleAiDirector.SelectLockedPreferredEnemyTarget(
-                    context.Heroes,
-                    hero,
-                    hero.CurrentTarget,
-                    999f),
-                BasicAttackTargetType.ThreateningEnemyNearRangedAlly => BattleAiDirector.SelectThreateningEnemyNearRangedAllyTarget(
-                        context.Heroes,
-                        hero,
-                        hero.Definition.basicAttack.targetPrioritySearchRadius > Mathf.Epsilon
-                            ? hero.Definition.basicAttack.targetPrioritySearchRadius
-                            : hero.AttackRange)
-                    ?? BattleAiDirector.SelectNearestEnemyTarget(context.Heroes, hero, 999f),
-                _ => BattleAiDirector.SelectNearestEnemyTarget(context.Heroes, hero, 999f),
-            };
-        }
-
-        private static bool ShouldPerformBasicAttack(RuntimeHero hero, RuntimeHero target)
-        {
-            if (hero?.Definition?.basicAttack == null || target == null)
-            {
-                return false;
-            }
-
-            if (hero.Definition.basicAttack.effectType != BasicAttackEffectType.Heal)
-            {
-                return true;
-            }
-
-            return target.CurrentHealth < target.MaxHealth - Mathf.Epsilon;
+            return BattleBasicAttackSystem.SelectPreferredTargetPreview(context, hero);
         }
 
         private static void MoveTowardTarget(RuntimeHero hero, RuntimeHero target, float deltaTime)
@@ -456,8 +429,9 @@ namespace Fight.Battle
             RuntimeHero hero,
             float previousPassiveAttackPowerBonus,
             float previousPassiveDefenseBonus,
+            float previousPassiveLifestealRatio,
             SkillData previousTemporarySkill,
-            float previousLifestealRatio,
+            float previousTemporaryLifestealRatio,
             float previousVisualScaleMultiplier,
             float previousVisualTintStrength)
         {
@@ -469,6 +443,7 @@ namespace Fight.Battle
             var passiveSkill = hero.Definition?.activeSkill;
             var currentPassiveAttackPowerBonus = QuantizeModifierValue(hero.PassiveAttackPowerBonusMultiplier);
             var currentPassiveDefenseBonus = QuantizeModifierValue(hero.PassiveDefenseBonusMultiplier);
+            var currentPassiveLifestealRatio = QuantizeModifierValue(hero.PassiveLifestealRatio);
             if (passiveSkill != null
                 && passiveSkill.activationMode == SkillActivationMode.Passive
                 && !Mathf.Approximately(previousPassiveAttackPowerBonus, currentPassiveAttackPowerBonus))
@@ -491,13 +466,24 @@ namespace Fight.Battle
                     currentPassiveDefenseBonus));
             }
 
+            if (passiveSkill != null
+                && passiveSkill.activationMode == SkillActivationMode.Passive
+                && !Mathf.Approximately(previousPassiveLifestealRatio, currentPassiveLifestealRatio))
+            {
+                context.EventBus.Publish(new PassiveSkillValueChangedEvent(
+                    hero,
+                    passiveSkill,
+                    PassiveSkillValueType.Lifesteal,
+                    currentPassiveLifestealRatio));
+            }
+
             var currentTemporarySkill = hero.CurrentTemporaryOverrideSourceSkill;
-            var currentLifestealRatio = QuantizeModifierValue(hero.CurrentLifestealRatio);
+            var currentTemporaryLifestealRatio = QuantizeModifierValue(hero.CurrentTemporaryOverrideLifestealRatio);
             var currentVisualScaleMultiplier = QuantizeModifierValue(hero.CurrentVisualScaleMultiplier);
             var currentVisualTintStrength = QuantizeModifierValue(hero.CurrentVisualTintStrength);
             var temporaryStateChanged =
                 previousTemporarySkill != currentTemporarySkill
-                || !Mathf.Approximately(previousLifestealRatio, currentLifestealRatio)
+                || !Mathf.Approximately(previousTemporaryLifestealRatio, currentTemporaryLifestealRatio)
                 || !Mathf.Approximately(previousVisualScaleMultiplier, currentVisualScaleMultiplier)
                 || !Mathf.Approximately(previousVisualTintStrength, currentVisualTintStrength);
 
@@ -508,7 +494,7 @@ namespace Fight.Battle
 
             if (previousTemporarySkill != null
                 && (currentTemporarySkill != previousTemporarySkill
-                    || currentLifestealRatio <= Mathf.Epsilon
+                    || currentTemporaryLifestealRatio <= Mathf.Epsilon
                     && currentVisualScaleMultiplier <= 1f + Mathf.Epsilon
                     && currentVisualTintStrength <= Mathf.Epsilon))
             {
@@ -522,7 +508,7 @@ namespace Fight.Battle
             }
 
             if (currentTemporarySkill != null
-                && (currentLifestealRatio > Mathf.Epsilon
+                && (currentTemporaryLifestealRatio > Mathf.Epsilon
                     || currentVisualScaleMultiplier > 1f + Mathf.Epsilon
                     || currentVisualTintStrength > Mathf.Epsilon))
             {
@@ -530,7 +516,7 @@ namespace Fight.Battle
                     hero,
                     currentTemporarySkill,
                     true,
-                    currentLifestealRatio,
+                    currentTemporaryLifestealRatio,
                     currentVisualScaleMultiplier,
                     currentVisualTintStrength));
             }

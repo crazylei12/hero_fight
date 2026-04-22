@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Fight.Battle;
 using Fight.Data;
 using UnityEngine;
 
@@ -15,11 +16,13 @@ namespace Fight.Heroes
     {
         public PendingCombatAction(
             RuntimeHero target,
+            ResolvedBasicAttack basicAttack,
             bool suppressActionSequenceTrigger = false,
             bool isActionSequenceStep = false)
         {
             ActionType = CombatActionType.BasicAttack;
             Target = target;
+            BasicAttack = basicAttack;
             AffectedTargets = Array.Empty<RuntimeHero>();
             SuppressActionSequenceTrigger = suppressActionSequenceTrigger;
             IsActionSequenceStep = isActionSequenceStep;
@@ -50,6 +53,8 @@ namespace Fight.Heroes
         public CombatActionType ActionType { get; }
 
         public RuntimeHero Target { get; }
+
+        public ResolvedBasicAttack BasicAttack { get; }
 
         public SkillData Skill { get; }
 
@@ -150,6 +155,8 @@ namespace Fight.Heroes
         public float RespawnRemainingSeconds { get; private set; }
 
         public float AttackCooldownRemainingSeconds { get; private set; }
+
+        public int CurrentBasicAttackVariantIndex { get; private set; }
 
         public int Kills { get; private set; }
 
@@ -320,6 +327,10 @@ namespace Fight.Heroes
 
         public float PassiveDefenseBonusMultiplier => GetPassiveDefenseBonusMultiplier();
 
+        public float PassiveLifestealRatio => GetPassiveLifestealRatio();
+
+        public float CurrentTemporaryOverrideLifestealRatio => GetCurrentTemporaryOverrideLifestealRatio();
+
         public float CurrentLifestealRatio => GetCurrentLifestealRatio();
 
         public float CurrentVisualScaleMultiplier => GetCurrentVisualScaleMultiplier();
@@ -329,6 +340,8 @@ namespace Fight.Heroes
         public float CurrentVisualTintStrength => GetCurrentVisualTintStrength();
 
         public SkillData CurrentTemporaryOverrideSourceSkill => GetCurrentTemporaryOverrideSourceSkill();
+
+        public SkillData CurrentLifestealSourceSkill => GetCurrentLifestealSourceSkill();
 
         private readonly List<RuntimeStatusEffect> activeStatusEffects = new List<RuntimeStatusEffect>();
         private readonly List<RuntimeSkillTemporaryOverride> activeTemporarySkillOverrides = new List<RuntimeSkillTemporaryOverride>();
@@ -350,6 +363,7 @@ namespace Fight.Heroes
             CurrentBattleTimeSeconds = 0f;
             RespawnRemainingSeconds = 0f;
             AttackCooldownRemainingSeconds = 0f;
+            CurrentBasicAttackVariantIndex = GetClampedStartingBasicAttackVariantIndex();
             ClearCombatActionState();
             ClearCombatActionSequence();
             CurrentTarget = null;
@@ -542,12 +556,13 @@ namespace Fight.Heroes
 
         public void BeginBasicAttack(
             RuntimeHero target,
+            ResolvedBasicAttack basicAttack,
             float windupSeconds,
             float recoverySeconds,
             bool consumeAttackCooldown = true,
             bool isActionSequenceStep = false)
         {
-            if (Definition?.basicAttack == null || target == null || IsDead)
+            if (Definition?.basicAttack == null || target == null || basicAttack == null || IsDead)
             {
                 return;
             }
@@ -557,9 +572,15 @@ namespace Fight.Heroes
                 StartAttackCooldown();
             }
 
+            if (basicAttack.AdvanceSequenceOnUse)
+            {
+                AdvanceBasicAttackVariantIndex();
+            }
+
             StartCombatAction(
                 new PendingCombatAction(
                     target,
+                    basicAttack,
                     suppressActionSequenceTrigger: false,
                     isActionSequenceStep: isActionSequenceStep),
                 windupSeconds,
@@ -838,6 +859,34 @@ namespace Fight.Heroes
             activeCombatActionSequence = sequence;
         }
 
+        public void ResetBasicAttackVariantIndex()
+        {
+            CurrentBasicAttackVariantIndex = GetClampedStartingBasicAttackVariantIndex();
+        }
+
+        public void AdvanceBasicAttackVariantIndex()
+        {
+            var variants = Definition?.basicAttack?.variants;
+            if (variants == null || variants.Count <= 0)
+            {
+                CurrentBasicAttackVariantIndex = 0;
+                return;
+            }
+
+            CurrentBasicAttackVariantIndex = (GetClampedBasicAttackVariantIndex() + 1) % variants.Count;
+        }
+
+        public int GetClampedBasicAttackVariantIndex()
+        {
+            var variants = Definition?.basicAttack?.variants;
+            if (variants == null || variants.Count <= 0)
+            {
+                return 0;
+            }
+
+            return Mathf.Clamp(CurrentBasicAttackVariantIndex, 0, variants.Count - 1);
+        }
+
         public void ClearCombatActionSequence()
         {
             activeCombatActionSequence = null;
@@ -848,6 +897,17 @@ namespace Fight.Heroes
             LastThreatSource = null;
             LastThreatTimeSeconds = -1f;
             ActiveRetreatThreatSource = null;
+        }
+
+        private int GetClampedStartingBasicAttackVariantIndex()
+        {
+            var variants = Definition?.basicAttack?.variants;
+            if (variants == null || variants.Count <= 0)
+            {
+                return 0;
+            }
+
+            return Mathf.Clamp(Definition.basicAttack.startingVariantIndex, 0, variants.Count - 1);
         }
 
         private static void RegisterContribution(
@@ -1077,6 +1137,34 @@ namespace Fight.Heroes
                 hostileSourceCount * Mathf.Max(0f, passiveData.recentDirectHostileSourceDefenseBonusPerSource));
         }
 
+        private float GetPassiveLifestealRatio()
+        {
+            var passiveSkill = Definition?.activeSkill;
+            var passiveData = passiveSkill?.passiveSkill;
+            if (passiveSkill == null
+                || passiveSkill.activationMode != SkillActivationMode.Passive
+                || passiveData == null
+                || !passiveData.HasLowHealthLifesteal
+                || IsDead)
+            {
+                return 0f;
+            }
+
+            var maxHealth = MaxHealth;
+            if (maxHealth <= Mathf.Epsilon)
+            {
+                return 0f;
+            }
+
+            var currentHealthRatio = Mathf.Clamp01(CurrentHealth / maxHealth);
+            if (currentHealthRatio >= Mathf.Clamp01(passiveData.lowHealthLifestealThreshold))
+            {
+                return 0f;
+            }
+
+            return Mathf.Max(0f, passiveData.lowHealthLifestealRatio);
+        }
+
         private int CountRecentDirectHostileDamageContributors(float recentWindowSeconds)
         {
             if (recentWindowSeconds <= Mathf.Epsilon)
@@ -1106,7 +1194,7 @@ namespace Fight.Heroes
             return count;
         }
 
-        private float GetCurrentLifestealRatio()
+        private float GetCurrentTemporaryOverrideLifestealRatio()
         {
             var totalRatio = 0f;
             for (var i = 0; i < activeTemporarySkillOverrides.Count; i++)
@@ -1118,6 +1206,11 @@ namespace Fight.Heroes
             }
 
             return Mathf.Max(0f, totalRatio);
+        }
+
+        private float GetCurrentLifestealRatio()
+        {
+            return Mathf.Max(0f, PassiveLifestealRatio + GetCurrentTemporaryOverrideLifestealRatio());
         }
 
         private float GetCurrentVisualScaleMultiplier()
@@ -1198,6 +1291,18 @@ namespace Fight.Heroes
             }
 
             return bestOverride?.SourceSkill;
+        }
+
+        private SkillData GetCurrentLifestealSourceSkill()
+        {
+            if (CurrentTemporaryOverrideLifestealRatio > Mathf.Epsilon)
+            {
+                return CurrentTemporaryOverrideSourceSkill;
+            }
+
+            return PassiveLifestealRatio > Mathf.Epsilon
+                ? Definition?.activeSkill
+                : null;
         }
 
         private void ClampActiveSkillCooldownToStatusCap()
