@@ -418,3 +418,4 @@
 - `docs/planning/stage-01-balance-tuning-reference.md`
 - `docs/planning/stage-01-status-effect-decisions.md`
 - `docs/planning/stage-01-offline-simulation-plan.md`
+- `docs/planning/stage-01-offline-simulation-usage.md`
