@@ -449,17 +449,24 @@ namespace Fight.Battle
                 return false;
             }
 
+            if (elapsedTime < caster.NextUltimateDecisionCheckTimeSeconds)
+            {
+                return false;
+            }
+
             if (IsDelayedByComboStrategy(context, caster, elapsedTime))
             {
+                ScheduleNextUltimateAttempt(context, caster);
                 return false;
             }
 
             if (!HasReachedUltimateTimingWindow(context, caster, elapsedTime))
             {
+                ScheduleNextUltimateAttempt(context, caster);
                 return false;
             }
 
-            return elapsedTime >= caster.NextUltimateDecisionCheckTimeSeconds;
+            return true;
         }
 
         private static void EnsureUltimateTimingWindowInitialized(BattleContext context, RuntimeHero caster)
