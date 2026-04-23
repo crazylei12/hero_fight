@@ -17,6 +17,8 @@ namespace Fight.Editor
         private const string SelectionModeArg = "-fightOfflineMode";
         private const string InputAssetPathArg = "-fightOfflineInputAssetPath";
         private const string HeroCatalogAssetPathArg = "-fightOfflineHeroCatalogAssetPath";
+        private const string BlueHeroSlotsArg = "-fightOfflineBlueHeroSlots";
+        private const string RedHeroSlotsArg = "-fightOfflineRedHeroSlots";
         private const string CountArg = "-fightOfflineCount";
         private const string SeedStartArg = "-fightOfflineSeedStart";
         private const string FixedDeltaTimeArg = "-fightOfflineFixedDeltaTime";
@@ -48,7 +50,8 @@ namespace Fight.Editor
                 }
 
                 HeroCatalogData heroCatalog = null;
-                if (selectionMode == BattleOfflineSelectionMode.RandomCatalog)
+                if (selectionMode == BattleOfflineSelectionMode.RandomCatalog
+                    || selectionMode == BattleOfflineSelectionMode.ManualSelection)
                 {
                     heroCatalog = AssetDatabase.LoadAssetAtPath<HeroCatalogData>(heroCatalogAssetPath);
                     if (heroCatalog == null)
@@ -74,6 +77,8 @@ namespace Fight.Editor
                     MaxTickCount = ReadIntArgument(arguments, MaxTicksArg, 100000),
                     ExportFullLogs = ReadBoolArgument(arguments, ExportFullLogsArg, false),
                     IncludeMatchRecords = ReadBoolArgument(arguments, IncludeMatchRecordsArg, false),
+                    ManualBlueHeroIds = ParseHeroSlots(ReadArgument(arguments, BlueHeroSlotsArg)),
+                    ManualRedHeroIds = ParseHeroSlots(ReadArgument(arguments, RedHeroSlotsArg)),
                 };
                 request.ProgressCallback = snapshot => WriteProgressSafe(progressPath, snapshot);
 
@@ -180,8 +185,14 @@ namespace Fight.Editor
                 return BattleOfflineSelectionMode.RandomCatalog;
             }
 
+            if (string.Equals(rawValue, "manual", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(rawValue, "manualselection", StringComparison.OrdinalIgnoreCase))
+            {
+                return BattleOfflineSelectionMode.ManualSelection;
+            }
+
             throw new InvalidOperationException(
-                $"Unsupported offline selection mode [{rawValue}]. Supported values: FixedInput, RandomCatalog.");
+                $"Unsupported offline selection mode [{rawValue}]. Supported values: FixedInput, RandomCatalog, ManualSelection.");
         }
 
         private static string ResolveOutputPath(string rawOutputPath)
@@ -219,6 +230,29 @@ namespace Fight.Editor
         {
             var projectRoot = Directory.GetParent(Application.dataPath)?.FullName ?? Application.dataPath;
             return Directory.GetParent(projectRoot)?.FullName ?? projectRoot;
+        }
+
+        private static string[] ParseHeroSlots(string rawValue)
+        {
+            if (string.IsNullOrWhiteSpace(rawValue))
+            {
+                return Array.Empty<string>();
+            }
+
+            var splitValues = rawValue.Split(new[] { ',' }, StringSplitOptions.None);
+            if (splitValues.Length > BattleInputConfig.DefaultTeamSize)
+            {
+                throw new InvalidOperationException(
+                    $"Manual hero slot count [{splitValues.Length}] exceeded team size [{BattleInputConfig.DefaultTeamSize}].");
+            }
+
+            var slots = new string[BattleInputConfig.DefaultTeamSize];
+            for (var i = 0; i < splitValues.Length; i++)
+            {
+                slots[i] = string.IsNullOrWhiteSpace(splitValues[i]) ? string.Empty : splitValues[i].Trim();
+            }
+
+            return slots;
         }
 
         private static void WriteProgressSafe(string progressPath, BattleOfflineSimulationProgressSnapshot snapshot)

@@ -28,6 +28,10 @@ namespace Fight.Battle
 
         public bool IncludeMatchRecords { get; set; }
 
+        public IReadOnlyList<string> ManualBlueHeroIds { get; set; } = Array.Empty<string>();
+
+        public IReadOnlyList<string> ManualRedHeroIds { get; set; } = Array.Empty<string>();
+
         public Action<BattleOfflineSimulationProgressSnapshot> ProgressCallback { get; set; }
     }
 

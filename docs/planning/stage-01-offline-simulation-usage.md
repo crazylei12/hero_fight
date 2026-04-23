@@ -58,6 +58,7 @@ set UNITY_EXE=D:\Unity\Editor\Unity.exe
 
 打开后可以直接设置：
 - `RandomCatalog` 或 `FixedInput`
+- `ManualSelection`
 - 运行多少场
 - `seedStart`
 - 是否保留每场数据
@@ -75,6 +76,12 @@ set UNITY_EXE=D:\Unity\Editor\Unity.exe
 - 总共多少场
 - 已完成多少场
 - 底部 bat / Unity 返回的运行日志
+
+如果选 `ManualSelection`：
+- 界面里会出现蓝红双方各 `5` 个英雄槽位
+- 你可以只指定其中几个
+- 留空的槽位会从英雄池里自动随机补齐
+- 同一场里仍然不允许重复英雄
 
 这套 exe 只是 GUI 包装器，不会绕开现有离线模拟主流程。
 
@@ -118,7 +125,7 @@ tools\run_stage01_offline_sim.bat -fightOfflineMode FixedInput -fightOfflineCoun
 - 对照修改前后差异
 - 验证指定阵容
 
-## 两种模式怎么选
+## 三种模式怎么选
 
 ### `RandomCatalog`
 
@@ -151,6 +158,18 @@ tools\run_stage01_offline_sim.bat -fightOfflineMode FixedInput -fightOfflineCoun
 - 直接使用 `BattleInputConfig` 里的蓝红双方英雄
 - 如果输入里有重复 `heroId`，会直接报错终止
 
+### `ManualSelection`
+
+适合：
+- 想指定某几个英雄做针对性对局
+- 但又不想把整套 10 人阵容都手工填满
+- 想让其余位置继续随机
+
+特点：
+- 蓝红双方都可以按槽位手动指定英雄
+- 未指定的槽位会从 `HeroCatalog` 剩余英雄里无放回随机补齐
+- 手动指定和随机补齐一起仍然遵守单局唯一英雄规则
+
 ## 全部参数说明
 
 ### `-fightOfflineMode`
@@ -158,6 +177,7 @@ tools\run_stage01_offline_sim.bat -fightOfflineMode FixedInput -fightOfflineCoun
 可选值：
 - `RandomCatalog`
 - `FixedInput`
+- `ManualSelection`
 
 默认：
 - `RandomCatalog`
@@ -189,6 +209,8 @@ tools\run_stage01_offline_sim.bat -fightOfflineMode FixedInput -fightOfflineCoun
 - `Assets/Resources/Stage01Demo/Stage01HeroCatalog.asset`
 
 仅在 `RandomCatalog` 下使用。
+
+在 `ManualSelection` 下也会使用。
 
 ### `-fightOfflineCount`
 
@@ -285,6 +307,32 @@ tools\run_stage01_offline_sim.bat -fightOfflineMode FixedInput -fightOfflineCoun
 - `false` 时，主结果 JSON 以最终英雄场均汇总为主
 - `true` 时，会额外写出 `matches`，包含逐场胜负、阵容和逐英雄逐场数据
 
+### `-fightOfflineBlueHeroSlots`
+
+含义：
+- `ManualSelection` 模式下，蓝方 5 个槽位的手动英雄列表
+
+格式：
+- 用英文逗号分隔的 5 槽字符串
+- 留空表示该槽位交给程序随机补齐
+
+示例：
+
+```bat
+-fightOfflineBlueHeroSlots "assassin_001_shadowstep,,support_001_sunpriest,,"
+```
+
+### `-fightOfflineRedHeroSlots`
+
+含义：
+- `ManualSelection` 模式下，红方 5 个槽位的手动英雄列表
+
+示例：
+
+```bat
+-fightOfflineRedHeroSlots "marksman_003_venomshooter,,,,tank_003_tidehunter"
+```
+
 ### `-fightOfflineOutputPath`
 
 含义：
@@ -345,6 +393,12 @@ tools\run_stage01_offline_sim.bat -fightOfflineMode RandomCatalog -fightOfflineC
 
 ```bat
 tools\run_stage01_offline_sim.bat -fightOfflineMode FixedInput -fightOfflineInputAssetPath "Assets/Resources/Stage01Demo/Stage01DemoBattleInput.asset" -fightOfflineCount 1 -fightOfflineSeedStart 42 -fightOfflineOutputPath "exports/stage01_offline_simulation/fixed_seed_42.json"
+```
+
+### 模板 G：指定部分英雄，其余随机补齐
+
+```bat
+tools\run_stage01_offline_sim.bat -fightOfflineMode ManualSelection -fightOfflineCount 1 -fightOfflineSeedStart 5000 -fightOfflineHeroCatalogAssetPath "Assets/Resources/Stage01Demo/Stage01HeroCatalog.asset" -fightOfflineBlueHeroSlots "assassin_001_shadowstep,,support_001_sunpriest,," -fightOfflineRedHeroSlots "marksman_003_venomshooter,,,,tank_003_tidehunter" -fightOfflineOutputPath "exports/stage01_offline_simulation/manual_mix_test.json"
 ```
 
 ## 输出结果怎么看

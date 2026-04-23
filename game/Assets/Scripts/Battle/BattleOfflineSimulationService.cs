@@ -35,9 +35,9 @@ namespace Fight.Battle
             ValidateRequest(request);
             ReportProgress(request, "Starting", 0, request.MatchCount > 0 ? 1 : 0, request.SeedStart, "Preparing offline simulation.");
 
-            var heroPool = request.SelectionMode == BattleOfflineSelectionMode.RandomCatalog
-                ? BuildValidatedHeroPool(request.HeroCatalog)
-                : GetValidatedHeroesFromInput(request.TemplateInput);
+            var heroPool = request.SelectionMode == BattleOfflineSelectionMode.FixedInput
+                ? GetValidatedHeroesFromInput(request.TemplateInput)
+                : BuildValidatedHeroPool(request.HeroCatalog);
             var aggregateAccumulators = CreateAggregateAccumulators(heroPool);
             var report = new BattleOfflineSimulationReport
             {
@@ -71,13 +71,28 @@ namespace Fight.Battle
                     matchIndex + 1,
                     seed,
                     $"Running match {matchIndex + 1}/{request.MatchCount}.");
-                var matchInput = request.SelectionMode == BattleOfflineSelectionMode.RandomCatalog
-                    ? CreateRandomCatalogInput(request.TemplateInput, heroPool, seed)
-                    : CloneInput(
+                BattleInputConfig matchInput;
+                if (request.SelectionMode == BattleOfflineSelectionMode.RandomCatalog)
+                {
+                    matchInput = CreateRandomCatalogInput(request.TemplateInput, heroPool, seed);
+                }
+                else if (request.SelectionMode == BattleOfflineSelectionMode.ManualSelection)
+                {
+                    matchInput = CreateManualSelectionInput(
+                        request.TemplateInput,
+                        heroPool,
+                        request.ManualBlueHeroIds,
+                        request.ManualRedHeroIds,
+                        seed);
+                }
+                else
+                {
+                    matchInput = CloneInput(
                         request.TemplateInput,
                         request.TemplateInput.blueTeam != null ? request.TemplateInput.blueTeam.heroes : Array.Empty<HeroDefinition>(),
                         request.TemplateInput.redTeam != null ? request.TemplateInput.redTeam.heroes : Array.Empty<HeroDefinition>(),
                         "OfflineFixedInput");
+                }
 
                 ValidateUniqueHeroIds(matchInput, request.SelectionMode);
 
@@ -200,9 +215,11 @@ namespace Fight.Battle
                 throw new InvalidOperationException("Offline simulation max tick count must be greater than zero.");
             }
 
-            if (request.SelectionMode == BattleOfflineSelectionMode.RandomCatalog && request.HeroCatalog == null)
+            if ((request.SelectionMode == BattleOfflineSelectionMode.RandomCatalog
+                    || request.SelectionMode == BattleOfflineSelectionMode.ManualSelection)
+                && request.HeroCatalog == null)
             {
-                throw new InvalidOperationException("RandomCatalog mode requires a HeroCatalogData asset.");
+                throw new InvalidOperationException($"{request.SelectionMode} mode requires a HeroCatalogData asset.");
             }
         }
 
@@ -343,6 +360,52 @@ namespace Fight.Battle
             return CloneInput(templateInput, blueHeroes, redHeroes, "OfflineRandomCatalogInput");
         }
 
+        private static BattleInputConfig CreateManualSelectionInput(
+            BattleInputConfig templateInput,
+            IReadOnlyList<HeroDefinition> heroPool,
+            IReadOnlyList<string> manualBlueHeroIds,
+            IReadOnlyList<string> manualRedHeroIds,
+            int seed)
+        {
+            var heroLookup = new Dictionary<string, HeroDefinition>(StringComparer.OrdinalIgnoreCase);
+            for (var i = 0; i < heroPool.Count; i++)
+            {
+                var hero = heroPool[i];
+                if (hero == null || string.IsNullOrWhiteSpace(hero.heroId) || heroLookup.ContainsKey(hero.heroId))
+                {
+                    continue;
+                }
+
+                heroLookup.Add(hero.heroId, hero);
+            }
+
+            var blueSlots = ResolveManualSlots(manualBlueHeroIds, TeamSide.Blue, heroLookup);
+            var redSlots = ResolveManualSlots(manualRedHeroIds, TeamSide.Red, heroLookup);
+            var usedHeroIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            MarkUsedHeroes(blueSlots, usedHeroIds, TeamSide.Blue);
+            MarkUsedHeroes(redSlots, usedHeroIds, TeamSide.Red);
+
+            var selectionRandom = new BattleRandomService(seed);
+            var availableHeroes = new List<HeroDefinition>();
+            for (var i = 0; i < heroPool.Count; i++)
+            {
+                var hero = heroPool[i];
+                if (hero == null || string.IsNullOrWhiteSpace(hero.heroId) || usedHeroIds.Contains(hero.heroId))
+                {
+                    continue;
+                }
+
+                availableHeroes.Add(hero);
+            }
+
+            FillMissingSlots(blueSlots, availableHeroes, selectionRandom);
+            FillMissingSlots(redSlots, availableHeroes, selectionRandom);
+
+            var blueHeroes = ToOrderedTeamList(blueSlots, TeamSide.Blue);
+            var redHeroes = ToOrderedTeamList(redSlots, TeamSide.Red);
+            return CloneInput(templateInput, blueHeroes, redHeroes, "OfflineManualSelectionInput");
+        }
+
         private static BattleInputConfig CloneInput(
             BattleInputConfig templateInput,
             IReadOnlyList<HeroDefinition> blueHeroes,
@@ -389,6 +452,120 @@ namespace Fight.Battle
             }
 
             return runtimeInput;
+        }
+
+        private static HeroDefinition[] ResolveManualSlots(
+            IReadOnlyList<string> manualHeroIds,
+            TeamSide side,
+            IReadOnlyDictionary<string, HeroDefinition> heroLookup)
+        {
+            var slots = new HeroDefinition[BattleInputConfig.DefaultTeamSize];
+            if (manualHeroIds == null)
+            {
+                return slots;
+            }
+
+            if (manualHeroIds.Count > BattleInputConfig.DefaultTeamSize)
+            {
+                throw new InvalidOperationException(
+                    $"ManualSelection mode received {manualHeroIds.Count} hero slots for {side}, exceeding team size {BattleInputConfig.DefaultTeamSize}.");
+            }
+
+            for (var slotIndex = 0; slotIndex < manualHeroIds.Count; slotIndex++)
+            {
+                var heroId = manualHeroIds[slotIndex];
+                if (string.IsNullOrWhiteSpace(heroId))
+                {
+                    continue;
+                }
+
+                if (!heroLookup.TryGetValue(heroId.Trim(), out var hero))
+                {
+                    throw new InvalidOperationException(
+                        $"ManualSelection mode could not find heroId [{heroId}] for {side} slot {slotIndex + 1} in the selected hero catalog.");
+                }
+
+                slots[slotIndex] = hero;
+            }
+
+            return slots;
+        }
+
+        private static void MarkUsedHeroes(
+            IReadOnlyList<HeroDefinition> slots,
+            HashSet<string> usedHeroIds,
+            TeamSide side)
+        {
+            if (slots == null)
+            {
+                return;
+            }
+
+            for (var slotIndex = 0; slotIndex < slots.Count; slotIndex++)
+            {
+                var hero = slots[slotIndex];
+                if (hero == null)
+                {
+                    continue;
+                }
+
+                if (!usedHeroIds.Add(hero.heroId))
+                {
+                    throw new InvalidOperationException(
+                        $"ManualSelection mode requires globally unique heroes, but heroId [{hero.heroId}] was repeated at {side} slot {slotIndex + 1}.");
+                }
+            }
+        }
+
+        private static void FillMissingSlots(
+            HeroDefinition[] slots,
+            List<HeroDefinition> availableHeroes,
+            BattleRandomService selectionRandom)
+        {
+            if (slots == null)
+            {
+                return;
+            }
+
+            for (var slotIndex = 0; slotIndex < slots.Length; slotIndex++)
+            {
+                if (slots[slotIndex] != null)
+                {
+                    continue;
+                }
+
+                if (availableHeroes == null || availableHeroes.Count <= 0)
+                {
+                    throw new InvalidOperationException("Hero pool was exhausted while filling manual selection slots.");
+                }
+
+                var heroIndex = selectionRandom.Range(0, availableHeroes.Count);
+                slots[slotIndex] = availableHeroes[heroIndex];
+                availableHeroes.RemoveAt(heroIndex);
+            }
+        }
+
+        private static List<HeroDefinition> ToOrderedTeamList(HeroDefinition[] slots, TeamSide side)
+        {
+            var heroes = new List<HeroDefinition>(BattleInputConfig.DefaultTeamSize);
+            if (slots == null)
+            {
+                throw new InvalidOperationException($"{side} slots were not initialized for ManualSelection mode.");
+            }
+
+            for (var slotIndex = 0; slotIndex < slots.Length; slotIndex++)
+            {
+                var hero = slots[slotIndex];
+                if (hero == null)
+                {
+                    throw new InvalidOperationException(
+                        $"ManualSelection mode left {side} slot {slotIndex + 1} empty after random fill.");
+                }
+
+                heroes.Add(hero);
+            }
+
+            return heroes;
         }
 
         private static BattleOfflineSimulationMatchRecord BuildMatchRecord(

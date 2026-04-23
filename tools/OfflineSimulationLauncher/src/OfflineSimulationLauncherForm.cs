@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
@@ -11,12 +12,14 @@ namespace Fight.Tools.OfflineSimulationLauncher
 {
     internal sealed class OfflineSimulationLauncherForm : Form
     {
+        private const int BattleSlotCount = 5;
         private const string DefaultInputAssetPath = "Assets/Resources/Stage01Demo/Stage01DemoBattleInput.asset";
         private const string DefaultHeroCatalogAssetPath = "Assets/Resources/Stage01Demo/Stage01HeroCatalog.asset";
 
         private readonly string repoRoot;
         private readonly string batchPath;
         private readonly JavaScriptSerializer serializer;
+        private readonly List<HeroCatalogEntry> heroCatalogEntries;
 
         private readonly Label repoRootValueLabel;
         private readonly ComboBox modeComboBox;
@@ -31,6 +34,9 @@ namespace Fight.Tools.OfflineSimulationLauncher
         private readonly Button browseOutputButton;
         private readonly Button startButton;
         private readonly Button openOutputButton;
+        private readonly GroupBox manualSelectionGroupBox;
+        private readonly ComboBox[] blueHeroSlotComboBoxes;
+        private readonly ComboBox[] redHeroSlotComboBoxes;
         private readonly Label progressSummaryLabel;
         private readonly ProgressBar progressBar;
         private readonly Label statusValueLabel;
@@ -49,17 +55,22 @@ namespace Fight.Tools.OfflineSimulationLauncher
                 : Path.GetFullPath(resolvedRepoRoot);
             batchPath = LauncherPaths.ResolveBatchPath(repoRoot);
             serializer = new JavaScriptSerializer();
+            heroCatalogEntries = HeroCatalogLoader.LoadHeroEntries(LauncherPaths.ResolveHeroesCsvPath(repoRoot));
+            blueHeroSlotComboBoxes = new ComboBox[5];
+            redHeroSlotComboBoxes = new ComboBox[5];
 
             Text = "Fight Offline Simulation Launcher";
             StartPosition = FormStartPosition.CenterScreen;
-            MinimumSize = new Size(900, 700);
-            Size = new Size(1080, 860);
+            MinimumSize = new Size(980, 760);
+            Size = new Size(1180, 940);
 
             TableLayoutPanel rootLayout = new TableLayoutPanel();
             rootLayout.Dock = DockStyle.Fill;
+            rootLayout.AutoScroll = true;
             rootLayout.ColumnCount = 1;
-            rootLayout.RowCount = 5;
+            rootLayout.RowCount = 6;
             rootLayout.Padding = new Padding(12);
+            rootLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             rootLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             rootLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             rootLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -70,6 +81,8 @@ namespace Fight.Tools.OfflineSimulationLauncher
             GroupBox settingsGroupBox = new GroupBox();
             settingsGroupBox.Text = "运行设置";
             settingsGroupBox.Dock = DockStyle.Top;
+            settingsGroupBox.AutoSize = true;
+            settingsGroupBox.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             settingsGroupBox.Padding = new Padding(12, 12, 12, 8);
             rootLayout.Controls.Add(settingsGroupBox, 0, 0);
 
@@ -101,6 +114,7 @@ namespace Fight.Tools.OfflineSimulationLauncher
             modeComboBox.Width = 180;
             modeComboBox.Items.Add("RandomCatalog");
             modeComboBox.Items.Add("FixedInput");
+            modeComboBox.Items.Add("ManualSelection");
             modeComboBox.SelectedIndex = 0;
             modeComboBox.SelectedIndexChanged += HandleModeChanged;
             modePanel.Controls.Add(modeComboBox);
@@ -170,13 +184,44 @@ namespace Fight.Tools.OfflineSimulationLauncher
             exportFullLogsCheckBox.Margin = new Padding(16, 3, 0, 3);
             optionsPanel.Controls.Add(exportFullLogsCheckBox);
 
+            manualSelectionGroupBox = new GroupBox();
+            manualSelectionGroupBox.Text = "手动指定英雄";
+            manualSelectionGroupBox.Dock = DockStyle.Top;
+            manualSelectionGroupBox.AutoSize = true;
+            manualSelectionGroupBox.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            manualSelectionGroupBox.Padding = new Padding(12);
+            rootLayout.Controls.Add(manualSelectionGroupBox, 0, 2);
+
+            TableLayoutPanel manualSelectionLayout = new TableLayoutPanel();
+            manualSelectionLayout.Dock = DockStyle.Top;
+            manualSelectionLayout.AutoSize = true;
+            manualSelectionLayout.ColumnCount = 4;
+            manualSelectionLayout.RowCount = 6;
+            manualSelectionLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            manualSelectionLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));
+            manualSelectionLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+            manualSelectionLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));
+            manualSelectionGroupBox.Controls.Add(manualSelectionLayout);
+
+            Label manualHintLabel = new Label();
+            manualHintLabel.AutoSize = true;
+            manualHintLabel.Text = "可只指定部分槽位，留空的槽位会从英雄池中无放回随机补齐。";
+            manualHintLabel.Margin = new Padding(0, 0, 0, 8);
+            manualSelectionLayout.Controls.Add(manualHintLabel, 0, 0);
+            manualSelectionLayout.SetColumnSpan(manualHintLabel, 4);
+
+            for (int slotIndex = 0; slotIndex < BattleSlotCount; slotIndex++)
+            {
+                AddManualSlotRow(manualSelectionLayout, slotIndex + 1, slotIndex);
+            }
+
             FlowLayoutPanel actionPanel = new FlowLayoutPanel();
             actionPanel.AutoSize = true;
             actionPanel.Dock = DockStyle.Top;
             actionPanel.FlowDirection = FlowDirection.LeftToRight;
             actionPanel.WrapContents = false;
             actionPanel.Padding = new Padding(0, 8, 0, 0);
-            rootLayout.Controls.Add(actionPanel, 0, 2);
+            rootLayout.Controls.Add(actionPanel, 0, 3);
 
             startButton = new Button();
             startButton.AutoSize = true;
@@ -198,8 +243,10 @@ namespace Fight.Tools.OfflineSimulationLauncher
             GroupBox statusGroupBox = new GroupBox();
             statusGroupBox.Text = "运行状态";
             statusGroupBox.Dock = DockStyle.Top;
+            statusGroupBox.AutoSize = true;
+            statusGroupBox.AutoSizeMode = AutoSizeMode.GrowAndShrink;
             statusGroupBox.Padding = new Padding(12);
-            rootLayout.Controls.Add(statusGroupBox, 0, 3);
+            rootLayout.Controls.Add(statusGroupBox, 0, 4);
 
             TableLayoutPanel statusLayout = new TableLayoutPanel();
             statusLayout.Dock = DockStyle.Top;
@@ -235,7 +282,7 @@ namespace Fight.Tools.OfflineSimulationLauncher
             logGroupBox.Text = "运行日志";
             logGroupBox.Dock = DockStyle.Fill;
             logGroupBox.Padding = new Padding(12);
-            rootLayout.Controls.Add(logGroupBox, 0, 4);
+            rootLayout.Controls.Add(logGroupBox, 0, 5);
 
             logTextBox = new TextBox();
             logTextBox.Dock = DockStyle.Fill;
@@ -257,6 +304,46 @@ namespace Fight.Tools.OfflineSimulationLauncher
         private void HandleModeChanged(object sender, EventArgs e)
         {
             UpdateModeState();
+        }
+
+        private void AddManualSlotRow(TableLayoutPanel layout, int rowIndex, int slotIndex)
+        {
+            Label blueLabel = new Label();
+            blueLabel.AutoSize = true;
+            blueLabel.Text = "蓝方 " + (slotIndex + 1).ToString(CultureInfo.InvariantCulture);
+            blueLabel.Margin = new Padding(0, 6, 12, 0);
+            layout.Controls.Add(blueLabel, 0, rowIndex);
+
+            ComboBox blueComboBox = CreateHeroSlotComboBox();
+            blueHeroSlotComboBoxes[slotIndex] = blueComboBox;
+            layout.Controls.Add(blueComboBox, 1, rowIndex);
+
+            Label redLabel = new Label();
+            redLabel.AutoSize = true;
+            redLabel.Text = "红方 " + (slotIndex + 1).ToString(CultureInfo.InvariantCulture);
+            redLabel.Margin = new Padding(16, 6, 12, 0);
+            layout.Controls.Add(redLabel, 2, rowIndex);
+
+            ComboBox redComboBox = CreateHeroSlotComboBox();
+            redHeroSlotComboBoxes[slotIndex] = redComboBox;
+            layout.Controls.Add(redComboBox, 3, rowIndex);
+        }
+
+        private ComboBox CreateHeroSlotComboBox()
+        {
+            ComboBox comboBox = new ComboBox();
+            comboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+            comboBox.Dock = DockStyle.Fill;
+            comboBox.Width = 320;
+            comboBox.DisplayMember = "DisplayText";
+            comboBox.Items.Add(new HeroCatalogEntry());
+            for (int i = 0; i < heroCatalogEntries.Count; i++)
+            {
+                comboBox.Items.Add(heroCatalogEntries[i]);
+            }
+
+            comboBox.SelectedIndex = 0;
+            return comboBox;
         }
 
         private void HandleBrowseOutputClicked(object sender, EventArgs e)
@@ -328,12 +415,28 @@ namespace Fight.Tools.OfflineSimulationLauncher
                 return;
             }
 
-            if (IsRandomMode())
+            if (IsRandomMode() || IsManualSelectionMode())
             {
                 string heroCatalogPath = heroCatalogAssetPathTextBox.Text.Trim();
                 if (string.IsNullOrWhiteSpace(heroCatalogPath))
                 {
-                    MessageBox.Show(this, "随机模式需要填写 HeroCatalog 资产路径。", "参数不完整", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show(this, "当前模式需要填写 HeroCatalog 资产路径。", "参数不完整", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+            }
+
+            if (IsManualSelectionMode())
+            {
+                if (heroCatalogEntries.Count <= 0)
+                {
+                    MessageBox.Show(this, "未能从 heroes.csv 读取英雄列表，无法使用手动指定英雄模式。", "英雄列表缺失", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                string validationError = ValidateManualSelection();
+                if (!string.IsNullOrWhiteSpace(validationError))
+                {
+                    MessageBox.Show(this, validationError, "手动选人无效", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
             }
@@ -544,9 +647,15 @@ namespace Fight.Tools.OfflineSimulationLauncher
             AppendArgument(builder, "-fightOfflineOutputPath", outputPath);
             AppendArgument(builder, "-fightOfflineProgressPath", progressPath);
 
-            if (IsRandomMode())
+            if (IsRandomMode() || IsManualSelectionMode())
             {
                 AppendArgument(builder, "-fightOfflineHeroCatalogAssetPath", heroCatalogAssetPathTextBox.Text.Trim());
+            }
+
+            if (IsManualSelectionMode())
+            {
+                AppendArgument(builder, "-fightOfflineBlueHeroSlots", SerializeManualSlots(blueHeroSlotComboBoxes));
+                AppendArgument(builder, "-fightOfflineRedHeroSlots", SerializeManualSlots(redHeroSlotComboBoxes));
             }
 
             return builder.ToString();
@@ -567,13 +676,78 @@ namespace Fight.Tools.OfflineSimulationLauncher
             builder.Append("\"");
         }
 
+        private string SerializeManualSlots(ComboBox[] comboBoxes)
+        {
+            if (comboBoxes == null || comboBoxes.Length == 0)
+            {
+                return string.Empty;
+            }
+
+            StringBuilder builder = new StringBuilder();
+            for (int i = 0; i < comboBoxes.Length; i++)
+            {
+                if (i > 0)
+                {
+                    builder.Append(",");
+                }
+
+                HeroCatalogEntry selectedEntry = comboBoxes[i].SelectedItem as HeroCatalogEntry;
+                if (selectedEntry != null && !string.IsNullOrWhiteSpace(selectedEntry.HeroId))
+                {
+                    builder.Append(selectedEntry.HeroId);
+                }
+            }
+
+            return builder.ToString();
+        }
+
+        private string ValidateManualSelection()
+        {
+            HashSet<string> seenHeroIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            string error = ValidateManualSide(blueHeroSlotComboBoxes, "蓝方", seenHeroIds);
+            if (!string.IsNullOrWhiteSpace(error))
+            {
+                return error;
+            }
+
+            return ValidateManualSide(redHeroSlotComboBoxes, "红方", seenHeroIds);
+        }
+
+        private static string ValidateManualSide(ComboBox[] comboBoxes, string sideLabel, HashSet<string> seenHeroIds)
+        {
+            if (comboBoxes == null)
+            {
+                return string.Empty;
+            }
+
+            for (int i = 0; i < comboBoxes.Length; i++)
+            {
+                HeroCatalogEntry selectedEntry = comboBoxes[i].SelectedItem as HeroCatalogEntry;
+                if (selectedEntry == null || string.IsNullOrWhiteSpace(selectedEntry.HeroId))
+                {
+                    continue;
+                }
+
+                if (!seenHeroIds.Add(selectedEntry.HeroId))
+                {
+                    return sideLabel + "第 " + (i + 1).ToString(CultureInfo.InvariantCulture) + " 个槽位选择了重复英雄 [" + selectedEntry.HeroId + "]。";
+                }
+            }
+
+            return string.Empty;
+        }
+
         private void UpdateModeState()
         {
             bool isRandomMode = IsRandomMode();
-            heroCatalogAssetPathTextBox.Enabled = isRandomMode;
+            bool isManualSelectionMode = IsManualSelectionMode();
+            heroCatalogAssetPathTextBox.Enabled = isRandomMode || isManualSelectionMode;
+            manualSelectionGroupBox.Visible = isManualSelectionMode;
             modeHintLabel.Text = isRandomMode
                 ? "随机模式会从英雄池无放回抽取 10 个英雄。"
-                : "固定模式会直接使用 BattleInputConfig 中已配置的双方阵容。";
+                : isManualSelectionMode
+                    ? "手动模式可指定部分槽位，剩余槽位会从英雄池随机补齐。"
+                    : "固定模式会直接使用 BattleInputConfig 中已配置的双方阵容。";
         }
 
         private void UpdateRepositoryState()
@@ -595,15 +769,21 @@ namespace Fight.Tools.OfflineSimulationLauncher
             includeMatchRecordsCheckBox.Enabled = !isRunning;
             exportFullLogsCheckBox.Enabled = !isRunning;
             inputAssetPathTextBox.Enabled = !isRunning;
-            heroCatalogAssetPathTextBox.Enabled = !isRunning && IsRandomMode();
+            heroCatalogAssetPathTextBox.Enabled = !isRunning && (IsRandomMode() || IsManualSelectionMode());
             outputPathTextBox.Enabled = !isRunning;
             browseOutputButton.Enabled = !isRunning;
+            manualSelectionGroupBox.Enabled = !isRunning && IsManualSelectionMode();
             startButton.Enabled = !isRunning && !string.IsNullOrWhiteSpace(repoRoot) && File.Exists(batchPath);
         }
 
         private bool IsRandomMode()
         {
             return string.Equals(Convert.ToString(modeComboBox.SelectedItem, CultureInfo.InvariantCulture), "RandomCatalog", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private bool IsManualSelectionMode()
+        {
+            return string.Equals(Convert.ToString(modeComboBox.SelectedItem, CultureInfo.InvariantCulture), "ManualSelection", StringComparison.OrdinalIgnoreCase);
         }
 
         private string ResolveOutputPathFromForm()

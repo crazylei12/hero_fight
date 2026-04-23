@@ -20,6 +20,8 @@ if not exist "%COMPILER_PATH%" (
  /reference:System.Drawing.dll ^
  /reference:System.Windows.Forms.dll ^
  /reference:System.Web.Extensions.dll ^
+ "%SOURCE_DIR%\HeroCatalogEntry.cs" ^
+ "%SOURCE_DIR%\HeroCatalogLoader.cs" ^
  "%SOURCE_DIR%\Program.cs" ^
  "%SOURCE_DIR%\LauncherPaths.cs" ^
  "%SOURCE_DIR%\LauncherProgressSnapshot.cs" ^
