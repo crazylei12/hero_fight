@@ -7,6 +7,8 @@ namespace Fight.Data
     public class BattleTeamLoadout
     {
         public TeamSide side = TeamSide.Blue;
+        public BattleUltimateTimingStrategy ultimateTimingStrategy = BattleUltimateTimingStrategy.Standard;
+        public BattleUltimateComboStrategy ultimateComboStrategy = BattleUltimateComboStrategy.Standard;
         public List<HeroDefinition> heroes = new List<HeroDefinition>();
     }
 }

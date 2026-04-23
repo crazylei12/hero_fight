@@ -19,6 +19,7 @@ namespace Fight.UI.Flow
         private GUIStyle slotStyle;
         private GUIStyle focusedSlotStyle;
         private GUIStyle heroButtonStyle;
+        private GUIStyle strategyButtonStyle;
         private Vector2 catalogScroll;
 
         private void Awake()
@@ -34,7 +35,7 @@ namespace Fight.UI.Flow
 
             GUI.Box(new Rect(18f, 18f, Screen.width - 36f, Screen.height - 36f), string.Empty);
             GUI.Label(new Rect(24f, 26f, Screen.width - 48f, 44f), "Hero Select", titleStyle);
-            GUI.Label(new Rect(24f, 66f, Screen.width - 48f, 24f), "先选左侧或右侧的阵容槽位，再点击中间英雄卡把英雄放进去。", bodyStyle);
+            GUI.Label(new Rect(24f, 66f, Screen.width - 48f, 24f), "先选阵容槽位，再点中间英雄卡分配英雄；左右两队也可以分别调整开大时机和协同策略。", bodyStyle);
 
             DrawTopButtons();
             DrawTeamPanel(new Rect(30f, 120f, 330f, Screen.height - 180f), TeamSide.Blue, new Color(0.22f, 0.42f, 0.9f, 0.85f));
@@ -104,10 +105,45 @@ namespace Fight.UI.Flow
                 GUI.color = previousColor;
             }
 
+            var timingRect = new Rect(rect.x + 16f, rect.y + rect.height - 106f, rect.width - 32f, 26f);
+            DrawStrategySelector(
+                timingRect,
+                "Ult Timing",
+                GetUltimateTimingLabel(GameFlowState.GetUltimateTimingStrategy(side)),
+                () => CycleUltimateTimingStrategy(side, -1),
+                () => CycleUltimateTimingStrategy(side, 1));
+
+            var comboRect = new Rect(rect.x + 16f, rect.y + rect.height - 74f, rect.width - 32f, 26f);
+            DrawStrategySelector(
+                comboRect,
+                "Ult Combo",
+                GetUltimateComboLabel(GameFlowState.GetUltimateComboStrategy(side)),
+                () => CycleUltimateComboStrategy(side, -1),
+                () => CycleUltimateComboStrategy(side, 1));
+
             GUI.Label(
                 new Rect(rect.x + 16f, rect.y + rect.height - 40f, rect.width - 32f, 28f),
                 activeSide == side ? $"Focused slot: {activeSlotIndex + 1}" : "Click a slot to assign heroes",
                 bodyStyle);
+        }
+
+        private void DrawStrategySelector(Rect rect, string label, string value, System.Action previous, System.Action next)
+        {
+            var buttonWidth = 28f;
+            var labelWidth = 96f;
+            GUI.Label(new Rect(rect.x, rect.y, labelWidth, rect.height), label, bodyStyle);
+
+            if (GUI.Button(new Rect(rect.x + labelWidth, rect.y, buttonWidth, rect.height), "<", strategyButtonStyle))
+            {
+                previous?.Invoke();
+            }
+
+            GUI.Box(new Rect(rect.x + labelWidth + buttonWidth + 6f, rect.y, rect.width - labelWidth - (buttonWidth * 2f) - 12f, rect.height), value);
+
+            if (GUI.Button(new Rect(rect.x + rect.width - buttonWidth, rect.y, buttonWidth, rect.height), ">", strategyButtonStyle))
+            {
+                next?.Invoke();
+            }
         }
 
         private void DrawCatalogPanel(Rect rect)
@@ -179,6 +215,53 @@ namespace Fight.UI.Flow
             };
         }
 
+        private static void CycleUltimateTimingStrategy(TeamSide side, int step)
+        {
+            var strategies = (BattleUltimateTimingStrategy[])System.Enum.GetValues(typeof(BattleUltimateTimingStrategy));
+            var current = GameFlowState.GetUltimateTimingStrategy(side);
+            var nextIndex = WrapEnumIndex(System.Array.IndexOf(strategies, current) + step, strategies.Length);
+            GameFlowState.SetUltimateTimingStrategy(side, strategies[nextIndex]);
+        }
+
+        private static void CycleUltimateComboStrategy(TeamSide side, int step)
+        {
+            var strategies = (BattleUltimateComboStrategy[])System.Enum.GetValues(typeof(BattleUltimateComboStrategy));
+            var current = GameFlowState.GetUltimateComboStrategy(side);
+            var nextIndex = WrapEnumIndex(System.Array.IndexOf(strategies, current) + step, strategies.Length);
+            GameFlowState.SetUltimateComboStrategy(side, strategies[nextIndex]);
+        }
+
+        private static int WrapEnumIndex(int value, int count)
+        {
+            if (count <= 0)
+            {
+                return 0;
+            }
+
+            var wrapped = value % count;
+            return wrapped < 0 ? wrapped + count : wrapped;
+        }
+
+        private static string GetUltimateTimingLabel(BattleUltimateTimingStrategy strategy)
+        {
+            return strategy switch
+            {
+                BattleUltimateTimingStrategy.Early => "Early",
+                BattleUltimateTimingStrategy.Late => "Late",
+                _ => "Standard",
+            };
+        }
+
+        private static string GetUltimateComboLabel(BattleUltimateComboStrategy strategy)
+        {
+            return strategy switch
+            {
+                BattleUltimateComboStrategy.Together => "Together",
+                BattleUltimateComboStrategy.Standard => "Standard",
+                _ => "Separate",
+            };
+        }
+
         private void EnsureStyles()
         {
             if (titleStyle != null)
@@ -229,6 +312,13 @@ namespace Fight.UI.Flow
                 fontSize = 13,
                 fontStyle = FontStyle.Bold,
                 wordWrap = true
+            };
+
+            strategyButtonStyle = new GUIStyle(GUI.skin.button)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                fontSize = 12,
+                fontStyle = FontStyle.Bold
             };
         }
     }

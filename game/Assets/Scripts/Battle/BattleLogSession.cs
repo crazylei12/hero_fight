@@ -39,6 +39,9 @@ namespace Fight.Battle
                     ResetBlueWarriorSpotlight();
                     CaptureTrackedBlueWarrior(started.Input);
                     AddLog($"Battle started. Session {CurrentBattleLogId}.");
+                    AddLog(
+                        $"Team ultimate strategy: Blue timing={started.Input?.blueTeam?.ultimateTimingStrategy} combo={started.Input?.blueTeam?.ultimateComboStrategy}; " +
+                        $"Red timing={started.Input?.redTeam?.ultimateTimingStrategy} combo={started.Input?.redTeam?.ultimateComboStrategy}.");
                     break;
                 case UnitSpawnedEvent spawned:
                     AddLog($"{FormatHeroLabel(spawned.Hero)} spawned for {spawned.Hero.Side}.");
