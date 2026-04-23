@@ -57,6 +57,7 @@ namespace Fight.Battle
             var matchLogs = request.ExportFullLogs
                 ? new List<BattleOfflineMatchLogExport>()
                 : new List<BattleOfflineMatchLogExport>(0);
+            var completedMatchCount = 0;
 
             for (var matchIndex = 0; matchIndex < request.MatchCount; matchIndex++)
             {
@@ -84,17 +85,15 @@ namespace Fight.Battle
                 try
                 {
                     var result = runner.RunToCompletion(request.FixedDeltaTimeSeconds, request.MaxTickCount);
-                    var matchRecord = BuildMatchRecord(matchIndex, seed, matchInput, result);
 
                     if (logSession != null)
                     {
                         var logFileName = BuildMatchLogFileName(matchIndex, seed);
-                        matchRecord.fullLogFile = logFileName;
                         matchLogs.Add(new BattleOfflineMatchLogExport(matchIndex, seed, logFileName, logSession.BuildExportText()));
                     }
 
-                    report.matches.Add(matchRecord);
-                    UpdateAggregateAccumulators(aggregateAccumulators, matchRecord);
+                    UpdateAggregateAccumulators(aggregateAccumulators, result);
+                    completedMatchCount++;
                 }
                 finally
                 {
@@ -105,7 +104,7 @@ namespace Fight.Battle
                 }
             }
 
-            report.runMeta.completedMatchCount = report.matches.Count;
+            report.runMeta.completedMatchCount = completedMatchCount;
             report.heroAggregatesByClass = BuildHeroAggregateGroups(aggregateAccumulators);
             return new BattleOfflineSimulationRunResult(report, matchLogs);
         }
@@ -328,83 +327,6 @@ namespace Fight.Battle
             return runtimeInput;
         }
 
-        private static BattleOfflineSimulationMatchRecord BuildMatchRecord(
-            int matchIndex,
-            int seed,
-            BattleInputConfig matchInput,
-            BattleResultData result)
-        {
-            var record = new BattleOfflineSimulationMatchRecord
-            {
-                matchIndex = matchIndex,
-                seed = seed,
-                winner = result.winner.ToString(),
-                endReason = result.endReason.ToString(),
-                enteredOvertime = result.enteredOvertime,
-                elapsedTimeSeconds = result.elapsedTimeSeconds,
-                blueKills = result.blueKills,
-                redKills = result.redKills,
-                blueHeroes = BuildHeroReferences(matchInput.blueTeam.heroes, TeamSide.Blue),
-                redHeroes = BuildHeroReferences(matchInput.redTeam.heroes, TeamSide.Red),
-            };
-
-            var sortedHeroStats = new List<HeroBattleStatLine>(result.heroStats);
-            sortedHeroStats.Sort(CompareHeroStatLines);
-            for (var i = 0; i < sortedHeroStats.Count; i++)
-            {
-                var heroStat = sortedHeroStats[i];
-                record.heroStats.Add(new BattleOfflineHeroMatchStat
-                {
-                    heroId = heroStat.heroId ?? string.Empty,
-                    displayName = string.IsNullOrWhiteSpace(heroStat.displayName) ? heroStat.heroId ?? string.Empty : heroStat.displayName,
-                    heroClass = heroStat.heroClass.ToString(),
-                    side = heroStat.side.ToString(),
-                    slotIndex = heroStat.slotIndex,
-                    won = heroStat.won,
-                    kills = heroStat.kills,
-                    deaths = heroStat.deaths,
-                    assists = heroStat.assists,
-                    damageDealt = heroStat.damageDealt,
-                    damageTaken = heroStat.damageTaken,
-                    healingDone = heroStat.healingDone,
-                    shieldingDone = heroStat.shieldingDone,
-                    activeSkillCastCount = heroStat.activeSkillCastCount,
-                    ultimateCastCount = heroStat.ultimateCastCount,
-                });
-            }
-
-            return record;
-        }
-
-        private static List<BattleOfflineHeroReference> BuildHeroReferences(IReadOnlyList<HeroDefinition> heroes, TeamSide side)
-        {
-            var results = new List<BattleOfflineHeroReference>();
-            if (heroes == null)
-            {
-                return results;
-            }
-
-            for (var i = 0; i < heroes.Count; i++)
-            {
-                var hero = heroes[i];
-                if (hero == null)
-                {
-                    continue;
-                }
-
-                results.Add(new BattleOfflineHeroReference
-                {
-                    heroId = hero.heroId ?? string.Empty,
-                    displayName = string.IsNullOrWhiteSpace(hero.displayName) ? hero.heroId ?? string.Empty : hero.displayName,
-                    heroClass = hero.heroClass.ToString(),
-                    side = side.ToString(),
-                    slotIndex = i,
-                });
-            }
-
-            return results;
-        }
-
         private static Dictionary<string, HeroAggregateAccumulator> CreateAggregateAccumulators(IReadOnlyList<HeroDefinition> heroes)
         {
             var accumulators = new Dictionary<string, HeroAggregateAccumulator>(StringComparer.OrdinalIgnoreCase);
@@ -435,28 +357,33 @@ namespace Fight.Battle
 
         private static void UpdateAggregateAccumulators(
             Dictionary<string, HeroAggregateAccumulator> accumulators,
-            BattleOfflineSimulationMatchRecord matchRecord)
+            BattleResultData result)
         {
-            for (var i = 0; i < matchRecord.heroStats.Count; i++)
+            if (result?.heroStats == null)
             {
-                var heroStat = matchRecord.heroStats[i];
+                return;
+            }
+
+            for (var i = 0; i < result.heroStats.Count; i++)
+            {
+                var heroStat = result.heroStats[i];
                 if (!accumulators.TryGetValue(heroStat.heroId, out var accumulator))
                 {
                     accumulator = new HeroAggregateAccumulator
                     {
                         HeroId = heroStat.heroId,
                         DisplayName = heroStat.displayName,
-                        HeroClass = ParseHeroClass(heroStat.heroClass),
+                        HeroClass = heroStat.heroClass,
                     };
                     accumulators.Add(heroStat.heroId, accumulator);
                 }
 
                 accumulator.PickCount++;
-                if (string.Equals(heroStat.side, TeamSide.Blue.ToString(), StringComparison.OrdinalIgnoreCase))
+                if (heroStat.side == TeamSide.Blue)
                 {
                     accumulator.AppearancesAsBlue++;
                 }
-                else if (string.Equals(heroStat.side, TeamSide.Red.ToString(), StringComparison.OrdinalIgnoreCase))
+                else if (heroStat.side == TeamSide.Red)
                 {
                     accumulator.AppearancesAsRed++;
                 }
@@ -613,30 +540,6 @@ namespace Fight.Battle
             }
 
             return string.Compare(GetAccumulatorHeroId(left), GetAccumulatorHeroId(right), StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static int CompareHeroStatLines(HeroBattleStatLine left, HeroBattleStatLine right)
-        {
-            var sideComparison = left.side.CompareTo(right.side);
-            if (sideComparison != 0)
-            {
-                return sideComparison;
-            }
-
-            var slotComparison = left.slotIndex.CompareTo(right.slotIndex);
-            if (slotComparison != 0)
-            {
-                return slotComparison;
-            }
-
-            return string.Compare(left.heroId, right.heroId, StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static HeroClass ParseHeroClass(string heroClass)
-        {
-            return Enum.TryParse(heroClass, ignoreCase: true, out HeroClass parsedHeroClass)
-                ? parsedHeroClass
-                : HeroClass.Warrior;
         }
 
         private static string GetAccumulatorHeroId(HeroAggregateAccumulator accumulator)
