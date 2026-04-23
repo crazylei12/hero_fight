@@ -129,7 +129,7 @@ namespace Fight.Tools.OfflineSimulationLauncher
             AddLabel(settingsLayout, 4, "输出文件");
             outputPathTextBox = new TextBox();
             outputPathTextBox.Dock = DockStyle.Fill;
-            outputPathTextBox.Text = LauncherPaths.ToDisplayPath(repoRoot, LauncherPaths.ResolveDefaultOutputPath(repoRoot));
+            outputPathTextBox.Text = LauncherPaths.ToDisplayPath(repoRoot, BuildNextOutputPathSuggestion());
             settingsLayout.Controls.Add(outputPathTextBox, 1, 4);
 
             browseOutputButton = new Button();
@@ -311,12 +311,15 @@ namespace Fight.Tools.OfflineSimulationLauncher
                 return;
             }
 
-            string outputPath = ResolveOutputPathFromForm();
-            if (string.IsNullOrWhiteSpace(outputPath))
+            string outputBasePath = ResolveOutputPathFromForm();
+            if (string.IsNullOrWhiteSpace(outputBasePath))
             {
                 MessageBox.Show(this, "请先填写输出文件路径。", "参数不完整", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
+
+            string outputPath = LauncherPaths.BuildTimestampedOutputPath(outputBasePath, DateTime.Now);
+            outputPathTextBox.Text = LauncherPaths.ToDisplayPath(repoRoot, outputPath);
 
             string inputAssetPath = inputAssetPathTextBox.Text.Trim();
             if (string.IsNullOrWhiteSpace(inputAssetPath))
@@ -415,6 +418,7 @@ namespace Fight.Tools.OfflineSimulationLauncher
                 if (latestProgress != null && string.Equals(latestProgress.status, "Completed", StringComparison.OrdinalIgnoreCase))
                 {
                     statusValueLabel.Text = "运行完成。结果已写入 " + NormalizePathForDisplay(latestProgress.outputPath);
+                    outputPathTextBox.Text = LauncherPaths.ToDisplayPath(repoRoot, BuildNextOutputPathSuggestion());
                 }
                 else
                 {
@@ -605,6 +609,17 @@ namespace Fight.Tools.OfflineSimulationLauncher
         private string ResolveOutputPathFromForm()
         {
             return LauncherPaths.ResolveUserPath(repoRoot, outputPathTextBox.Text.Trim());
+        }
+
+        private string BuildNextOutputPathSuggestion()
+        {
+            string baseOutputPath = ResolveOutputPathFromForm();
+            if (string.IsNullOrWhiteSpace(baseOutputPath))
+            {
+                baseOutputPath = LauncherPaths.ResolveDefaultOutputPath(repoRoot);
+            }
+
+            return LauncherPaths.BuildTimestampedOutputPath(baseOutputPath, DateTime.Now);
         }
 
         private static void AddLabel(TableLayoutPanel layout, int rowIndex, string text)

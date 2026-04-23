@@ -1,10 +1,15 @@
 using System;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace Fight.Tools.OfflineSimulationLauncher
 {
     internal static class LauncherPaths
     {
+        private static readonly Regex TimestampSuffixRegex = new Regex(
+            @"_(\d{8}_\d{6}(_\d{3})?)$",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
         public static string ResolveRepositoryRoot(string baseDirectory)
         {
             string currentDirectory = string.IsNullOrWhiteSpace(baseDirectory)
@@ -48,6 +53,25 @@ namespace Fight.Tools.OfflineSimulationLauncher
             }
 
             return Path.Combine(repoRoot, "exports", "stage01_offline_simulation", "offline_simulation_report.json");
+        }
+
+        public static string BuildTimestampedOutputPath(string outputPath, DateTime timestamp)
+        {
+            if (string.IsNullOrWhiteSpace(outputPath))
+            {
+                return string.Empty;
+            }
+
+            string fullPath = Path.GetFullPath(outputPath);
+            string directoryPath = Path.GetDirectoryName(fullPath);
+            string extension = Path.GetExtension(fullPath);
+            string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fullPath);
+            string normalizedFileName = StripTrailingTimestamp(fileNameWithoutExtension);
+            string timestampSuffix = timestamp.ToString("yyyyMMdd_HHmmss_fff");
+
+            return Path.Combine(
+                string.IsNullOrWhiteSpace(directoryPath) ? string.Empty : directoryPath,
+                normalizedFileName + "_" + timestampSuffix + extension);
         }
 
         public static string ResolveProgressPath(string repoRoot)
@@ -130,6 +154,16 @@ namespace Fight.Tools.OfflineSimulationLauncher
             return path.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal)
                 ? path
                 : path + Path.DirectorySeparatorChar;
+        }
+
+        private static string StripTrailingTimestamp(string fileNameWithoutExtension)
+        {
+            if (string.IsNullOrWhiteSpace(fileNameWithoutExtension))
+            {
+                return "offline_simulation_report";
+            }
+
+            return TimestampSuffixRegex.Replace(fileNameWithoutExtension, string.Empty);
         }
     }
 }

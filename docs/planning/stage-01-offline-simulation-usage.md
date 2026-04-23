@@ -64,6 +64,12 @@ set UNITY_EXE=D:\Unity\Editor\Unity.exe
 - 是否额外导出完整日志
 - 输出 JSON 路径
 
+补充说明：
+- exe 每次点击“开始运行”时，都会自动把当前时间戳追加到结果文件名里
+- 这样即使你连续跑很多次，也会保留多份结果，不会直接覆盖上一份
+- 例如你填的是 `exports/stage01_offline_simulation/offline_simulation_report.json`
+- 实际输出会变成类似 `offline_simulation_report_20260423_163055_123.json`
+
 启动后界面会实时显示：
 - 当前正在第几场
 - 总共多少场
