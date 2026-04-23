@@ -103,12 +103,6 @@ namespace Fight.Editor
                     var matchLog = runResult.MatchLogs[i];
                     var logPath = Path.Combine(logsDirectory, matchLog.FileName);
                     File.WriteAllText(logPath, matchLog.Content ?? string.Empty, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-
-                    if (matchLog.MatchIndex >= 0 && matchLog.MatchIndex < runResult.Report.matches.Count)
-                    {
-                        runResult.Report.matches[matchLog.MatchIndex].fullLogFile =
-                            Path.Combine(logsFolderName, matchLog.FileName).Replace("\\", "/");
-                    }
                 }
             }
 
