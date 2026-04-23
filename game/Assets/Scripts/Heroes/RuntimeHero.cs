@@ -325,6 +325,10 @@ namespace Fight.Heroes
 
         public bool HasInitializedUltimateDecisionSchedule { get; private set; }
 
+        public float UltimateTimingNotBeforeTimeSeconds { get; private set; }
+
+        public bool HasInitializedUltimateTimingWindow { get; private set; }
+
         public RuntimeHero LastThreatSource { get; private set; }
 
         public float LastThreatTimeSeconds { get; private set; }
@@ -925,6 +929,12 @@ namespace Fight.Heroes
         {
             NextUltimateDecisionCheckTimeSeconds = Mathf.Max(0f, nextCheckTimeSeconds);
             HasInitializedUltimateDecisionSchedule = true;
+        }
+
+        public void InitializeUltimateTimingWindow(float notBeforeTimeSeconds)
+        {
+            UltimateTimingNotBeforeTimeSeconds = Mathf.Max(0f, notBeforeTimeSeconds);
+            HasInitializedUltimateTimingWindow = true;
         }
 
         public void StartCombatActionSequence(RuntimeCombatActionSequence sequence)

@@ -14,6 +14,10 @@ namespace Fight.UI.Flow
         private static List<HeroDefinition> heroCatalog;
         private static List<HeroDefinition> blueSelection;
         private static List<HeroDefinition> redSelection;
+        private static BattleUltimateTimingStrategy blueUltimateTimingStrategy = BattleUltimateTimingStrategy.Standard;
+        private static BattleUltimateTimingStrategy redUltimateTimingStrategy = BattleUltimateTimingStrategy.Standard;
+        private static BattleUltimateComboStrategy blueUltimateComboStrategy = BattleUltimateComboStrategy.Standard;
+        private static BattleUltimateComboStrategy redUltimateComboStrategy = BattleUltimateComboStrategy.Standard;
         private static BattleInputConfig pendingBattleInput;
         private static BattleInputConfig lastUsedBattleInput;
         private static string lastBattleLogSessionId;
@@ -70,6 +74,18 @@ namespace Fight.UI.Flow
             var template = GetDefaultBattleTemplate();
             blueSelection = CloneTeam(template?.blueTeam?.heroes);
             redSelection = CloneTeam(template?.redTeam?.heroes);
+            blueUltimateTimingStrategy = template?.blueTeam != null
+                ? template.blueTeam.ultimateTimingStrategy
+                : BattleUltimateTimingStrategy.Standard;
+            redUltimateTimingStrategy = template?.redTeam != null
+                ? template.redTeam.ultimateTimingStrategy
+                : BattleUltimateTimingStrategy.Standard;
+            blueUltimateComboStrategy = template?.blueTeam != null
+                ? template.blueTeam.ultimateComboStrategy
+                : BattleUltimateComboStrategy.Standard;
+            redUltimateComboStrategy = template?.redTeam != null
+                ? template.redTeam.ultimateComboStrategy
+                : BattleUltimateComboStrategy.Standard;
         }
 
         public static void SetSelectedHero(TeamSide side, int slotIndex, HeroDefinition hero)
@@ -87,6 +103,42 @@ namespace Fight.UI.Flow
         public static void ClearSelectedHero(TeamSide side, int slotIndex)
         {
             SetSelectedHero(side, slotIndex, null);
+        }
+
+        public static BattleUltimateTimingStrategy GetUltimateTimingStrategy(TeamSide side)
+        {
+            return side == TeamSide.Red
+                ? redUltimateTimingStrategy
+                : blueUltimateTimingStrategy;
+        }
+
+        public static void SetUltimateTimingStrategy(TeamSide side, BattleUltimateTimingStrategy strategy)
+        {
+            if (side == TeamSide.Red)
+            {
+                redUltimateTimingStrategy = strategy;
+                return;
+            }
+
+            blueUltimateTimingStrategy = strategy;
+        }
+
+        public static BattleUltimateComboStrategy GetUltimateComboStrategy(TeamSide side)
+        {
+            return side == TeamSide.Red
+                ? redUltimateComboStrategy
+                : blueUltimateComboStrategy;
+        }
+
+        public static void SetUltimateComboStrategy(TeamSide side, BattleUltimateComboStrategy strategy)
+        {
+            if (side == TeamSide.Red)
+            {
+                redUltimateComboStrategy = strategy;
+                return;
+            }
+
+            blueUltimateComboStrategy = strategy;
         }
 
         public static bool HasValidSelections()
@@ -117,10 +169,20 @@ namespace Fight.UI.Flow
             runtimeInput.enableSkills = template.enableSkills;
             runtimeInput.arenaId = template.arenaId;
 
-            runtimeInput.blueTeam = new BattleTeamLoadout { side = TeamSide.Blue };
+            runtimeInput.blueTeam = new BattleTeamLoadout
+            {
+                side = TeamSide.Blue,
+                ultimateTimingStrategy = blueUltimateTimingStrategy,
+                ultimateComboStrategy = blueUltimateComboStrategy,
+            };
             runtimeInput.blueTeam.heroes.AddRange(blueSelection);
 
-            runtimeInput.redTeam = new BattleTeamLoadout { side = TeamSide.Red };
+            runtimeInput.redTeam = new BattleTeamLoadout
+            {
+                side = TeamSide.Red,
+                ultimateTimingStrategy = redUltimateTimingStrategy,
+                ultimateComboStrategy = redUltimateComboStrategy,
+            };
             runtimeInput.redTeam.heroes.AddRange(redSelection);
 
             pendingBattleInput = runtimeInput;

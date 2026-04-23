@@ -4491,10 +4491,14 @@ namespace Fight.Editor
             input.arenaId = Stage01ArenaSpec.ArenaId;
 
             input.blueTeam.side = TeamSide.Blue;
+            input.blueTeam.ultimateTimingStrategy = BattleUltimateTimingStrategy.Standard;
+            input.blueTeam.ultimateComboStrategy = BattleUltimateComboStrategy.Standard;
             input.blueTeam.heroes.Clear();
             input.blueTeam.heroes.AddRange(new[] { tank, warrior, mage, support, marksman });
 
             input.redTeam.side = TeamSide.Red;
+            input.redTeam.ultimateTimingStrategy = BattleUltimateTimingStrategy.Standard;
+            input.redTeam.ultimateComboStrategy = BattleUltimateComboStrategy.Standard;
             input.redTeam.heroes.Clear();
             input.redTeam.heroes.AddRange(includeAssassinOnRedTeam
                 ? new[] { tank, assassin, mage, support, marksman }
@@ -4519,10 +4523,14 @@ namespace Fight.Editor
                 resourcesInput.arenaId = input.arenaId;
 
                 resourcesInput.blueTeam.side = input.blueTeam.side;
+                resourcesInput.blueTeam.ultimateTimingStrategy = input.blueTeam.ultimateTimingStrategy;
+                resourcesInput.blueTeam.ultimateComboStrategy = input.blueTeam.ultimateComboStrategy;
                 resourcesInput.blueTeam.heroes.Clear();
                 resourcesInput.blueTeam.heroes.AddRange(input.blueTeam.heroes);
 
                 resourcesInput.redTeam.side = input.redTeam.side;
+                resourcesInput.redTeam.ultimateTimingStrategy = input.redTeam.ultimateTimingStrategy;
+                resourcesInput.redTeam.ultimateComboStrategy = input.redTeam.ultimateComboStrategy;
                 resourcesInput.redTeam.heroes.Clear();
                 resourcesInput.redTeam.heroes.AddRange(input.redTeam.heroes);
 

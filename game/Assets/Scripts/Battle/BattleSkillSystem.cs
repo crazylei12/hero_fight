@@ -21,6 +21,17 @@ namespace Fight.Battle
         private const float UltimateFirstFallbackBonus = 0.2f;
         private const float UltimateSecondFallbackBonus = 0.5f;
         private const float UltimateSecondaryPriorityBonus = 0.25f;
+        private const float UltimateEarlyTimingMinSeconds = 6f;
+        private const float UltimateEarlyTimingMaxSeconds = 10f;
+        private const float UltimateStandardTimingMinSeconds = 10f;
+        private const float UltimateStandardTimingMaxSeconds = 16f;
+        private const float UltimateLateTimingMinSeconds = 16f;
+        private const float UltimateLateTimingMaxSeconds = 24f;
+        private const float UltimateComboTogetherWindowSeconds = 1.25f;
+        private const float UltimateComboTogetherChanceMultiplier = 1.35f;
+        private const float UltimateComboSeparateLockWindowSeconds = 3f;
+        private const float UltimateComboStandardWindowSeconds = 2.5f;
+        private const float UltimateComboStandardChanceMultiplier = 0.65f;
         private const float UltimateAllySuppressionWindowSeconds = 5f;
         private const float UltimateAllySuppressionChanceMultiplier = 0.25f;
 
@@ -427,6 +438,7 @@ namespace Fight.Battle
             }
 
             var elapsedTime = context.Clock.ElapsedTimeSeconds;
+            EnsureUltimateTimingWindowInitialized(context, caster);
             if (!caster.HasInitializedUltimateDecisionSchedule)
             {
                 caster.InitializeUltimateDecisionSchedule(UltimateInitialLockoutSeconds + GetRandomJitter(context));
@@ -437,7 +449,99 @@ namespace Fight.Battle
                 return false;
             }
 
+            if (IsDelayedByComboStrategy(context, caster, elapsedTime))
+            {
+                return false;
+            }
+
+            if (!HasReachedUltimateTimingWindow(context, caster, elapsedTime))
+            {
+                return false;
+            }
+
             return elapsedTime >= caster.NextUltimateDecisionCheckTimeSeconds;
+        }
+
+        private static void EnsureUltimateTimingWindowInitialized(BattleContext context, RuntimeHero caster)
+        {
+            if (caster == null || caster.HasInitializedUltimateTimingWindow)
+            {
+                return;
+            }
+
+            caster.InitializeUltimateTimingWindow(GetUltimateTimingNotBeforeTimeSeconds(context, caster));
+        }
+
+        private static float GetUltimateTimingNotBeforeTimeSeconds(BattleContext context, RuntimeHero caster)
+        {
+            var timingStrategy = context != null
+                ? context.GetUltimateTimingStrategy(caster != null ? caster.Side : TeamSide.None)
+                : BattleUltimateTimingStrategy.Standard;
+
+            var timingWindow = timingStrategy switch
+            {
+                BattleUltimateTimingStrategy.Early => new Vector2(UltimateEarlyTimingMinSeconds, UltimateEarlyTimingMaxSeconds),
+                BattleUltimateTimingStrategy.Late => new Vector2(UltimateLateTimingMinSeconds, UltimateLateTimingMaxSeconds),
+                _ => new Vector2(UltimateStandardTimingMinSeconds, UltimateStandardTimingMaxSeconds),
+            };
+
+            return GetRandomRange(context, timingWindow.x, timingWindow.y);
+        }
+
+        private static float GetRandomRange(BattleContext context, float minValue, float maxValue)
+        {
+            if (maxValue <= minValue + Mathf.Epsilon)
+            {
+                return minValue;
+            }
+
+            return context?.RandomService != null
+                ? context.RandomService.Range(minValue, maxValue)
+                : (minValue + maxValue) * 0.5f;
+        }
+
+        private static bool HasReachedUltimateTimingWindow(BattleContext context, RuntimeHero caster, float elapsedTime)
+        {
+            if (caster == null)
+            {
+                return false;
+            }
+
+            if (elapsedTime >= caster.UltimateTimingNotBeforeTimeSeconds)
+            {
+                return true;
+            }
+
+            return CanFollowRecentAllyUltimate(context, caster);
+        }
+
+        private static bool CanFollowRecentAllyUltimate(BattleContext context, RuntimeHero caster)
+        {
+            if (context == null
+                || caster == null
+                || context.GetUltimateComboStrategy(caster.Side) != BattleUltimateComboStrategy.Together)
+            {
+                return false;
+            }
+
+            var timeSinceLastAllyUltimateSeconds = GetTimeSinceLastAllyUltimateSeconds(context, caster);
+            return timeSinceLastAllyUltimateSeconds >= 0f
+                && timeSinceLastAllyUltimateSeconds <= UltimateComboTogetherWindowSeconds;
+        }
+
+        private static bool IsDelayedByComboStrategy(BattleContext context, RuntimeHero caster, float elapsedTime)
+        {
+            if (context == null
+                || caster == null
+                || context.GetUltimateComboStrategy(caster.Side) != BattleUltimateComboStrategy.Separate)
+            {
+                return false;
+            }
+
+            var timeSinceLastAllyUltimateSeconds = GetTimeSinceLastAllyUltimateSeconds(context, caster);
+            return timeSinceLastAllyUltimateSeconds >= 0f
+                && timeSinceLastAllyUltimateSeconds <= UltimateComboSeparateLockWindowSeconds
+                && elapsedTime >= caster.UltimateTimingNotBeforeTimeSeconds;
         }
 
         private static void ScheduleNextUltimateAttempt(BattleContext context, RuntimeHero caster)
@@ -1307,21 +1411,53 @@ namespace Fight.Battle
                 return new UltimateSuppressionInfo(multiplier: 1f, timeSinceLastAllyUltimateSeconds: -1f);
             }
 
-            var lastAllyUltimateCastTimeSeconds = context.GetLastUltimateCastTimeSeconds(caster.Side);
-            if (float.IsNegativeInfinity(lastAllyUltimateCastTimeSeconds))
+            var timeSinceLastAllyUltimateSeconds = GetTimeSinceLastAllyUltimateSeconds(context, caster);
+            if (timeSinceLastAllyUltimateSeconds < 0f)
             {
                 return new UltimateSuppressionInfo(multiplier: 1f, timeSinceLastAllyUltimateSeconds: -1f);
             }
 
-            var timeSinceLastAllyUltimateSeconds = Mathf.Max(0f, context.Clock.ElapsedTimeSeconds - lastAllyUltimateCastTimeSeconds);
-            if (timeSinceLastAllyUltimateSeconds > UltimateAllySuppressionWindowSeconds)
+            var comboStrategy = context.GetUltimateComboStrategy(caster.Side);
+            switch (comboStrategy)
             {
-                return new UltimateSuppressionInfo(multiplier: 1f, timeSinceLastAllyUltimateSeconds);
+                case BattleUltimateComboStrategy.Together:
+                    return new UltimateSuppressionInfo(
+                        multiplier: timeSinceLastAllyUltimateSeconds <= UltimateComboTogetherWindowSeconds
+                            ? UltimateComboTogetherChanceMultiplier
+                            : 1f,
+                        timeSinceLastAllyUltimateSeconds);
+                case BattleUltimateComboStrategy.Standard:
+                    return new UltimateSuppressionInfo(
+                        multiplier: timeSinceLastAllyUltimateSeconds <= UltimateComboStandardWindowSeconds
+                            ? UltimateComboStandardChanceMultiplier
+                            : 1f,
+                        timeSinceLastAllyUltimateSeconds);
+                default:
+                    if (timeSinceLastAllyUltimateSeconds > UltimateAllySuppressionWindowSeconds)
+                    {
+                        return new UltimateSuppressionInfo(multiplier: 1f, timeSinceLastAllyUltimateSeconds);
+                    }
+
+                    return new UltimateSuppressionInfo(
+                        multiplier: UltimateAllySuppressionChanceMultiplier,
+                        timeSinceLastAllyUltimateSeconds);
+            }
+        }
+
+        private static float GetTimeSinceLastAllyUltimateSeconds(BattleContext context, RuntimeHero caster)
+        {
+            if (context?.Clock == null || caster == null || caster.Side == TeamSide.None)
+            {
+                return -1f;
             }
 
-            return new UltimateSuppressionInfo(
-                multiplier: UltimateAllySuppressionChanceMultiplier,
-                timeSinceLastAllyUltimateSeconds);
+            var lastAllyUltimateCastTimeSeconds = context.GetLastUltimateCastTimeSeconds(caster.Side);
+            if (float.IsNegativeInfinity(lastAllyUltimateCastTimeSeconds))
+            {
+                return -1f;
+            }
+
+            return Mathf.Max(0f, context.Clock.ElapsedTimeSeconds - lastAllyUltimateCastTimeSeconds);
         }
 
         private static void PublishUltimateDecisionEvaluated(

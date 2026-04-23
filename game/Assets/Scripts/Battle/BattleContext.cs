@@ -131,6 +131,32 @@ namespace Fight.Battle
 
         public List<RuntimeReactiveGuard> ReactiveGuards { get; }
 
+        public BattleTeamLoadout GetTeamLoadout(TeamSide side)
+        {
+            return side switch
+            {
+                TeamSide.Blue => Input?.blueTeam,
+                TeamSide.Red => Input?.redTeam,
+                _ => null,
+            };
+        }
+
+        public BattleUltimateTimingStrategy GetUltimateTimingStrategy(TeamSide side)
+        {
+            var loadout = GetTeamLoadout(side);
+            return loadout != null
+                ? loadout.ultimateTimingStrategy
+                : BattleUltimateTimingStrategy.Standard;
+        }
+
+        public BattleUltimateComboStrategy GetUltimateComboStrategy(TeamSide side)
+        {
+            var loadout = GetTeamLoadout(side);
+            return loadout != null
+                ? loadout.ultimateComboStrategy
+                : BattleUltimateComboStrategy.Standard;
+        }
+
         public void RecordUltimateCast(TeamSide side)
         {
             var castTimeSeconds = Clock != null ? Mathf.Max(0f, Clock.ElapsedTimeSeconds) : 0f;
