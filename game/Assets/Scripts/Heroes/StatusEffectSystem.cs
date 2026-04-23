@@ -349,6 +349,35 @@ namespace Fight.Heroes
             return true;
         }
 
+        public static int RemoveStatuses(
+            RuntimeHero hero,
+            StatusEffectType effectType,
+            string statusThemeKey = null,
+            Action<RuntimeStatusEffect> onRemovedStatus = null)
+        {
+            if (hero == null || effectType == StatusEffectType.None)
+            {
+                return 0;
+            }
+
+            var removedCount = 0;
+            var statuses = hero.MutableStatusEffects;
+            for (var i = statuses.Count - 1; i >= 0; i--)
+            {
+                var status = statuses[i];
+                if (!MatchesStatusQuery(status, effectType, statusThemeKey))
+                {
+                    continue;
+                }
+
+                onRemovedStatus?.Invoke(status);
+                statuses.RemoveAt(i);
+                removedCount++;
+            }
+
+            return removedCount;
+        }
+
         public static void Tick(
             RuntimeHero hero,
             float deltaTime,

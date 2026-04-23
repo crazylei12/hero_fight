@@ -1596,6 +1596,7 @@ namespace Fight.Editor
             detonation.statusStackQueryThemeKey = PoisonStatusThemeKey;
             detonation.minimumRequiredStatusStacks = 1;
             detonation.bonusPowerMultiplierPerStatusStack = 1.8f;
+            detonation.consumeQueriedStatusesOnHit = true;
             detonation.triggerFollowUpAreaOnTargetDeath = true;
             detonation.followUpAreaRadius = 3.4f;
             detonation.followUpAreaPowerMultiplier = 1.8f;
