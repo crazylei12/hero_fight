@@ -233,6 +233,22 @@ tools\run_stage01_offline_sim.bat -fightOfflineMode FixedInput -fightOfflineCoun
 
 开启后会额外生成一个日志目录。
 
+### `-fightOfflineIncludeMatchRecords`
+
+含义：
+- 是否把逐场结果也写进主结果 JSON
+
+可选值：
+- `true`
+- `false`
+
+默认：
+- `false`
+
+说明：
+- `false` 时，主结果 JSON 以最终英雄场均汇总为主
+- `true` 时，会额外写出 `matches`，包含逐场胜负、阵容和逐英雄逐场数据
+
 ### `-fightOfflineOutputPath`
 
 含义：
@@ -283,7 +299,13 @@ tools\run_stage01_offline_sim.bat -fightOfflineMode RandomCatalog -fightOfflineC
 tools\run_stage01_offline_sim.bat -fightOfflineMode RandomCatalog -fightOfflineCount 20 -fightOfflineSeedStart 2000 -fightOfflineExportFullLogs true -fightOfflineOutputPath "exports/stage01_offline_simulation/run_20_with_logs.json"
 ```
 
-### 模板 E：固定阵容复现
+### 模板 E：保留逐场结果
+
+```bat
+tools\run_stage01_offline_sim.bat -fightOfflineMode RandomCatalog -fightOfflineCount 20 -fightOfflineSeedStart 2000 -fightOfflineIncludeMatchRecords true -fightOfflineOutputPath "exports/stage01_offline_simulation/run_20_with_matches.json"
+```
+
+### 模板 F：固定阵容复现
 
 ```bat
 tools\run_stage01_offline_sim.bat -fightOfflineMode FixedInput -fightOfflineInputAssetPath "Assets/Resources/Stage01Demo/Stage01DemoBattleInput.asset" -fightOfflineCount 1 -fightOfflineSeedStart 42 -fightOfflineOutputPath "exports/stage01_offline_simulation/fixed_seed_42.json"
@@ -315,6 +337,9 @@ tools\run_stage01_offline_sim.bat -fightOfflineMode FixedInput -fightOfflineInpu
 - `runMeta`
 - `heroAggregatesByClass`
 
+当 `-fightOfflineIncludeMatchRecords true` 时，还会有：
+- `matches`
+
 你最常看的部分一般是：
 
 #### `runMeta`
@@ -326,11 +351,30 @@ tools\run_stage01_offline_sim.bat -fightOfflineMode FixedInput -fightOfflineInpu
 - `seedStart`
 - 固定步长是多少
 - 是否导出了完整日志
+- 是否保留了逐场结果
 
 说明：
-- 主结果 JSON 现在不会保存逐场结果
-- 这份文件的目标是给你和 AI 直接看最终英雄场均数据
-- 如果你需要逐场过程、逐场 seed 或逐场阵容，请开启 `-fightOfflineExportFullLogs true`
+- 默认情况下，主结果 JSON 不会保留逐场数据
+- 这份文件的目标优先是给你和 AI 直接看最终英雄场均数据
+- 如果你还想把逐场过程一起写进主结果 JSON，请加 `-fightOfflineIncludeMatchRecords true`
+- 如果你只需要事件过程文本日志，请开启 `-fightOfflineExportFullLogs true`
+
+#### `matches`
+
+只有在 `-fightOfflineIncludeMatchRecords true` 时才会填充。
+
+每场至少会有：
+- `matchIndex`
+- `seed`
+- `winner`
+- `endReason`
+- `enteredOvertime`
+- `elapsedTimeSeconds`
+- `blueKills`
+- `redKills`
+- `blueHeroes`
+- `redHeroes`
+- `heroStats`
 
 #### `heroAggregatesByClass`
 
@@ -374,7 +418,9 @@ tools\run_stage01_offline_sim.bat -fightOfflineMode FixedInput -fightOfflineInpu
 
 ## 怎么复现某一局
 
-主结果 JSON 不再保存逐场列表，所以复现某一局有两种方式：
+如果你开了 `-fightOfflineIncludeMatchRecords true`，可以直接从 `matches` 里找目标 seed。
+
+如果你没开这项参数，复现某一局有两种方式：
 
 ### 1. 你已经知道目标 seed
 

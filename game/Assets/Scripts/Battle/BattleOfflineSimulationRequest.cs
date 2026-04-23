@@ -24,6 +24,8 @@ namespace Fight.Battle
         public int MaxTickCount { get; set; } = 100000;
 
         public bool ExportFullLogs { get; set; }
+
+        public bool IncludeMatchRecords { get; set; }
     }
 
     public sealed class BattleOfflineSimulationRunResult

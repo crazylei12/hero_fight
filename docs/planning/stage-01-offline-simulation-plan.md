@@ -29,7 +29,7 @@
 - 用户希望在项目内有一个 `脚本、命令入口或等价工具`，执行后即可完成战斗并记录数据
 - 用户希望支持 `批量` 运行，例如连续跑 `100` 场
 - 用户希望能拿到 `每个英雄的各项统计数据`，作为后续平衡调整依据
-- 用户希望主结果文件尽量精简，不保留批量运行中的逐场明细，只保留最终英雄场均数据
+- 用户希望主结果文件尽量精简，但也希望能按需切换是否保留批量运行中的逐场明细
 
 ## 核心结论
 
@@ -45,6 +45,7 @@
   - 固定 seed
   - 单局内全局唯一英雄校验
   - 导出每英雄统计
+  - 可选保留每场结果
   - 输出单个 AI 易读主结果文件
   - 可选导出完整事件日志
 
@@ -187,12 +188,16 @@
 - 用户当前明确希望最终结果落成 `一个文件`
 - AI 读取单个结构化 JSON 更直接
 - 运行信息和按职业分组的英雄汇总可以放在同一份文件中
-- 逐场明细默认不进主结果文件，避免批量调数时文件体积和噪音快速膨胀
+- 逐场明细应支持按开关决定是否进入主结果文件，避免批量调数时文件体积和噪音快速膨胀
 
 该主结果文件至少应包含两层内容：
 
 - `runMeta`
 - `heroAggregatesByClass`
+
+当 `includeMatchRecords = true` 时，主结果文件还应额外包含：
+
+- `matches`
 
 其中：
 
@@ -206,12 +211,27 @@
 - `seedStart`
 - `fixedDeltaTime`
 - `exportFullLogs`
+- `includeMatchRecords`
 - `uniqueHeroValidation`
 
 说明：
 - `seedStart` 结合 `matchCount` 即可推出本次批量运行覆盖的 seed 区间
 - 如果需要逐场 seed 或完整过程，应开启 `exportFullLogs`
-- 第一版主结果文件不再默认保存逐场阵容、逐场胜负和逐场英雄数据
+- 默认建议 `includeMatchRecords = false`
+- 当 `includeMatchRecords = true` 时，主结果文件应额外保存逐场阵容、逐场胜负和逐场英雄数据
+
+`matches` 中每场数据至少包含：
+- `matchIndex`
+- `seed`
+- `winner`
+- `endReason`
+- `enteredOvertime`
+- `elapsedTimeSeconds`
+- `blueKills`
+- `redKills`
+- `blueHeroes`
+- `redHeroes`
+- `heroStats`
 
 `heroAggregatesByClass` 中每个英雄至少包含：
 - `heroId`
@@ -410,6 +430,10 @@
 - 每个英雄的聚合统计
 - 按职业排序后的分组结果
 
+当 `includeMatchRecords = true` 时，还应额外承载：
+- 每场对局摘要
+- 每场英雄逐场数据
+
 日志目录仅在开启完整日志时生成，例如：
 - `offline_simulation_report_logs/match_0001_seed_1001.txt`
 
@@ -467,6 +491,7 @@
 最低完成标准：
 - 输出单个 `offline_simulation_report.json`
 - 结果内包含运行元数据和按职业分组的英雄汇总
+- 能通过参数决定是否把 `matches` 写进主结果文件
 - 主结果文件字段顺序和职业顺序稳定
 - 可选完整日志目录能按场次和 seed 稳定落盘
 
@@ -529,6 +554,7 @@
 - `FixedInput` 模式下若出现重复 heroId 能明确报错
 - 能导出单个 AI 易读主结果文件
 - 主结果文件中包含最终每英雄统计
+- 能按开关选择是否保留每场结果
 - 主结果文件中的英雄汇总按职业分组排序
 - 能通过 `runMeta` 与可选日志文件还原本次运行的 seed 范围
 - 离线模式没有偷偷绕开现有技能、状态、AI、复活、加时逻辑

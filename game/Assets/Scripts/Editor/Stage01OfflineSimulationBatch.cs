@@ -21,6 +21,7 @@ namespace Fight.Editor
         private const string SeedStartArg = "-fightOfflineSeedStart";
         private const string FixedDeltaTimeArg = "-fightOfflineFixedDeltaTime";
         private const string ExportFullLogsArg = "-fightOfflineExportFullLogs";
+        private const string IncludeMatchRecordsArg = "-fightOfflineIncludeMatchRecords";
         private const string OutputPathArg = "-fightOfflineOutputPath";
         private const string MaxTicksArg = "-fightOfflineMaxTicks";
 
@@ -66,6 +67,7 @@ namespace Fight.Editor
                     FixedDeltaTimeSeconds = ReadFloatArgument(arguments, FixedDeltaTimeArg, 0.05f),
                     MaxTickCount = ReadIntArgument(arguments, MaxTicksArg, 100000),
                     ExportFullLogs = ReadBoolArgument(arguments, ExportFullLogsArg, false),
+                    IncludeMatchRecords = ReadBoolArgument(arguments, IncludeMatchRecordsArg, false),
                 };
 
                 var runResult = BattleOfflineSimulationService.Run(request);
@@ -103,6 +105,12 @@ namespace Fight.Editor
                     var matchLog = runResult.MatchLogs[i];
                     var logPath = Path.Combine(logsDirectory, matchLog.FileName);
                     File.WriteAllText(logPath, matchLog.Content ?? string.Empty, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+
+                    if (matchLog.MatchIndex >= 0 && matchLog.MatchIndex < runResult.Report.matches.Count)
+                    {
+                        runResult.Report.matches[matchLog.MatchIndex].fullLogFile =
+                            Path.Combine(logsFolderName, matchLog.FileName).Replace("\\", "/");
+                    }
                 }
             }
 
