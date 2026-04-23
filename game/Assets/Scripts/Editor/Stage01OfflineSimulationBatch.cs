@@ -22,18 +22,24 @@ namespace Fight.Editor
         private const string FixedDeltaTimeArg = "-fightOfflineFixedDeltaTime";
         private const string ExportFullLogsArg = "-fightOfflineExportFullLogs";
         private const string IncludeMatchRecordsArg = "-fightOfflineIncludeMatchRecords";
+        private const string ProgressPathArg = "-fightOfflineProgressPath";
         private const string OutputPathArg = "-fightOfflineOutputPath";
         private const string MaxTicksArg = "-fightOfflineMaxTicks";
 
         public static void RunFromCommandLine()
         {
+            string outputPath = string.Empty;
+            string progressPath = string.Empty;
+            BattleOfflineSimulationRequest request = null;
+
             try
             {
                 var arguments = Environment.GetCommandLineArgs();
                 var selectionMode = ParseSelectionMode(ReadArgument(arguments, SelectionModeArg));
                 var inputAssetPath = NormalizeAssetPath(ReadArgument(arguments, InputAssetPathArg) ?? DefaultInputAssetPath);
                 var heroCatalogAssetPath = NormalizeAssetPath(ReadArgument(arguments, HeroCatalogAssetPathArg) ?? DefaultHeroCatalogAssetPath);
-                var outputPath = ResolveOutputPath(ReadArgument(arguments, OutputPathArg));
+                outputPath = ResolveOutputPath(ReadArgument(arguments, OutputPathArg));
+                progressPath = ResolveOptionalRepoPath(ReadArgument(arguments, ProgressPathArg));
 
                 var templateInput = AssetDatabase.LoadAssetAtPath<BattleInputConfig>(inputAssetPath);
                 if (templateInput == null)
@@ -55,7 +61,7 @@ namespace Fight.Editor
                     heroCatalogAssetPath = string.Empty;
                 }
 
-                var request = new BattleOfflineSimulationRequest
+                request = new BattleOfflineSimulationRequest
                 {
                     SelectionMode = selectionMode,
                     TemplateInput = templateInput,
@@ -69,13 +75,50 @@ namespace Fight.Editor
                     ExportFullLogs = ReadBoolArgument(arguments, ExportFullLogsArg, false),
                     IncludeMatchRecords = ReadBoolArgument(arguments, IncludeMatchRecordsArg, false),
                 };
+                request.ProgressCallback = snapshot => WriteProgressSafe(progressPath, snapshot);
+
+                WriteProgressSafe(progressPath, new BattleOfflineSimulationProgressSnapshot
+                {
+                    status = "Starting",
+                    matchCount = request.MatchCount,
+                    completedMatchCount = 0,
+                    activeMatchNumber = request.MatchCount > 0 ? 1 : 0,
+                    currentSeed = request.SeedStart,
+                    outputPath = outputPath.Replace("\\", "/"),
+                    message = "Launching offline simulation.",
+                    updatedAt = DateTimeOffset.Now.ToString("O"),
+                });
 
                 var runResult = BattleOfflineSimulationService.Run(request);
                 WriteOutputs(outputPath, runResult);
+                WriteProgressSafe(progressPath, new BattleOfflineSimulationProgressSnapshot
+                {
+                    status = "Completed",
+                    matchCount = request.MatchCount,
+                    completedMatchCount = runResult.Report.runMeta.completedMatchCount,
+                    activeMatchNumber = 0,
+                    currentSeed = runResult.Report.runMeta.completedMatchCount > 0
+                        ? request.SeedStart + runResult.Report.runMeta.completedMatchCount - 1
+                        : request.SeedStart,
+                    outputPath = outputPath.Replace("\\", "/"),
+                    message = $"Completed {runResult.Report.runMeta.completedMatchCount}/{request.MatchCount} matches.",
+                    updatedAt = DateTimeOffset.Now.ToString("O"),
+                });
                 Debug.Log($"[Stage01OfflineSimulation] Exported {runResult.Report.runMeta.completedMatchCount} matches to {outputPath}");
             }
             catch (Exception exception)
             {
+                WriteProgressSafe(progressPath, new BattleOfflineSimulationProgressSnapshot
+                {
+                    status = "Failed",
+                    matchCount = request != null ? request.MatchCount : 0,
+                    completedMatchCount = 0,
+                    activeMatchNumber = 0,
+                    currentSeed = request != null ? request.SeedStart : 0,
+                    outputPath = string.IsNullOrWhiteSpace(outputPath) ? string.Empty : outputPath.Replace("\\", "/"),
+                    message = exception.Message,
+                    updatedAt = DateTimeOffset.Now.ToString("O"),
+                });
                 Debug.LogException(exception);
                 EditorApplication.Exit(1);
                 return;
@@ -152,6 +195,19 @@ namespace Fight.Editor
                 : Path.GetFullPath(Path.Combine(repoRoot, outputPath));
         }
 
+        private static string ResolveOptionalRepoPath(string rawPath)
+        {
+            if (string.IsNullOrWhiteSpace(rawPath))
+            {
+                return string.Empty;
+            }
+
+            var repoRoot = GetRepoRoot();
+            return Path.IsPathRooted(rawPath)
+                ? Path.GetFullPath(rawPath)
+                : Path.GetFullPath(Path.Combine(repoRoot, rawPath));
+        }
+
         private static string NormalizeAssetPath(string assetPath)
         {
             return string.IsNullOrWhiteSpace(assetPath)
@@ -163,6 +219,30 @@ namespace Fight.Editor
         {
             var projectRoot = Directory.GetParent(Application.dataPath)?.FullName ?? Application.dataPath;
             return Directory.GetParent(projectRoot)?.FullName ?? projectRoot;
+        }
+
+        private static void WriteProgressSafe(string progressPath, BattleOfflineSimulationProgressSnapshot snapshot)
+        {
+            if (string.IsNullOrWhiteSpace(progressPath) || snapshot == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var progressDirectory = Path.GetDirectoryName(progressPath);
+                if (!string.IsNullOrWhiteSpace(progressDirectory))
+                {
+                    Directory.CreateDirectory(progressDirectory);
+                }
+
+                var progressJson = JsonUtility.ToJson(snapshot, true);
+                File.WriteAllText(progressPath, progressJson, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+            }
+            catch (Exception exception)
+            {
+                Debug.LogWarning($"[Stage01OfflineSimulation] Failed to write progress file: {exception.Message}");
+            }
         }
 
         private static string ReadArgument(string[] arguments, string argumentName)

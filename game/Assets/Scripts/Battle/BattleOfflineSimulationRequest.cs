@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Fight.Data;
 
@@ -26,6 +27,8 @@ namespace Fight.Battle
         public bool ExportFullLogs { get; set; }
 
         public bool IncludeMatchRecords { get; set; }
+
+        public Action<BattleOfflineSimulationProgressSnapshot> ProgressCallback { get; set; }
     }
 
     public sealed class BattleOfflineSimulationRunResult
@@ -60,5 +63,18 @@ namespace Fight.Battle
         public string FileName { get; }
 
         public string Content { get; }
+    }
+
+    [Serializable]
+    public sealed class BattleOfflineSimulationProgressSnapshot
+    {
+        public string status = string.Empty;
+        public int matchCount;
+        public int completedMatchCount;
+        public int activeMatchNumber;
+        public int currentSeed;
+        public string outputPath = string.Empty;
+        public string message = string.Empty;
+        public string updatedAt = string.Empty;
     }
 }
