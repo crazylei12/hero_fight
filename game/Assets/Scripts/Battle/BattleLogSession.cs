@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text;
 using Fight.Data;
@@ -18,6 +19,7 @@ namespace Fight.Battle
         private int blueWarriorActiveSkillCastCount;
         private int blueWarriorUltimateCastCount;
         private int blueWarriorKnockUpAppliedCount;
+        private Func<float> timeProvider;
 
         public BattleLogSession()
         {
@@ -27,6 +29,11 @@ namespace Fight.Battle
         public string CurrentBattleLogId { get; private set; }
 
         public bool HasEvents => fullLogEntries.Count > 0;
+
+        public void SetTimeProvider(Func<float> provider)
+        {
+            timeProvider = provider;
+        }
 
         public void HandleBattleEvent(IBattleEvent battleEvent)
         {
@@ -154,17 +161,22 @@ namespace Fight.Battle
 
         private void AddLog(string message)
         {
-            fullLogEntries.Add($"[{Time.timeSinceLevelLoad:0.0}] {message}");
+            fullLogEntries.Add($"[{GetCurrentTimeSeconds():0.0}] {message}");
         }
 
         private void AddBlueWarriorSpotlightLog(string message)
         {
-            blueWarriorSpotlightEntries.Add($"[{Time.timeSinceLevelLoad:0.0}] {message}");
+            blueWarriorSpotlightEntries.Add($"[{GetCurrentTimeSeconds():0.0}] {message}");
         }
 
         private void AddUltimateDecisionLog(string message)
         {
-            ultimateDecisionEntries.Add($"[{Time.timeSinceLevelLoad:0.0}] {message}");
+            ultimateDecisionEntries.Add($"[{GetCurrentTimeSeconds():0.0}] {message}");
+        }
+
+        private float GetCurrentTimeSeconds()
+        {
+            return Mathf.Max(0f, timeProvider != null ? timeProvider() : Time.timeSinceLevelLoad);
         }
 
         private static string FormatDamageLog(DamageAppliedEvent damageApplied)

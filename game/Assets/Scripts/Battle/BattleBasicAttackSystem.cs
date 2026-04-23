@@ -11,9 +11,9 @@ namespace Fight.Battle
         private const float HeroWideFallbackSearchRange = 999f;
         private static int projectileSequence;
 
-        public static void TickProjectiles(BattleContext context, float deltaTime, BattleManager battleManager)
+        public static void TickProjectiles(BattleContext context, float deltaTime, IBattleSimulationCallbacks battleCallbacks)
         {
-            if (context == null || battleManager == null || context.Projectiles.Count == 0)
+            if (context == null || battleCallbacks == null || context.Projectiles.Count == 0)
             {
                 return;
             }
@@ -45,7 +45,7 @@ namespace Fight.Battle
                         projectile.TargetType,
                         projectile.OnHitStatusEffects,
                         projectile.VariantKey,
-                        battleManager);
+                        battleCallbacks);
                     context.Projectiles.RemoveAt(i);
                     continue;
                 }
@@ -88,14 +88,14 @@ namespace Fight.Battle
             RuntimeHero attacker,
             RuntimeHero target,
             ResolvedBasicAttack resolvedAttack,
-            BattleManager battleManager)
+            IBattleSimulationCallbacks battleCallbacks)
         {
             BeginAttack(
                 context,
                 attacker,
                 target,
                 resolvedAttack,
-                battleManager,
+                battleCallbacks,
                 CombatActionTiming.DefaultWindupSeconds,
                 CombatActionTiming.DefaultRecoverySeconds,
                 consumeAttackCooldown: true);
@@ -106,7 +106,7 @@ namespace Fight.Battle
             RuntimeHero attacker,
             RuntimeHero target,
             ResolvedBasicAttack resolvedAttack,
-            BattleManager battleManager,
+            IBattleSimulationCallbacks battleCallbacks,
             float windupSeconds,
             float recoverySeconds,
             bool consumeAttackCooldown,
@@ -116,7 +116,7 @@ namespace Fight.Battle
                 || attacker == null
                 || target == null
                 || resolvedAttack == null
-                || battleManager == null)
+                || battleCallbacks == null)
             {
                 return;
             }
@@ -131,14 +131,14 @@ namespace Fight.Battle
             context.EventBus.Publish(new AttackPerformedEvent(attacker, target, resolvedAttack.VariantKey));
         }
 
-        public static void ResolvePendingAttack(BattleContext context, RuntimeHero attacker, PendingCombatAction pendingAction, BattleManager battleManager)
+        public static void ResolvePendingAttack(BattleContext context, RuntimeHero attacker, PendingCombatAction pendingAction, IBattleSimulationCallbacks battleCallbacks)
         {
             if (context == null
                 || attacker == null
                 || attacker.IsDead
                 || pendingAction?.Target == null
                 || pendingAction.BasicAttack == null
-                || battleManager == null)
+                || battleCallbacks == null)
             {
                 return;
             }
@@ -163,7 +163,7 @@ namespace Fight.Battle
 
             if (resolvedAttack.EffectType == BasicAttackEffectType.Damage)
             {
-                BattleDeployableProxySystem.TriggerOwnerBasicAttackProxies(context, attacker, target, battleManager);
+                BattleDeployableProxySystem.TriggerOwnerBasicAttackProxies(context, attacker, target, battleCallbacks);
             }
 
             if (resolvedAttack.UsesProjectile)
@@ -182,7 +182,7 @@ namespace Fight.Battle
                 resolvedAttack.TargetType,
                 resolvedAttack.OnHitStatusEffects,
                 resolvedAttack.VariantKey,
-                battleManager);
+                battleCallbacks);
         }
 
         public static bool TryResolveProxyAttack(
@@ -222,13 +222,13 @@ namespace Fight.Battle
             RuntimeDeployableProxy proxy,
             RuntimeHero target,
             ResolvedBasicAttack resolvedAttack,
-            BattleManager battleManager)
+            IBattleSimulationCallbacks battleCallbacks)
         {
             if (context == null
                 || proxy?.Owner == null
                 || target == null
                 || resolvedAttack == null
-                || battleManager == null)
+                || battleCallbacks == null)
             {
                 return;
             }
@@ -270,7 +270,7 @@ namespace Fight.Battle
                 resolvedAttack.TargetType,
                 resolvedAttack.OnHitStatusEffects,
                 resolvedAttack.VariantKey,
-                battleManager);
+                battleCallbacks);
         }
 
         private static bool TryResolveHeroAttack(
@@ -733,7 +733,7 @@ namespace Fight.Battle
             BasicAttackTargetType targetType,
             System.Collections.Generic.IReadOnlyList<StatusEffectData> onHitStatusEffects,
             string variantKey,
-            BattleManager battleManager)
+            IBattleSimulationCallbacks battleCallbacks)
         {
             if (!IsValidTarget(attacker, target, effectType, targetType, onHitStatusEffects))
             {
@@ -764,7 +764,7 @@ namespace Fight.Battle
 
             var actualDamage = BattleDamageSystem.ApplyResolvedDamage(
                 context,
-                battleManager,
+                battleCallbacks,
                 attacker,
                 target,
                 impactAmount,

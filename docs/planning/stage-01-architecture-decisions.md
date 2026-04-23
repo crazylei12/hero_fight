@@ -344,6 +344,15 @@
 - 这会显著降低后续重构成本。
 - 也更适合 AI 编写和验证纯逻辑模块。
 
+### 离线模拟与批量调数入口
+
+- 第一阶段战斗核心应支持 `无窗口离线模拟`，用于批量调数和结果采样。
+- 这条能力的正式执行方式，第一版优先采用 `Unity batchmode + -nographics + 项目内脚本入口`，而不是额外重写一套 Unity 外部独立战斗引擎。
+- 场景内可视战斗与离线批量模拟必须复用同一套运行时战斗逻辑，不允许长期并行维护两套规则实现。
+- 为了支持这条能力，战斗推进应收口为共享的纯运行时驱动层；`BattleManager` 可以继续作为场景入口，但不应成为唯一的战斗推进宿主。
+- 离线模式应优先支持：固定步长、显式 seed、每场结果导出、每英雄统计导出，以及可选的完整事件日志导出。
+- 详细方案见 `docs/planning/stage-01-offline-simulation-plan.md`。
+
 ## 战斗管理器
 
 第一阶段需要统一的战斗管理器作为入口。
@@ -358,6 +367,7 @@
 
 说明：
 - 它会成为选人界面、战斗系统、日志系统、结果界面和未来联机之间的重要枢纽。
+- 但在支持离线模拟后，它更适合作为 `场景内入口与适配层`，而不是长期独占完整战斗推进实现。
 
 ## 对后续 AI 的约束
 
@@ -377,4 +387,5 @@
 - `docs/planning/stage-01-combat-rules-decisions.md`
 - `docs/planning/stage-01-status-effect-decisions.md`
 - `docs/planning/stage-01-hero-spec-decisions.md`
+- `docs/planning/stage-01-offline-simulation-plan.md`
 - `docs/planning/stage-01-architecture-questions.md`

@@ -10,29 +10,29 @@ namespace Fight.Battle
         private const int SeparationResolutionPassCount = 4;
         private const float SeparationSqrEpsilon = 0.0001f;
 
-        public static void Tick(BattleContext context, float deltaTime, BattleManager battleManager)
+        public static void Tick(BattleContext context, float deltaTime, IBattleSimulationCallbacks battleCallbacks)
         {
-            if (context == null || battleManager == null)
+            if (context == null || battleCallbacks == null)
             {
                 return;
             }
 
-            BattleBasicAttackSystem.TickProjectiles(context, deltaTime, battleManager);
-            TickSkillAreas(context, deltaTime, battleManager);
-            BattleDeployableProxySystem.Tick(context, deltaTime, battleManager);
+            BattleBasicAttackSystem.TickProjectiles(context, deltaTime, battleCallbacks);
+            TickSkillAreas(context, deltaTime, battleCallbacks);
+            BattleDeployableProxySystem.Tick(context, deltaTime, battleCallbacks);
 
             for (var i = 0; i < context.Heroes.Count; i++)
             {
-                TickHero(context, context.Heroes[i], deltaTime, battleManager);
+                TickHero(context, context.Heroes[i], deltaTime, battleCallbacks);
             }
 
             BattleReactiveGuardSystem.Tick(context, deltaTime);
-            BattleSkillSystem.TickDelayedSkillEffects(context, deltaTime, battleManager);
-            BattleSkillSystem.TickRadialSweeps(context, deltaTime, battleManager);
+            BattleSkillSystem.TickDelayedSkillEffects(context, deltaTime, battleCallbacks);
+            BattleSkillSystem.TickRadialSweeps(context, deltaTime, battleCallbacks);
             ResolveHeroMinimumSeparation(context);
         }
 
-        private static void TickSkillAreas(BattleContext context, float deltaTime, BattleManager battleManager)
+        private static void TickSkillAreas(BattleContext context, float deltaTime, IBattleSimulationCallbacks battleCallbacks)
         {
             for (var i = context.SkillAreas.Count - 1; i >= 0; i--)
             {
@@ -48,7 +48,7 @@ namespace Fight.Battle
                 var pendingPulseCount = area.ConsumePendingPulseCount();
                 for (var pulseIndex = 0; pulseIndex < pendingPulseCount; pulseIndex++)
                 {
-                    BattleSkillSystem.ResolveSkillAreaPulse(context, area, battleManager);
+                    BattleSkillSystem.ResolveSkillAreaPulse(context, area, battleCallbacks);
                 }
 
                 if (area.IsExpired)
@@ -58,7 +58,7 @@ namespace Fight.Battle
             }
         }
 
-        private static void TickHero(BattleContext context, RuntimeHero hero, float deltaTime, BattleManager battleManager)
+        private static void TickHero(BattleContext context, RuntimeHero hero, float deltaTime, IBattleSimulationCallbacks battleCallbacks)
         {
             hero.SetBattleTimeSeconds(context?.Clock != null ? context.Clock.ElapsedTimeSeconds : 0f);
             var previousPassiveAttackPowerBonus = QuantizeModifierValue(hero.PassiveAttackPowerBonusMultiplier);
@@ -71,7 +71,7 @@ namespace Fight.Battle
 
             hero.Tick(
                 deltaTime,
-                status => ResolvePeriodicStatusTick(context, hero, status, battleManager),
+                status => ResolvePeriodicStatusTick(context, hero, status, battleCallbacks),
                 status => PublishStatusRemovedEvent(context, hero, status));
 
             PublishSkillModifierEvents(
@@ -98,7 +98,7 @@ namespace Fight.Battle
 
             if (hero.TryConsumeReadyCombatAction(out var pendingAction))
             {
-                ResolvePendingCombatAction(context, hero, pendingAction, battleManager);
+                ResolvePendingCombatAction(context, hero, pendingAction, battleCallbacks);
                 return;
             }
 
@@ -107,12 +107,12 @@ namespace Fight.Battle
                 return;
             }
 
-            if (BattleCombatActionSequenceSystem.TryProgressSequence(context, hero, battleManager))
+            if (BattleCombatActionSequenceSystem.TryProgressSequence(context, hero, battleCallbacks))
             {
                 return;
             }
 
-            if (context.Input.enableSkills && hero.CanCastSkills && BattleSkillSystem.TryCastSkill(context, hero, battleManager))
+            if (context.Input.enableSkills && hero.CanCastSkills && BattleSkillSystem.TryCastSkill(context, hero, battleCallbacks))
             {
                 return;
             }
@@ -160,12 +160,12 @@ namespace Fight.Battle
                 context.EventBus.Publish(new TargetChangedEvent(hero, resolvedTarget));
             }
 
-            BattleBasicAttackSystem.BeginAttack(context, hero, resolvedTarget, resolvedAttack, battleManager);
+            BattleBasicAttackSystem.BeginAttack(context, hero, resolvedTarget, resolvedAttack, battleCallbacks);
         }
 
-        private static void ResolvePendingCombatAction(BattleContext context, RuntimeHero hero, PendingCombatAction pendingAction, BattleManager battleManager)
+        private static void ResolvePendingCombatAction(BattleContext context, RuntimeHero hero, PendingCombatAction pendingAction, IBattleSimulationCallbacks battleCallbacks)
         {
-            if (context == null || hero == null || pendingAction == null || battleManager == null)
+            if (context == null || hero == null || pendingAction == null || battleCallbacks == null)
             {
                 return;
             }
@@ -173,10 +173,10 @@ namespace Fight.Battle
             switch (pendingAction.ActionType)
             {
                 case CombatActionType.BasicAttack:
-                    BattleBasicAttackSystem.ResolvePendingAttack(context, hero, pendingAction, battleManager);
+                    BattleBasicAttackSystem.ResolvePendingAttack(context, hero, pendingAction, battleCallbacks);
                     break;
                 case CombatActionType.SkillCast:
-                    BattleSkillSystem.ResolvePendingSkillCast(context, hero, pendingAction, battleManager);
+                    BattleSkillSystem.ResolvePendingSkillCast(context, hero, pendingAction, battleCallbacks);
                     break;
             }
         }
@@ -361,9 +361,9 @@ namespace Fight.Battle
             return position;
         }
 
-        private static void ResolvePeriodicStatusTick(BattleContext context, RuntimeHero target, RuntimeStatusEffect status, BattleManager battleManager)
+        private static void ResolvePeriodicStatusTick(BattleContext context, RuntimeHero target, RuntimeStatusEffect status, IBattleSimulationCallbacks battleCallbacks)
         {
-            if (context == null || target == null || status == null || battleManager == null)
+            if (context == null || target == null || status == null || battleCallbacks == null)
             {
                 return;
             }
@@ -374,7 +374,7 @@ namespace Fight.Battle
                     ResolveHealOverTime(context, target, status);
                     break;
                 case StatusEffectType.DamageOverTime:
-                    ResolveDamageOverTime(context, target, status, battleManager);
+                    ResolveDamageOverTime(context, target, status, battleCallbacks);
                     break;
             }
         }
@@ -391,12 +391,12 @@ namespace Fight.Battle
             context.EventBus.Publish(new HealAppliedEvent(status.Source ?? target, target, actualHeal, status.SourceSkill, target.CurrentHealth));
         }
 
-        private static void ResolveDamageOverTime(BattleContext context, RuntimeHero target, RuntimeStatusEffect status, BattleManager battleManager)
+        private static void ResolveDamageOverTime(BattleContext context, RuntimeHero target, RuntimeStatusEffect status, IBattleSimulationCallbacks battleCallbacks)
         {
             var resolvedDamage = DamageResolver.ResolveRawDamage(status.Magnitude, target.Defense);
             var actualDamage = BattleDamageSystem.ApplyResolvedDamage(
                 context,
-                battleManager,
+                battleCallbacks,
                 status.Source,
                 target,
                 resolvedDamage,

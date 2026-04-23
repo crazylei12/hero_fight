@@ -10,7 +10,7 @@ namespace Fight.Battle
     {
         public static float ApplyResolvedDamage(
             BattleContext context,
-            BattleManager battleManager,
+            IBattleSimulationCallbacks battleCallbacks,
             RuntimeHero attacker,
             RuntimeHero target,
             float damageAmount,
@@ -21,7 +21,7 @@ namespace Fight.Battle
         {
             var actualDamage = ApplyResolvedDamageInternal(
                 context,
-                battleManager,
+                battleCallbacks,
                 attacker,
                 target,
                 damageAmount,
@@ -36,7 +36,7 @@ namespace Fight.Battle
 
         private static float ApplyResolvedDamageInternal(
             BattleContext context,
-            BattleManager battleManager,
+            IBattleSimulationCallbacks battleCallbacks,
             RuntimeHero attacker,
             RuntimeHero target,
             float damageAmount,
@@ -46,7 +46,7 @@ namespace Fight.Battle
             RuntimeDeployableProxy sourceProxy,
             bool allowDamageShare)
         {
-            if (context == null || battleManager == null || target == null || damageAmount <= 0f || target.IsDead || !target.CanReceiveDamage)
+            if (context == null || battleCallbacks == null || target == null || damageAmount <= 0f || target.IsDead || !target.CanReceiveDamage)
             {
                 return 0f;
             }
@@ -94,7 +94,7 @@ namespace Fight.Battle
             {
                 totalActualDamage += ApplyHealthDamageToTarget(
                     context,
-                    battleManager,
+                    battleCallbacks,
                     attacker,
                     target,
                     damageToTarget,
@@ -114,7 +114,7 @@ namespace Fight.Battle
                 var transfer = damageShareTransfers[i];
                 totalActualDamage += ApplyResolvedDamageInternal(
                     context,
-                    battleManager,
+                    battleCallbacks,
                     attacker,
                     transfer.Receiver,
                     transfer.DamageAmount,
@@ -130,7 +130,7 @@ namespace Fight.Battle
 
         private static float ApplyHealthDamageToTarget(
             BattleContext context,
-            BattleManager battleManager,
+            IBattleSimulationCallbacks battleCallbacks,
             RuntimeHero attacker,
             RuntimeHero target,
             float damageAmount,
@@ -139,7 +139,7 @@ namespace Fight.Battle
             string sourceBasicAttackVariantKey,
             RuntimeDeployableProxy sourceProxy)
         {
-            if (context == null || battleManager == null || target == null || damageAmount <= 0f)
+            if (context == null || battleCallbacks == null || target == null || damageAmount <= 0f)
             {
                 return 0f;
             }
@@ -186,7 +186,7 @@ namespace Fight.Battle
 
             if (attacker != null)
             {
-                battleManager.RegisterKill(attacker.Side);
+                battleCallbacks.RegisterKill(attacker.Side);
             }
 
             ApplyKillParticipationRewards(context, killParticipants);

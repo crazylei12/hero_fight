@@ -10,7 +10,7 @@ namespace Fight.Battle
     {
         private static int deployableProxySequence;
 
-        public static void Tick(BattleContext context, float deltaTime, BattleManager battleManager)
+        public static void Tick(BattleContext context, float deltaTime, IBattleSimulationCallbacks battleCallbacks)
         {
             if (context?.DeployableProxies == null)
             {
@@ -27,7 +27,7 @@ namespace Fight.Battle
                 }
 
                 proxy.Tick(deltaTime);
-                TryFirePeriodicProxyAttack(context, proxy, battleManager);
+                TryFirePeriodicProxyAttack(context, proxy, battleCallbacks);
                 if (proxy.IsExpired)
                 {
                     context.EventBus?.Publish(new DeployableProxyRemovedEvent(proxy, DeployableProxyRemovalReason.Expired));
@@ -42,7 +42,7 @@ namespace Fight.Battle
             SkillData sourceSkill,
             SkillEffectData effect,
             IReadOnlyList<RuntimeHero> anchorTargets,
-            BattleManager battleManager)
+            IBattleSimulationCallbacks battleCallbacks)
         {
             if (context?.DeployableProxies == null
                 || owner == null
@@ -81,7 +81,7 @@ namespace Fight.Battle
 
                 if (effect.deployableProxyImmediateStrikeOnSpawn)
                 {
-                    ResolveProxyStrike(context, proxy, anchorTarget, battleManager, DamageSourceKind.Skill, sourceSkill);
+                    ResolveProxyStrike(context, proxy, anchorTarget, battleCallbacks, DamageSourceKind.Skill, sourceSkill);
                 }
             }
         }
@@ -90,12 +90,12 @@ namespace Fight.Battle
             BattleContext context,
             RuntimeHero owner,
             RuntimeHero preferredTarget,
-            BattleManager battleManager)
+            IBattleSimulationCallbacks battleCallbacks)
         {
             if (context?.DeployableProxies == null
                 || owner == null
                 || owner.IsDead
-                || battleManager == null)
+                || battleCallbacks == null)
             {
                 return;
             }
@@ -117,7 +117,7 @@ namespace Fight.Battle
                     continue;
                 }
 
-                ResolveProxyStrike(context, proxy, strikeTarget, battleManager, DamageSourceKind.BasicAttack, null);
+                ResolveProxyStrike(context, proxy, strikeTarget, battleCallbacks, DamageSourceKind.BasicAttack, null);
             }
         }
 
@@ -291,7 +291,7 @@ namespace Fight.Battle
             BattleContext context,
             RuntimeDeployableProxy proxy,
             RuntimeHero target,
-            BattleManager battleManager,
+            IBattleSimulationCallbacks battleCallbacks,
             DamageSourceKind sourceKind,
             SkillData sourceSkill)
         {
@@ -301,7 +301,7 @@ namespace Fight.Battle
                 || target == null
                 || target.IsDead
                 || !IsValidStrikeTarget(proxy.Owner, target)
-                || battleManager == null)
+                || battleCallbacks == null)
             {
                 return;
             }
@@ -327,7 +327,7 @@ namespace Fight.Battle
 
             BattleDamageSystem.ApplyResolvedDamage(
                 context,
-                battleManager,
+                battleCallbacks,
                 proxy.Owner,
                 target,
                 damage,
@@ -340,14 +340,14 @@ namespace Fight.Battle
         private static void TryFirePeriodicProxyAttack(
             BattleContext context,
             RuntimeDeployableProxy proxy,
-            BattleManager battleManager)
+            IBattleSimulationCallbacks battleCallbacks)
         {
             if (context == null
                 || proxy == null
                 || proxy.IsExpired
                 || proxy.Owner == null
                 || proxy.Owner.IsDead
-                || battleManager == null
+                || battleCallbacks == null
                 || !proxy.TryConsumeReadyAttack())
             {
                 return;
@@ -358,7 +358,7 @@ namespace Fight.Battle
                 return;
             }
 
-            BattleBasicAttackSystem.FireProxyAttack(context, proxy, target, resolvedAttack, battleManager);
+            BattleBasicAttackSystem.FireProxyAttack(context, proxy, target, resolvedAttack, battleCallbacks);
         }
     }
 }
