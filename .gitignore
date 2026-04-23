@@ -10,6 +10,8 @@ Thumbs.db
 /*.exe.old
 /*.log
 /unity_build*.log
+/Temp/
+/exports/stage01_offline_simulation/
 /.publish_snapshot_*/
 /plugin/
 *.unitypackage
