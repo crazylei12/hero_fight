@@ -44,6 +44,7 @@ namespace Fight.Battle
 
         private void OnContextInitialized(BattleContext context)
         {
+            logSession.SetTimeProvider(() => context?.Clock?.ElapsedTimeSeconds ?? 0f);
             BindToBattleEvents(context?.EventBus);
         }
 

@@ -417,3 +417,4 @@
 与当前实现强相关的调试和调数参考可见：
 - `docs/planning/stage-01-balance-tuning-reference.md`
 - `docs/planning/stage-01-status-effect-decisions.md`
+- `docs/planning/stage-01-offline-simulation-plan.md`

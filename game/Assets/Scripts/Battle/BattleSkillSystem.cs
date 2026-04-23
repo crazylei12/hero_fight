@@ -166,7 +166,7 @@ namespace Fight.Battle
             }
         }
 
-        public static bool TryCastSkill(BattleContext context, RuntimeHero caster, BattleManager battleManager)
+        public static bool TryCastSkill(BattleContext context, RuntimeHero caster, IBattleSimulationCallbacks battleManager)
         {
             if (context == null || caster == null || battleManager == null || caster.IsDead)
             {
@@ -186,7 +186,7 @@ namespace Fight.Battle
             return TryCastActiveSkill(context, caster, caster.Definition?.activeSkill, battleManager);
         }
 
-        private static bool TryCastActiveSkill(BattleContext context, RuntimeHero caster, SkillData skill, BattleManager battleManager)
+        private static bool TryCastActiveSkill(BattleContext context, RuntimeHero caster, SkillData skill, IBattleSimulationCallbacks battleManager)
         {
             if (skill == null || skill.activationMode != SkillActivationMode.Active)
             {
@@ -196,7 +196,7 @@ namespace Fight.Battle
             return TryCastSpecificSkill(context, caster, skill, battleManager, requireHighValueCast: false);
         }
 
-        private static bool TryCastUltimate(BattleContext context, RuntimeHero caster, SkillData skill, BattleManager battleManager)
+        private static bool TryCastUltimate(BattleContext context, RuntimeHero caster, SkillData skill, IBattleSimulationCallbacks battleManager)
         {
             if (skill == null)
             {
@@ -373,7 +373,7 @@ namespace Fight.Battle
             return true;
         }
 
-        private static bool TryCastSpecificSkill(BattleContext context, RuntimeHero caster, SkillData skill, BattleManager battleManager, bool requireHighValueCast)
+        private static bool TryCastSpecificSkill(BattleContext context, RuntimeHero caster, SkillData skill, IBattleSimulationCallbacks battleManager, bool requireHighValueCast)
         {
             if (skill == null)
             {
@@ -1942,7 +1942,7 @@ namespace Fight.Battle
             };
         }
 
-        public static void ResolvePendingSkillCast(BattleContext context, RuntimeHero caster, PendingCombatAction pendingAction, BattleManager battleManager)
+        public static void ResolvePendingSkillCast(BattleContext context, RuntimeHero caster, PendingCombatAction pendingAction, IBattleSimulationCallbacks battleManager)
         {
             if (context == null || caster == null || caster.IsDead || pendingAction == null || pendingAction.Skill == null || battleManager == null)
             {
@@ -1998,7 +1998,7 @@ namespace Fight.Battle
             return affectedTargets.Count >= Mathf.Max(1, skill.minTargetsToCast);
         }
 
-        public static void TickDelayedSkillEffects(BattleContext context, float deltaTime, BattleManager battleManager)
+        public static void TickDelayedSkillEffects(BattleContext context, float deltaTime, IBattleSimulationCallbacks battleManager)
         {
             if (context?.DelayedSkillEffects == null || battleManager == null)
             {
@@ -2025,7 +2025,7 @@ namespace Fight.Battle
             }
         }
 
-        public static void TickRadialSweeps(BattleContext context, float deltaTime, BattleManager battleManager)
+        public static void TickRadialSweeps(BattleContext context, float deltaTime, IBattleSimulationCallbacks battleManager)
         {
             if (context?.RadialSweeps == null || battleManager == null)
             {
@@ -2068,7 +2068,7 @@ namespace Fight.Battle
             }
         }
 
-        private static void BeginSkillCast(BattleContext context, RuntimeHero caster, SkillData skill, RuntimeHero primaryTarget, List<RuntimeHero> affectedTargets, BattleManager battleManager)
+        private static void BeginSkillCast(BattleContext context, RuntimeHero caster, SkillData skill, RuntimeHero primaryTarget, List<RuntimeHero> affectedTargets, IBattleSimulationCallbacks battleManager)
         {
             QueueSkillCast(
                 context,
@@ -2092,7 +2092,7 @@ namespace Fight.Battle
             List<RuntimeHero> affectedTargets,
             float windupSeconds,
             float recoverySeconds,
-            BattleManager battleManager)
+            IBattleSimulationCallbacks battleManager)
         {
             QueueSkillCast(
                 context,
@@ -2119,7 +2119,7 @@ namespace Fight.Battle
             bool consumeCooldown,
             bool suppressActionSequenceTrigger,
             bool isActionSequenceStep,
-            BattleManager battleManager)
+            IBattleSimulationCallbacks battleManager)
         {
             if (context == null || caster == null || skill == null || battleManager == null)
             {
@@ -2155,7 +2155,7 @@ namespace Fight.Battle
             SkillData skill,
             RuntimeHero primaryTarget,
             List<RuntimeHero> affectedTargets,
-            BattleManager battleManager,
+            IBattleSimulationCallbacks battleManager,
             bool allowActionSequenceTrigger = true)
         {
             if (context == null || caster == null || caster.IsDead || skill == null || battleManager == null)
@@ -2382,7 +2382,7 @@ namespace Fight.Battle
             List<RuntimeHero> affectedTargets,
             SkillEffectData effect,
             SkillEffectResolutionState resolutionState,
-            BattleManager battleManager)
+            IBattleSimulationCallbacks battleManager)
         {
             if (ShouldDelaySkillEffect(effect, resolutionState))
             {
@@ -2401,7 +2401,7 @@ namespace Fight.Battle
             List<RuntimeHero> affectedTargets,
             SkillEffectData effect,
             SkillEffectResolutionState resolutionState,
-            BattleManager battleManager)
+            IBattleSimulationCallbacks battleManager)
         {
             if (effect?.effectType == SkillEffectType.CreateRadialSweep)
             {
@@ -2471,7 +2471,7 @@ namespace Fight.Battle
                 resolutionState.DashDurationSeconds));
         }
 
-        private static void ResolveDelayedSkillEffect(BattleContext context, RuntimeDelayedSkillEffect delayedEffect, BattleManager battleManager)
+        private static void ResolveDelayedSkillEffect(BattleContext context, RuntimeDelayedSkillEffect delayedEffect, IBattleSimulationCallbacks battleManager)
         {
             if (context == null
                 || delayedEffect?.Caster == null
@@ -2494,7 +2494,7 @@ namespace Fight.Battle
                 battleManager);
         }
 
-        public static void ResolveSkillAreaPulse(BattleContext context, RuntimeSkillArea area, BattleManager battleManager)
+        public static void ResolveSkillAreaPulse(BattleContext context, RuntimeSkillArea area, IBattleSimulationCallbacks battleManager)
         {
             if (context == null || area == null || area.Skill == null || area.Caster == null)
             {
@@ -2903,7 +2903,7 @@ namespace Fight.Battle
             SkillData skill,
             SkillEffectData effect,
             List<RuntimeHero> effectTargets,
-            BattleManager battleManager)
+            IBattleSimulationCallbacks battleManager)
         {
             BattleDeployableProxySystem.CreateDeployableProxies(
                 context,
@@ -2951,7 +2951,7 @@ namespace Fight.Battle
             SkillData skill,
             SkillEffectData effect,
             List<RuntimeHero> targets,
-            BattleManager battleManager,
+            IBattleSimulationCallbacks battleManager,
             DamageSourceKind damageSourceKind = DamageSourceKind.Skill)
         {
             HashSet<string> followUpTriggeredUnitIds = null;
@@ -3037,7 +3037,7 @@ namespace Fight.Battle
             SkillEffectData effect,
             RuntimeHero deadTarget,
             Vector3 origin,
-            BattleManager battleManager,
+            IBattleSimulationCallbacks battleManager,
             HashSet<string> followUpTriggeredUnitIds)
         {
             if (context == null
@@ -3176,7 +3176,7 @@ namespace Fight.Battle
             RuntimeRadialSweep sweep,
             float segmentInnerRadius,
             float segmentOuterRadius,
-            BattleManager battleManager)
+            IBattleSimulationCallbacks battleManager)
         {
             if (context == null || sweep?.Caster == null || sweep.Skill == null || sweep.Effect == null)
             {

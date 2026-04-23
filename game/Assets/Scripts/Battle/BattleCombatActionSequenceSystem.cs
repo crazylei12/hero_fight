@@ -17,9 +17,9 @@ namespace Fight.Battle
             actor.StartCombatActionSequence(new RuntimeCombatActionSequence(sourceSkill, definition, primaryTarget));
         }
 
-        public static bool TryProgressSequence(BattleContext context, RuntimeHero actor, BattleManager battleManager)
+        public static bool TryProgressSequence(BattleContext context, RuntimeHero actor, IBattleSimulationCallbacks battleCallbacks)
         {
-            if (context == null || actor == null || battleManager == null)
+            if (context == null || actor == null || battleCallbacks == null)
             {
                 return false;
             }
@@ -60,8 +60,8 @@ namespace Fight.Battle
 
             var queued = sequence.PayloadType switch
             {
-                CombatActionSequencePayloadType.SourceSkill => TryQueueSkillSequenceStep(context, actor, sequence, battleManager),
-                _ => TryQueueBasicAttackSequenceStep(context, actor, sequence, battleManager),
+                CombatActionSequencePayloadType.SourceSkill => TryQueueSkillSequenceStep(context, actor, sequence, battleCallbacks),
+                _ => TryQueueBasicAttackSequenceStep(context, actor, sequence, battleCallbacks),
             };
 
             if (!queued)
@@ -77,7 +77,7 @@ namespace Fight.Battle
             BattleContext context,
             RuntimeHero actor,
             RuntimeCombatActionSequence sequence,
-            BattleManager battleManager)
+            IBattleSimulationCallbacks battleCallbacks)
         {
             if (!BattleBasicAttackSystem.TryResolveHeroAttack(
                     context,
@@ -95,7 +95,7 @@ namespace Fight.Battle
                 actor,
                 target,
                 resolvedAttack,
-                battleManager,
+                battleCallbacks,
                 sequence.WindupSeconds,
                 sequence.RecoverySeconds,
                 consumeAttackCooldown: false,
@@ -109,7 +109,7 @@ namespace Fight.Battle
             BattleContext context,
             RuntimeHero actor,
             RuntimeCombatActionSequence sequence,
-            BattleManager battleManager)
+            IBattleSimulationCallbacks battleCallbacks)
         {
             if (!BattleSkillSystem.TryPrepareSequenceSkillCast(
                     context,
@@ -133,7 +133,7 @@ namespace Fight.Battle
                 affectedTargets,
                 sequence.WindupSeconds,
                 sequence.RecoverySeconds,
-                battleManager);
+                battleCallbacks);
             sequence.MarkExecutionQueued(primaryTarget);
 
             return true;

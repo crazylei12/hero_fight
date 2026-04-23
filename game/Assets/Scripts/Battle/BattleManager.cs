@@ -12,6 +12,7 @@ namespace Fight.Battle
 
         private BattleContext context;
         private BattleResultData activeResult;
+        private BattleSessionRunner sessionRunner;
 
         public event Action<BattleContext> ContextInitialized;
 
@@ -44,25 +45,13 @@ namespace Fight.Battle
 
         private void Update()
         {
-            if (context == null || !context.Clock.IsRunning)
+            if (sessionRunner == null || !sessionRunner.IsRunning)
             {
                 return;
             }
 
-            BattleSimulationSystem.Tick(context, Time.deltaTime, this);
-            context.Clock.Tick(Time.deltaTime);
-
-            if (!context.Clock.IsOvertime && context.Clock.HasReachedRegulationTime())
-            {
-                if (BattleEndResolver.ShouldEnterOvertime(context.ScoreSystem))
-                {
-                    context.Clock.EnterOvertime();
-                    context.EventBus.Publish(new OvertimeStartedEvent());
-                    return;
-                }
-
-                FinishBattle(BattleEndReason.TimeExpired);
-            }
+            sessionRunner.Tick(Time.deltaTime);
+            activeResult = sessionRunner.ActiveResult;
         }
 
         public void StartBattle(BattleInputConfig inputConfig)
@@ -79,80 +68,17 @@ namespace Fight.Battle
                 return;
             }
 
-            var randomService = new BattleRandomService();
-            var runtimeHeroes = BattleBootstrapper.CreateRuntimeHeroes(inputConfig, randomService);
-            context = new BattleContext(
-                inputConfig,
-                new BattleClock(inputConfig.regulationDurationSeconds),
-                new BattleScoreSystem(),
-                randomService,
-                new BattleEventBus(),
-                runtimeHeroes);
-
+            sessionRunner = new BattleSessionRunner(inputConfig);
+            context = sessionRunner.Context;
             ContextInitialized?.Invoke(context);
             activeResult = null;
-            context.Clock.Start();
-            context.EventBus.Publish(new BattleStartedEvent(inputConfig));
-
-            for (var i = 0; i < runtimeHeroes.Count; i++)
-            {
-                context.EventBus.Publish(new UnitSpawnedEvent(runtimeHeroes[i]));
-            }
+            sessionRunner.Start();
         }
 
         public void RegisterKill(TeamSide killerSide)
         {
-            if (context == null || !context.Clock.IsRunning)
-            {
-                return;
-            }
-
-            context.ScoreSystem.RegisterKill(killerSide);
-            context.EventBus.Publish(new ScoreChangedEvent(context.ScoreSystem.BlueKills, context.ScoreSystem.RedKills));
-
-            if (context.Clock.IsOvertime)
-            {
-                FinishBattle(BattleEndReason.OvertimeKill);
-            }
-        }
-
-        private void FinishBattle(BattleEndReason endReason)
-        {
-            if (context == null)
-            {
-                return;
-            }
-
-            context.Clock.Stop();
-
-            activeResult = new BattleResultData
-            {
-                winner = BattleEndResolver.ResolveWinner(context.ScoreSystem),
-                endReason = endReason,
-                enteredOvertime = context.Clock.IsOvertime,
-                elapsedTimeSeconds = context.Clock.ElapsedTimeSeconds,
-                blueKills = context.ScoreSystem.BlueKills,
-                redKills = context.ScoreSystem.RedKills,
-            };
-
-            for (var i = 0; i < context.Heroes.Count; i++)
-            {
-                var hero = context.Heroes[i];
-                activeResult.heroStats.Add(new HeroBattleStatLine
-                {
-                    heroId = hero.Definition != null ? hero.Definition.heroId : string.Empty,
-                    side = hero.Side,
-                    kills = hero.Kills,
-                    deaths = hero.Deaths,
-                    assists = hero.Assists,
-                    damageDealt = hero.DamageDealt,
-                    damageTaken = hero.DamageTaken,
-                    healingDone = hero.HealingDone,
-                    shieldingDone = hero.ShieldingDone,
-                });
-            }
-
-            context.EventBus.Publish(new BattleEndedEvent(activeResult));
+            sessionRunner?.RegisterKill(killerSide);
+            activeResult = sessionRunner?.ActiveResult;
         }
     }
 }

@@ -20,7 +20,11 @@ namespace Fight.Data
     public class HeroBattleStatLine
     {
         public string heroId;
+        public string displayName;
+        public HeroClass heroClass = HeroClass.Warrior;
         public TeamSide side = TeamSide.None;
+        public int slotIndex;
+        public bool won;
         public int kills;
         public int deaths;
         public int assists;
@@ -28,5 +32,7 @@ namespace Fight.Data
         public float damageTaken;
         public float healingDone;
         public float shieldingDone;
+        public int activeSkillCastCount;
+        public int ultimateCastCount;
     }
 }

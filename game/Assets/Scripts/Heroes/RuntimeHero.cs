@@ -186,6 +186,10 @@ namespace Fight.Heroes
 
         public int Assists { get; private set; }
 
+        public int ActiveSkillCastCount { get; private set; }
+
+        public int UltimateCastCount { get; private set; }
+
         public bool IsDead { get; private set; }
 
         public float CombatEngagedSeconds { get; private set; }
@@ -628,6 +632,7 @@ namespace Fight.Heroes
             if (consumeCooldown)
             {
                 StartSkillCooldown(skill.slotType, skill.cooldownSeconds);
+                RecordSkillCast(skill.slotType);
             }
 
             StartCombatAction(
@@ -892,6 +897,20 @@ namespace Fight.Heroes
             }
 
             HasCastUltimate = true;
+        }
+
+        private void RecordSkillCast(SkillSlotType slotType)
+        {
+            if (slotType == SkillSlotType.ActiveSkill)
+            {
+                ActiveSkillCastCount++;
+                return;
+            }
+
+            if (slotType == SkillSlotType.Ultimate)
+            {
+                UltimateCastCount++;
+            }
         }
 
         public void ApplyTemporarySkillOverride(SkillData sourceSkill)
