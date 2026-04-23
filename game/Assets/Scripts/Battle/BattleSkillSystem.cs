@@ -2987,6 +2987,7 @@ namespace Fight.Battle
                     damage,
                     damageSourceKind,
                     skill);
+                ConsumeQueriedStatuses(context, target, effect);
                 if (actualDamage <= 0f)
                 {
                     ApplyStatuses(context, caster, skill, effect?.statusEffects, target);
@@ -3028,6 +3029,24 @@ namespace Fight.Battle
                     battleManager,
                     followUpTriggeredUnitIds);
             }
+        }
+
+        private static void ConsumeQueriedStatuses(BattleContext context, RuntimeHero target, SkillEffectData effect)
+        {
+            if (context == null
+                || target == null
+                || effect == null
+                || !effect.consumeQueriedStatusesOnHit
+                || effect.statusStackQueryEffectType == StatusEffectType.None)
+            {
+                return;
+            }
+
+            StatusEffectSystem.RemoveStatuses(
+                target,
+                effect.statusStackQueryEffectType,
+                effect.statusStackQueryThemeKey,
+                status => PublishStatusRemovedEvent(context, target, status));
         }
 
         private static void TryTriggerDeathFollowUpArea(
@@ -3255,6 +3274,21 @@ namespace Fight.Battle
             }
 
             return Mathf.Max(0f, effect.powerMultiplier + effect.bonusPowerMultiplierPerStatusStack * Mathf.Max(0, statusStackCount));
+        }
+
+        private static void PublishStatusRemovedEvent(BattleContext context, RuntimeHero target, RuntimeStatusEffect status)
+        {
+            if (context?.EventBus == null || target == null || status == null)
+            {
+                return;
+            }
+
+            context.EventBus.Publish(new StatusRemovedEvent(
+                status.Source,
+                target,
+                status.EffectType,
+                status.SourceSkill,
+                status.AppliedBy));
         }
 
         private static float GetEffectRadius(SkillData skill, SkillEffectData effect)

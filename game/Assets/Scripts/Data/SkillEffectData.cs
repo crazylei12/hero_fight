@@ -68,6 +68,7 @@ namespace Fight.Data
         public string statusStackQueryThemeKey = string.Empty;
         [Min(0)] public int minimumRequiredStatusStacks = 0;
         [Min(0f)] public float bonusPowerMultiplierPerStatusStack = 0f;
+        public bool consumeQueriedStatusesOnHit;
         [Min(0f)] public float radiusOverride = 0f;
         [Min(0f)] public float durationSeconds = 0f;
         [Min(0.1f)] public float tickIntervalSeconds = 1f;

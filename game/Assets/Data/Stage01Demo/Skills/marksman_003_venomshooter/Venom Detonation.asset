@@ -49,6 +49,7 @@ MonoBehaviour:
     statusStackQueryThemeKey: poison
     minimumRequiredStatusStacks: 1
     bonusPowerMultiplierPerStatusStack: 1.8
+    consumeQueriedStatusesOnHit: 1
     radiusOverride: 0
     durationSeconds: 0
     tickIntervalSeconds: 1
