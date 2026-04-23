@@ -24,6 +24,11 @@
 - 不需要你手工点 Play
 - 跑完后输出结果 JSON
 
+另外，当前还提供了一个 Windows 图形启动器：
+- `tools/OfflineSimulationLauncher/FightOfflineSimulationLauncher.exe`
+
+它底层仍然调用同一个 `.bat` 和同一个 Unity batchmode 入口，只是把参数选择和进度显示做成了 GUI。
+
 ## 使用前准备
 
 运行前默认假设：
@@ -41,6 +46,31 @@ set UNITY_EXE=D:\Unity\Editor\Unity.exe
 
 建议：
 - 先关闭已经打开的同一 Unity 项目，避免编辑器占用项目导致 batchmode 运行变慢或出现锁文件问题
+
+如果你双击 exe 后提示找不到仓库或 bat 入口：
+- 确认 exe 仍位于仓库里的 `tools/OfflineSimulationLauncher/` 目录附近
+- 如果 exe 丢了，可以执行 `tools\OfflineSimulationLauncher\build.bat` 重新生成
+
+## Windows 启动器怎么用
+
+直接双击：
+- `tools/OfflineSimulationLauncher/FightOfflineSimulationLauncher.exe`
+
+打开后可以直接设置：
+- `RandomCatalog` 或 `FixedInput`
+- 运行多少场
+- `seedStart`
+- 是否保留每场数据
+- 是否额外导出完整日志
+- 输出 JSON 路径
+
+启动后界面会实时显示：
+- 当前正在第几场
+- 总共多少场
+- 已完成多少场
+- 底部 bat / Unity 返回的运行日志
+
+这套 exe 只是 GUI 包装器，不会绕开现有离线模拟主流程。
 
 ## 最快上手
 

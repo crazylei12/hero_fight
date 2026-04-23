@@ -33,6 +33,7 @@ namespace Fight.Battle
         public static BattleOfflineSimulationRunResult Run(BattleOfflineSimulationRequest request)
         {
             ValidateRequest(request);
+            ReportProgress(request, "Starting", 0, request.MatchCount > 0 ? 1 : 0, request.SeedStart, "Preparing offline simulation.");
 
             var heroPool = request.SelectionMode == BattleOfflineSelectionMode.RandomCatalog
                 ? BuildValidatedHeroPool(request.HeroCatalog)
@@ -63,6 +64,13 @@ namespace Fight.Battle
             for (var matchIndex = 0; matchIndex < request.MatchCount; matchIndex++)
             {
                 var seed = request.SeedStart + matchIndex;
+                ReportProgress(
+                    request,
+                    "Running",
+                    completedMatchCount,
+                    matchIndex + 1,
+                    seed,
+                    $"Running match {matchIndex + 1}/{request.MatchCount}.");
                 var matchInput = request.SelectionMode == BattleOfflineSelectionMode.RandomCatalog
                     ? CreateRandomCatalogInput(request.TemplateInput, heroPool, seed)
                     : CloneInput(
@@ -107,6 +115,17 @@ namespace Fight.Battle
 
                     UpdateAggregateAccumulators(aggregateAccumulators, result);
                     completedMatchCount++;
+                    var nextActiveMatchNumber = completedMatchCount < request.MatchCount ? completedMatchCount + 1 : 0;
+                    var nextSeed = completedMatchCount < request.MatchCount
+                        ? request.SeedStart + completedMatchCount
+                        : seed;
+                    ReportProgress(
+                        request,
+                        "Running",
+                        completedMatchCount,
+                        nextActiveMatchNumber,
+                        nextSeed,
+                        $"Completed match {completedMatchCount}/{request.MatchCount}.");
                 }
                 finally
                 {
@@ -120,6 +139,38 @@ namespace Fight.Battle
             report.runMeta.completedMatchCount = completedMatchCount;
             report.heroAggregatesByClass = BuildHeroAggregateGroups(aggregateAccumulators);
             return new BattleOfflineSimulationRunResult(report, matchLogs);
+        }
+
+        private static void ReportProgress(
+            BattleOfflineSimulationRequest request,
+            string status,
+            int completedMatchCount,
+            int activeMatchNumber,
+            int currentSeed,
+            string message)
+        {
+            if (request?.ProgressCallback == null)
+            {
+                return;
+            }
+
+            try
+            {
+                request.ProgressCallback(new BattleOfflineSimulationProgressSnapshot
+                {
+                    status = status ?? string.Empty,
+                    matchCount = request.MatchCount,
+                    completedMatchCount = completedMatchCount,
+                    activeMatchNumber = activeMatchNumber,
+                    currentSeed = currentSeed,
+                    message = message ?? string.Empty,
+                    updatedAt = DateTimeOffset.Now.ToString("O"),
+                });
+            }
+            catch (Exception exception)
+            {
+                Debug.LogWarning($"[BattleOfflineSimulation] Failed to report progress: {exception.Message}");
+            }
         }
 
         private static void ValidateRequest(BattleOfflineSimulationRequest request)
