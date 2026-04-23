@@ -58,8 +58,9 @@ namespace Fight.Tools.OfflineSimulationLauncher
             TableLayoutPanel rootLayout = new TableLayoutPanel();
             rootLayout.Dock = DockStyle.Fill;
             rootLayout.ColumnCount = 1;
-            rootLayout.RowCount = 4;
+            rootLayout.RowCount = 5;
             rootLayout.Padding = new Padding(12);
+            rootLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             rootLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             rootLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             rootLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -169,18 +170,42 @@ namespace Fight.Tools.OfflineSimulationLauncher
             exportFullLogsCheckBox.Margin = new Padding(16, 3, 0, 3);
             optionsPanel.Controls.Add(exportFullLogsCheckBox);
 
+            FlowLayoutPanel actionPanel = new FlowLayoutPanel();
+            actionPanel.AutoSize = true;
+            actionPanel.Dock = DockStyle.Top;
+            actionPanel.FlowDirection = FlowDirection.LeftToRight;
+            actionPanel.WrapContents = false;
+            actionPanel.Padding = new Padding(0, 8, 0, 0);
+            rootLayout.Controls.Add(actionPanel, 0, 2);
+
+            startButton = new Button();
+            startButton.AutoSize = true;
+            startButton.Text = "开始运行";
+            startButton.MinimumSize = new Size(120, 36);
+            startButton.Font = new Font(Font.FontFamily, 10f, FontStyle.Bold);
+            startButton.Click += HandleStartClicked;
+            actionPanel.Controls.Add(startButton);
+
+            openOutputButton = new Button();
+            openOutputButton.AutoSize = true;
+            openOutputButton.Text = "打开结果位置";
+            openOutputButton.Enabled = false;
+            openOutputButton.MinimumSize = new Size(120, 36);
+            openOutputButton.Margin = new Padding(12, 3, 0, 3);
+            openOutputButton.Click += HandleOpenOutputClicked;
+            actionPanel.Controls.Add(openOutputButton);
+
             GroupBox statusGroupBox = new GroupBox();
             statusGroupBox.Text = "运行状态";
             statusGroupBox.Dock = DockStyle.Top;
             statusGroupBox.Padding = new Padding(12);
-            rootLayout.Controls.Add(statusGroupBox, 0, 2);
+            rootLayout.Controls.Add(statusGroupBox, 0, 3);
 
             TableLayoutPanel statusLayout = new TableLayoutPanel();
             statusLayout.Dock = DockStyle.Top;
             statusLayout.AutoSize = true;
             statusLayout.ColumnCount = 1;
-            statusLayout.RowCount = 4;
-            statusLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            statusLayout.RowCount = 3;
             statusLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             statusLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             statusLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -206,32 +231,11 @@ namespace Fight.Tools.OfflineSimulationLauncher
             statusValueLabel.Text = "等待启动。";
             statusLayout.Controls.Add(statusValueLabel, 0, 2);
 
-            FlowLayoutPanel buttonPanel = new FlowLayoutPanel();
-            buttonPanel.AutoSize = true;
-            buttonPanel.FlowDirection = FlowDirection.LeftToRight;
-            buttonPanel.WrapContents = false;
-            buttonPanel.Margin = new Padding(0, 8, 0, 0);
-            statusLayout.Controls.Add(buttonPanel, 0, 3);
-
-            startButton = new Button();
-            startButton.AutoSize = true;
-            startButton.Text = "开始运行";
-            startButton.Click += HandleStartClicked;
-            buttonPanel.Controls.Add(startButton);
-
-            openOutputButton = new Button();
-            openOutputButton.AutoSize = true;
-            openOutputButton.Text = "打开结果位置";
-            openOutputButton.Enabled = false;
-            openOutputButton.Margin = new Padding(12, 3, 0, 3);
-            openOutputButton.Click += HandleOpenOutputClicked;
-            buttonPanel.Controls.Add(openOutputButton);
-
             GroupBox logGroupBox = new GroupBox();
             logGroupBox.Text = "运行日志";
             logGroupBox.Dock = DockStyle.Fill;
             logGroupBox.Padding = new Padding(12);
-            rootLayout.Controls.Add(logGroupBox, 0, 3);
+            rootLayout.Controls.Add(logGroupBox, 0, 4);
 
             logTextBox = new TextBox();
             logTextBox.Dock = DockStyle.Fill;
