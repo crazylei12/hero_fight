@@ -7,6 +7,7 @@ namespace Fight.Data
     {
         FixedInput = 0,
         RandomCatalog = 1,
+        ManualSelection = 2,
     }
 
     [Serializable]

@@ -55,6 +55,16 @@ namespace Fight.Tools.OfflineSimulationLauncher
             return Path.Combine(repoRoot, "exports", "stage01_offline_simulation", "offline_simulation_report.json");
         }
 
+        public static string ResolveHeroesCsvPath(string repoRoot)
+        {
+            if (string.IsNullOrWhiteSpace(repoRoot))
+            {
+                return string.Empty;
+            }
+
+            return Path.Combine(repoRoot, "game", "BalanceSheets", "Stage01", "heroes.csv");
+        }
+
         public static string BuildTimestampedOutputPath(string outputPath, DateTime timestamp)
         {
             if (string.IsNullOrWhiteSpace(outputPath))
