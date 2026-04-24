@@ -2387,11 +2387,11 @@ namespace Fight.Editor
 
             ResetUltimateDecision(skill);
             skill.ultimateDecision.targetingType = UltimateTargetingType.CurrentTargetOnly;
-            skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.SelfLowHealth;
-            skill.ultimateDecision.primaryCondition.healthPercentThreshold = 0.65f;
-            skill.ultimateDecision.secondaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;
-            skill.ultimateDecision.secondaryCondition.searchRadius = 3.2f;
-            skill.ultimateDecision.secondaryCondition.requiredUnitCount = 2;
+            skill.ultimateDecision.minimumSelfHealthPercentToCast = 0.6f;
+            skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;
+            skill.ultimateDecision.primaryCondition.searchRadius = 3.2f;
+            skill.ultimateDecision.primaryCondition.requiredUnitCount = 2;
+            skill.ultimateDecision.secondaryCondition.conditionType = UltimateConditionType.None;
             skill.ultimateDecision.combineMode = UltimateConditionCombineMode.PrimaryOnly;
             skill.ultimateDecision.fallback.fallbackType = UltimateFallbackType.AlternatePrimaryCondition;
             skill.ultimateDecision.fallback.triggerAfterSeconds = 45f;
@@ -2452,11 +2452,12 @@ namespace Fight.Editor
 
             ResetTemporaryOverride(skill);
             skill.temporaryOverride.durationSeconds = 6f;
-            skill.temporaryOverride.lifestealRatio = 0f;
+            skill.temporaryOverride.lifestealMode = SkillTemporaryOverrideLifestealMode.AtLeast;
+            skill.temporaryOverride.lifestealRatio = 0.35f;
             skill.temporaryOverride.visualScaleMultiplier = 1.4f;
             skill.temporaryOverride.visualTintColor = new Color(1f, 0.34f, 0.34f, 1f);
             skill.temporaryOverride.visualTintStrength = 0.6f;
-            skill.description = "Stage-01 demo skill: enter a short frenzy with bonus damage, attack speed, move speed, defense, visual growth, and a red rage tint.";
+            skill.description = "Stage-01 demo skill: enter a short frenzy with bonus damage, attack speed, move speed, defense, guaranteed lifesteal, visual growth, and a red rage tint.";
         }
 
         private static void AddDefaultEffectsForSkill(SkillData skill, float powerMultiplier)
@@ -3060,6 +3061,7 @@ namespace Fight.Editor
             }
 
             skill.ultimateDecision.targetingType = UltimateTargetingType.UseSkillTargetType;
+            skill.ultimateDecision.minimumSelfHealthPercentToCast = 0f;
             skill.ultimateDecision.combineMode = UltimateConditionCombineMode.PrimaryOnly;
 
             ResetUltimateCondition(skill.ultimateDecision.primaryCondition);
@@ -3141,6 +3143,7 @@ namespace Fight.Editor
             }
 
             skill.temporaryOverride.durationSeconds = 0f;
+            skill.temporaryOverride.lifestealMode = SkillTemporaryOverrideLifestealMode.Additive;
             skill.temporaryOverride.lifestealRatio = 0f;
             skill.temporaryOverride.visualScaleMultiplier = 1f;
             skill.temporaryOverride.visualTintColor = Color.white;

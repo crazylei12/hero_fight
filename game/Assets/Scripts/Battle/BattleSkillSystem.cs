@@ -1057,6 +1057,20 @@ namespace Fight.Battle
                 return new UltimateDecisionTrace(false, fallbackStage, "templateDecision=missing-config");
             }
 
+            var minimumSelfHealthPercentToCast = GetMinimumSelfHealthPercentToCast(decision);
+            if (minimumSelfHealthPercentToCast > Mathf.Epsilon)
+            {
+                var currentSelfHealthRatio = GetHealthRatio(caster);
+                var selfHealthGatePassed = currentSelfHealthRatio + Mathf.Epsilon >= minimumSelfHealthPercentToCast;
+                if (!selfHealthGatePassed)
+                {
+                    return new UltimateDecisionTrace(
+                        false,
+                        fallbackStage,
+                        $"combine={decision.combineMode} fallbackStage={fallbackStage}; selfHealthGate=currentHpRatio={currentSelfHealthRatio:0.00} minimum={minimumSelfHealthPercentToCast:0.00} pass=false; finalPass=false");
+                }
+            }
+
             var primaryTrace = EvaluateUltimateConditionTrace(
                 context,
                 caster,
@@ -1719,6 +1733,13 @@ namespace Fight.Battle
             return fallback.overrideHealthPercentThreshold >= 0f
                 ? Mathf.Clamp01(fallback.overrideHealthPercentThreshold)
                 : defaultValue;
+        }
+
+        private static float GetMinimumSelfHealthPercentToCast(UltimateDecisionData decision)
+        {
+            return decision == null
+                ? 0f
+                : Mathf.Clamp01(decision.minimumSelfHealthPercentToCast);
         }
 
         private static int CountUnitsInRange(BattleContext context, RuntimeHero caster, RuntimeHero primaryTarget, float searchRadius, bool countAllies)
