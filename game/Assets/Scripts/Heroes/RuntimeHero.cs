@@ -83,6 +83,8 @@ namespace Fight.Heroes
 
             public float RemainingDurationSeconds { get; private set; }
 
+            public SkillTemporaryOverrideLifestealMode LifestealMode { get; private set; }
+
             public float LifestealRatio { get; private set; }
 
             public float VisualScaleMultiplier { get; private set; }
@@ -94,6 +96,7 @@ namespace Fight.Heroes
             public void Refresh(SkillTemporaryOverrideData definition)
             {
                 RemainingDurationSeconds = definition != null ? Mathf.Max(0f, definition.durationSeconds) : 0f;
+                LifestealMode = definition != null ? definition.lifestealMode : SkillTemporaryOverrideLifestealMode.Additive;
                 LifestealRatio = definition != null ? Mathf.Max(0f, definition.lifestealRatio) : 0f;
                 VisualScaleMultiplier = definition != null ? Mathf.Max(1f, definition.visualScaleMultiplier) : 1f;
                 VisualTintColor = definition != null ? definition.visualTintColor : Color.white;
@@ -1353,21 +1356,51 @@ namespace Fight.Heroes
 
         private float GetCurrentTemporaryOverrideLifestealRatio()
         {
-            var totalRatio = 0f;
+            var additiveRatio = 0f;
+            var minimumRatio = 0f;
             for (var i = 0; i < activeTemporarySkillOverrides.Count; i++)
             {
-                if (activeTemporarySkillOverrides[i] != null)
+                var runtimeOverride = activeTemporarySkillOverrides[i];
+                if (runtimeOverride == null)
                 {
-                    totalRatio += Mathf.Max(0f, activeTemporarySkillOverrides[i].LifestealRatio);
+                    continue;
                 }
+
+                if (runtimeOverride.LifestealMode == SkillTemporaryOverrideLifestealMode.AtLeast)
+                {
+                    minimumRatio = Mathf.Max(minimumRatio, Mathf.Max(0f, runtimeOverride.LifestealRatio));
+                    continue;
+                }
+
+                additiveRatio += Mathf.Max(0f, runtimeOverride.LifestealRatio);
             }
 
-            return Mathf.Max(0f, totalRatio);
+            return Mathf.Max(0f, additiveRatio + minimumRatio);
         }
 
         private float GetCurrentLifestealRatio()
         {
-            return Mathf.Max(0f, PassiveLifestealRatio + GetCurrentTemporaryOverrideLifestealRatio());
+            var passiveRatio = PassiveLifestealRatio;
+            var additiveTemporaryRatio = 0f;
+            var minimumTemporaryRatio = 0f;
+            for (var i = 0; i < activeTemporarySkillOverrides.Count; i++)
+            {
+                var runtimeOverride = activeTemporarySkillOverrides[i];
+                if (runtimeOverride == null)
+                {
+                    continue;
+                }
+
+                if (runtimeOverride.LifestealMode == SkillTemporaryOverrideLifestealMode.AtLeast)
+                {
+                    minimumTemporaryRatio = Mathf.Max(minimumTemporaryRatio, Mathf.Max(0f, runtimeOverride.LifestealRatio));
+                    continue;
+                }
+
+                additiveTemporaryRatio += Mathf.Max(0f, runtimeOverride.LifestealRatio);
+            }
+
+            return Mathf.Max(0f, Mathf.Max(passiveRatio, minimumTemporaryRatio) + additiveTemporaryRatio);
         }
 
         private float GetCurrentVisualScaleMultiplier()

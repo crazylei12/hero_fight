@@ -15,7 +15,7 @@ MonoBehaviour:
   skillId: skill_berserker_ultimate_titanrage
   displayName: Titan Rage
   description: 'Stage-01 demo skill: enter a short frenzy with bonus damage, attack
-    speed, move speed, defense, and visual growth.'
+    speed, move speed, defense, guaranteed lifesteal, and visual growth.'
   slotType: 1
   activationMode: 0
   skillType: 3
@@ -156,7 +156,8 @@ MonoBehaviour:
     interruptFlags: 3
   temporaryOverride:
     durationSeconds: 6
-    lifestealRatio: 0
+    lifestealMode: 1
+    lifestealRatio: 0.35
     visualScaleMultiplier: 1.4
     visualTintColor: {r: 1, g: 0.34, b: 0.34, a: 1}
     visualTintStrength: 0.6
@@ -181,11 +182,12 @@ MonoBehaviour:
   skillAreaPresentationType: 0
   ultimateDecision:
     targetingType: 6
+    minimumSelfHealthPercentToCast: 0.6
     primaryCondition:
-      conditionType: 5
-      searchRadius: 0
-      requiredUnitCount: 1
-      healthPercentThreshold: 0.65
+      conditionType: 1
+      searchRadius: 3.2
+      requiredUnitCount: 2
+      healthPercentThreshold: 1
       durationSeconds: 0
       highValueTargetType: 0
       heroClassFilter: 2
@@ -194,9 +196,9 @@ MonoBehaviour:
       minimumStatusStacks: 1
       requireTargetInCastRange: 1
     secondaryCondition:
-      conditionType: 1
-      searchRadius: 3.2
-      requiredUnitCount: 2
+      conditionType: 0
+      searchRadius: 0
+      requiredUnitCount: 1
       healthPercentThreshold: 1
       durationSeconds: 0
       highValueTargetType: 0

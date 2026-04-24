@@ -7,6 +7,7 @@ namespace Fight.Data
     public class SkillTemporaryOverrideData
     {
         [Min(0f)] public float durationSeconds = 0f;
+        public SkillTemporaryOverrideLifestealMode lifestealMode = SkillTemporaryOverrideLifestealMode.Additive;
         [Min(0f)] public float lifestealRatio = 0f;
         [Min(1f)] public float visualScaleMultiplier = 1f;
         public Color visualTintColor = Color.white;
