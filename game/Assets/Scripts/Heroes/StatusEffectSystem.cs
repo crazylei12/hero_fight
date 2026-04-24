@@ -353,7 +353,9 @@ namespace Fight.Heroes
             RuntimeHero hero,
             StatusEffectType effectType,
             string statusThemeKey = null,
-            Action<RuntimeStatusEffect> onRemovedStatus = null)
+            Action<RuntimeStatusEffect> onRemovedStatus = null,
+            RuntimeHero source = null,
+            string stackGroupKey = null)
         {
             if (hero == null || effectType == StatusEffectType.None)
             {
@@ -365,7 +367,7 @@ namespace Fight.Heroes
             for (var i = statuses.Count - 1; i >= 0; i--)
             {
                 var status = statuses[i];
-                if (!MatchesStatusQuery(status, effectType, statusThemeKey))
+                if (!MatchesStatusQuery(status, effectType, statusThemeKey, source, stackGroupKey))
                 {
                     continue;
                 }
@@ -532,23 +534,41 @@ namespace Fight.Heroes
                 && status.SourceSkill == sourceSkill
                 && Approximately(status.BaseMagnitude, data.magnitude)
                 && Approximately(status.SourceAttackPowerMultiplier, Mathf.Max(0f, data.sourceAttackPowerMultiplier))
+                && Approximately(status.TargetMaxHealthMultiplier, Mathf.Max(0f, data.targetMaxHealthMultiplier))
                 && Approximately(status.ActiveSkillCooldownCapSeconds, Mathf.Max(0f, data.activeSkillCooldownCapSeconds))
                 && Approximately(status.TickIntervalSeconds, Mathf.Max(0.1f, data.tickIntervalSeconds));
         }
 
-        private static bool MatchesStatusQuery(RuntimeStatusEffect status, StatusEffectType effectType, string statusThemeKey)
+        private static bool MatchesStatusQuery(
+            RuntimeStatusEffect status,
+            StatusEffectType effectType,
+            string statusThemeKey,
+            RuntimeHero source,
+            string stackGroupKey)
         {
             if (status == null || status.EffectType != effectType)
             {
                 return false;
             }
 
-            if (string.IsNullOrWhiteSpace(statusThemeKey))
+            if (source != null && status.Source != source)
             {
-                return true;
+                return false;
             }
 
-            return string.Equals(status.StatusThemeKey, statusThemeKey, StringComparison.Ordinal);
+            if (!string.IsNullOrWhiteSpace(statusThemeKey)
+                && !string.Equals(status.StatusThemeKey, statusThemeKey, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(stackGroupKey)
+                && !string.Equals(status.StackGroupKey, stackGroupKey, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            return true;
         }
 
         private static bool UsesSourceScopedStackGroups(StatusEffectDefinition definition)
@@ -593,7 +613,12 @@ namespace Fight.Heroes
             return false;
         }
 
-        public static int GetStatusStackCount(RuntimeHero hero, StatusEffectType effectType, string statusThemeKey = null)
+        public static int GetStatusStackCount(
+            RuntimeHero hero,
+            StatusEffectType effectType,
+            string statusThemeKey = null,
+            RuntimeHero source = null,
+            string stackGroupKey = null)
         {
             if (hero == null || effectType == StatusEffectType.None)
             {
@@ -604,7 +629,7 @@ namespace Fight.Heroes
             var statuses = hero.MutableStatusEffects;
             for (var i = 0; i < statuses.Count; i++)
             {
-                if (MatchesStatusQuery(statuses[i], effectType, statusThemeKey))
+                if (MatchesStatusQuery(statuses[i], effectType, statusThemeKey, source, stackGroupKey))
                 {
                     count++;
                 }

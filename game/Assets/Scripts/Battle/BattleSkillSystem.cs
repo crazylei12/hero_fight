@@ -660,16 +660,16 @@ namespace Fight.Battle
                         return currentEnemyTarget;
                     }
 
-                    var fallbackTargetType = skill.fallbackTargetType == SkillTargetType.CurrentEnemyTarget
+                    var currentFallbackTargetType = skill.fallbackTargetType == SkillTargetType.CurrentEnemyTarget
                         ? SkillTargetType.None
                         : skill.fallbackTargetType;
-                    return fallbackTargetType == SkillTargetType.None
+                    return currentFallbackTargetType == SkillTargetType.None
                         ? null
                         : SelectPrimaryTargetByType(
                             context,
                             caster,
                             skill,
-                            fallbackTargetType,
+                            currentFallbackTargetType,
                             effectiveCastRange,
                             allowFallbackForPriorityTarget: false);
                 case SkillTargetType.LowestHealthEnemy:
@@ -740,16 +740,16 @@ namespace Fight.Battle
                         return preferredTarget;
                     }
 
-                    var fallbackTargetType = skill.fallbackTargetType == SkillTargetType.PriorityEnemyHeroClass
+                    var priorityFallbackTargetType = skill.fallbackTargetType == SkillTargetType.PriorityEnemyHeroClass
                         ? SkillTargetType.NearestEnemy
                         : skill.fallbackTargetType;
-                    return fallbackTargetType == SkillTargetType.None
+                    return priorityFallbackTargetType == SkillTargetType.None
                         ? null
                         : SelectPrimaryTargetByType(
                             context,
                             caster,
                             skill,
-                            fallbackTargetType,
+                            priorityFallbackTargetType,
                             effectiveCastRange,
                             allowFallbackForPriorityTarget: false);
                 default:

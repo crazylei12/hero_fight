@@ -17,6 +17,7 @@ namespace Fight.Battle
         SkillAreaPulse = 3,
         StatusEffect = 4,
         DamageShare = 5,
+        CounterTrigger = 6,
     }
 
     public sealed class BattleStartedEvent : IBattleEvent
@@ -581,6 +582,33 @@ namespace Fight.Battle
         public float ModifierMultiplier { get; }
     }
 
+    public sealed class PassivePeriodicHealRateChangedEvent : IBattleEvent
+    {
+        public PassivePeriodicHealRateChangedEvent(
+            RuntimeHero hero,
+            SkillData skill,
+            float currentHealthRatio,
+            float healPercentMaxHealthPerTick,
+            float tickIntervalSeconds)
+        {
+            Hero = hero;
+            Skill = skill;
+            CurrentHealthRatio = currentHealthRatio;
+            HealPercentMaxHealthPerTick = healPercentMaxHealthPerTick;
+            TickIntervalSeconds = tickIntervalSeconds;
+        }
+
+        public RuntimeHero Hero { get; }
+
+        public SkillData Skill { get; }
+
+        public float CurrentHealthRatio { get; }
+
+        public float HealPercentMaxHealthPerTick { get; }
+
+        public float TickIntervalSeconds { get; }
+    }
+
     public sealed class PassiveStackChangedEvent : IBattleEvent
     {
         public PassiveStackChangedEvent(
@@ -618,6 +646,88 @@ namespace Fight.Battle
         public float AttackSpeedBonusMultiplier { get; }
 
         public float HealAmount { get; }
+    }
+
+    public sealed class StatusCounterChangedEvent : IBattleEvent
+    {
+        public StatusCounterChangedEvent(
+            RuntimeHero source,
+            RuntimeHero target,
+            StatusEffectType effectType,
+            string statusThemeKey,
+            SkillData sourceSkill,
+            DamageSourceKind sourceKind,
+            int previousStackCount,
+            int currentStackCount,
+            int maxStacks)
+        {
+            Source = source;
+            Target = target;
+            EffectType = effectType;
+            StatusThemeKey = statusThemeKey ?? string.Empty;
+            SourceSkill = sourceSkill;
+            SourceKind = sourceKind;
+            PreviousStackCount = previousStackCount;
+            CurrentStackCount = currentStackCount;
+            MaxStacks = maxStacks;
+        }
+
+        public RuntimeHero Source { get; }
+
+        public RuntimeHero Target { get; }
+
+        public StatusEffectType EffectType { get; }
+
+        public string StatusThemeKey { get; }
+
+        public SkillData SourceSkill { get; }
+
+        public DamageSourceKind SourceKind { get; }
+
+        public int PreviousStackCount { get; }
+
+        public int CurrentStackCount { get; }
+
+        public int MaxStacks { get; }
+    }
+
+    public sealed class StatusCounterThresholdTriggeredEvent : IBattleEvent
+    {
+        public StatusCounterThresholdTriggeredEvent(
+            RuntimeHero source,
+            RuntimeHero target,
+            StatusEffectType effectType,
+            string statusThemeKey,
+            SkillData sourceSkill,
+            DamageSourceKind sourceKind,
+            int threshold,
+            int clearedStackCount)
+        {
+            Source = source;
+            Target = target;
+            EffectType = effectType;
+            StatusThemeKey = statusThemeKey ?? string.Empty;
+            SourceSkill = sourceSkill;
+            SourceKind = sourceKind;
+            Threshold = threshold;
+            ClearedStackCount = clearedStackCount;
+        }
+
+        public RuntimeHero Source { get; }
+
+        public RuntimeHero Target { get; }
+
+        public StatusEffectType EffectType { get; }
+
+        public string StatusThemeKey { get; }
+
+        public SkillData SourceSkill { get; }
+
+        public DamageSourceKind SourceKind { get; }
+
+        public int Threshold { get; }
+
+        public int ClearedStackCount { get; }
     }
 
     public sealed class PositiveEffectRejectedEvent : IBattleEvent

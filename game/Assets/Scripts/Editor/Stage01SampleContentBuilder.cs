@@ -80,6 +80,8 @@ namespace Fight.Editor
         private const string WindchimeUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/WindchimeStillwindDomainField.prefab";
         private const string PoisonStatusThemeKey = "poison";
         private const string VenomshooterPoisonStackGroupKey = "venomshooter_poison_pool";
+        private const string ShockStatusThemeKey = "shock";
+        private const string LightningmageShockStackGroupKey = "lightningmage_shock_pool";
         private static bool autoEnsureScheduled;
 
         private static float ScaleRangedHeroDistance(float value)
@@ -238,6 +240,23 @@ namespace Fight.Editor
             EnsureHeroSkillReferences(sandemperor, sandemperorActive, sandemperorUltimateSkill);
             EnsureHeroBattlePrefabReference(sandemperor, LoadBattlePrefab("mage_003_sandemperor", HeroClass.Mage));
 
+            var lightningmageActive = CreateLightningmageActiveSkill(overwriteExistingContent);
+            var lightningmageUltimateSkill = CreateLightningmageUltimateSkill(overwriteExistingContent, out var lightningmageUltimateExisted);
+
+            var lightningmage = CreateHero(
+                "mage_004_lightningmage",
+                "Lightningmage",
+                HeroClass.Mage,
+                290f, 30f, 8f, 1f / 1.05f, 3.75f, 0.10f, 1.7f, ScaleRangedHeroDistance(5.9333333f),
+                lightningmageActive,
+                ConfigureLightningmageUltimate(lightningmageUltimateSkill, overwriteExistingContent, lightningmageUltimateExisted),
+                overwriteExistingContent,
+                out var lightningmageHeroExisted,
+                HeroTag.Ranged, HeroTag.Control, HeroTag.SustainedDamage);
+            ConfigureLightningmageBasicAttack(lightningmage, overwriteExistingContent, lightningmageHeroExisted);
+            EnsureHeroSkillReferences(lightningmage, lightningmageActive, lightningmageUltimateSkill);
+            EnsureHeroBattlePrefabReference(lightningmage, LoadBattlePrefab("mage_004_lightningmage", HeroClass.Mage));
+
             CreateArchivedMageFireboltSkill(overwriteExistingContent);
 
             var assassinActive = CreateShadowstepActiveSkill(overwriteExistingContent);
@@ -344,6 +363,21 @@ namespace Fight.Editor
                 HeroTag.Melee, HeroTag.Control, HeroTag.Buff);
             EnsureHeroSkillReferences(tidehunter, tidehunterActive, tidehunterUltimateSkill);
             EnsureHeroBattlePrefabReference(tidehunter, LoadBattlePrefab("tank_003_tidehunter", HeroClass.Tank));
+
+            var mundoActive = CreateMundoActiveSkill(overwriteExistingContent);
+            var mundoUltimateSkill = CreateMundoUltimateSkill(overwriteExistingContent, out var mundoUltimateExisted);
+
+            var mundo = CreateHero(
+                "tank_004_mundo",
+                "Mundo",
+                HeroClass.Tank,
+                620f, 22f, 38f, 0.9f, 3.45f, 0.05f, 1.5f, 1.9f,
+                mundoActive,
+                ConfigureMundoUltimate(mundoUltimateSkill, overwriteExistingContent, mundoUltimateExisted),
+                overwriteExistingContent,
+                HeroTag.Melee, HeroTag.Heal);
+            EnsureHeroSkillReferences(mundo, mundoActive, mundoUltimateSkill);
+            EnsureHeroBattlePrefabReference(mundo, LoadBattlePrefab("tank_004_mundo", HeroClass.Tank));
 
             var supportActive = CreateSupportActiveSkill(overwriteExistingContent);
             var supportUltimateSkill = CreateSupportUltimateSkill(overwriteExistingContent, out var supportUltimateExisted);
@@ -493,7 +527,7 @@ namespace Fight.Editor
             EnsureHeroSkillReferences(boomeranger, boomerangerActive, boomerangerUltimateSkill);
             EnsureHeroBattlePrefabReference(boomeranger, LoadBattlePrefab("marksman_004_boomeranger", HeroClass.Marksman));
 
-            CreateHeroCatalog(warrior, bladesman, berserker, mage, frostmage, sandemperor, assassin, tidefin, butcher, loner, tank, shieldwarden, tidehunter, support, windchime, monk, shrinemaiden, marksman, rifleman, venomshooter, boomeranger);
+            CreateHeroCatalog(warrior, bladesman, berserker, mage, frostmage, sandemperor, lightningmage, assassin, tidefin, butcher, loner, tank, shieldwarden, tidehunter, mundo, support, windchime, monk, shrinemaiden, marksman, rifleman, venomshooter, boomeranger);
 
             var battleInput = CreateBattleInput(
                 "Stage01DemoBattleInput",
@@ -1070,6 +1104,7 @@ namespace Fight.Editor
                 "mage_001_firemage" => AssetDatabase.LoadAssetAtPath<GameObject>(FireMageProjectilePrefabPath),
                 "mage_002_frostmage" => AssetDatabase.LoadAssetAtPath<GameObject>(FrostMageProjectilePrefabPath),
                 "mage_003_sandemperor" => AssetDatabase.LoadAssetAtPath<GameObject>(FireMageProjectilePrefabPath),
+                "mage_004_lightningmage" => AssetDatabase.LoadAssetAtPath<GameObject>(FrostMageProjectilePrefabPath),
                 "marksman_001_longshot" => AssetDatabase.LoadAssetAtPath<GameObject>(LongshotProjectilePrefabPath),
                 "marksman_002_rifleman" => AssetDatabase.LoadAssetAtPath<GameObject>(RiflemanProjectilePrefabPath),
                 "marksman_003_venomshooter" => AssetDatabase.LoadAssetAtPath<GameObject>(LongshotProjectilePrefabPath),
@@ -1083,6 +1118,7 @@ namespace Fight.Editor
                 heroId == "mage_001_firemage"
                 || heroId == "mage_002_frostmage"
                 || heroId == "mage_003_sandemperor"
+                || heroId == "mage_004_lightningmage"
                 || heroId == "marksman_001_longshot"
                 || heroId == "marksman_002_rifleman"
                 || heroId == "marksman_003_venomshooter"
@@ -1109,6 +1145,7 @@ namespace Fight.Editor
                 "mage_001_firemage" => FireMagePrefabPath,
                 "mage_002_frostmage" => FrostMagePrefabPath,
                 "mage_003_sandemperor" => FireMagePrefabPath,
+                "mage_004_lightningmage" => FrostMagePrefabPath,
                 "marksman_001_longshot" => MarksmanPrefabPath,
                 "marksman_002_rifleman" => RiflemanPrefabPath,
                 "marksman_003_venomshooter" => MarksmanPrefabPath,
@@ -1204,6 +1241,7 @@ namespace Fight.Editor
             ResetReactiveGuard(skill);
             ResetActionSequence(skill);
             ResetPassiveSkillData(skill);
+            ResetDamageTriggeredStatusCounter(skill);
             ResetTemporaryOverride(skill);
             skill.castImpactVfxPrefab = null;
             skill.castImpactVfxLocalOffset = Vector3.zero;
@@ -2173,6 +2211,104 @@ namespace Fight.Editor
             return skill;
         }
 
+        private static SkillData CreateLightningmageActiveSkill(bool overwriteExistingContent)
+        {
+            var skill = CreateSkill(
+                "skill_lightningmage_active_thunderline",
+                "Thunderline",
+                SkillSlotType.ActiveSkill,
+                SkillType.AreaDamage,
+                SkillTargetType.CurrentEnemyTarget,
+                ScaleRangedHeroDistance(6.3333333f),
+                0f,
+                0f,
+                6f,
+                1,
+                overwriteExistingContent,
+                out var existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.description = "Stage-01 demo skill: fires a narrow lightning lane through the current target direction and seeds a shared shock counter on every damaging hit.";
+            skill.skillType = SkillType.AreaDamage;
+            skill.targetType = SkillTargetType.CurrentEnemyTarget;
+            skill.fallbackTargetType = SkillTargetType.DensestEnemyArea;
+            skill.castRange = ScaleRangedHeroDistance(6.3333333f);
+            skill.areaRadius = 0f;
+            skill.cooldownSeconds = 6f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+            AddReturningPathStrikeEffect(
+                skill,
+                1.35f,
+                ScaleRangedHeroDistance(7.4666667f),
+                ScaleRangedHeroDistance(1.2f),
+                0f,
+                0.4f,
+                ReturningPathStrikePhase.Outbound);
+            ConfigureLightningmageShockCounter(skill);
+            ResetActionSequence(skill);
+            ResetUltimateDecision(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateLightningmageUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
+        {
+            var skill = CreateSkill(
+                "skill_lightningmage_ultimate_stormverdict",
+                "Storm Verdict",
+                SkillSlotType.Ultimate,
+                SkillType.AreaDamage,
+                SkillTargetType.AllEnemies,
+                0f,
+                0f,
+                0f,
+                0f,
+                1,
+                overwriteExistingContent,
+                out existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.description = "Stage-01 demo skill: re-checks all living enemies every second and calls down five global lightning strikes in total.";
+            skill.skillType = SkillType.AreaDamage;
+            skill.targetType = SkillTargetType.AllEnemies;
+            skill.fallbackTargetType = SkillTargetType.None;
+            skill.castRange = 0f;
+            skill.areaRadius = 0f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+            AddDamageEffect(skill, 1.1f);
+
+            ResetActionSequence(skill);
+            skill.actionSequence.enabled = true;
+            skill.actionSequence.payloadType = CombatActionSequencePayloadType.SourceSkill;
+            skill.actionSequence.repeatMode = CombatActionSequenceRepeatMode.FixedCount;
+            skill.actionSequence.repeatCount = 5;
+            skill.actionSequence.durationSeconds = 5f;
+            skill.actionSequence.intervalSeconds = 1f;
+            skill.actionSequence.windupSeconds = 0f;
+            skill.actionSequence.recoverySeconds = 0f;
+            skill.actionSequence.temporaryBasicAttackRangeOverride = 0f;
+            skill.actionSequence.temporarySkillCastRangeOverride = 0f;
+            skill.actionSequence.targetRefreshMode = CombatActionSequenceTargetRefreshMode.RefreshEveryIteration;
+            skill.actionSequence.interruptFlags =
+                CombatActionSequenceInterruptFlags.HardControl | CombatActionSequenceInterruptFlags.ForcedMovement;
+
+            ResetUltimateDecision(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
         private static SkillData CreateArchivedMageFireboltSkill(bool overwriteExistingContent)
         {
             var assetPath = $"{SkillsRootFolder}/Archive/Firebolt Burst.asset";
@@ -2798,6 +2934,38 @@ namespace Fight.Editor
             }
         }
 
+        private static void ConfigureLightningmageShockCounter(SkillData skill)
+        {
+            if (skill == null)
+            {
+                return;
+            }
+
+            ResetDamageTriggeredStatusCounter(skill);
+            skill.damageTriggeredStatusCounter.enabled = true;
+            skill.damageTriggeredStatusCounter.countBasicAttackDamage = true;
+            skill.damageTriggeredStatusCounter.countSkillDamage = true;
+            skill.damageTriggeredStatusCounter.countSkillAreaPulseDamage = true;
+            skill.damageTriggeredStatusCounter.countStatusEffectDamage = true;
+            skill.damageTriggeredStatusCounter.countCounterTriggerDamage = false;
+            skill.damageTriggeredStatusCounter.triggerThreshold = 3;
+            skill.damageTriggeredStatusCounter.clearCountedStatusesOnTrigger = true;
+            skill.damageTriggeredStatusCounter.countedStatus.effectType = StatusEffectType.Marker;
+            skill.damageTriggeredStatusCounter.countedStatus.durationSeconds = 4f;
+            skill.damageTriggeredStatusCounter.countedStatus.maxStacks = 3;
+            skill.damageTriggeredStatusCounter.countedStatus.stackGroupKey = LightningmageShockStackGroupKey;
+            skill.damageTriggeredStatusCounter.countedStatus.statusThemeKey = ShockStatusThemeKey;
+            skill.damageTriggeredStatusCounter.countedStatus.refreshDurationOnReapply = true;
+            skill.damageTriggeredStatusCounter.triggerStatusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.Stun,
+                durationSeconds = 0.6f,
+                magnitude = 0f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+        }
+
         private static void ConfigureSupportBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
         {
             if (hero == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
@@ -3134,6 +3302,27 @@ namespace Fight.Editor
             EditorUtility.SetDirty(hero);
         }
 
+        private static void ConfigureLightningmageBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (hero == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return;
+            }
+
+            hero.basicAttack.damageMultiplier = 0.75f;
+            hero.basicAttack.attackInterval = 1.05f;
+            hero.basicAttack.rangeOverride = ScaleRangedHeroDistance(5.9333333f);
+            hero.basicAttack.usesProjectile = true;
+            hero.basicAttack.projectileSpeed = 15f;
+            hero.basicAttack.effectType = BasicAttackEffectType.Damage;
+            hero.basicAttack.targetType = BasicAttackTargetType.NearestEnemy;
+            hero.basicAttack.targetPrioritySearchRadius = 0f;
+            EnsureBasicAttackStatusList(hero.basicAttack);
+            hero.basicAttack.onHitStatusEffects.Clear();
+            hero.debugNotes = "Stage-01 demo hero for Mage. Lightningmage validates shared damage-triggered shock counters, frequent short stuns, and global action-sequence ult pulses.";
+            EditorUtility.SetDirty(hero);
+        }
+
         private static SkillData CreateSupportActiveSkill(bool overwriteExistingContent)
         {
             var skill = CreateSkill(
@@ -3301,11 +3490,56 @@ namespace Fight.Editor
             skill.passiveSkill.recentDirectHostileSourceWindowSeconds = 0f;
             skill.passiveSkill.recentDirectHostileSourceDefenseBonusPerSource = 0f;
             skill.passiveSkill.maxDefenseBonus = 0f;
+            skill.passiveSkill.periodicSelfHealIntervalSeconds = 0f;
+            skill.passiveSkill.periodicSelfHealMidHealthThreshold = 0f;
+            skill.passiveSkill.periodicSelfHealLowHealthThreshold = 0f;
+            skill.passiveSkill.periodicSelfHealHighHealthPercentMaxHealth = 0f;
+            skill.passiveSkill.periodicSelfHealMidHealthPercentMaxHealth = 0f;
+            skill.passiveSkill.periodicSelfHealLowHealthPercentMaxHealth = 0f;
             skill.passiveSkill.rejectExternalPositiveEffects = false;
             skill.passiveSkill.killParticipationAttackPowerBonusPerStack = 0f;
             skill.passiveSkill.killParticipationAttackSpeedBonusPerStack = 0f;
             skill.passiveSkill.killParticipationHealPercentMaxHealth = 0f;
             skill.passiveSkill.killParticipationMaxStacks = 0;
+        }
+
+        private static void ResetDamageTriggeredStatusCounter(SkillData skill)
+        {
+            if (skill == null)
+            {
+                return;
+            }
+
+            if (skill.damageTriggeredStatusCounter == null)
+            {
+                skill.damageTriggeredStatusCounter = new DamageTriggeredStatusCounterData();
+            }
+
+            skill.damageTriggeredStatusCounter.enabled = false;
+            skill.damageTriggeredStatusCounter.countBasicAttackDamage = true;
+            skill.damageTriggeredStatusCounter.countSkillDamage = true;
+            skill.damageTriggeredStatusCounter.countSkillAreaPulseDamage = true;
+            skill.damageTriggeredStatusCounter.countStatusEffectDamage = true;
+            skill.damageTriggeredStatusCounter.countCounterTriggerDamage = false;
+            skill.damageTriggeredStatusCounter.triggerThreshold = 3;
+            skill.damageTriggeredStatusCounter.clearCountedStatusesOnTrigger = true;
+            if (skill.damageTriggeredStatusCounter.countedStatus == null)
+            {
+                skill.damageTriggeredStatusCounter.countedStatus = new StatusEffectData();
+            }
+
+            var countedStatus = skill.damageTriggeredStatusCounter.countedStatus;
+            countedStatus.effectType = StatusEffectType.None;
+            countedStatus.durationSeconds = 1f;
+            countedStatus.magnitude = 0f;
+            countedStatus.sourceAttackPowerMultiplier = 0f;
+            countedStatus.activeSkillCooldownCapSeconds = 0f;
+            countedStatus.tickIntervalSeconds = 1f;
+            countedStatus.maxStacks = 1;
+            countedStatus.stackGroupKey = string.Empty;
+            countedStatus.statusThemeKey = string.Empty;
+            countedStatus.refreshDurationOnReapply = true;
+            skill.damageTriggeredStatusCounter.triggerStatusEffects.Clear();
         }
 
         private static void ResetTemporaryOverride(SkillData skill)
@@ -3462,6 +3696,38 @@ namespace Fight.Editor
             skill.ultimateDecision.fallback.overrideRequiredUnitCount = 0;
             skill.ultimateDecision.fallback.secondaryTriggerAfterSeconds = 0f;
             skill.ultimateDecision.fallback.secondaryOverrideRequiredUnitCount = 0;
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData ConfigureLightningmageUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.skillType = SkillType.AreaDamage;
+            skill.targetType = SkillTargetType.AllEnemies;
+            skill.fallbackTargetType = SkillTargetType.None;
+            skill.castRange = 0f;
+            skill.areaRadius = 0f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+
+            ResetUltimateDecision(skill);
+            skill.ultimateDecision.targetingType = UltimateTargetingType.UseSkillTargetType;
+            skill.ultimateDecision.combineMode = UltimateConditionCombineMode.PrimaryOnly;
+            skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;
+            skill.ultimateDecision.primaryCondition.searchRadius = Stage01ArenaSpec.FullMapTargetingRangeWorldUnits;
+            skill.ultimateDecision.primaryCondition.requiredUnitCount = 3;
+            skill.ultimateDecision.secondaryCondition.conditionType = UltimateConditionType.EnemyWithStatusInRange;
+            skill.ultimateDecision.secondaryCondition.searchRadius = Stage01ArenaSpec.FullMapTargetingRangeWorldUnits;
+            skill.ultimateDecision.secondaryCondition.requiredUnitCount = 2;
+            skill.ultimateDecision.secondaryCondition.statusEffectTypeFilter = StatusEffectType.Marker;
+            skill.ultimateDecision.secondaryCondition.statusThemeKey = ShockStatusThemeKey;
+            skill.ultimateDecision.secondaryCondition.minimumStatusStacks = 2;
+            ApplyCountFallback(skill, 40f, 2, 50f, 1);
             EditorUtility.SetDirty(skill);
             return skill;
         }
@@ -4353,6 +4619,133 @@ namespace Fight.Editor
             });
         }
 
+        private static SkillData CreateMundoActiveSkill(bool overwriteExistingContent)
+        {
+            var skill = CreateSkill(
+                "skill_mundo_active_brutemetabolism",
+                "Brute Metabolism",
+                SkillSlotType.ActiveSkill,
+                SkillType.Buff,
+                SkillTargetType.Self,
+                0f,
+                0f,
+                0f,
+                0f,
+                1,
+                overwriteExistingContent,
+                out var existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.description = "Stage-01 demo passive skill: periodically heal self based on max health, with stronger recovery at lower health.";
+            skill.activationMode = SkillActivationMode.Passive;
+            skill.skillType = SkillType.Buff;
+            skill.targetType = SkillTargetType.Self;
+            skill.fallbackTargetType = SkillTargetType.None;
+            skill.castRange = 0f;
+            skill.areaRadius = 0f;
+            skill.cooldownSeconds = 0f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = true;
+            skill.effects.Clear();
+            ResetPassiveSkillData(skill);
+            skill.passiveSkill.periodicSelfHealIntervalSeconds = 1f;
+            skill.passiveSkill.periodicSelfHealMidHealthThreshold = 0.6f;
+            skill.passiveSkill.periodicSelfHealLowHealthThreshold = 0.3f;
+            skill.passiveSkill.periodicSelfHealHighHealthPercentMaxHealth = 0.015f;
+            skill.passiveSkill.periodicSelfHealMidHealthPercentMaxHealth = 0.028f;
+            skill.passiveSkill.periodicSelfHealLowHealthPercentMaxHealth = 0.045f;
+            ResetTemporaryOverride(skill);
+            ResetUltimateDecision(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateMundoUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
+        {
+            var skill = CreateSkill(
+                "skill_mundo_ultimate_monstrousrecovery",
+                "Monstrous Recovery",
+                SkillSlotType.Ultimate,
+                SkillType.Buff,
+                SkillTargetType.Self,
+                0f,
+                0f,
+                0f,
+                0f,
+                1,
+                overwriteExistingContent,
+                out existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            ApplyMundoUltimateBaseConfiguration(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData ConfigureMundoUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            ApplyMundoUltimateBaseConfiguration(skill);
+
+            ResetUltimateDecision(skill);
+            skill.ultimateDecision.targetingType = UltimateTargetingType.Self;
+            skill.ultimateDecision.combineMode = UltimateConditionCombineMode.AllMustPass;
+            skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.SelfLowHealth;
+            skill.ultimateDecision.primaryCondition.healthPercentThreshold = 0.45f;
+            skill.ultimateDecision.secondaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;
+            skill.ultimateDecision.secondaryCondition.searchRadius = 6.5f;
+            skill.ultimateDecision.secondaryCondition.requiredUnitCount = 2;
+            skill.ultimateDecision.fallback.fallbackType = UltimateFallbackType.LowerPrimaryThreshold;
+            skill.ultimateDecision.fallback.triggerAfterSeconds = 45f;
+            skill.ultimateDecision.fallback.overrideRequiredUnitCount = 1;
+            skill.ultimateDecision.fallback.overrideHealthPercentThreshold = 0.6f;
+            // Stage-01's shared ultimate template cannot express the exact
+            // "(<=25% HP and 1 enemy) OR (<=45% HP and 2 enemies)" pairing
+            // without hero-only branching, so Mundo currently uses the default
+            // 45%/2-enemy gate and relaxes to 60%/1-enemy late in regulation.
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static void ApplyMundoUltimateBaseConfiguration(SkillData skill)
+        {
+            skill.description = "Stage-01 demo skill: rapidly heal self for a short duration based on max health.";
+            skill.activationMode = SkillActivationMode.Active;
+            skill.skillType = SkillType.Buff;
+            skill.targetType = SkillTargetType.Self;
+            skill.fallbackTargetType = SkillTargetType.None;
+            skill.castRange = 0f;
+            skill.areaRadius = 0f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = true;
+            skill.effects.Clear();
+
+            var selfHealOverTime = AddApplyStatusEffectsEffect(skill);
+            selfHealOverTime.targetMode = SkillEffectTargetMode.Caster;
+            selfHealOverTime.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.HealOverTime,
+                durationSeconds = 6f,
+                magnitude = 0f,
+                targetMaxHealthMultiplier = 0.06f,
+                tickIntervalSeconds = 0.5f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+        }
+
         private static SkillData ConfigureRiflemanUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
         {
             if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
@@ -4880,10 +5273,14 @@ namespace Fight.Editor
                 "skill_boomeranger_ultimate_wheelstorm" => "marksman_004_boomeranger",
                 "skill_sandemperor_active_raisesandguard" => "mage_003_sandemperor",
                 "skill_sandemperor_ultimate_imperialencirclement" => "mage_003_sandemperor",
+                "skill_lightningmage_active_thunderline" => "mage_004_lightningmage",
+                "skill_lightningmage_ultimate_stormverdict" => "mage_004_lightningmage",
                 "skill_berserker_active_bloodfury" => "warrior_003_berserker",
                 "skill_berserker_ultimate_titanrage" => "warrior_003_berserker",
                 "skill_tidehunter_active_undertowcarapace" => "tank_003_tidehunter",
                 "skill_tidehunter_ultimate_tidalrebound" => "tank_003_tidehunter",
+                "skill_mundo_active_brutemetabolism" => "tank_004_mundo",
+                "skill_mundo_ultimate_monstrousrecovery" => "tank_004_mundo",
                 _ => null,
             };
         }

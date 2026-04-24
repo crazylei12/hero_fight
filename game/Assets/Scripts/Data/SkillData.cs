@@ -23,6 +23,7 @@ namespace Fight.Data
 
         [Header("Passive")]
         public PassiveSkillData passiveSkill = new PassiveSkillData();
+        public DamageTriggeredStatusCounterData damageTriggeredStatusCounter = new DamageTriggeredStatusCounterData();
 
         [Header("Numbers")]
         [Min(0.1f)] public float castRange = 4f;
