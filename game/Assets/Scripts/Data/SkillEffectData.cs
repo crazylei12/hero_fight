@@ -57,6 +57,12 @@ namespace Fight.Data
         OtherAlliesInRadiusAroundCaster = 8,
     }
 
+    public enum ReturningPathStrikePhase
+    {
+        Outbound = 0,
+        Return = 1,
+    }
+
     [Serializable]
     public class SkillEffectData
     {
@@ -93,6 +99,10 @@ namespace Fight.Data
         [Min(0f)] public float deployableProxyAttackRange = 0f;
         [Min(0f)] public float deployableProxyProjectileSpeedOverride = 0f;
         [Min(0)] public int deployableProxyStartingVariantIndex = 0;
+        public ReturningPathStrikePhase returningPathStrikePhase = ReturningPathStrikePhase.Outbound;
+        [Min(0f)] public float returningPathMaxDistance = 0f;
+        [Min(0f)] public float returningPathWidth = 0f;
+        [Min(0f)] public float returningPathDelaySeconds = 0f;
         public ForcedMovementDirectionMode forcedMovementDirection = ForcedMovementDirectionMode.AwayFromSource;
         [Min(0f)] public float forcedMovementDistance = 0f;
         [Min(0f)] public float forcedMovementDurationSeconds = 0f;

@@ -692,6 +692,15 @@ namespace Fight.Editor
                 parts.Add($"波锋:{FormatFloat(effect.radialSweepRingWidth)}");
             }
 
+            if (effect.effectType == SkillEffectType.CreateReturningPathStrike)
+            {
+                parts.Add($"阶段:{FormatEnum(effect.returningPathStrikePhase)}");
+                parts.Add($"阵营:{FormatEnum(effect.persistentAreaTargetType)}");
+                parts.Add($"距离:{FormatFloat(effect.returningPathMaxDistance)}");
+                parts.Add($"宽度:{FormatFloat(effect.returningPathWidth)}");
+                parts.Add($"延迟:{FormatFloat(effect.returningPathDelaySeconds)}");
+            }
+
             return string.Join(" / ", parts);
         }
 
@@ -961,6 +970,7 @@ namespace Fight.Editor
                     SkillEffectType.ApplyForcedMovement => "施加强制位移",
                     SkillEffectType.CreateDeployableProxy => "创建部署物代理",
                     SkillEffectType.CreateRadialSweep => "创建径向扫波",
+                    SkillEffectType.CreateReturningPathStrike => "创建往返路径打击",
                     _ => value.ToString(),
                 },
                 SkillEffectTargetMode skillEffectTargetMode => skillEffectTargetMode switch
@@ -998,6 +1008,12 @@ namespace Fight.Editor
                 {
                     RadialSweepDirectionMode.Outward => "向外",
                     RadialSweepDirectionMode.Inward => "向内",
+                    _ => value.ToString(),
+                },
+                ReturningPathStrikePhase returningPathStrikePhase => returningPathStrikePhase switch
+                {
+                    ReturningPathStrikePhase.Outbound => "外放",
+                    ReturningPathStrikePhase.Return => "回收",
                     _ => value.ToString(),
                 },
                 StatusEffectType statusEffectType => statusEffectType switch

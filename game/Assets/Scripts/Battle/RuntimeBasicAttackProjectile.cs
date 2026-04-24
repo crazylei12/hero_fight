@@ -18,7 +18,9 @@ namespace Fight.Battle
             BasicAttackEffectType effectType,
             string variantKey,
             BasicAttackTargetType targetType,
-            IReadOnlyList<StatusEffectData> onHitStatusEffects)
+            IReadOnlyList<StatusEffectData> onHitStatusEffects,
+            RuntimeBasicAttackBounceChain bounceChain,
+            int bounceHopIndex)
         {
             ProjectileId = projectileId;
             Attacker = attacker;
@@ -31,6 +33,8 @@ namespace Fight.Battle
             VariantKey = variantKey ?? string.Empty;
             TargetType = targetType;
             OnHitStatusEffects = onHitStatusEffects ?? System.Array.Empty<StatusEffectData>();
+            BounceChain = bounceChain;
+            BounceHopIndex = Mathf.Max(0, bounceHopIndex);
         }
 
         public string ProjectileId { get; }
@@ -54,5 +58,9 @@ namespace Fight.Battle
         public BasicAttackTargetType TargetType { get; }
 
         public IReadOnlyList<StatusEffectData> OnHitStatusEffects { get; }
+
+        public RuntimeBasicAttackBounceChain BounceChain { get; }
+
+        public int BounceHopIndex { get; }
     }
 }

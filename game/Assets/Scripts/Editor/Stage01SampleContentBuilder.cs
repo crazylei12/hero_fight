@@ -476,7 +476,24 @@ namespace Fight.Editor
             EnsureHeroSkillReferences(venomshooter, venomshooterActive, venomshooterUltimateSkill);
             EnsureHeroBattlePrefabReference(venomshooter, LoadBattlePrefab("marksman_003_venomshooter", HeroClass.Marksman));
 
-            CreateHeroCatalog(warrior, bladesman, berserker, mage, frostmage, sandemperor, assassin, tidefin, butcher, loner, tank, shieldwarden, tidehunter, support, windchime, monk, shrinemaiden, marksman, rifleman, venomshooter);
+            var boomerangerActive = CreateBoomerangerActiveSkill(overwriteExistingContent);
+            var boomerangerUltimateSkill = CreateBoomerangerUltimateSkill(overwriteExistingContent, out var boomerangerUltimateExisted);
+
+            var boomeranger = CreateHero(
+                "marksman_004_boomeranger",
+                "Boomeranger",
+                HeroClass.Marksman,
+                300f, 31f, 8f, 1.053f, 3.9f, 0.12f, 1.7f, ScaleRangedHeroDistance(5.4666667f),
+                boomerangerActive,
+                ConfigureBoomerangerUltimate(boomerangerUltimateSkill, overwriteExistingContent, boomerangerUltimateExisted),
+                overwriteExistingContent,
+                out var boomerangerHeroExisted,
+                HeroTag.Ranged, HeroTag.SustainedDamage, HeroTag.AreaDamage);
+            ConfigureBoomerangerBasicAttack(boomeranger, overwriteExistingContent, boomerangerHeroExisted);
+            EnsureHeroSkillReferences(boomeranger, boomerangerActive, boomerangerUltimateSkill);
+            EnsureHeroBattlePrefabReference(boomeranger, LoadBattlePrefab("marksman_004_boomeranger", HeroClass.Marksman));
+
+            CreateHeroCatalog(warrior, bladesman, berserker, mage, frostmage, sandemperor, assassin, tidefin, butcher, loner, tank, shieldwarden, tidehunter, support, windchime, monk, shrinemaiden, marksman, rifleman, venomshooter, boomeranger);
 
             var battleInput = CreateBattleInput(
                 "Stage01DemoBattleInput",
@@ -1029,6 +1046,10 @@ namespace Fight.Editor
             hero.basicAttack.targetPrioritySearchRadius = 0f;
             EnsureBasicAttackStatusList(hero.basicAttack);
             hero.basicAttack.onHitStatusEffects.Clear();
+            hero.basicAttack.bounce.maxAdditionalTargets = 0;
+            hero.basicAttack.bounce.searchRadius = 0f;
+            hero.basicAttack.bounce.powerMultiplier = 0f;
+            hero.basicAttack.bounce.bounceVariantKey = string.Empty;
 
             hero.activeSkill = activeSkill;
             hero.ultimateSkill = ultimateSkill;
@@ -1052,6 +1073,7 @@ namespace Fight.Editor
                 "marksman_001_longshot" => AssetDatabase.LoadAssetAtPath<GameObject>(LongshotProjectilePrefabPath),
                 "marksman_002_rifleman" => AssetDatabase.LoadAssetAtPath<GameObject>(RiflemanProjectilePrefabPath),
                 "marksman_003_venomshooter" => AssetDatabase.LoadAssetAtPath<GameObject>(LongshotProjectilePrefabPath),
+                "marksman_004_boomeranger" => AssetDatabase.LoadAssetAtPath<GameObject>(LongshotProjectilePrefabPath),
                 "support_001_sunpriest" => AssetDatabase.LoadAssetAtPath<GameObject>(SunpriestProjectilePrefabPath),
                 "support_002_windchime" => AssetDatabase.LoadAssetAtPath<GameObject>(SunpriestProjectilePrefabPath),
                 "support_004_shrinemaiden" => AssetDatabase.LoadAssetAtPath<GameObject>(FrostMageProjectilePrefabPath),
@@ -1064,6 +1086,7 @@ namespace Fight.Editor
                 || heroId == "marksman_001_longshot"
                 || heroId == "marksman_002_rifleman"
                 || heroId == "marksman_003_venomshooter"
+                || heroId == "marksman_004_boomeranger"
                 || heroId == "support_001_sunpriest"
                 || heroId == "support_002_windchime"
                 || heroId == "support_004_shrinemaiden";
@@ -1089,6 +1112,7 @@ namespace Fight.Editor
                 "marksman_001_longshot" => MarksmanPrefabPath,
                 "marksman_002_rifleman" => RiflemanPrefabPath,
                 "marksman_003_venomshooter" => MarksmanPrefabPath,
+                "marksman_004_boomeranger" => MarksmanPrefabPath,
                 "support_002_windchime" => WindchimePrefabPath,
                 "support_003_monk" => MonkPrefabPath,
                 "warrior_002_bladesman" => BladesmanPrefabPath,
@@ -1605,6 +1629,96 @@ namespace Fight.Editor
             AddVenomshooterPoisonStacks(detonation.followUpAreaStatusEffects, 2);
 
             skill.description = "Stage-01 demo skill: detonates existing poison on all enemies, then chains corpse explosions that re-spread poison.";
+            ResetActionSequence(skill);
+            ResetUltimateDecision(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateBoomerangerActiveSkill(bool overwriteExistingContent)
+        {
+            var skill = CreateSkill(
+                "skill_boomeranger_active_returningwheel",
+                "Returning Wheel",
+                SkillSlotType.ActiveSkill,
+                SkillType.AreaDamage,
+                SkillTargetType.CurrentEnemyTarget,
+                ScaleRangedHeroDistance(6.133333f),
+                0f,
+                0f,
+                6f,
+                1,
+                overwriteExistingContent,
+                out var existedBefore);
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.skillType = SkillType.AreaDamage;
+            skill.targetType = SkillTargetType.CurrentEnemyTarget;
+            skill.fallbackTargetType = SkillTargetType.DensestEnemyArea;
+            skill.castRange = ScaleRangedHeroDistance(6.133333f);
+            skill.areaRadius = 0f;
+            skill.cooldownSeconds = 6f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+
+            AddReturningPathStrikeEffect(
+                skill,
+                1.6f,
+                ScaleRangedHeroDistance(7f),
+                ScaleRangedHeroDistance(1f),
+                0f,
+                0.4f,
+                ReturningPathStrikePhase.Outbound);
+            AddReturningPathStrikeEffect(
+                skill,
+                1.2f,
+                ScaleRangedHeroDistance(7f),
+                ScaleRangedHeroDistance(1f),
+                0.5f,
+                0.4f,
+                ReturningPathStrikePhase.Return);
+
+            skill.description = "Stage-01 demo skill: throws a fixed-direction wheel that damages once on the outbound path and once again on the return path.";
+            ResetActionSequence(skill);
+            ResetUltimateDecision(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateBoomerangerUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
+        {
+            var skill = CreateSkill(
+                "skill_boomeranger_ultimate_wheelstorm",
+                "Wheelstorm",
+                SkillSlotType.Ultimate,
+                SkillType.AreaDamage,
+                SkillTargetType.Self,
+                0f,
+                5f,
+                0f,
+                0f,
+                1,
+                overwriteExistingContent,
+                out existedBefore);
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.skillType = SkillType.AreaDamage;
+            skill.targetType = SkillTargetType.Self;
+            skill.fallbackTargetType = SkillTargetType.None;
+            skill.castRange = 0f;
+            skill.areaRadius = 5f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = true;
+            skill.effects.Clear();
+            AddPersistentAreaEffect(skill, PersistentAreaPulseEffectType.DirectDamage, PersistentAreaTargetType.Enemies, 1.2f, skill.areaRadius, 4.8f, 0.4f, true);
+            skill.description = "Stage-01 demo skill: creates a short-range rotating wheel storm around the caster that repeatedly cuts nearby enemies.";
             ResetActionSequence(skill);
             ResetUltimateDecision(skill);
             EditorUtility.SetDirty(skill);
@@ -2602,6 +2716,30 @@ namespace Fight.Editor
             return effect;
         }
 
+        private static SkillEffectData AddReturningPathStrikeEffect(
+            SkillData skill,
+            float powerMultiplier,
+            float maxDistance,
+            float pathWidth,
+            float delaySeconds,
+            float durationSeconds,
+            ReturningPathStrikePhase phase)
+        {
+            var effect = new SkillEffectData
+            {
+                effectType = SkillEffectType.CreateReturningPathStrike,
+                powerMultiplier = powerMultiplier,
+                durationSeconds = durationSeconds,
+                persistentAreaTargetType = PersistentAreaTargetType.Enemies,
+                returningPathStrikePhase = phase,
+                returningPathMaxDistance = maxDistance,
+                returningPathWidth = pathWidth,
+                returningPathDelaySeconds = delaySeconds,
+            };
+            skill.effects.Add(effect);
+            return effect;
+        }
+
         private static SkillEffectData AddDeployableProxyEffect(
             SkillData skill,
             float powerMultiplier,
@@ -2932,6 +3070,46 @@ namespace Fight.Editor
             hero.basicAttack.onHitStatusEffects.Clear();
             hero.basicAttack.onHitStatusEffects.Add(CreateVenomshooterPoisonStatus());
             hero.debugNotes = "Stage-01 demo hero for Marksman. Venomshooter validates same-source poison stack pooling, cross-source poison-theme reading, and chained on-kill area follow-up effects.";
+            EditorUtility.SetDirty(hero);
+        }
+
+        private static void ConfigureBoomerangerBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (hero == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return;
+            }
+
+            hero.basicAttack.damageMultiplier = 0.85f;
+            hero.basicAttack.attackInterval = 0.95f;
+            hero.basicAttack.rangeOverride = ScaleRangedHeroDistance(5.4666667f);
+            hero.basicAttack.usesProjectile = true;
+            hero.basicAttack.projectileSpeed = 15f;
+            hero.basicAttack.effectType = BasicAttackEffectType.Damage;
+            hero.basicAttack.targetType = BasicAttackTargetType.NearestEnemy;
+            hero.basicAttack.targetPrioritySearchRadius = 0f;
+            EnsureBasicAttackStatusList(hero.basicAttack);
+            hero.basicAttack.onHitStatusEffects.Clear();
+            hero.basicAttack.variants.Clear();
+            hero.basicAttack.bounce.maxAdditionalTargets = 3;
+            hero.basicAttack.bounce.searchRadius = ScaleRangedHeroDistance(2.1333333f);
+            hero.basicAttack.bounce.powerMultiplier = 0.48f;
+            hero.basicAttack.bounce.bounceVariantKey = "bounce";
+
+            hero.visualConfig ??= new HeroVisualConfig();
+            hero.visualConfig.projectilePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(LongshotProjectilePrefabPath);
+            hero.visualConfig.projectileAlignToMovement = true;
+            hero.visualConfig.projectileEulerAngles = Vector3.zero;
+            hero.visualConfig.basicAttackVariantVisuals = new[]
+            {
+                new BasicAttackVariantVisualConfig
+                {
+                    variantKey = "bounce",
+                    projectilePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(LongshotProjectilePrefabPath),
+                    hitVfxPrefab = null,
+                },
+            };
+            hero.debugNotes = "Stage-01 demo hero for Marksman. Boomeranger validates short-range projectile bounce chains, fixed-direction returning path damage, and self-following close-range area pressure.";
             EditorUtility.SetDirty(hero);
         }
 
@@ -3721,6 +3899,34 @@ namespace Fight.Editor
             return skill;
         }
 
+        private static SkillData ConfigureBoomerangerUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.skillType = SkillType.AreaDamage;
+            skill.targetType = SkillTargetType.Self;
+            skill.fallbackTargetType = SkillTargetType.None;
+            skill.castRange = 0f;
+            skill.areaRadius = 5f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = true;
+
+            ResetUltimateDecision(skill);
+            skill.ultimateDecision.targetingType = UltimateTargetingType.Self;
+            skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;
+            skill.ultimateDecision.primaryCondition.searchRadius = 5f;
+            skill.ultimateDecision.primaryCondition.requiredUnitCount = 2;
+            skill.ultimateDecision.combineMode = UltimateConditionCombineMode.PrimaryOnly;
+            skill.ultimateDecision.fallback.fallbackType = UltimateFallbackType.LowerPrimaryThreshold;
+            skill.ultimateDecision.fallback.triggerAfterSeconds = 45f;
+            skill.ultimateDecision.fallback.overrideRequiredUnitCount = 1;
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
         private static SkillData CreateWindchimeUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
         {
             var skill = CreateSkill(
@@ -4467,6 +4673,11 @@ namespace Fight.Editor
             {
                 basicAttack.variants = new List<BasicAttackVariantData>();
             }
+
+            if (basicAttack.bounce == null)
+            {
+                basicAttack.bounce = new BasicAttackBounceData();
+            }
         }
 
         private static BattleInputConfig CreateBattleInput(
@@ -4665,6 +4876,8 @@ namespace Fight.Editor
                 "skill_rifleman_ultimate_fraggrenade" => "marksman_002_rifleman",
                 "skill_venomshooter_active_poisonmist" => "marksman_003_venomshooter",
                 "skill_venomshooter_ultimate_venomdetonation" => "marksman_003_venomshooter",
+                "skill_boomeranger_active_returningwheel" => "marksman_004_boomeranger",
+                "skill_boomeranger_ultimate_wheelstorm" => "marksman_004_boomeranger",
                 "skill_sandemperor_active_raisesandguard" => "mage_003_sandemperor",
                 "skill_sandemperor_ultimate_imperialencirclement" => "mage_003_sandemperor",
                 "skill_berserker_active_bloodfury" => "warrior_003_berserker",

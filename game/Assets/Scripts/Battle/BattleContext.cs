@@ -102,6 +102,7 @@ namespace Fight.Battle
             Projectiles = new List<RuntimeBasicAttackProjectile>();
             SkillAreas = new List<RuntimeSkillArea>();
             RadialSweeps = new List<RuntimeRadialSweep>();
+            ReturningPathStrikes = new List<RuntimeReturningPathStrike>();
             DeployableProxies = new List<RuntimeDeployableProxy>();
             DelayedSkillEffects = new List<RuntimeDelayedSkillEffect>();
             ReactiveGuards = new List<RuntimeReactiveGuard>();
@@ -124,6 +125,8 @@ namespace Fight.Battle
         public List<RuntimeSkillArea> SkillAreas { get; }
 
         public List<RuntimeRadialSweep> RadialSweeps { get; }
+
+        public List<RuntimeReturningPathStrike> ReturningPathStrikes { get; }
 
         public List<RuntimeDeployableProxy> DeployableProxies { get; }
 

@@ -14,6 +14,10 @@ namespace Fight.Battle
             float targetPrioritySearchRadius,
             bool usesProjectile,
             float projectileSpeed,
+            int maxAdditionalBounceTargets,
+            float bounceSearchRadius,
+            float bouncePowerMultiplier,
+            string bounceVariantKey,
             IReadOnlyList<StatusEffectData> onHitStatusEffects,
             Vector3 launchPosition,
             bool advanceSequenceOnUse)
@@ -25,6 +29,10 @@ namespace Fight.Battle
             TargetPrioritySearchRadius = Mathf.Max(0f, targetPrioritySearchRadius);
             UsesProjectile = usesProjectile;
             ProjectileSpeed = Mathf.Max(0f, projectileSpeed);
+            MaxAdditionalBounceTargets = Mathf.Max(0, maxAdditionalBounceTargets);
+            BounceSearchRadius = Mathf.Max(0f, bounceSearchRadius);
+            BouncePowerMultiplier = Mathf.Max(0f, bouncePowerMultiplier);
+            BounceVariantKey = bounceVariantKey ?? string.Empty;
             OnHitStatusEffects = onHitStatusEffects ?? System.Array.Empty<StatusEffectData>();
             LaunchPosition = launchPosition;
             AdvanceSequenceOnUse = advanceSequenceOnUse;
@@ -43,6 +51,16 @@ namespace Fight.Battle
         public bool UsesProjectile { get; }
 
         public float ProjectileSpeed { get; }
+
+        public int MaxAdditionalBounceTargets { get; }
+
+        public float BounceSearchRadius { get; }
+
+        public float BouncePowerMultiplier { get; }
+
+        public string BounceVariantKey { get; }
+
+        public bool HasBounce => MaxAdditionalBounceTargets > 0 && BounceSearchRadius > Mathf.Epsilon && BouncePowerMultiplier > Mathf.Epsilon;
 
         public IReadOnlyList<StatusEffectData> OnHitStatusEffects { get; }
 

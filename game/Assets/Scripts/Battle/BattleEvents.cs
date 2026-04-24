@@ -91,6 +91,37 @@ namespace Fight.Battle
         public RuntimeBasicAttackProjectile Projectile { get; }
     }
 
+    public sealed class BasicAttackBounceChainResolvedEvent : IBattleEvent
+    {
+        public BasicAttackBounceChainResolvedEvent(
+            RuntimeHero attacker,
+            string chainId,
+            int bounceHitCount,
+            int totalHitCount,
+            RuntimeHero firstTarget,
+            RuntimeHero lastTarget)
+        {
+            Attacker = attacker;
+            ChainId = chainId ?? string.Empty;
+            BounceHitCount = bounceHitCount;
+            TotalHitCount = totalHitCount;
+            FirstTarget = firstTarget;
+            LastTarget = lastTarget;
+        }
+
+        public RuntimeHero Attacker { get; }
+
+        public string ChainId { get; }
+
+        public int BounceHitCount { get; }
+
+        public int TotalHitCount { get; }
+
+        public RuntimeHero FirstTarget { get; }
+
+        public RuntimeHero LastTarget { get; }
+    }
+
     public sealed class SkillCastEvent : IBattleEvent
     {
         public SkillCastEvent(RuntimeHero caster, SkillData skill, RuntimeHero primaryTarget, int affectedTargetCount)
@@ -263,6 +294,88 @@ namespace Fight.Battle
         public Vector3 Center { get; }
 
         public float MaxRadius { get; }
+
+        public int HitCount { get; }
+    }
+
+    public sealed class ReturningPathStrikeQueuedEvent : IBattleEvent
+    {
+        public ReturningPathStrikeQueuedEvent(
+            RuntimeHero caster,
+            SkillData skill,
+            string strikeId,
+            ReturningPathStrikePhase phase,
+            Vector3 startPosition,
+            Vector3 endPosition,
+            float pathWidth,
+            float delaySeconds,
+            float travelDurationSeconds)
+        {
+            Caster = caster;
+            Skill = skill;
+            StrikeId = strikeId ?? string.Empty;
+            Phase = phase;
+            StartPosition = startPosition;
+            EndPosition = endPosition;
+            PathWidth = pathWidth;
+            DelaySeconds = delaySeconds;
+            TravelDurationSeconds = travelDurationSeconds;
+        }
+
+        public RuntimeHero Caster { get; }
+
+        public SkillData Skill { get; }
+
+        public string StrikeId { get; }
+
+        public ReturningPathStrikePhase Phase { get; }
+
+        public Vector3 StartPosition { get; }
+
+        public Vector3 EndPosition { get; }
+
+        public float PathWidth { get; }
+
+        public float DelaySeconds { get; }
+
+        public float TravelDurationSeconds { get; }
+    }
+
+    public sealed class ReturningPathStrikeResolvedEvent : IBattleEvent
+    {
+        public ReturningPathStrikeResolvedEvent(
+            RuntimeHero caster,
+            SkillData skill,
+            string strikeId,
+            ReturningPathStrikePhase phase,
+            Vector3 startPosition,
+            Vector3 endPosition,
+            float pathWidth,
+            int hitCount)
+        {
+            Caster = caster;
+            Skill = skill;
+            StrikeId = strikeId ?? string.Empty;
+            Phase = phase;
+            StartPosition = startPosition;
+            EndPosition = endPosition;
+            PathWidth = pathWidth;
+            HitCount = hitCount;
+        }
+
+        public RuntimeHero Caster { get; }
+
+        public SkillData Skill { get; }
+
+        public string StrikeId { get; }
+
+        public ReturningPathStrikePhase Phase { get; }
+
+        public Vector3 StartPosition { get; }
+
+        public Vector3 EndPosition { get; }
+
+        public float PathWidth { get; }
 
         public int HitCount { get; }
     }
