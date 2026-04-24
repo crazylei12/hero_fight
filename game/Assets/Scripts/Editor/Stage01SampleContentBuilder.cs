@@ -42,6 +42,9 @@ namespace Fight.Editor
         private const string ShrinemaidenHeroAssetPath = HeroesRootFolder + "/support_004_shrinemaiden/Shrinemaiden.asset";
         private const string ShrinemaidenActiveSkillAssetPath = SkillsRootFolder + "/support_004_shrinemaiden/Prayer Bloom.asset";
         private const string ShrinemaidenUltimateSkillAssetPath = SkillsRootFolder + "/support_004_shrinemaiden/Twin Rite Totem.asset";
+        private const string ChefHeroAssetPath = HeroesRootFolder + "/support_005_chef/Chef.asset";
+        private const string ChefActiveSkillAssetPath = SkillsRootFolder + "/support_005_chef/Daily Special.asset";
+        private const string ChefUltimateSkillAssetPath = SkillsRootFolder + "/support_005_chef/Grand Feast.asset";
         private const string SandemperorHeroAssetPath = HeroesRootFolder + "/mage_003_sandemperor/Sandemperor.asset";
         private const string SandemperorActiveSkillAssetPath = SkillsRootFolder + "/mage_003_sandemperor/Raise Sandguard.asset";
         private const string SandemperorUltimateSkillAssetPath = SkillsRootFolder + "/mage_003_sandemperor/Imperial Encirclement.asset";
@@ -478,6 +481,12 @@ namespace Fight.Editor
             ConfigureShrinemaidenBasicAttack(shrinemaiden, overwriteExistingContent, shrinemaidenHeroExisted);
             EnsureHeroSkillReferences(shrinemaiden, shrinemaidenActive, shrinemaidenUltimateSkill);
             EnsureHeroBattlePrefabReference(shrinemaiden, LoadBattlePrefab("support_004_shrinemaiden", HeroClass.Support));
+
+            var chef = AssetDatabase.LoadAssetAtPath<HeroDefinition>(ChefHeroAssetPath);
+            var chefActive = AssetDatabase.LoadAssetAtPath<SkillData>(ChefActiveSkillAssetPath);
+            var chefUltimateSkill = AssetDatabase.LoadAssetAtPath<SkillData>(ChefUltimateSkillAssetPath);
+            EnsureHeroSkillReferences(chef, chefActive, chefUltimateSkill);
+            EnsureHeroBattlePrefabReference(chef, LoadBattlePrefab("support_005_chef", HeroClass.Support));
 
             var marksmanActive = CreateLongshotActiveSkill(overwriteExistingContent);
             var marksmanUltimateSkill = CreateLongshotUltimateSkill(overwriteExistingContent, out var marksmanUltimateExisted);
