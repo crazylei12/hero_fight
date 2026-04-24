@@ -147,6 +147,9 @@ namespace Fight.Battle
                 case DeployableProxyRemovedEvent deployableProxyRemoved:
                     AddLog(FormatDeployableProxyRemovedLog(deployableProxyRemoved));
                     break;
+                case DeployableProxyPulseEvent deployableProxyPulse:
+                    AddLog(FormatDeployableProxyPulseLog(deployableProxyPulse));
+                    break;
                 case UnitDiedEvent died:
                     AddLog($"{FormatHeroLabel(died.Victim)} was killed by {FormatHeroLabel(died.Killer)}.");
                     break;
@@ -278,6 +281,17 @@ namespace Fight.Battle
             }
 
             return $"{FormatHeroLabel(proxy.Owner)} lost deployable proxy {proxy.ProxyId} due to {deployableProxyRemoved.Reason}.";
+        }
+
+        private static string FormatDeployableProxyPulseLog(DeployableProxyPulseEvent deployableProxyPulse)
+        {
+            var proxy = deployableProxyPulse?.Proxy;
+            if (proxy == null)
+            {
+                return "Deployable proxy pulsed.";
+            }
+
+            return $"{FormatHeroLabel(proxy.Owner)} triggered deployable proxy {proxy.ProxyId} pulse at ({proxy.CurrentPosition.x:0.0}, {proxy.CurrentPosition.z:0.0}) affecting {deployableProxyPulse.AffectedTargetCount} target(s).";
         }
 
         private static string FormatStatusLog(StatusAppliedEvent statusApplied)

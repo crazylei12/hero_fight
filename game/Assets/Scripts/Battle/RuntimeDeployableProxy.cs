@@ -22,8 +22,8 @@ namespace Fight.Battle
             ProxyId = $"deployable_proxy_{spawnSequence:D4}";
             TotalDurationSeconds = Mathf.Max(0f, sourceEffect != null ? sourceEffect.durationSeconds : 0f);
             RemainingDurationSeconds = TotalDurationSeconds;
-            RemainingAttackCooldownSeconds = 0f;
             CurrentBasicAttackVariantIndex = GetClampedStartingVariantIndex();
+            RemainingAttackCooldownSeconds = GetInitialPeriodicTriggerCooldownSeconds();
         }
 
         public string ProxyId { get; }
@@ -88,15 +88,12 @@ namespace Fight.Battle
 
         public bool TryConsumeReadyAttack()
         {
-            if (TriggerMode != DeployableProxyTriggerMode.PeriodicBasicAttackSequence
-                || AttackIntervalSeconds <= Mathf.Epsilon
-                || RemainingAttackCooldownSeconds > Mathf.Epsilon)
-            {
-                return false;
-            }
+            return TryConsumeReadyPeriodicTrigger(DeployableProxyTriggerMode.PeriodicBasicAttackSequence);
+        }
 
-            RemainingAttackCooldownSeconds = AttackIntervalSeconds;
-            return true;
+        public bool TryConsumeReadyEffectPulse()
+        {
+            return TryConsumeReadyPeriodicTrigger(DeployableProxyTriggerMode.PeriodicEffectPulse);
         }
 
         public int GetClampedBasicAttackVariantIndex()
@@ -132,6 +129,27 @@ namespace Fight.Battle
 
             var configuredIndex = SourceEffect != null ? SourceEffect.deployableProxyStartingVariantIndex : 0;
             return Mathf.Clamp(configuredIndex, 0, variants.Count - 1);
+        }
+
+        private bool TryConsumeReadyPeriodicTrigger(DeployableProxyTriggerMode requiredMode)
+        {
+            if (TriggerMode != requiredMode
+                || AttackIntervalSeconds <= Mathf.Epsilon
+                || RemainingAttackCooldownSeconds > Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            RemainingAttackCooldownSeconds = AttackIntervalSeconds;
+            return true;
+        }
+
+        private float GetInitialPeriodicTriggerCooldownSeconds()
+        {
+            return TriggerMode == DeployableProxyTriggerMode.PeriodicBasicAttackSequence
+                || TriggerMode == DeployableProxyTriggerMode.PeriodicEffectPulse
+                ? AttackIntervalSeconds
+                : 0f;
         }
     }
 }

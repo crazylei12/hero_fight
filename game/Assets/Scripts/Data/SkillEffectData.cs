@@ -42,6 +42,7 @@ namespace Fight.Data
         None = 0,
         OnOwnerBasicAttack = 1,
         PeriodicBasicAttackSequence = 2,
+        PeriodicEffectPulse = 3,
     }
 
     public enum SkillEffectTargetMode

@@ -28,6 +28,7 @@ namespace Fight.Battle
 
                 proxy.Tick(deltaTime);
                 TryFirePeriodicProxyAttack(context, proxy, battleCallbacks);
+                TryFirePeriodicProxyEffectPulse(context, proxy);
                 if (proxy.IsExpired)
                 {
                     context.EventBus?.Publish(new DeployableProxyRemovedEvent(proxy, DeployableProxyRemovalReason.Expired));
@@ -359,6 +360,89 @@ namespace Fight.Battle
             }
 
             BattleBasicAttackSystem.FireProxyAttack(context, proxy, target, resolvedAttack, battleCallbacks);
+        }
+
+        private static void TryFirePeriodicProxyEffectPulse(BattleContext context, RuntimeDeployableProxy proxy)
+        {
+            if (context == null
+                || proxy == null
+                || proxy.IsExpired
+                || proxy.Owner == null
+                || proxy.Owner.IsDead
+                || proxy.SourceEffect == null
+                || !proxy.TryConsumeReadyEffectPulse())
+            {
+                return;
+            }
+
+            var targets = CollectPulseTargets(context, proxy);
+            context.EventBus?.Publish(new DeployableProxyPulseEvent(proxy, targets.Count));
+            if (targets.Count <= 0)
+            {
+                return;
+            }
+
+            BattleForcedMovementUtility.ApplyForcedMovementToTargets(
+                context,
+                proxy.Owner,
+                proxy.CurrentPosition,
+                proxy.SourceSkill,
+                proxy.SourceEffect,
+                targets);
+        }
+
+        private static List<RuntimeHero> CollectPulseTargets(BattleContext context, RuntimeDeployableProxy proxy)
+        {
+            var results = new List<RuntimeHero>();
+            if (context?.Heroes == null || proxy?.Owner == null)
+            {
+                return results;
+            }
+
+            var radius = proxy.StrikeRadius;
+            if (radius <= Mathf.Epsilon)
+            {
+                return results;
+            }
+
+            var targetType = proxy.SourceEffect != null
+                ? proxy.SourceEffect.persistentAreaTargetType
+                : PersistentAreaTargetType.Enemies;
+            for (var i = 0; i < context.Heroes.Count; i++)
+            {
+                var candidate = context.Heroes[i];
+                if (!IsValidPulseTarget(proxy.Owner, candidate, targetType))
+                {
+                    continue;
+                }
+
+                if (Vector3.Distance(proxy.CurrentPosition, candidate.CurrentPosition) <= radius)
+                {
+                    results.Add(candidate);
+                }
+            }
+
+            return results;
+        }
+
+        private static bool IsValidPulseTarget(RuntimeHero owner, RuntimeHero target, PersistentAreaTargetType targetType)
+        {
+            if (owner == null || target == null || target.IsDead)
+            {
+                return false;
+            }
+
+            if (target != owner && !target.CanBeDirectTargeted)
+            {
+                return false;
+            }
+
+            return targetType switch
+            {
+                PersistentAreaTargetType.Allies => target.Side == owner.Side,
+                PersistentAreaTargetType.Both => true,
+                _ => target.Side != owner.Side,
+            };
         }
     }
 }
