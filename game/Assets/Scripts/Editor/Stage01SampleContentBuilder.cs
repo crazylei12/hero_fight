@@ -199,6 +199,22 @@ namespace Fight.Editor
             EnsureHeroSkillReferences(berserker, berserkerActive, berserkerUltimate);
             EnsureHeroBattlePrefabReference(berserker, LoadBattlePrefab("warrior_003_berserker", HeroClass.Warrior));
 
+            var spellbladeActive = CreateSpellbladeActiveSkill(overwriteExistingContent);
+            var spellbladeUltimate = CreateSpellbladeUltimateSkill(overwriteExistingContent, out var spellbladeUltimateExisted);
+            var spellblade = CreateHero(
+                "warrior_004_spellblade",
+                "Spellblade",
+                HeroClass.Warrior,
+                425f, 43f, 21f, 1f / 1.04f, 4.4f, 0.10f, 1.6f, 1.8f,
+                spellbladeActive,
+                ConfigureSpellbladeUltimate(spellbladeUltimate, overwriteExistingContent, spellbladeUltimateExisted),
+                overwriteExistingContent,
+                out var spellbladeHeroExisted,
+                HeroTag.Melee, HeroTag.AreaDamage, HeroTag.SustainedDamage);
+            ConfigureSpellbladeBasicAttack(spellblade, overwriteExistingContent, spellbladeHeroExisted);
+            EnsureHeroSkillReferences(spellblade, spellbladeActive, spellbladeUltimate);
+            EnsureHeroBattlePrefabReference(spellblade, LoadBattlePrefab("warrior_004_spellblade", HeroClass.Warrior));
+
             var mageUltimateSkill = CreateSkill("skill_mage_ultimate_meteor", "Meteor Fall", SkillSlotType.Ultimate, SkillType.AreaDamage, SkillTargetType.Self, 0f, ScaleRangedHeroDistance(6f), 3.3f, 0f, 3, overwriteExistingContent, out var mageUltimateExisted);
 
             var mage = CreateHero(
@@ -527,7 +543,7 @@ namespace Fight.Editor
             EnsureHeroSkillReferences(boomeranger, boomerangerActive, boomerangerUltimateSkill);
             EnsureHeroBattlePrefabReference(boomeranger, LoadBattlePrefab("marksman_004_boomeranger", HeroClass.Marksman));
 
-            CreateHeroCatalog(warrior, bladesman, berserker, mage, frostmage, sandemperor, lightningmage, assassin, tidefin, butcher, loner, tank, shieldwarden, tidehunter, mundo, support, windchime, monk, shrinemaiden, marksman, rifleman, venomshooter, boomeranger);
+            CreateHeroCatalog(warrior, bladesman, berserker, spellblade, mage, frostmage, sandemperor, lightningmage, assassin, tidefin, butcher, loner, tank, shieldwarden, tidehunter, mundo, support, windchime, monk, shrinemaiden, chef, marksman, rifleman, venomshooter, boomeranger);
 
             var battleInput = CreateBattleInput(
                 "Stage01DemoBattleInput",
@@ -2710,6 +2726,135 @@ namespace Fight.Editor
             skill.description = "Stage-01 demo skill: enter a short frenzy with bonus damage, attack speed, move speed, defense, guaranteed lifesteal, visual growth, and a red rage tint.";
         }
 
+        private static SkillData CreateSpellbladeActiveSkill(bool overwriteExistingContent)
+        {
+            var skill = CreateSkill(
+                "skill_spellblade_active_riftwave",
+                "裂空剑气",
+                SkillSlotType.ActiveSkill,
+                SkillType.AreaDamage,
+                SkillTargetType.CurrentEnemyTarget,
+                4.8f,
+                0f,
+                0f,
+                6.5f,
+                1,
+                overwriteExistingContent,
+                out var existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.skillType = SkillType.AreaDamage;
+            skill.targetType = SkillTargetType.CurrentEnemyTarget;
+            skill.fallbackTargetType = SkillTargetType.NearestEnemy;
+            skill.castRange = 4.8f;
+            skill.areaRadius = 0f;
+            skill.cooldownSeconds = 6.5f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+
+            AddReturningPathStrikeEffect(
+                skill,
+                powerMultiplier: 1.25f,
+                maxDistance: 7.2f,
+                pathWidth: 2.2f,
+                delaySeconds: 0f,
+                durationSeconds: 0f,
+                phase: ReturningPathStrikePhase.Outbound);
+
+            skill.description = "Stage-01 demo skill: fire a straight sword wave along the current target direction and damage every enemy on that line once.";
+            ResetUltimateDecision(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateSpellbladeUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
+        {
+            var skill = CreateSkill(
+                "skill_spellblade_ultimate_boundblade",
+                "缚阵魔剑",
+                SkillSlotType.Ultimate,
+                SkillType.Buff,
+                SkillTargetType.Self,
+                0f,
+                8.5f,
+                0f,
+                0f,
+                1,
+                overwriteExistingContent,
+                out existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            ApplySpellbladeUltimateBaseConfiguration(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData ConfigureSpellbladeUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            ApplySpellbladeUltimateBaseConfiguration(skill);
+
+            ResetUltimateDecision(skill);
+            skill.ultimateDecision.targetingType = UltimateTargetingType.Self;
+            skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;
+            skill.ultimateDecision.primaryCondition.searchRadius = 8.5f;
+            skill.ultimateDecision.primaryCondition.requiredUnitCount = 3;
+            skill.ultimateDecision.secondaryCondition.conditionType = UltimateConditionType.None;
+            skill.ultimateDecision.combineMode = UltimateConditionCombineMode.PrimaryOnly;
+            ApplyCountFallback(skill, 45f, 2, 0f, 0);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static void ApplySpellbladeUltimateBaseConfiguration(SkillData skill)
+        {
+            skill.activationMode = SkillActivationMode.Active;
+            skill.skillType = SkillType.Buff;
+            skill.targetType = SkillTargetType.Self;
+            skill.fallbackTargetType = SkillTargetType.None;
+            skill.castRange = 0f;
+            skill.areaRadius = 8.5f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = true;
+            skill.effects.Clear();
+            ResetPassiveSkillData(skill);
+            ResetTemporaryOverride(skill);
+
+            var deployableEffect = AddDeployableProxyEffect(
+                skill,
+                powerMultiplier: 0f,
+                strikeRadius: 8.5f,
+                durationSeconds: 4f,
+                maxCount: 1,
+                spawnMode: DeployableProxySpawnMode.AtTargetPosition,
+                spawnOffsetDistance: 0f,
+                triggerMode: DeployableProxyTriggerMode.PeriodicEffectPulse,
+                replaceOldestWhenLimitReached: true,
+                immediateStrikeOnSpawn: false);
+            deployableEffect.targetMode = SkillEffectTargetMode.PrimaryTarget;
+            deployableEffect.persistentAreaTargetType = PersistentAreaTargetType.Enemies;
+            deployableEffect.deployableProxyAttackIntervalSeconds = 1f;
+            deployableEffect.forcedMovementDirection = ForcedMovementDirectionMode.TowardSource;
+            deployableEffect.forcedMovementDistance = 1.8f;
+            deployableEffect.forcedMovementDurationSeconds = 0.28f;
+            deployableEffect.forcedMovementPeakHeight = 0f;
+
+            skill.description = "Stage-01 demo skill: leave a fixed cursed sword at the current fight point that pulses every second and drags nearby enemies inward.";
+        }
+
         private static void AddDefaultEffectsForSkill(SkillData skill, float powerMultiplier)
         {
             switch (skill.skillType)
@@ -3181,6 +3326,26 @@ namespace Fight.Editor
             EnsureBasicAttackStatusList(hero.basicAttack);
             hero.basicAttack.onHitStatusEffects.Clear();
             hero.debugNotes = "Stage-01 demo hero for Warrior. Bladesman validates pre-damage defense shred and fixed-distance line-breaking dash damage.";
+            EditorUtility.SetDirty(hero);
+        }
+
+        private static void ConfigureSpellbladeBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (hero == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return;
+            }
+
+            hero.basicAttack.damageMultiplier = 1.05f;
+            hero.basicAttack.attackInterval = 1.04f;
+            hero.basicAttack.rangeOverride = 1.8f;
+            hero.basicAttack.usesProjectile = false;
+            hero.basicAttack.projectileSpeed = 0f;
+            hero.basicAttack.effectType = BasicAttackEffectType.Damage;
+            hero.basicAttack.targetType = BasicAttackTargetType.NearestEnemy;
+            EnsureBasicAttackStatusList(hero.basicAttack);
+            hero.basicAttack.onHitStatusEffects.Clear();
+            hero.debugNotes = "Stage-01 demo hero for Warrior. Spellblade validates current-target line strikes and periodic proxy pulses that compress enemy formation toward a fixed anchor.";
             EditorUtility.SetDirty(hero);
         }
 
@@ -5218,6 +5383,8 @@ namespace Fight.Editor
             {
                 "skill_bladesman_active_rendingslash" => "Rending Slash",
                 "skill_bladesman_ultimate_flyingswallowsever" => "Flying Swallow Sever",
+                "skill_spellblade_active_riftwave" => "Rift Wave",
+                "skill_spellblade_ultimate_boundblade" => "Bound Blade",
                 "skill_tank_active_shieldbash" => "Shield Bash",
                 "skill_tank_ultimate_ironoath" => "Ground Lock",
                 _ => null,
@@ -5277,6 +5444,8 @@ namespace Fight.Editor
                 "skill_lightningmage_ultimate_stormverdict" => "mage_004_lightningmage",
                 "skill_berserker_active_bloodfury" => "warrior_003_berserker",
                 "skill_berserker_ultimate_titanrage" => "warrior_003_berserker",
+                "skill_spellblade_active_riftwave" => "warrior_004_spellblade",
+                "skill_spellblade_ultimate_boundblade" => "warrior_004_spellblade",
                 "skill_tidehunter_active_undertowcarapace" => "tank_003_tidehunter",
                 "skill_tidehunter_ultimate_tidalrebound" => "tank_003_tidehunter",
                 "skill_mundo_active_brutemetabolism" => "tank_004_mundo",

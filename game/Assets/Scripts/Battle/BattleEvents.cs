@@ -866,6 +866,19 @@ namespace Fight.Battle
         public DeployableProxyRemovalReason Reason { get; }
     }
 
+    public sealed class DeployableProxyPulseEvent : IBattleEvent
+    {
+        public DeployableProxyPulseEvent(RuntimeDeployableProxy proxy, int affectedTargetCount)
+        {
+            Proxy = proxy;
+            AffectedTargetCount = Mathf.Max(0, affectedTargetCount);
+        }
+
+        public RuntimeDeployableProxy Proxy { get; }
+
+        public int AffectedTargetCount { get; }
+    }
+
     public sealed class BattleEndedEvent : IBattleEvent
     {
         public BattleEndedEvent(BattleResultData result)
