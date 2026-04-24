@@ -10,5 +10,6 @@ namespace Fight.Data
         ApplyForcedMovement = 5,
         CreateDeployableProxy = 6,
         CreateRadialSweep = 7,
+        CreateReturningPathStrike = 8,
     }
 }

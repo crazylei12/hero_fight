@@ -30,6 +30,15 @@ namespace Fight.Data
     }
 
     [Serializable]
+    public class BasicAttackBounceData
+    {
+        [Min(0)] public int maxAdditionalTargets = 0;
+        [Min(0f)] public float searchRadius = 0f;
+        [Min(0f)] public float powerMultiplier = 0f;
+        public string bounceVariantKey = string.Empty;
+    }
+
+    [Serializable]
     public class BasicAttackData
     {
         [Min(0.1f)] public float damageMultiplier = 1f;
@@ -42,6 +51,7 @@ namespace Fight.Data
         public BasicAttackTargetType targetType = BasicAttackTargetType.NearestEnemy;
         [Min(0f)] public float targetPrioritySearchRadius = 0f;
         [Min(0)] public int startingVariantIndex = 0;
+        public BasicAttackBounceData bounce = new BasicAttackBounceData();
         public List<StatusEffectData> onHitStatusEffects = new List<StatusEffectData>();
         public List<BasicAttackVariantData> variants = new List<BasicAttackVariantData>();
     }

@@ -62,6 +62,9 @@ namespace Fight.Battle
                 case BasicAttackProjectileLaunchedEvent projectileLaunched:
                     AddLog(FormatBasicAttackProjectileLog(projectileLaunched.Projectile));
                     break;
+                case BasicAttackBounceChainResolvedEvent bounceResolved:
+                    AddLog(FormatBasicAttackBounceResolvedLog(bounceResolved));
+                    break;
                 case SkillCastEvent skillCast:
                     AddLog($"{FormatHeroLabel(skillCast.Caster)} started casting {skillCast.Skill.displayName} on {FormatHeroLabel(skillCast.PrimaryTarget, "area")} ({skillCast.AffectedTargetCount} target(s)).");
                     TryAddBlueWarriorSkillCast(skillCast);
@@ -81,6 +84,9 @@ namespace Fight.Battle
                     break;
                 case RadialSweepResolvedEvent radialSweepResolved:
                     AddLog(FormatRadialSweepResolvedLog(radialSweepResolved));
+                    break;
+                case ReturningPathStrikeResolvedEvent returningPathResolved:
+                    AddLog(FormatReturningPathStrikeResolvedLog(returningPathResolved));
                     break;
                 case DamageAppliedEvent damageApplied:
                     AddLog(FormatDamageLog(damageApplied));
@@ -214,7 +220,20 @@ namespace Fight.Battle
             var proxySuffix = projectile.SourceProxy != null
                 ? $" from proxy {projectile.SourceProxy.ProxyId}"
                 : string.Empty;
-            return $"{FormatHeroLabel(projectile.Attacker)} fired [{FormatBasicAttackVariantLabel(projectile.VariantKey)}] projectile at {FormatHeroLabel(projectile.Target)}{proxySuffix}.";
+            var bounceSuffix = projectile.BounceHopIndex > 0
+                ? $" bounceHop={projectile.BounceHopIndex} chain={projectile.BounceChain?.ChainId ?? "none"}"
+                : string.Empty;
+            return $"{FormatHeroLabel(projectile.Attacker)} fired [{FormatBasicAttackVariantLabel(projectile.VariantKey)}] projectile at {FormatHeroLabel(projectile.Target)}{proxySuffix}{bounceSuffix}.";
+        }
+
+        private static string FormatBasicAttackBounceResolvedLog(BasicAttackBounceChainResolvedEvent bounceResolved)
+        {
+            if (bounceResolved == null)
+            {
+                return "Basic-attack bounce chain resolved.";
+            }
+
+            return $"{FormatHeroLabel(bounceResolved.Attacker, "Unknown")} resolved bounce chain {bounceResolved.ChainId}, bounce hits {bounceResolved.BounceHitCount}, total hits {bounceResolved.TotalHitCount}, first={FormatHeroLabel(bounceResolved.FirstTarget)}, last={FormatHeroLabel(bounceResolved.LastTarget)}.";
         }
 
         private static string FormatDeployableProxySpawnedLog(DeployableProxySpawnedEvent deployableProxySpawned)
@@ -313,6 +332,19 @@ namespace Fight.Battle
             var skillName = radialSweepResolved.Skill != null ? radialSweepResolved.Skill.displayName : "Radial Sweep";
             var phaseLabel = radialSweepResolved.Direction == RadialSweepDirectionMode.Inward ? "inward" : "outward";
             return $"{casterName}'s {skillName} {phaseLabel} sweep resolved at ({radialSweepResolved.Center.x:0.0}, {radialSweepResolved.Center.z:0.0}), radius {radialSweepResolved.MaxRadius:0.0}, hits {radialSweepResolved.HitCount} target(s), sweep {radialSweepResolved.SweepId}.";
+        }
+
+        private static string FormatReturningPathStrikeResolvedLog(ReturningPathStrikeResolvedEvent returningPathResolved)
+        {
+            if (returningPathResolved == null)
+            {
+                return "Returning path strike resolved.";
+            }
+
+            var casterName = FormatHeroLabel(returningPathResolved.Caster, "Unknown");
+            var skillName = returningPathResolved.Skill != null ? returningPathResolved.Skill.displayName : "Returning Path Strike";
+            var phaseLabel = returningPathResolved.Phase == ReturningPathStrikePhase.Return ? "return" : "outbound";
+            return $"{casterName}'s {skillName} {phaseLabel} strike resolved from ({returningPathResolved.StartPosition.x:0.0}, {returningPathResolved.StartPosition.z:0.0}) to ({returningPathResolved.EndPosition.x:0.0}, {returningPathResolved.EndPosition.z:0.0}), width {returningPathResolved.PathWidth:0.0}, hits {returningPathResolved.HitCount} target(s), strike {returningPathResolved.StrikeId}.";
         }
 
         private static string FormatSkillTemporaryOverrideChangedLog(SkillTemporaryOverrideChangedEvent temporaryOverrideChanged)

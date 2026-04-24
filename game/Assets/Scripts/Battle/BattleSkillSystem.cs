@@ -654,7 +654,24 @@ namespace Fight.Battle
                 case SkillTargetType.NearestEnemy:
                     return SelectCurrentOrNearestEnemyTarget(context, caster, skill, effectiveCastRange);
                 case SkillTargetType.CurrentEnemyTarget:
-                    return SelectCurrentEnemyTarget(context, caster, skill, effectiveCastRange);
+                    var currentEnemyTarget = SelectCurrentEnemyTarget(context, caster, skill, effectiveCastRange);
+                    if (currentEnemyTarget != null || !allowFallbackForPriorityTarget)
+                    {
+                        return currentEnemyTarget;
+                    }
+
+                    var fallbackTargetType = skill.fallbackTargetType == SkillTargetType.CurrentEnemyTarget
+                        ? SkillTargetType.None
+                        : skill.fallbackTargetType;
+                    return fallbackTargetType == SkillTargetType.None
+                        ? null
+                        : SelectPrimaryTargetByType(
+                            context,
+                            caster,
+                            skill,
+                            fallbackTargetType,
+                            effectiveCastRange,
+                            allowFallbackForPriorityTarget: false);
                 case SkillTargetType.LowestHealthEnemy:
                     return FindLowestHealth(context.Heroes, caster, skill, includeAllies: false, effectiveCastRange);
                 case SkillTargetType.LowestHealthAlly:
@@ -2046,6 +2063,32 @@ namespace Fight.Battle
             }
         }
 
+        public static void TickReturningPathStrikes(BattleContext context, float deltaTime, IBattleSimulationCallbacks battleManager)
+        {
+            if (context?.ReturningPathStrikes == null || battleManager == null)
+            {
+                return;
+            }
+
+            for (var i = context.ReturningPathStrikes.Count - 1; i >= 0; i--)
+            {
+                var strike = context.ReturningPathStrikes[i];
+                if (strike == null)
+                {
+                    context.ReturningPathStrikes.RemoveAt(i);
+                    continue;
+                }
+
+                if (!strike.Advance(deltaTime))
+                {
+                    continue;
+                }
+
+                context.ReturningPathStrikes.RemoveAt(i);
+                ResolveReturningPathStrike(context, strike, battleManager);
+            }
+        }
+
         public static void TickRadialSweeps(BattleContext context, float deltaTime, IBattleSimulationCallbacks battleManager)
         {
             if (context?.RadialSweeps == null || battleManager == null)
@@ -2280,6 +2323,20 @@ namespace Fight.Battle
                     continue;
                 }
 
+                if (effect.effectType == SkillEffectType.CreateReturningPathStrike)
+                {
+                    var pathTargets = CollectReturningPathTargets(context, caster, primaryTarget, effect);
+                    for (var j = 0; j < pathTargets.Count; j++)
+                    {
+                        if (pathTargets[j] != null)
+                        {
+                            uniqueTargetIds.Add(pathTargets[j].RuntimeId);
+                        }
+                    }
+
+                    continue;
+                }
+
                 if (effect.effectType == SkillEffectType.CreateRadialSweep)
                 {
                     var radialSweepTargets = CollectPotentialRadialSweepTargets(context, caster, skill, primaryTarget, effect);
@@ -2424,6 +2481,12 @@ namespace Fight.Battle
             SkillEffectResolutionState resolutionState,
             IBattleSimulationCallbacks battleManager)
         {
+            if (effect?.effectType == SkillEffectType.CreateReturningPathStrike)
+            {
+                QueueReturningPathStrike(context, caster, skill, primaryTarget, effect, battleManager);
+                return;
+            }
+
             if (effect?.effectType == SkillEffectType.CreateRadialSweep)
             {
                 CreateRadialSweep(context, caster, skill, effect, primaryTarget);
@@ -2456,6 +2519,8 @@ namespace Fight.Battle
                     break;
                 case SkillEffectType.CreateDeployableProxy:
                     CreateDeployableProxies(context, caster, skill, effect, effectTargets, battleManager);
+                    break;
+                case SkillEffectType.CreateReturningPathStrike:
                     break;
             }
         }
@@ -2902,6 +2967,47 @@ namespace Fight.Battle
             context.EventBus.Publish(new SkillAreaCreatedEvent(caster, skill, area));
         }
 
+        private static void QueueReturningPathStrike(
+            BattleContext context,
+            RuntimeHero caster,
+            SkillData skill,
+            RuntimeHero primaryTarget,
+            SkillEffectData effect,
+            IBattleSimulationCallbacks battleManager)
+        {
+            if (context == null
+                || caster == null
+                || skill == null
+                || effect == null
+                || battleManager == null
+                || context.ReturningPathStrikes == null
+                || !TryGetReturningPathSegment(caster, primaryTarget, effect, out var startPosition, out var endPosition, out var pathWidth))
+            {
+                return;
+            }
+
+            var strike = new RuntimeReturningPathStrike(caster, skill, effect, startPosition, endPosition, pathWidth);
+            context.EventBus?.Publish(new ReturningPathStrikeQueuedEvent(
+                caster,
+                skill,
+                strike.StrikeId,
+                strike.Phase,
+                strike.StartPosition,
+                strike.EndPosition,
+                strike.PathWidth,
+                strike.DelaySeconds,
+                strike.TravelDurationSeconds));
+
+            if (strike.IsImmediate)
+            {
+                strike.CompleteImmediately();
+                ResolveReturningPathStrike(context, strike, battleManager);
+                return;
+            }
+
+            context.ReturningPathStrikes.Add(strike);
+        }
+
         private static void CreateRadialSweep(
             BattleContext context,
             RuntimeHero caster,
@@ -2933,6 +3039,139 @@ namespace Fight.Battle
                 effect,
                 effectTargets,
                 battleManager);
+        }
+
+        private static void ResolveReturningPathStrike(
+            BattleContext context,
+            RuntimeReturningPathStrike strike,
+            IBattleSimulationCallbacks battleManager)
+        {
+            if (context == null
+                || strike?.Caster == null
+                || strike.Caster.IsDead
+                || strike.Skill == null
+                || strike.Effect == null
+                || battleManager == null)
+            {
+                return;
+            }
+
+            var targets = CollectReturningPathTargets(
+                context,
+                strike.Caster,
+                strike.StartPosition,
+                strike.EndPosition,
+                strike.PathWidth,
+                strike.Effect);
+            ApplyDamageToTargets(context, strike.Caster, strike.Skill, strike.Effect, targets, battleManager);
+            context.EventBus?.Publish(new ReturningPathStrikeResolvedEvent(
+                strike.Caster,
+                strike.Skill,
+                strike.StrikeId,
+                strike.Phase,
+                strike.StartPosition,
+                strike.EndPosition,
+                strike.PathWidth,
+                targets.Count));
+        }
+
+        private static List<RuntimeHero> CollectReturningPathTargets(
+            BattleContext context,
+            RuntimeHero caster,
+            RuntimeHero primaryTarget,
+            SkillEffectData effect)
+        {
+            if (!TryGetReturningPathSegment(caster, primaryTarget, effect, out var startPosition, out var endPosition, out var pathWidth))
+            {
+                return new List<RuntimeHero>();
+            }
+
+            return CollectReturningPathTargets(context, caster, startPosition, endPosition, pathWidth, effect);
+        }
+
+        private static List<RuntimeHero> CollectReturningPathTargets(
+            BattleContext context,
+            RuntimeHero caster,
+            Vector3 startPosition,
+            Vector3 endPosition,
+            float pathWidth,
+            SkillEffectData effect)
+        {
+            var results = new List<RuntimeHero>();
+            if (context?.Heroes == null || caster == null || effect == null)
+            {
+                return results;
+            }
+
+            var halfWidth = Mathf.Max(0.05f, pathWidth * 0.5f);
+            for (var i = 0; i < context.Heroes.Count; i++)
+            {
+                var candidate = context.Heroes[i];
+                if (!IsValidReturningPathTarget(caster, candidate, effect))
+                {
+                    continue;
+                }
+
+                if (ShouldRejectPositiveSkillEffectTarget(effect, caster, candidate))
+                {
+                    continue;
+                }
+
+                if (GetDistanceToSegment(candidate.CurrentPosition, startPosition, endPosition) <= halfWidth)
+                {
+                    results.Add(candidate);
+                }
+            }
+
+            return results;
+        }
+
+        private static bool TryGetReturningPathSegment(
+            RuntimeHero caster,
+            RuntimeHero primaryTarget,
+            SkillEffectData effect,
+            out Vector3 startPosition,
+            out Vector3 endPosition,
+            out float pathWidth)
+        {
+            startPosition = Vector3.zero;
+            endPosition = Vector3.zero;
+            pathWidth = 0f;
+            if (caster == null || primaryTarget == null || effect == null)
+            {
+                return false;
+            }
+
+            var origin = caster.CurrentPosition;
+            origin.y = 0f;
+            var direction = primaryTarget.CurrentPosition - origin;
+            direction.y = 0f;
+            if (direction.sqrMagnitude <= Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            var travelDistance = Mathf.Max(0f, effect.returningPathMaxDistance);
+            if (travelDistance <= Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            var apex = origin + direction.normalized * travelDistance;
+            apex = Stage01ArenaSpec.ClampPosition(apex);
+            apex.y = 0f;
+            origin = Stage01ArenaSpec.ClampPosition(origin);
+            origin.y = 0f;
+            pathWidth = Mathf.Max(0f, effect.returningPathWidth);
+            if (pathWidth <= Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            var isReturnPhase = effect.returningPathStrikePhase == ReturningPathStrikePhase.Return;
+            startPosition = isReturnPhase ? apex : origin;
+            endPosition = isReturnPhase ? origin : apex;
+            return true;
         }
 
         private static List<RuntimeHero> CollectAreaTargets(BattleContext context, RuntimeHero caster, Vector3 center, SkillData skill, SkillEffectData effect)
@@ -3440,6 +3679,26 @@ namespace Fight.Battle
         private static bool IsValidPersistentAreaTarget(RuntimeHero caster, RuntimeHero candidate, SkillEffectData effect)
         {
             if (caster == null || candidate == null || effect == null)
+            {
+                return false;
+            }
+
+            return effect.persistentAreaTargetType switch
+            {
+                PersistentAreaTargetType.Allies => candidate.Side == caster.Side,
+                PersistentAreaTargetType.Both => true,
+                _ => candidate.Side != caster.Side,
+            };
+        }
+
+        private static bool IsValidReturningPathTarget(RuntimeHero caster, RuntimeHero candidate, SkillEffectData effect)
+        {
+            if (caster == null || candidate == null || effect == null || candidate.IsDead)
+            {
+                return false;
+            }
+
+            if (candidate != caster && !candidate.CanBeDirectTargeted)
             {
                 return false;
             }

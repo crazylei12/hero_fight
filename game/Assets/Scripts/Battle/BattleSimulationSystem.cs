@@ -28,6 +28,7 @@ namespace Fight.Battle
 
             BattleReactiveGuardSystem.Tick(context, deltaTime);
             BattleSkillSystem.TickDelayedSkillEffects(context, deltaTime, battleCallbacks);
+            BattleSkillSystem.TickReturningPathStrikes(context, deltaTime, battleCallbacks);
             BattleSkillSystem.TickRadialSweeps(context, deltaTime, battleCallbacks);
             ResolveHeroMinimumSeparation(context);
         }

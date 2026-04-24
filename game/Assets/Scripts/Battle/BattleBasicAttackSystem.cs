@@ -23,6 +23,11 @@ namespace Fight.Battle
                 var projectile = context.Projectiles[i];
                 if (!IsValidTarget(projectile.Attacker, projectile.Target, projectile.EffectType, projectile.TargetType, projectile.OnHitStatusEffects))
                 {
+                    if (projectile.BounceChain != null && projectile.BounceChain.TotalHitCount > 0)
+                    {
+                        CompleteBounceChain(context, projectile.Attacker, projectile.BounceChain);
+                    }
+
                     context.Projectiles.RemoveAt(i);
                     continue;
                 }
@@ -45,6 +50,8 @@ namespace Fight.Battle
                         projectile.TargetType,
                         projectile.OnHitStatusEffects,
                         projectile.VariantKey,
+                        projectile.BounceChain,
+                        projectile.BounceHopIndex,
                         battleCallbacks);
                     context.Projectiles.RemoveAt(i);
                     continue;
@@ -166,9 +173,10 @@ namespace Fight.Battle
                 BattleDeployableProxySystem.TriggerOwnerBasicAttackProxies(context, attacker, target, battleCallbacks);
             }
 
+            var bounceChain = CreateBounceChain(resolvedAttack);
             if (resolvedAttack.UsesProjectile)
             {
-                LaunchProjectile(context, attacker, null, target, impactAmount, resolvedAttack);
+                LaunchProjectile(context, attacker, null, target, impactAmount, resolvedAttack, bounceChain, 0);
                 return;
             }
 
@@ -182,6 +190,8 @@ namespace Fight.Battle
                 resolvedAttack.TargetType,
                 resolvedAttack.OnHitStatusEffects,
                 resolvedAttack.VariantKey,
+                bounceChain,
+                0,
                 battleCallbacks);
         }
 
@@ -254,9 +264,10 @@ namespace Fight.Battle
                     context.RandomService,
                     resolvedAttack.PowerMultiplier);
 
+            var bounceChain = CreateBounceChain(resolvedAttack);
             if (resolvedAttack.UsesProjectile)
             {
-                LaunchProjectile(context, proxy.Owner, proxy, target, impactAmount, resolvedAttack);
+                LaunchProjectile(context, proxy.Owner, proxy, target, impactAmount, resolvedAttack, bounceChain, 0);
                 return;
             }
 
@@ -270,6 +281,8 @@ namespace Fight.Battle
                 resolvedAttack.TargetType,
                 resolvedAttack.OnHitStatusEffects,
                 resolvedAttack.VariantKey,
+                bounceChain,
+                0,
                 battleCallbacks);
         }
 
@@ -420,6 +433,7 @@ namespace Fight.Battle
             var targetPrioritySearchRadius = variant != null ? variant.targetPrioritySearchRadius : basicAttack.targetPrioritySearchRadius;
             var onHitStatusEffects = variant != null ? variant.onHitStatusEffects : basicAttack.onHitStatusEffects;
             var projectileSpeed = projectileSpeedOverride > Mathf.Epsilon ? projectileSpeedOverride : basicAttack.projectileSpeed;
+            var bounce = basicAttack.bounce;
 
             return new ResolvedBasicAttack(
                 variant != null ? variant.variantKey : string.Empty,
@@ -429,6 +443,10 @@ namespace Fight.Battle
                 targetPrioritySearchRadius,
                 basicAttack.usesProjectile,
                 projectileSpeed,
+                bounce != null ? bounce.maxAdditionalTargets : 0,
+                bounce != null ? bounce.searchRadius : 0f,
+                bounce != null ? bounce.powerMultiplier * Mathf.Max(0f, powerMultiplierScale) : 0f,
+                bounce != null ? bounce.bounceVariantKey : string.Empty,
                 onHitStatusEffects,
                 launchPosition,
                 advanceSequenceOnUse);
@@ -697,13 +715,250 @@ namespace Fight.Battle
             return target != null && Vector3.Distance(sourcePosition, target.CurrentPosition) <= Mathf.Max(0f, range);
         }
 
+        private static RuntimeBasicAttackBounceChain CreateBounceChain(ResolvedBasicAttack resolvedAttack)
+        {
+            if (resolvedAttack == null || !resolvedAttack.HasBounce)
+            {
+                return null;
+            }
+
+            return new RuntimeBasicAttackBounceChain(
+                resolvedAttack.MaxAdditionalBounceTargets,
+                resolvedAttack.BounceSearchRadius,
+                resolvedAttack.BouncePowerMultiplier,
+                resolvedAttack.ProjectileSpeed,
+                resolvedAttack.EffectType,
+                resolvedAttack.TargetType,
+                resolvedAttack.OnHitStatusEffects,
+                resolvedAttack.VariantKey,
+                resolvedAttack.BounceVariantKey);
+        }
+
+        private static void TryContinueBounceChain(
+            BattleContext context,
+            RuntimeHero attacker,
+            RuntimeDeployableProxy sourceProxy,
+            RuntimeHero currentTarget,
+            RuntimeBasicAttackBounceChain bounceChain)
+        {
+            if (context == null
+                || attacker == null
+                || currentTarget == null
+                || bounceChain == null
+                || bounceChain.IsCompleted)
+            {
+                return;
+            }
+
+            if (!bounceChain.HasRemainingBounces)
+            {
+                CompleteBounceChain(context, attacker, bounceChain);
+                return;
+            }
+
+            var nextTarget = SelectBounceTarget(context, attacker, currentTarget, bounceChain);
+            if (nextTarget == null)
+            {
+                CompleteBounceChain(context, attacker, bounceChain);
+                return;
+            }
+
+            bounceChain.ConsumeBounce();
+            var impactAmount = bounceChain.EffectType == BasicAttackEffectType.Heal
+                ? HealResolver.ResolveHealAmount(attacker, bounceChain.PowerMultiplier)
+                : DamageResolver.ResolveDamage(
+                    attacker.AttackPower,
+                    attacker.CriticalChance,
+                    attacker.CriticalDamageMultiplier,
+                    nextTarget.Defense,
+                    context.RandomService,
+                    bounceChain.PowerMultiplier);
+            LaunchBounceProjectile(context, attacker, sourceProxy, currentTarget.CurrentPosition, nextTarget, impactAmount, bounceChain);
+        }
+
+        private static RuntimeHero SelectBounceTarget(
+            BattleContext context,
+            RuntimeHero attacker,
+            RuntimeHero anchorTarget,
+            RuntimeBasicAttackBounceChain bounceChain)
+        {
+            if (context?.Heroes == null
+                || attacker == null
+                || anchorTarget == null
+                || bounceChain == null
+                || bounceChain.SearchRadius <= Mathf.Epsilon)
+            {
+                return null;
+            }
+
+            return bounceChain.TargetType == BasicAttackTargetType.LowestHealthAlly
+                ? SelectLowestHealthBounceAllyTarget(context.Heroes, attacker, anchorTarget.CurrentPosition, bounceChain)
+                : SelectNearestBounceEnemyTarget(context.Heroes, attacker, anchorTarget.CurrentPosition, bounceChain);
+        }
+
+        private static RuntimeHero SelectNearestBounceEnemyTarget(
+            System.Collections.Generic.IReadOnlyList<RuntimeHero> heroes,
+            RuntimeHero attacker,
+            Vector3 anchorPosition,
+            RuntimeBasicAttackBounceChain bounceChain)
+        {
+            RuntimeHero bestTarget = null;
+            var bestDistance = float.MaxValue;
+            for (var i = 0; i < heroes.Count; i++)
+            {
+                var candidate = heroes[i];
+                if (!IsPotentialEnemyTarget(attacker, candidate)
+                    || bounceChain.HasAlreadyHit(candidate)
+                    || !IsWithinRange(anchorPosition, candidate, bounceChain.SearchRadius)
+                    || !CanExecuteBounceAgainstTarget(attacker, candidate, bounceChain))
+                {
+                    continue;
+                }
+
+                var distance = Vector3.Distance(anchorPosition, candidate.CurrentPosition);
+                if (distance >= bestDistance)
+                {
+                    continue;
+                }
+
+                bestDistance = distance;
+                bestTarget = candidate;
+            }
+
+            return bestTarget;
+        }
+
+        private static RuntimeHero SelectLowestHealthBounceAllyTarget(
+            System.Collections.Generic.IReadOnlyList<RuntimeHero> heroes,
+            RuntimeHero attacker,
+            Vector3 anchorPosition,
+            RuntimeBasicAttackBounceChain bounceChain)
+        {
+            RuntimeHero bestTarget = null;
+            var bestHealth = float.MaxValue;
+            var bestRatio = float.MaxValue;
+            var bestDistance = float.MaxValue;
+            for (var i = 0; i < heroes.Count; i++)
+            {
+                var candidate = heroes[i];
+                if (!IsPotentialAllyTarget(attacker, candidate)
+                    || bounceChain.HasAlreadyHit(candidate)
+                    || !IsWithinRange(anchorPosition, candidate, bounceChain.SearchRadius)
+                    || !CanExecuteBounceAgainstTarget(attacker, candidate, bounceChain))
+                {
+                    continue;
+                }
+
+                var distance = Vector3.Distance(anchorPosition, candidate.CurrentPosition);
+                var healthRatio = candidate.MaxHealth > 0f
+                    ? candidate.CurrentHealth / candidate.MaxHealth
+                    : 1f;
+                if (!IsBetterLowestHealthAllyCandidate(
+                        candidate.CurrentHealth,
+                        healthRatio,
+                        distance,
+                        bestHealth,
+                        bestRatio,
+                        bestDistance))
+                {
+                    continue;
+                }
+
+                bestHealth = candidate.CurrentHealth;
+                bestRatio = healthRatio;
+                bestDistance = distance;
+                bestTarget = candidate;
+            }
+
+            return bestTarget;
+        }
+
+        private static bool CanExecuteBounceAgainstTarget(RuntimeHero attacker, RuntimeHero target, RuntimeBasicAttackBounceChain bounceChain)
+        {
+            if (target == null || bounceChain == null)
+            {
+                return false;
+            }
+
+            if (ShouldRejectPositiveBasicAttackTarget(attacker, target, bounceChain.EffectType, bounceChain.OnHitStatusEffects))
+            {
+                return false;
+            }
+
+            return AllowsHealthyHealBounceAnchor(bounceChain)
+                || CanApplyEffectToTarget(target, bounceChain.EffectType);
+        }
+
+        private static bool AllowsHealthyHealBounceAnchor(RuntimeBasicAttackBounceChain bounceChain)
+        {
+            return bounceChain != null
+                && bounceChain.EffectType == BasicAttackEffectType.Heal
+                && bounceChain.TargetType == BasicAttackTargetType.LowestHealthAlly;
+        }
+
+        private static void LaunchBounceProjectile(
+            BattleContext context,
+            RuntimeHero attacker,
+            RuntimeDeployableProxy sourceProxy,
+            Vector3 startPosition,
+            RuntimeHero target,
+            float impactAmount,
+            RuntimeBasicAttackBounceChain bounceChain)
+        {
+            if (context == null || attacker == null || target == null || bounceChain == null)
+            {
+                return;
+            }
+
+            var projectileId = $"basic_attack_{projectileSequence++}";
+            var variantKey = string.IsNullOrWhiteSpace(bounceChain.BounceVariantKey)
+                ? bounceChain.PrimaryVariantKey
+                : bounceChain.BounceVariantKey;
+            var projectile = new RuntimeBasicAttackProjectile(
+                projectileId,
+                attacker,
+                sourceProxy,
+                target,
+                startPosition,
+                bounceChain.ProjectileSpeed,
+                impactAmount,
+                bounceChain.EffectType,
+                variantKey,
+                bounceChain.TargetType,
+                bounceChain.OnHitStatusEffects,
+                bounceChain,
+                bounceChain.BounceHitCount + 1);
+
+            context.Projectiles.Add(projectile);
+            context.EventBus.Publish(new BasicAttackProjectileLaunchedEvent(projectile));
+        }
+
+        private static void CompleteBounceChain(BattleContext context, RuntimeHero attacker, RuntimeBasicAttackBounceChain bounceChain)
+        {
+            if (context?.EventBus == null || attacker == null || bounceChain == null || bounceChain.IsCompleted)
+            {
+                return;
+            }
+
+            bounceChain.MarkCompleted();
+            context.EventBus.Publish(new BasicAttackBounceChainResolvedEvent(
+                attacker,
+                bounceChain.ChainId,
+                bounceChain.BounceHitCount,
+                bounceChain.TotalHitCount,
+                bounceChain.FirstTarget,
+                bounceChain.LastTarget));
+        }
+
         private static void LaunchProjectile(
             BattleContext context,
             RuntimeHero attacker,
             RuntimeDeployableProxy sourceProxy,
             RuntimeHero target,
             float impactAmount,
-            ResolvedBasicAttack resolvedAttack)
+            ResolvedBasicAttack resolvedAttack,
+            RuntimeBasicAttackBounceChain bounceChain,
+            int bounceHopIndex)
         {
             var projectileId = $"basic_attack_{projectileSequence++}";
             var projectile = new RuntimeBasicAttackProjectile(
@@ -717,7 +972,9 @@ namespace Fight.Battle
                 resolvedAttack.EffectType,
                 resolvedAttack.VariantKey,
                 resolvedAttack.TargetType,
-                resolvedAttack.OnHitStatusEffects);
+                resolvedAttack.OnHitStatusEffects,
+                bounceChain,
+                bounceHopIndex);
 
             context.Projectiles.Add(projectile);
             context.EventBus.Publish(new BasicAttackProjectileLaunchedEvent(projectile));
@@ -733,6 +990,8 @@ namespace Fight.Battle
             BasicAttackTargetType targetType,
             System.Collections.Generic.IReadOnlyList<StatusEffectData> onHitStatusEffects,
             string variantKey,
+            RuntimeBasicAttackBounceChain bounceChain,
+            int bounceHopIndex,
             IBattleSimulationCallbacks battleCallbacks)
         {
             if (!IsValidTarget(attacker, target, effectType, targetType, onHitStatusEffects))
@@ -740,12 +999,15 @@ namespace Fight.Battle
                 return;
             }
 
+            bounceChain?.TryRegisterHit(target, bounceHopIndex > 0);
+
             if (effectType == BasicAttackEffectType.Heal)
             {
                 if (ShouldRejectPositiveBasicAttackTarget(attacker, target, effectType, onHitStatusEffects))
                 {
                     PublishPositiveEffectRejected(context, attacker, target, "Heal", variantKey);
                     ApplyOnHitStatuses(context, attacker, target, onHitStatusEffects, variantKey);
+                    TryContinueBounceChain(context, attacker, sourceProxy, target, bounceChain);
                     return;
                 }
 
@@ -753,12 +1015,14 @@ namespace Fight.Battle
                 if (actualHeal <= 0f)
                 {
                     ApplyOnHitStatuses(context, attacker, target, onHitStatusEffects, variantKey);
+                    TryContinueBounceChain(context, attacker, sourceProxy, target, bounceChain);
                     return;
                 }
 
                 BattleStatsSystem.RecordHealingContribution(context, attacker, target, actualHeal);
                 context.EventBus.Publish(new HealAppliedEvent(attacker, target, actualHeal, null, target.CurrentHealth, variantKey, sourceProxy));
                 ApplyOnHitStatuses(context, attacker, target, onHitStatusEffects, variantKey);
+                TryContinueBounceChain(context, attacker, sourceProxy, target, bounceChain);
                 return;
             }
 
@@ -775,10 +1039,12 @@ namespace Fight.Battle
             if (actualDamage <= 0f)
             {
                 ApplyOnHitStatuses(context, attacker, target, onHitStatusEffects, variantKey);
+                TryContinueBounceChain(context, attacker, sourceProxy, target, bounceChain);
                 return;
             }
 
             ApplyOnHitStatuses(context, attacker, target, onHitStatusEffects, variantKey);
+            TryContinueBounceChain(context, attacker, sourceProxy, target, bounceChain);
         }
 
         private static bool CanApplyEffectToTarget(RuntimeHero target, BasicAttackEffectType effectType)
