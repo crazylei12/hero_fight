@@ -16,5 +16,6 @@ namespace Fight.Data
         public int secondaryOverrideRequiredUnitCount = 0;
         public float secondaryOverrideHealthPercentThreshold = -1f;
         public UltimateConditionData alternatePrimaryCondition = new UltimateConditionData();
+        public UltimateConditionData alternateSecondaryCondition = new UltimateConditionData();
     }
 }

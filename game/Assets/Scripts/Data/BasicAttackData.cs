@@ -15,6 +15,7 @@ namespace Fight.Data
         NearestEnemy = 0,
         LowestHealthAlly = 1,
         ThreateningEnemyNearRangedAlly = 2,
+        MissingOnHitStatusOrExpiringAlly = 3,
     }
 
     [Serializable]

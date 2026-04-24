@@ -1,8 +1,24 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace Fight.Data
 {
+    public enum SkillVariantSelectionMode
+    {
+        None = 0,
+        RandomSingle = 1,
+    }
+
+    [Serializable]
+    public class SkillVariantData
+    {
+        public string variantKey = string.Empty;
+        public SkillTargetType targetType = SkillTargetType.None;
+        public SkillTargetType fallbackTargetType = SkillTargetType.None;
+        public List<SkillEffectData> effects = new List<SkillEffectData>();
+    }
+
     [CreateAssetMenu(fileName = "Skill_", menuName = "Fight/Data/Skill")]
     public class SkillData : ScriptableObject
     {
@@ -20,6 +36,10 @@ namespace Fight.Data
         public SkillTargetType fallbackTargetType = SkillTargetType.NearestEnemy;
         [Min(0f)] public float targetPrioritySearchRadius = 0f;
         [Min(1)] public int targetPriorityRequiredUnitCount = 1;
+
+        [Header("Variants")]
+        public SkillVariantSelectionMode variantSelectionMode = SkillVariantSelectionMode.None;
+        public List<SkillVariantData> variants = new List<SkillVariantData>();
 
         [Header("Passive")]
         public PassiveSkillData passiveSkill = new PassiveSkillData();

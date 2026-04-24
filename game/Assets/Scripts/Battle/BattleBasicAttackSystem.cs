@@ -529,6 +529,15 @@ namespace Fight.Battle
                     resolvedAttack,
                     selectionRange,
                     allowHealthyHealFallback),
+                BasicAttackTargetType.MissingOnHitStatusOrExpiringAlly => SelectStatusCoverageAllyTarget(
+                    context.Heroes,
+                    attacker,
+                    sourcePosition,
+                    selectionRange,
+                    resolvedAttack.EffectType,
+                    resolvedAttack.OnHitStatusEffects,
+                    fallbackAttack: resolvedAttack,
+                    allowHealthyFallback: allowHealthyHealFallback),
                 BasicAttackTargetType.ThreateningEnemyNearRangedAlly => BattleAiDirector.SelectThreateningEnemyNearRangedAllyTarget(
                         context.Heroes,
                         attacker,
@@ -560,7 +569,8 @@ namespace Fight.Battle
         {
             return resolvedAttack != null
                 && resolvedAttack.EffectType == BasicAttackEffectType.Heal
-                && resolvedAttack.TargetType == BasicAttackTargetType.LowestHealthAlly;
+                && (resolvedAttack.TargetType == BasicAttackTargetType.LowestHealthAlly
+                    || resolvedAttack.TargetType == BasicAttackTargetType.MissingOnHitStatusOrExpiringAlly);
         }
 
         private static RuntimeHero SelectNearestEnemyTarget(
@@ -793,7 +803,9 @@ namespace Fight.Battle
 
             return bounceChain.TargetType == BasicAttackTargetType.LowestHealthAlly
                 ? SelectLowestHealthBounceAllyTarget(context.Heroes, attacker, anchorTarget.CurrentPosition, bounceChain)
-                : SelectNearestBounceEnemyTarget(context.Heroes, attacker, anchorTarget.CurrentPosition, bounceChain);
+                : bounceChain.TargetType == BasicAttackTargetType.MissingOnHitStatusOrExpiringAlly
+                    ? SelectStatusCoverageBounceAllyTarget(context.Heroes, attacker, anchorTarget.CurrentPosition, bounceChain)
+                    : SelectNearestBounceEnemyTarget(context.Heroes, attacker, anchorTarget.CurrentPosition, bounceChain);
         }
 
         private static RuntimeHero SelectNearestBounceEnemyTarget(
@@ -893,7 +905,8 @@ namespace Fight.Battle
         {
             return bounceChain != null
                 && bounceChain.EffectType == BasicAttackEffectType.Heal
-                && bounceChain.TargetType == BasicAttackTargetType.LowestHealthAlly;
+                && (bounceChain.TargetType == BasicAttackTargetType.LowestHealthAlly
+                    || bounceChain.TargetType == BasicAttackTargetType.MissingOnHitStatusOrExpiringAlly);
         }
 
         private static void LaunchBounceProjectile(
@@ -1071,6 +1084,7 @@ namespace Fight.Battle
             }
 
             var targetMatches = targetType == BasicAttackTargetType.LowestHealthAlly
+                || targetType == BasicAttackTargetType.MissingOnHitStatusOrExpiringAlly
                 ? target.Side == attacker.Side
                 : target.Side != attacker.Side;
             if (!targetMatches)
@@ -1079,6 +1093,277 @@ namespace Fight.Battle
             }
 
             return effectType != BasicAttackEffectType.Heal || target.Side == attacker.Side;
+        }
+
+        private static RuntimeHero SelectStatusCoverageBounceAllyTarget(
+            System.Collections.Generic.IReadOnlyList<RuntimeHero> heroes,
+            RuntimeHero attacker,
+            Vector3 anchorPosition,
+            RuntimeBasicAttackBounceChain bounceChain)
+        {
+            return SelectStatusCoverageAllyTarget(
+                heroes,
+                attacker,
+                anchorPosition,
+                bounceChain.SearchRadius,
+                bounceChain.EffectType,
+                bounceChain.OnHitStatusEffects,
+                fallbackAttack: null,
+                allowHealthyFallback: true,
+                bounceChain);
+        }
+
+        private static RuntimeHero SelectStatusCoverageAllyTarget(
+            System.Collections.Generic.IReadOnlyList<RuntimeHero> heroes,
+            RuntimeHero attacker,
+            Vector3 sourcePosition,
+            float selectionRange,
+            BasicAttackEffectType effectType,
+            System.Collections.Generic.IReadOnlyList<StatusEffectData> onHitStatusEffects,
+            ResolvedBasicAttack fallbackAttack,
+            bool allowHealthyFallback,
+            RuntimeBasicAttackBounceChain bounceChain = null)
+        {
+            if (heroes == null || attacker == null)
+            {
+                return null;
+            }
+
+            var hasCoverageStatuses = HasTrackableCoverageStatuses(onHitStatusEffects);
+            if (!hasCoverageStatuses)
+            {
+                if (fallbackAttack != null)
+                {
+                    return SelectLowestHealthAllyTarget(
+                        heroes,
+                        attacker,
+                        sourcePosition,
+                        fallbackAttack,
+                        selectionRange,
+                        allowHealthyFallback);
+                }
+
+                return SelectLowestHealthBounceAllyTarget(heroes, attacker, sourcePosition, bounceChain);
+            }
+
+            RuntimeHero bestMissing = null;
+            var bestMissingStatusCount = int.MinValue;
+            var bestMissingHealth = float.MaxValue;
+            var bestMissingRatio = float.MaxValue;
+            var bestMissingDistance = float.MaxValue;
+
+            RuntimeHero bestCovered = null;
+            var bestCoveredRemainingDuration = float.MaxValue;
+            var bestCoveredHealth = float.MaxValue;
+            var bestCoveredRatio = float.MaxValue;
+            var bestCoveredDistance = float.MaxValue;
+
+            for (var i = 0; i < heroes.Count; i++)
+            {
+                var candidate = heroes[i];
+                if (!IsPotentialAllyTarget(attacker, candidate)
+                    || !IsWithinRange(sourcePosition, candidate, selectionRange)
+                    || ShouldRejectPositiveBasicAttackTarget(attacker, candidate, effectType, onHitStatusEffects))
+                {
+                    continue;
+                }
+
+                var distance = Vector3.Distance(sourcePosition, candidate.CurrentPosition);
+                var healthRatio = candidate.MaxHealth > 0f
+                    ? candidate.CurrentHealth / candidate.MaxHealth
+                    : 1f;
+                var missingStatusCount = CountMissingCoverageStatuses(candidate, attacker, onHitStatusEffects, out var shortestRemainingDuration);
+
+                if (missingStatusCount > 0)
+                {
+                    if (!IsBetterMissingCoverageCandidate(
+                            missingStatusCount,
+                            candidate.CurrentHealth,
+                            healthRatio,
+                            distance,
+                            bestMissingStatusCount,
+                            bestMissingHealth,
+                            bestMissingRatio,
+                            bestMissingDistance))
+                    {
+                        continue;
+                    }
+
+                    bestMissingStatusCount = missingStatusCount;
+                    bestMissingHealth = candidate.CurrentHealth;
+                    bestMissingRatio = healthRatio;
+                    bestMissingDistance = distance;
+                    bestMissing = candidate;
+                    continue;
+                }
+
+                if (!IsBetterExpiringCoverageCandidate(
+                        shortestRemainingDuration,
+                        candidate.CurrentHealth,
+                        healthRatio,
+                        distance,
+                        bestCoveredRemainingDuration,
+                        bestCoveredHealth,
+                        bestCoveredRatio,
+                        bestCoveredDistance))
+                {
+                    continue;
+                }
+
+                bestCoveredRemainingDuration = shortestRemainingDuration;
+                bestCoveredHealth = candidate.CurrentHealth;
+                bestCoveredRatio = healthRatio;
+                bestCoveredDistance = distance;
+                bestCovered = candidate;
+            }
+
+            return bestMissing ?? bestCovered;
+        }
+
+        private static bool HasTrackableCoverageStatuses(System.Collections.Generic.IReadOnlyList<StatusEffectData> onHitStatusEffects)
+        {
+            if (onHitStatusEffects == null)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < onHitStatusEffects.Count; i++)
+            {
+                var status = onHitStatusEffects[i];
+                if (status != null && status.effectType != StatusEffectType.None)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static int CountMissingCoverageStatuses(
+            RuntimeHero target,
+            RuntimeHero attacker,
+            System.Collections.Generic.IReadOnlyList<StatusEffectData> onHitStatusEffects,
+            out float shortestRemainingDuration)
+        {
+            shortestRemainingDuration = float.MaxValue;
+            if (target == null || attacker == null || onHitStatusEffects == null)
+            {
+                return 0;
+            }
+
+            var missingCount = 0;
+            for (var i = 0; i < onHitStatusEffects.Count; i++)
+            {
+                var status = onHitStatusEffects[i];
+                if (status == null || status.effectType == StatusEffectType.None)
+                {
+                    continue;
+                }
+
+                if (StatusEffectSystem.CountMatchingStatuses(target, status, attacker) <= 0)
+                {
+                    missingCount++;
+                    continue;
+                }
+
+                if (StatusEffectSystem.TryGetShortestMatchingStatusRemainingDuration(target, status, attacker, out var remainingDuration))
+                {
+                    shortestRemainingDuration = Mathf.Min(shortestRemainingDuration, remainingDuration);
+                }
+            }
+
+            if (shortestRemainingDuration == float.MaxValue)
+            {
+                shortestRemainingDuration = 0f;
+            }
+
+            return missingCount;
+        }
+
+        private static bool IsBetterMissingCoverageCandidate(
+            int missingStatusCount,
+            float currentHealth,
+            float healthRatio,
+            float distance,
+            int bestMissingStatusCount,
+            float bestCurrentHealth,
+            float bestHealthRatio,
+            float bestDistance)
+        {
+            if (missingStatusCount > bestMissingStatusCount)
+            {
+                return true;
+            }
+
+            if (missingStatusCount != bestMissingStatusCount)
+            {
+                return false;
+            }
+
+            if (currentHealth < bestCurrentHealth - Mathf.Epsilon)
+            {
+                return true;
+            }
+
+            if (Mathf.Abs(currentHealth - bestCurrentHealth) > Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            if (healthRatio < bestHealthRatio - Mathf.Epsilon)
+            {
+                return true;
+            }
+
+            if (Mathf.Abs(healthRatio - bestHealthRatio) > Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            return distance < bestDistance;
+        }
+
+        private static bool IsBetterExpiringCoverageCandidate(
+            float remainingDuration,
+            float currentHealth,
+            float healthRatio,
+            float distance,
+            float bestRemainingDuration,
+            float bestCurrentHealth,
+            float bestHealthRatio,
+            float bestDistance)
+        {
+            if (remainingDuration < bestRemainingDuration - Mathf.Epsilon)
+            {
+                return true;
+            }
+
+            if (Mathf.Abs(remainingDuration - bestRemainingDuration) > Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            if (currentHealth < bestCurrentHealth - Mathf.Epsilon)
+            {
+                return true;
+            }
+
+            if (Mathf.Abs(currentHealth - bestCurrentHealth) > Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            if (healthRatio < bestHealthRatio - Mathf.Epsilon)
+            {
+                return true;
+            }
+
+            if (Mathf.Abs(healthRatio - bestHealthRatio) > Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            return distance < bestDistance;
         }
 
         private static void ApplyOnHitStatuses(
