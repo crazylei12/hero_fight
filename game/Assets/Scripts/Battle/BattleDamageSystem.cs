@@ -104,6 +104,18 @@ namespace Fight.Battle
                     sourceProxy);
             }
 
+            if ((absorbedByShield > Mathf.Epsilon || totalActualDamage > Mathf.Epsilon)
+                && !target.IsDead
+                && target.CurrentHealth > 0f)
+            {
+                BattleDamageTriggeredStatusSystem.TryProcessDamage(
+                    context,
+                    attacker,
+                    target,
+                    sourceKind,
+                    sourceSkill);
+            }
+
             if (damageShareTransfers == null || damageShareTransfers.Count == 0)
             {
                 return totalActualDamage;

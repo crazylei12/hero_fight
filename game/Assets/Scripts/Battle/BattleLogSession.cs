@@ -95,10 +95,20 @@ namespace Fight.Battle
                     AddLog(FormatHealLog(healApplied));
                     break;
                 case StatusAppliedEvent statusApplied:
+                    if (!ShouldLogStatusLifecycleEvent(statusApplied.EffectType))
+                    {
+                        break;
+                    }
+
                     AddLog(FormatStatusLog(statusApplied));
                     TryAddBlueWarriorKnockUp(statusApplied);
                     break;
                 case StatusRemovedEvent statusRemoved:
+                    if (!ShouldLogStatusLifecycleEvent(statusRemoved.EffectType))
+                    {
+                        break;
+                    }
+
                     AddLog(FormatStatusRemovedLog(statusRemoved));
                     break;
                 case ForcedMovementAppliedEvent forcedMovementApplied:
@@ -107,8 +117,17 @@ namespace Fight.Battle
                 case PassiveSkillValueChangedEvent passiveSkillChanged:
                     AddLog(FormatPassiveSkillValueChangedLog(passiveSkillChanged));
                     break;
+                case PassivePeriodicHealRateChangedEvent passivePeriodicHealRateChanged:
+                    AddLog(FormatPassivePeriodicHealRateChangedLog(passivePeriodicHealRateChanged));
+                    break;
                 case PassiveStackChangedEvent passiveStackChanged:
                     AddLog(FormatPassiveStackChangedLog(passiveStackChanged));
+                    break;
+                case StatusCounterChangedEvent statusCounterChanged:
+                    AddLog(FormatStatusCounterChangedLog(statusCounterChanged));
+                    break;
+                case StatusCounterThresholdTriggeredEvent statusCounterTriggered:
+                    AddLog(FormatStatusCounterThresholdTriggeredLog(statusCounterTriggered));
                     break;
                 case PositiveEffectRejectedEvent positiveEffectRejected:
                     AddLog(FormatPositiveEffectRejectedLog(positiveEffectRejected));
@@ -300,6 +319,13 @@ namespace Fight.Battle
             return $"{heroName}'s {skillName} updated {valueLabel} to {passiveSkillChanged.ModifierMultiplier * 100f:0.#}%.";
         }
 
+        private static string FormatPassivePeriodicHealRateChangedLog(PassivePeriodicHealRateChangedEvent passivePeriodicHealRateChanged)
+        {
+            var heroName = FormatHeroLabel(passivePeriodicHealRateChanged.Hero, "Unknown");
+            var skillName = passivePeriodicHealRateChanged.Skill != null ? passivePeriodicHealRateChanged.Skill.displayName : "Passive Skill";
+            return $"{heroName}'s {skillName} shifted self-heal to {passivePeriodicHealRateChanged.HealPercentMaxHealthPerTick * 100f:0.#}% max HP every {passivePeriodicHealRateChanged.TickIntervalSeconds:0.0}s at {passivePeriodicHealRateChanged.CurrentHealthRatio * 100f:0.#}% HP.";
+        }
+
         private static string FormatPassiveStackChangedLog(PassiveStackChangedEvent passiveStackChanged)
         {
             var heroName = FormatHeroLabel(passiveStackChanged.Hero, "Unknown");
@@ -311,6 +337,24 @@ namespace Fight.Battle
                 ? $"{passiveStackChanged.HealAmount:0.0} heal"
                 : "no heal";
             return $"{heroName}'s {skillName} triggered: stacks {passiveStackChanged.PreviousStackCount}->{passiveStackChanged.CurrentStackCount}/{maxStacksLabel}, attack bonus {passiveStackChanged.AttackPowerBonusMultiplier * 100f:0.#}%, attack speed bonus {passiveStackChanged.AttackSpeedBonusMultiplier * 100f:0.#}%, {healLabel}.";
+        }
+
+        private static string FormatStatusCounterChangedLog(StatusCounterChangedEvent statusCounterChanged)
+        {
+            var sourceName = FormatHeroLabel(statusCounterChanged.Source, "Unknown");
+            var targetName = FormatHeroLabel(statusCounterChanged.Target, "Unknown");
+            var skillName = statusCounterChanged.SourceSkill != null ? statusCounterChanged.SourceSkill.displayName : "Basic Attack";
+            var counterLabel = FormatCounterLabel(statusCounterChanged.EffectType, statusCounterChanged.StatusThemeKey);
+            return $"{sourceName} advanced {counterLabel} on {targetName} via {skillName} [{statusCounterChanged.SourceKind}]: {statusCounterChanged.PreviousStackCount}->{statusCounterChanged.CurrentStackCount}/{Mathf.Max(1, statusCounterChanged.MaxStacks)}.";
+        }
+
+        private static string FormatStatusCounterThresholdTriggeredLog(StatusCounterThresholdTriggeredEvent statusCounterTriggered)
+        {
+            var sourceName = FormatHeroLabel(statusCounterTriggered.Source, "Unknown");
+            var targetName = FormatHeroLabel(statusCounterTriggered.Target, "Unknown");
+            var skillName = statusCounterTriggered.SourceSkill != null ? statusCounterTriggered.SourceSkill.displayName : "Basic Attack";
+            var counterLabel = FormatCounterLabel(statusCounterTriggered.EffectType, statusCounterTriggered.StatusThemeKey);
+            return $"{sourceName} triggered {counterLabel} threshold on {targetName} via {skillName} [{statusCounterTriggered.SourceKind}], threshold {statusCounterTriggered.Threshold}, cleared {statusCounterTriggered.ClearedStackCount} stack(s).";
         }
 
         private static string FormatPositiveEffectRejectedLog(PositiveEffectRejectedEvent positiveEffectRejected)
@@ -569,6 +613,18 @@ namespace Fight.Battle
                 ? hero.Definition.displayName
                 : "UnknownHero";
             return $"{displayName}[{hero.Side}|{hero.RuntimeId}]";
+        }
+
+        private static bool ShouldLogStatusLifecycleEvent(StatusEffectType effectType)
+        {
+            return effectType != StatusEffectType.Marker;
+        }
+
+        private static string FormatCounterLabel(StatusEffectType effectType, string statusThemeKey)
+        {
+            return string.IsNullOrWhiteSpace(statusThemeKey)
+                ? effectType.ToString()
+                : $"{statusThemeKey}[{effectType}]";
         }
 
         private static string FormatStatusMagnitude(StatusEffectType effectType, float magnitude)

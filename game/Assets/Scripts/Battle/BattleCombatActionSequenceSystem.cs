@@ -121,6 +121,12 @@ namespace Fight.Battle
                     out var primaryTarget,
                     out var affectedTargets))
             {
+                if (ShouldSkipEmptyGlobalSkillPulse(sequence))
+                {
+                    sequence.MarkExecutionSkipped();
+                    return true;
+                }
+
                 return false;
             }
 
@@ -137,6 +143,12 @@ namespace Fight.Battle
             sequence.MarkExecutionQueued(primaryTarget);
 
             return true;
+        }
+
+        private static bool ShouldSkipEmptyGlobalSkillPulse(RuntimeCombatActionSequence sequence)
+        {
+            var targetType = sequence?.SourceSkill?.targetType ?? SkillTargetType.None;
+            return targetType == SkillTargetType.AllEnemies || targetType == SkillTargetType.AllAllies;
         }
 
         private static void ApplySequenceTarget(

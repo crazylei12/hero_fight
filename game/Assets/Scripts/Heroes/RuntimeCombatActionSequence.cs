@@ -117,6 +117,19 @@ namespace Fight.Heroes
             }
         }
 
+        public void MarkExecutionSkipped()
+        {
+            waitingForCurrentActionToFinish = false;
+            if (RepeatMode == CombatActionSequenceRepeatMode.FixedCount)
+            {
+                RemainingExecutions = Mathf.Max(0, RemainingExecutions - 1);
+            }
+
+            intervalRemainingSeconds = HasAvailableExecutions
+                ? IntervalSeconds
+                : 0f;
+        }
+
         public void RestoreQueuedExecution()
         {
             if (!waitingForCurrentActionToFinish)
