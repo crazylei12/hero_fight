@@ -97,6 +97,23 @@ namespace Fight.Battle
                 return;
             }
 
+            hero.ResolvePassivePeriodicSelfHeals(
+                deltaTime,
+                (skill, currentHealthRatio, healPercentMaxHealthPerTick, tickIntervalSeconds) =>
+                {
+                    context.EventBus.Publish(new PassivePeriodicHealRateChangedEvent(
+                        hero,
+                        skill,
+                        currentHealthRatio,
+                        healPercentMaxHealthPerTick,
+                        tickIntervalSeconds));
+                },
+                (skill, actualHeal, resultingHealth) =>
+                {
+                    BattleStatsSystem.RecordHealingContribution(context, hero, hero, actualHeal);
+                    context.EventBus.Publish(new HealAppliedEvent(hero, hero, actualHeal, skill, resultingHealth));
+                });
+
             if (hero.TryConsumeReadyCombatAction(out var pendingAction))
             {
                 ResolvePendingCombatAction(context, hero, pendingAction, battleCallbacks);

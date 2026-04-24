@@ -16,9 +16,10 @@ namespace Fight.Heroes
             RemainingDurationSeconds = TotalDurationSeconds;
             BaseMagnitude = data.magnitude;
             SourceAttackPowerMultiplier = Mathf.Max(0f, data.sourceAttackPowerMultiplier);
+            TargetMaxHealthMultiplier = Mathf.Max(0f, data.targetMaxHealthMultiplier);
             StackGroupKey = data.stackGroupKey ?? string.Empty;
             StatusThemeKey = data.statusThemeKey ?? string.Empty;
-            Magnitude = ResolveMagnitude(data, source ?? appliedBy);
+            Magnitude = ResolveMagnitude(data, target, source ?? appliedBy);
             ActiveSkillCooldownCapSeconds = Mathf.Max(0f, data.activeSkillCooldownCapSeconds);
             TickIntervalSeconds = Mathf.Max(0.1f, data.tickIntervalSeconds);
             TimeUntilNextTickSeconds = TickIntervalSeconds;
@@ -42,6 +43,8 @@ namespace Fight.Heroes
         public float BaseMagnitude { get; private set; }
 
         public float SourceAttackPowerMultiplier { get; private set; }
+
+        public float TargetMaxHealthMultiplier { get; private set; }
 
         public float ActiveSkillCooldownCapSeconds { get; private set; }
 
@@ -96,11 +99,12 @@ namespace Fight.Heroes
             RemainingDurationSeconds = TotalDurationSeconds;
             BaseMagnitude = data.magnitude;
             SourceAttackPowerMultiplier = Mathf.Max(0f, data.sourceAttackPowerMultiplier);
+            TargetMaxHealthMultiplier = Mathf.Max(0f, data.targetMaxHealthMultiplier);
             StackGroupKey = data.stackGroupKey ?? string.Empty;
             StatusThemeKey = data.statusThemeKey ?? string.Empty;
             if (refreshMagnitude)
             {
-                Magnitude = ResolveMagnitude(data, source ?? appliedBy);
+                Magnitude = ResolveMagnitude(data, target, source ?? appliedBy);
             }
 
             ActiveSkillCooldownCapSeconds = Mathf.Max(0f, data.activeSkillCooldownCapSeconds);
@@ -155,7 +159,7 @@ namespace Fight.Heroes
 
         public bool IsExpired => RemainingDurationSeconds <= 0f;
 
-        private static float ResolveMagnitude(StatusEffectData data, RuntimeHero snapshotSource)
+        private static float ResolveMagnitude(StatusEffectData data, RuntimeHero target, RuntimeHero snapshotSource)
         {
             if (data == null)
             {
@@ -163,6 +167,12 @@ namespace Fight.Heroes
             }
 
             var baseMagnitude = data.magnitude;
+            var targetMaxHealthMultiplier = Mathf.Max(0f, data.targetMaxHealthMultiplier);
+            if (targetMaxHealthMultiplier > Mathf.Epsilon && target != null)
+            {
+                baseMagnitude += targetMaxHealthMultiplier * Mathf.Max(0f, target.MaxHealth);
+            }
+
             var attackPowerMultiplier = Mathf.Max(0f, data.sourceAttackPowerMultiplier);
             if (attackPowerMultiplier <= Mathf.Epsilon || snapshotSource == null)
             {

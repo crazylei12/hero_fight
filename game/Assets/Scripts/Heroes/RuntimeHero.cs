@@ -139,6 +139,25 @@ namespace Fight.Heroes
             public SkillData SourceSkill { get; }
 
             public int KillParticipationStacks { get; set; }
+
+            public bool HasInitializedPeriodicSelfHealTimer { get; private set; }
+
+            public float PeriodicSelfHealTickRemainingSeconds { get; set; }
+
+            public float LastReportedPeriodicSelfHealPercentMaxHealth { get; set; } = -1f;
+
+            public void InitializePeriodicSelfHealTimer(float intervalSeconds)
+            {
+                HasInitializedPeriodicSelfHealTimer = true;
+                PeriodicSelfHealTickRemainingSeconds = Mathf.Max(0.1f, intervalSeconds);
+            }
+
+            public void ResetForSpawn()
+            {
+                HasInitializedPeriodicSelfHealTimer = false;
+                PeriodicSelfHealTickRemainingSeconds = 0f;
+                LastReportedPeriodicSelfHealPercentMaxHealth = -1f;
+            }
         }
 
         public RuntimeHero(HeroDefinition definition, TeamSide side, Vector3 spawnPosition, int slotIndex)
@@ -405,6 +424,7 @@ namespace Fight.Heroes
             activeForcedMovement = null;
             forcedMovementInterruptTicksRemaining = 0;
             activeTemporarySkillOverrides.Clear();
+            ResetPassiveSkillStatesForSpawn();
             ClearThreatTracking();
             ClearContributionHistory();
         }
@@ -740,6 +760,60 @@ namespace Fight.Heroes
                     currentStackCount * Mathf.Max(0f, passiveData.killParticipationAttackPowerBonusPerStack),
                     currentStackCount * Mathf.Max(0f, passiveData.killParticipationAttackSpeedBonusPerStack),
                     actualHeal);
+            });
+        }
+
+        public void ResolvePassivePeriodicSelfHeals(
+            float deltaTime,
+            Action<SkillData, float, float, float> onRateChanged = null,
+            Action<SkillData, float, float> onHealResolved = null)
+        {
+            if (IsDead || deltaTime <= 0f)
+            {
+                return;
+            }
+
+            ForEachPassiveSkill((skill, passiveData) =>
+            {
+                if (skill == null || passiveData == null || !passiveData.HasPeriodicSelfHeal)
+                {
+                    return;
+                }
+
+                var state = GetOrCreatePassiveSkillState(skill);
+                if (state == null)
+                {
+                    return;
+                }
+
+                var intervalSeconds = Mathf.Max(0.1f, passiveData.periodicSelfHealIntervalSeconds);
+                if (!state.HasInitializedPeriodicSelfHealTimer)
+                {
+                    state.InitializePeriodicSelfHealTimer(intervalSeconds);
+                }
+
+                PublishPassivePeriodicSelfHealRateIfNeeded(skill, passiveData, state, intervalSeconds, onRateChanged);
+
+                state.PeriodicSelfHealTickRemainingSeconds -= deltaTime;
+                while (state.PeriodicSelfHealTickRemainingSeconds <= 0f)
+                {
+                    var healPercentMaxHealth = GetPassivePeriodicSelfHealPercentMaxHealth(passiveData);
+                    var actualHeal = healPercentMaxHealth > Mathf.Epsilon
+                        ? ApplyHealing(MaxHealth * healPercentMaxHealth)
+                        : 0f;
+                    if (actualHeal > 0f)
+                    {
+                        onHealResolved?.Invoke(skill, actualHeal, CurrentHealth);
+                    }
+
+                    state.PeriodicSelfHealTickRemainingSeconds += intervalSeconds;
+                    if (state.PeriodicSelfHealTickRemainingSeconds <= 0f)
+                    {
+                        state.PeriodicSelfHealTickRemainingSeconds = intervalSeconds;
+                    }
+
+                    PublishPassivePeriodicSelfHealRateIfNeeded(skill, passiveData, state, intervalSeconds, onRateChanged);
+                }
             });
         }
 
@@ -1495,6 +1569,45 @@ namespace Fight.Heroes
                 : null;
         }
 
+        private float GetCurrentHealthRatio()
+        {
+            return MaxHealth > Mathf.Epsilon
+                ? Mathf.Clamp01(CurrentHealth / MaxHealth)
+                : 1f;
+        }
+
+        private float GetPassivePeriodicSelfHealPercentMaxHealth(PassiveSkillData passiveData)
+        {
+            if (passiveData == null || !passiveData.HasPeriodicSelfHeal)
+            {
+                return 0f;
+            }
+
+            return passiveData.ResolvePeriodicSelfHealPercentMaxHealth(GetCurrentHealthRatio());
+        }
+
+        private void PublishPassivePeriodicSelfHealRateIfNeeded(
+            SkillData skill,
+            PassiveSkillData passiveData,
+            RuntimePassiveSkillState state,
+            float intervalSeconds,
+            Action<SkillData, float, float, float> onRateChanged)
+        {
+            if (state == null || passiveData == null || onRateChanged == null)
+            {
+                return;
+            }
+
+            var healPercentMaxHealth = GetPassivePeriodicSelfHealPercentMaxHealth(passiveData);
+            if (Mathf.Approximately(state.LastReportedPeriodicSelfHealPercentMaxHealth, healPercentMaxHealth))
+            {
+                return;
+            }
+
+            state.LastReportedPeriodicSelfHealPercentMaxHealth = healPercentMaxHealth;
+            onRateChanged(skill, GetCurrentHealthRatio(), healPercentMaxHealth, intervalSeconds);
+        }
+
         private void ForEachPassiveSkill(Action<SkillData, PassiveSkillData> visitor)
         {
             if (visitor == null)
@@ -1555,6 +1668,14 @@ namespace Fight.Heroes
             var state = new RuntimePassiveSkillState(sourceSkill);
             passiveSkillStates.Add(state);
             return state;
+        }
+
+        private void ResetPassiveSkillStatesForSpawn()
+        {
+            for (var i = 0; i < passiveSkillStates.Count; i++)
+            {
+                passiveSkillStates[i]?.ResetForSpawn();
+            }
         }
 
         private void ClampActiveSkillCooldownToStatusCap()
