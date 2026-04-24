@@ -39,6 +39,24 @@ namespace Fight.Battle
             return FindHighestDamageEnemy(heroes, actor, maxRange);
         }
 
+        public static RuntimeHero SelectHighestDamageAllyTarget(
+            IReadOnlyList<RuntimeHero> heroes,
+            RuntimeHero actor,
+            float maxRange,
+            bool allowSelfTarget = false)
+        {
+            return FindHighestDamageAlly(heroes, actor, maxRange, allowSelfTarget);
+        }
+
+        public static RuntimeHero SelectHighestDamageTakenAllyTarget(
+            IReadOnlyList<RuntimeHero> heroes,
+            RuntimeHero actor,
+            float maxRange,
+            bool allowSelfTarget = false)
+        {
+            return FindHighestDamageTakenAlly(heroes, actor, maxRange, allowSelfTarget);
+        }
+
         public static RuntimeHero SelectEnemyTargetByHeroClass(
             IReadOnlyList<RuntimeHero> heroes,
             RuntimeHero actor,
@@ -366,6 +384,88 @@ namespace Fight.Battle
             }
 
             return bestInjured ?? (allowHealthyFallback ? nearestHealthyAlly ?? selfTarget : null);
+        }
+
+        private static RuntimeHero FindHighestDamageAlly(
+            IReadOnlyList<RuntimeHero> heroes,
+            RuntimeHero actor,
+            float maxRange,
+            bool allowSelfTarget)
+        {
+            RuntimeHero best = null;
+            var highestDamageDealt = float.MinValue;
+            var lowestHealthRatio = float.MaxValue;
+            var nearestDistance = float.MaxValue;
+
+            for (var i = 0; i < heroes.Count; i++)
+            {
+                var candidate = heroes[i];
+                if (!IsValidAllyCandidate(candidate, actor, maxRange, allowSelfTarget))
+                {
+                    continue;
+                }
+
+                var distance = Vector3.Distance(actor.CurrentPosition, candidate.CurrentPosition);
+                var healthRatio = candidate.MaxHealth > 0f ? candidate.CurrentHealth / candidate.MaxHealth : 1f;
+                if (!IsBetterHighestAllyStatCandidate(
+                        candidate.DamageDealt,
+                        healthRatio,
+                        distance,
+                        highestDamageDealt,
+                        lowestHealthRatio,
+                        nearestDistance))
+                {
+                    continue;
+                }
+
+                highestDamageDealt = candidate.DamageDealt;
+                lowestHealthRatio = healthRatio;
+                nearestDistance = distance;
+                best = candidate;
+            }
+
+            return best;
+        }
+
+        private static RuntimeHero FindHighestDamageTakenAlly(
+            IReadOnlyList<RuntimeHero> heroes,
+            RuntimeHero actor,
+            float maxRange,
+            bool allowSelfTarget)
+        {
+            RuntimeHero best = null;
+            var highestDamageTaken = float.MinValue;
+            var lowestHealthRatio = float.MaxValue;
+            var nearestDistance = float.MaxValue;
+
+            for (var i = 0; i < heroes.Count; i++)
+            {
+                var candidate = heroes[i];
+                if (!IsValidAllyCandidate(candidate, actor, maxRange, allowSelfTarget))
+                {
+                    continue;
+                }
+
+                var distance = Vector3.Distance(actor.CurrentPosition, candidate.CurrentPosition);
+                var healthRatio = candidate.MaxHealth > 0f ? candidate.CurrentHealth / candidate.MaxHealth : 1f;
+                if (!IsBetterHighestAllyStatCandidate(
+                        candidate.DamageTaken,
+                        healthRatio,
+                        distance,
+                        highestDamageTaken,
+                        lowestHealthRatio,
+                        nearestDistance))
+                {
+                    continue;
+                }
+
+                highestDamageTaken = candidate.DamageTaken;
+                lowestHealthRatio = healthRatio;
+                nearestDistance = distance;
+                best = candidate;
+            }
+
+            return best;
         }
 
         private static RuntimeHero FindLowestHealthRangedAlly(
@@ -799,6 +899,37 @@ namespace Fight.Battle
             }
 
             if (Mathf.Abs(currentHealth - bestCurrentHealth) > Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            return distance < bestDistance;
+        }
+
+        private static bool IsBetterHighestAllyStatCandidate(
+            float trackedValue,
+            float healthRatio,
+            float distance,
+            float bestTrackedValue,
+            float bestHealthRatio,
+            float bestDistance)
+        {
+            if (trackedValue > bestTrackedValue + Mathf.Epsilon)
+            {
+                return true;
+            }
+
+            if (Mathf.Abs(trackedValue - bestTrackedValue) > Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            if (healthRatio < bestHealthRatio - Mathf.Epsilon)
+            {
+                return true;
+            }
+
+            if (Mathf.Abs(healthRatio - bestHealthRatio) > Mathf.Epsilon)
             {
                 return false;
             }

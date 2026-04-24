@@ -125,12 +125,13 @@ namespace Fight.Battle
 
     public sealed class SkillCastEvent : IBattleEvent
     {
-        public SkillCastEvent(RuntimeHero caster, SkillData skill, RuntimeHero primaryTarget, int affectedTargetCount)
+        public SkillCastEvent(RuntimeHero caster, SkillData skill, RuntimeHero primaryTarget, int affectedTargetCount, string variantKey = null)
         {
             Caster = caster;
             Skill = skill;
             PrimaryTarget = primaryTarget;
             AffectedTargetCount = affectedTargetCount;
+            VariantKey = variantKey ?? string.Empty;
         }
 
         public RuntimeHero Caster { get; }
@@ -140,6 +141,8 @@ namespace Fight.Battle
         public RuntimeHero PrimaryTarget { get; }
 
         public int AffectedTargetCount { get; }
+
+        public string VariantKey { get; }
     }
 
     public enum UltimateDecisionOutcome

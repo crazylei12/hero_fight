@@ -178,6 +178,66 @@ namespace Fight.Heroes
             return false;
         }
 
+        public static int CountMatchingStatuses(RuntimeHero hero, StatusEffectData data, RuntimeHero source, SkillData sourceSkill = null)
+        {
+            if (hero == null || data == null || data.effectType == StatusEffectType.None)
+            {
+                return 0;
+            }
+
+            var count = 0;
+            var definition = StatusEffectCatalog.Get(data.effectType);
+            var statuses = hero.MutableStatusEffects;
+            for (var i = 0; i < statuses.Count; i++)
+            {
+                if (BelongsToSameStackGroup(statuses[i], data, source, sourceSkill, definition))
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        public static bool TryGetShortestMatchingStatusRemainingDuration(
+            RuntimeHero hero,
+            StatusEffectData data,
+            RuntimeHero source,
+            out float remainingDurationSeconds,
+            SkillData sourceSkill = null)
+        {
+            remainingDurationSeconds = 0f;
+            if (hero == null || data == null || data.effectType == StatusEffectType.None)
+            {
+                return false;
+            }
+
+            var bestRemainingDuration = float.MaxValue;
+            var definition = StatusEffectCatalog.Get(data.effectType);
+            var statuses = hero.MutableStatusEffects;
+            for (var i = 0; i < statuses.Count; i++)
+            {
+                var status = statuses[i];
+                if (!BelongsToSameStackGroup(status, data, source, sourceSkill, definition))
+                {
+                    continue;
+                }
+
+                if (status.RemainingDurationSeconds < bestRemainingDuration)
+                {
+                    bestRemainingDuration = status.RemainingDurationSeconds;
+                }
+            }
+
+            if (bestRemainingDuration == float.MaxValue)
+            {
+                return false;
+            }
+
+            remainingDurationSeconds = bestRemainingDuration;
+            return true;
+        }
+
         public static float GetActiveSkillCooldownCap(RuntimeHero hero)
         {
             if (hero == null)

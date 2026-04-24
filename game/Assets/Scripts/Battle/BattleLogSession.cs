@@ -66,7 +66,10 @@ namespace Fight.Battle
                     AddLog(FormatBasicAttackBounceResolvedLog(bounceResolved));
                     break;
                 case SkillCastEvent skillCast:
-                    AddLog($"{FormatHeroLabel(skillCast.Caster)} started casting {skillCast.Skill.displayName} on {FormatHeroLabel(skillCast.PrimaryTarget, "area")} ({skillCast.AffectedTargetCount} target(s)).");
+                    var skillVariantSuffix = string.IsNullOrWhiteSpace(skillCast.VariantKey)
+                        ? string.Empty
+                        : $" [{skillCast.VariantKey}]";
+                    AddLog($"{FormatHeroLabel(skillCast.Caster)} started casting {skillCast.Skill.displayName}{skillVariantSuffix} on {FormatHeroLabel(skillCast.PrimaryTarget, "area")} ({skillCast.AffectedTargetCount} target(s)).");
                     TryAddBlueWarriorSkillCast(skillCast);
                     break;
                 case UltimateDecisionEvaluatedEvent ultimateDecision:

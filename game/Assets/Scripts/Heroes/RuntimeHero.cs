@@ -29,14 +29,15 @@ namespace Fight.Heroes
         }
 
         public PendingCombatAction(
-            SkillData skill,
+            ResolvedSkillCast resolvedSkill,
             RuntimeHero primaryTarget,
             IReadOnlyList<RuntimeHero> affectedTargets,
             bool suppressActionSequenceTrigger = false,
             bool isActionSequenceStep = false)
         {
             ActionType = CombatActionType.SkillCast;
-            Skill = skill;
+            ResolvedSkill = resolvedSkill;
+            Skill = resolvedSkill?.Skill;
             PrimaryTarget = primaryTarget;
             SuppressActionSequenceTrigger = suppressActionSequenceTrigger;
             IsActionSequenceStep = isActionSequenceStep;
@@ -57,6 +58,8 @@ namespace Fight.Heroes
         public ResolvedBasicAttack BasicAttack { get; }
 
         public SkillData Skill { get; }
+
+        public ResolvedSkillCast ResolvedSkill { get; }
 
         public RuntimeHero PrimaryTarget { get; }
 
@@ -638,7 +641,7 @@ namespace Fight.Heroes
         }
 
         public void BeginSkillCast(
-            SkillData skill,
+            ResolvedSkillCast resolvedSkill,
             RuntimeHero primaryTarget,
             IReadOnlyList<RuntimeHero> affectedTargets,
             float windupSeconds,
@@ -647,6 +650,7 @@ namespace Fight.Heroes
             bool suppressActionSequenceTrigger = false,
             bool isActionSequenceStep = false)
         {
+            var skill = resolvedSkill?.Skill;
             if (skill == null || IsDead)
             {
                 return;
@@ -660,7 +664,7 @@ namespace Fight.Heroes
 
             StartCombatAction(
                 new PendingCombatAction(
-                    skill,
+                    resolvedSkill,
                     primaryTarget,
                     affectedTargets,
                     suppressActionSequenceTrigger,
