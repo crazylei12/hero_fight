@@ -19,11 +19,9 @@ namespace Fight.Editor
         private const string ShrinemaidenPrefabPath = "Assets/Prefabs/Heroes/support_004_shrinemaiden/ShrinemaidenWunv.prefab";
         private const string ShrinemaidenHeroAssetPath = "Assets/Data/Stage01Demo/Heroes/support_004_shrinemaiden/Shrinemaiden.asset";
         private const string BuilderScriptAssetPath = "Assets/Scripts/Editor/ShrinemaidenWunvVisualBuilder.cs";
-        private const int SourceColumns = 8;
-        private const int SourceRows = 8;
-        private const int OutputFrameCount = 8;
-        private const int OutputFrameWidth = 167;
-        private const int OutputFrameHeight = 148;
+        private const int ExpectedFrameColumns = 9;
+        private const int ExpectedActionRows = 7;
+        private const float GridLineCoverageRatio = 0.54f;
         private const float PixelsPerUnit = 64f;
 
         private static readonly Vector2 FootPivot = new Vector2(0.5f, 0.06f);
@@ -32,13 +30,17 @@ namespace Fight.Editor
         {
             new ClipBuildSpec("Idle", 0, "idle", 7f, true),
             new ClipBuildSpec("Run", 1, "run", 12f, true),
-            new ClipBuildSpec("Jump", 2, "jump", 12f, false),
-            new ClipBuildSpec("Attack1", 3, "attack_damage", 16f, false, composeLastFrameWithPreviousBody: true),
-            new ClipBuildSpec("Attack2", 4, "attack_heal", 16f, false, composeLastFrameWithPreviousBody: true),
-            new ClipBuildSpec("Skill", 5, "prayer_bloom", 14f, false),
-            new ClipBuildSpec("Ult", 5, "ult", 14f, false),
-            new ClipBuildSpec("Hit", 6, "hurt", 12f, false),
-            new ClipBuildSpec("Death", 7, "defeated", 9f, false),
+            new ClipBuildSpec("Attack1", 2, "attack_damage", 16f, false),
+            new ClipBuildSpec("Attack2", 3, "attack_heal", 16f, false),
+            new ClipBuildSpec("Skill", 4, "prayer_bloom", 14f, false),
+            new ClipBuildSpec("Hit", 5, "hurt", 12f, false),
+            new ClipBuildSpec("Death", 6, "defeated", 9f, false),
+        };
+
+        private static readonly string[] ObsoleteClipFolders =
+        {
+            "Jump",
+            "Ult",
         };
 
         private static bool autoBuildScheduled;
@@ -124,27 +126,26 @@ namespace Fight.Editor
             }
 
             EnsureFolder(ResourcesRoot);
+            DeleteObsoleteClipFolders();
+            var grid = DetectGrid(sourceTexture);
             foreach (var spec in ClipBuildSpecs)
             {
                 var folderPath = $"{ResourcesRoot}/{spec.ClipKey}";
                 EnsureFolder(folderPath);
                 ClearGeneratedPngs(folderPath);
 
-                for (var i = 0; i < OutputFrameCount; i++)
+                var frameRects = BuildFrameRects(grid, spec.SourceRow);
+                var outputFrameWidth = 1;
+                var outputFrameHeight = 1;
+                foreach (var rect in frameRects)
                 {
-                    var sourceFrame = Mathf.Min(i, SourceColumns - 1);
-                    var shouldComposeLastFrame = spec.ComposeLastFrameWithPreviousBody && i == OutputFrameCount - 1;
-                    var frameTexture = CropFrame(sourceTexture, spec.SourceRow, sourceFrame, centerSubject: !shouldComposeLastFrame);
-                    if (shouldComposeLastFrame)
-                    {
-                        var previousFrameTexture = CropFrame(sourceTexture, spec.SourceRow, sourceFrame - 1, centerSubject: false);
-                        var projectileFrameTexture = frameTexture;
-                        frameTexture = CompositeFrame(previousFrameTexture, projectileFrameTexture);
-                        CenterSubjectHorizontally(frameTexture);
-                        UnityEngine.Object.DestroyImmediate(previousFrameTexture);
-                        UnityEngine.Object.DestroyImmediate(projectileFrameTexture);
-                    }
+                    outputFrameWidth = Mathf.Max(outputFrameWidth, rect.width);
+                    outputFrameHeight = Mathf.Max(outputFrameHeight, rect.height);
+                }
 
+                for (var i = 0; i < frameRects.Length; i++)
+                {
+                    var frameTexture = CropFrame(sourceTexture, frameRects[i], outputFrameWidth, outputFrameHeight);
                     var assetPath = $"{folderPath}/{spec.FilePrefix}_{i:00}.png";
                     File.WriteAllBytes(ToAbsolutePath(assetPath), frameTexture.EncodeToPNG());
                     UnityEngine.Object.DestroyImmediate(frameTexture);
@@ -227,19 +228,42 @@ namespace Fight.Editor
             EditorUtility.SetDirty(hero);
         }
 
-        private static Texture2D CropFrame(Texture2D sourceTexture, int sourceRow, int sourceFrame, bool centerSubject = true)
+        private static RectInt[] BuildFrameRects(GridSpec grid, int sourceRow)
         {
-            var sourceX = Mathf.RoundToInt(sourceFrame * sourceTexture.width / (float)SourceColumns);
-            var sourceYTop = Mathf.RoundToInt(sourceRow * sourceTexture.height / (float)SourceRows);
-            var topLeftPixels = new Color32[OutputFrameWidth * OutputFrameHeight];
-
-            for (var y = 0; y < OutputFrameHeight; y++)
+            if (sourceRow < 0 || sourceRow >= grid.HorizontalLines.Length - 1)
             {
-                var sourceY = sourceYTop + y;
-                for (var x = 0; x < OutputFrameWidth; x++)
+                throw new InvalidOperationException($"Shrinemaiden source row {sourceRow} is outside the detected grid.");
+            }
+
+            var rects = new RectInt[ExpectedFrameColumns];
+            var yMin = grid.HorizontalLines[sourceRow].Max + 1;
+            var yMax = grid.HorizontalLines[sourceRow + 1].Min - 1;
+            for (var i = 0; i < rects.Length; i++)
+            {
+                var xMin = grid.VerticalLines[i].Max + 1;
+                var xMax = grid.VerticalLines[i + 1].Min - 1;
+                rects[i] = new RectInt(
+                    xMin,
+                    yMin,
+                    Mathf.Max(1, xMax - xMin + 1),
+                    Mathf.Max(1, yMax - yMin + 1));
+            }
+
+            return rects;
+        }
+
+        private static Texture2D CropFrame(Texture2D sourceTexture, RectInt pngRect, int outputFrameWidth, int outputFrameHeight)
+        {
+            var topLeftPixels = new Color32[outputFrameWidth * outputFrameHeight];
+            var horizontalPadding = Mathf.Max(0, (outputFrameWidth - pngRect.width) / 2);
+
+            for (var y = 0; y < pngRect.height && y < outputFrameHeight; y++)
+            {
+                var sourceY = pngRect.y + y;
+                for (var x = 0; x < pngRect.width && x + horizontalPadding < outputFrameWidth; x++)
                 {
-                    var sourceXPosition = sourceX + x;
-                    var outputIndex = y * OutputFrameWidth + x;
+                    var sourceXPosition = pngRect.x + x;
+                    var outputIndex = y * outputFrameWidth + x + horizontalPadding;
                     if (sourceXPosition < 0
                         || sourceXPosition >= sourceTexture.width
                         || sourceY < 0
@@ -254,31 +278,124 @@ namespace Fight.Editor
                 }
             }
 
-            RemoveConnectedCheckerBackground(topLeftPixels, OutputFrameWidth, OutputFrameHeight);
-            RemoveHorizontalEdgeFragments(topLeftPixels, OutputFrameWidth, OutputFrameHeight);
-            if (centerSubject)
-            {
-                CenterSubjectHorizontally(topLeftPixels, OutputFrameWidth, OutputFrameHeight);
-            }
+            RemoveConnectedCheckerBackground(topLeftPixels, outputFrameWidth, outputFrameHeight);
 
             var unityPixels = new Color32[topLeftPixels.Length];
-            for (var y = 0; y < OutputFrameHeight; y++)
+            for (var y = 0; y < outputFrameHeight; y++)
             {
-                var unityY = OutputFrameHeight - 1 - y;
+                var unityY = outputFrameHeight - 1 - y;
                 Array.Copy(
                     topLeftPixels,
-                    y * OutputFrameWidth,
+                    y * outputFrameWidth,
                     unityPixels,
-                    unityY * OutputFrameWidth,
-                    OutputFrameWidth);
+                    unityY * outputFrameWidth,
+                    outputFrameWidth);
             }
 
-            var frameTexture = new Texture2D(OutputFrameWidth, OutputFrameHeight, TextureFormat.RGBA32, false);
+            var frameTexture = new Texture2D(outputFrameWidth, outputFrameHeight, TextureFormat.RGBA32, false);
             frameTexture.SetPixels32(unityPixels);
             frameTexture.filterMode = FilterMode.Point;
             frameTexture.wrapMode = TextureWrapMode.Clamp;
             frameTexture.Apply();
             return frameTexture;
+        }
+
+        private static GridSpec DetectGrid(Texture2D sourceTexture)
+        {
+            var verticalLines = DetectLineGroups(
+                sourceTexture,
+                scanColumns: true,
+                ExpectedFrameColumns + 1,
+                Mathf.RoundToInt(sourceTexture.height * GridLineCoverageRatio));
+            var horizontalLines = DetectLineGroups(
+                sourceTexture,
+                scanColumns: false,
+                ExpectedActionRows + 1,
+                Mathf.RoundToInt(sourceTexture.width * GridLineCoverageRatio));
+            return new GridSpec(verticalLines, horizontalLines);
+        }
+
+        private static GridLine[] DetectLineGroups(
+            Texture2D sourceTexture,
+            bool scanColumns,
+            int expectedCount,
+            int threshold)
+        {
+            var majorLength = scanColumns ? sourceTexture.width : sourceTexture.height;
+            var minorLength = scanColumns ? sourceTexture.height : sourceTexture.width;
+            var groups = new List<GridLine>();
+            var currentMin = -1;
+            var currentMax = -1;
+            var currentPeak = 0;
+
+            for (var major = 0; major < majorLength; major++)
+            {
+                var count = 0;
+                for (var minor = 0; minor < minorLength; minor++)
+                {
+                    var x = scanColumns ? major : minor;
+                    var yTop = scanColumns ? minor : major;
+                    if (IsGridLinePixel(GetPixelTopLeft(sourceTexture, x, yTop)))
+                    {
+                        count++;
+                    }
+                }
+
+                if (count >= threshold)
+                {
+                    if (currentMin < 0)
+                    {
+                        currentMin = major;
+                    }
+
+                    currentMax = major;
+                    currentPeak = Mathf.Max(currentPeak, count);
+                    continue;
+                }
+
+                AddCurrentGroup();
+            }
+
+            AddCurrentGroup();
+
+            if (groups.Count != expectedCount)
+            {
+                throw new InvalidOperationException(
+                    $"Shrinemaiden source grid detection expected {expectedCount} {(scanColumns ? "vertical" : "horizontal")} lines, found {groups.Count}.");
+            }
+
+            return groups.ToArray();
+
+            void AddCurrentGroup()
+            {
+                if (currentMin < 0)
+                {
+                    return;
+                }
+
+                groups.Add(new GridLine(currentMin, currentMax, currentPeak));
+                currentMin = -1;
+                currentMax = -1;
+                currentPeak = 0;
+            }
+        }
+
+        private static Color32 GetPixelTopLeft(Texture2D sourceTexture, int x, int yTop)
+        {
+            return sourceTexture.GetPixel(x, sourceTexture.height - 1 - yTop);
+        }
+
+        private static bool IsGridLinePixel(Color32 color)
+        {
+            if (color.a == 0)
+            {
+                return false;
+            }
+
+            var min = Mathf.Min(color.r, Mathf.Min(color.g, color.b));
+            var max = Mathf.Max(color.r, Mathf.Max(color.g, color.b));
+            var average = (color.r + color.g + color.b) / 3f;
+            return average >= 145f && average <= 220f && max - min <= 10;
         }
 
         private static void CenterSubjectHorizontally(Texture2D texture)
@@ -287,42 +404,6 @@ namespace Fight.Editor
             CenterSubjectHorizontally(pixels, texture.width, texture.height);
             texture.SetPixels32(pixels);
             texture.Apply();
-        }
-
-        private static Texture2D CompositeFrame(Texture2D baseTexture, Texture2D overlayTexture)
-        {
-            var basePixels = baseTexture.GetPixels32();
-            var overlayPixels = overlayTexture.GetPixels32();
-            for (var i = 0; i < basePixels.Length && i < overlayPixels.Length; i++)
-            {
-                var overlay = overlayPixels[i];
-                if (overlay.a == 0)
-                {
-                    continue;
-                }
-
-                if (overlay.a == byte.MaxValue)
-                {
-                    basePixels[i] = overlay;
-                    continue;
-                }
-
-                var alpha = overlay.a / 255f;
-                var inverseAlpha = 1f - alpha;
-                var baseColor = basePixels[i];
-                basePixels[i] = new Color32(
-                    (byte)Mathf.RoundToInt(overlay.r * alpha + baseColor.r * inverseAlpha),
-                    (byte)Mathf.RoundToInt(overlay.g * alpha + baseColor.g * inverseAlpha),
-                    (byte)Mathf.RoundToInt(overlay.b * alpha + baseColor.b * inverseAlpha),
-                    (byte)Mathf.Max(overlay.a, baseColor.a));
-            }
-
-            var texture = new Texture2D(baseTexture.width, baseTexture.height, TextureFormat.RGBA32, false);
-            texture.SetPixels32(basePixels);
-            texture.filterMode = FilterMode.Point;
-            texture.wrapMode = TextureWrapMode.Clamp;
-            texture.Apply();
-            return texture;
         }
 
         private static void RemoveConnectedCheckerBackground(Color32[] pixels, int width, int height)
@@ -582,7 +663,8 @@ namespace Fight.Editor
 
             var min = Mathf.Min(color.r, Mathf.Min(color.g, color.b));
             var max = Mathf.Max(color.r, Mathf.Max(color.g, color.b));
-            return min >= 224 && max - min <= 20;
+            var average = (color.r + color.g + color.b) / 3f;
+            return average >= 170f && max - min <= 28;
         }
 
         private static bool TryLoadTexture(string assetPath, out Texture2D texture)
@@ -644,6 +726,18 @@ namespace Fight.Editor
                 if (File.Exists(metaPath))
                 {
                     File.Delete(metaPath);
+                }
+            }
+        }
+
+        private static void DeleteObsoleteClipFolders()
+        {
+            foreach (var folder in ObsoleteClipFolders)
+            {
+                var assetPath = $"{ResourcesRoot}/{folder}";
+                if (AssetDatabase.IsValidFolder(assetPath))
+                {
+                    AssetDatabase.DeleteAsset(assetPath);
                 }
             }
         }
@@ -738,6 +832,32 @@ namespace Fight.Editor
             }
         }
 
+        private readonly struct GridSpec
+        {
+            public GridSpec(GridLine[] verticalLines, GridLine[] horizontalLines)
+            {
+                VerticalLines = verticalLines ?? Array.Empty<GridLine>();
+                HorizontalLines = horizontalLines ?? Array.Empty<GridLine>();
+            }
+
+            public GridLine[] VerticalLines { get; }
+            public GridLine[] HorizontalLines { get; }
+        }
+
+        private readonly struct GridLine
+        {
+            public GridLine(int min, int max, int peak)
+            {
+                Min = min;
+                Max = max;
+                Peak = peak;
+            }
+
+            public int Min { get; }
+            public int Max { get; }
+            public int Peak { get; }
+        }
+
         private sealed class ClipBuildSpec
         {
             public ClipBuildSpec(
@@ -745,15 +865,13 @@ namespace Fight.Editor
                 int sourceRow,
                 string filePrefix,
                 float framesPerSecond,
-                bool loop,
-                bool composeLastFrameWithPreviousBody = false)
+                bool loop)
             {
                 ClipKey = clipKey;
                 SourceRow = sourceRow;
                 FilePrefix = filePrefix;
                 FramesPerSecond = framesPerSecond;
                 Loop = loop;
-                ComposeLastFrameWithPreviousBody = composeLastFrameWithPreviousBody;
             }
 
             public string ClipKey { get; }
@@ -761,7 +879,6 @@ namespace Fight.Editor
             public string FilePrefix { get; }
             public float FramesPerSecond { get; }
             public bool Loop { get; }
-            public bool ComposeLastFrameWithPreviousBody { get; }
         }
     }
 }

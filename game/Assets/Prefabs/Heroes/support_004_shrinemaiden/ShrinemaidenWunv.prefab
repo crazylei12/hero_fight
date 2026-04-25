@@ -150,10 +150,6 @@ MonoBehaviour:
     resourcesFolder: Run
     framesPerSecond: 12
     loop: 1
-  - key: Jump
-    resourcesFolder: Jump
-    framesPerSecond: 12
-    loop: 0
   - key: Attack1
     resourcesFolder: Attack1
     framesPerSecond: 16
@@ -164,10 +160,6 @@ MonoBehaviour:
     loop: 0
   - key: Skill
     resourcesFolder: Skill
-    framesPerSecond: 14
-    loop: 0
-  - key: Ult
-    resourcesFolder: Ult
     framesPerSecond: 14
     loop: 0
   - key: Hit
