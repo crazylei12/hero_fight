@@ -298,7 +298,6 @@ namespace Fight.Battle
         {
             if (context == null
                 || proxy?.Owner == null
-                || proxy.Owner.IsDead
                 || target == null
                 || target.IsDead
                 || !IsValidStrikeTarget(proxy.Owner, target)
@@ -347,7 +346,6 @@ namespace Fight.Battle
                 || proxy == null
                 || proxy.IsExpired
                 || proxy.Owner == null
-                || proxy.Owner.IsDead
                 || battleCallbacks == null
                 || !proxy.TryConsumeReadyAttack())
             {
@@ -368,7 +366,6 @@ namespace Fight.Battle
                 || proxy == null
                 || proxy.IsExpired
                 || proxy.Owner == null
-                || proxy.Owner.IsDead
                 || proxy.SourceEffect == null
                 || !proxy.TryConsumeReadyEffectPulse())
             {

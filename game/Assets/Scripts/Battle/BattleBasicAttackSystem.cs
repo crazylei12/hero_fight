@@ -204,8 +204,7 @@ namespace Fight.Battle
             target = null;
             resolvedAttack = null;
             if (context?.Heroes == null
-                || proxy?.Owner?.Definition?.basicAttack == null
-                || proxy.Owner.IsDead)
+                || proxy?.Owner?.Definition?.basicAttack == null)
             {
                 return false;
             }

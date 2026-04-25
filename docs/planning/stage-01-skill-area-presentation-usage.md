@@ -589,6 +589,7 @@
 当前规则：
 
 - 代理体的创建、持续时间、攻击频率、目标选择和移除仍完全由 `RuntimeDeployableProxy` 与 `BattleDeployableProxySystem` 决定
+- 代理体创建后应按自身剩余持续时间独立运作；拥有者死亡或等待复活不应让已存在的周期攻击 / 脉冲代理体停机，拥有者只继续作为阵营、数值、日志和结算归属来源
 - 表现层只读取 `SkillEffectData.deployableProxyLoopVfxPrefab` 及其 offset / rotation / scale 字段来创建和同步可见对象
 - 代理体 VFX 应继续使用项目内整理过的 prefab，例如 `game/Assets/Prefabs/VFX/Skills/ShrinemaidenTotemLoop.prefab`
 - 这类 VFX 只能表达“这里有一个正在生效的代理体”，不能反向决定代理体持续时间、攻击时机、目标或数值
