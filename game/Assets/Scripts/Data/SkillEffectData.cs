@@ -100,6 +100,12 @@ namespace Fight.Data
         [Min(0f)] public float deployableProxyAttackRange = 0f;
         [Min(0f)] public float deployableProxyProjectileSpeedOverride = 0f;
         [Min(0)] public int deployableProxyStartingVariantIndex = 0;
+        public GameObject deployableProxySpawnVfxPrefab;
+        public GameObject deployableProxyLoopVfxPrefab;
+        public GameObject deployableProxyRemovalVfxPrefab;
+        public Vector3 deployableProxyVfxLocalOffset = Vector3.zero;
+        public Vector3 deployableProxyVfxEulerAngles = Vector3.zero;
+        public Vector3 deployableProxyVfxScaleMultiplier = Vector3.one;
         public ReturningPathStrikePhase returningPathStrikePhase = ReturningPathStrikePhase.Outbound;
         [Min(0f)] public float returningPathMaxDistance = 0f;
         [Min(0f)] public float returningPathWidth = 0f;

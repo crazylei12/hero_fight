@@ -5,6 +5,7 @@ using System.IO;
 using Fight.Battle;
 using Fight.Data;
 using Fight.Heroes;
+using Fight.UI.Preview;
 using Fight.UI.Presentation.Statuses;
 using Fight.UI.Presentation.Skills;
 using UnityEngine;
@@ -48,6 +49,8 @@ namespace Fight.UI
         private const float DashChargeLifetimePaddingSeconds = 0.08f;
         private const float DashChargeMinLifetimeSeconds = 0.18f;
         private const int HealEventVfxSortOrderOffset = 190;
+        private const int DamageEventVfxSortOrderOffset = 188;
+        private const int DeployableProxySortOrderOffset = -3;
         private const int DashChargeSortOrderOffset = -6;
         private const int SkillTargetIndicatorSortOrderOffset = 214;
         private const int SkillCastImpactVfxSortOrderOffset = 212;
@@ -142,8 +145,10 @@ namespace Fight.UI
         private readonly Dictionary<string, HeroBattleAnimationDriver> heroAnimationDrivers = new Dictionary<string, HeroBattleAnimationDriver>();
         private readonly Dictionary<string, ProjectileViewState> projectileViews = new Dictionary<string, ProjectileViewState>();
         private readonly Dictionary<string, SkillAreaViewState> skillAreaViews = new Dictionary<string, SkillAreaViewState>();
+        private readonly Dictionary<string, DeployableProxyViewState> deployableProxyViews = new Dictionary<string, DeployableProxyViewState>();
         private Transform heroRoot;
         private Transform projectileRoot;
+        private Transform deployableProxyRoot;
         private Transform skillAreaRoot;
         private Transform persistentGroundVfxRoot;
         private Transform transientWorldVfxRoot;
@@ -226,6 +231,13 @@ namespace Fight.UI
             public Renderer[] Renderers;
             public Vector3 LastPosition;
             public bool HasLastPosition;
+        }
+
+        private sealed class DeployableProxyViewState
+        {
+            public GameObject Root;
+            public SortingGroup SortingGroup;
+            public Renderer[] Renderers;
         }
 
         private sealed class StatusEffectViewState
@@ -315,6 +327,8 @@ namespace Fight.UI
             heroRoot.SetParent(transform, false);
             projectileRoot = new GameObject("BattleProjectileViews").transform;
             projectileRoot.SetParent(transform, false);
+            deployableProxyRoot = new GameObject("BattleDeployableProxyViews").transform;
+            deployableProxyRoot.SetParent(transform, false);
             skillAreaRoot = new GameObject("BattleSkillAreaViews").transform;
             skillAreaRoot.SetParent(transform, false);
             persistentGroundVfxRoot = new GameObject("BattlePersistentGroundVfx").transform;
@@ -344,6 +358,7 @@ namespace Fight.UI
             }
 
             SyncProjectiles(context);
+            SyncDeployableProxies(context);
             SyncSkillAreas(context);
         }
 
@@ -524,6 +539,15 @@ namespace Fight.UI
             }
 
             Destroy(heroEditorDriver);
+
+            var spriteSheetDriver = host.AddComponent<SpriteSheetBattleAnimationDriver>();
+            spriteSheetDriver.Initialize(hero, visual);
+            if (spriteSheetDriver.IsReady)
+            {
+                return spriteSheetDriver;
+            }
+
+            Destroy(spriteSheetDriver);
 
             var genericDriver = host.AddComponent<GenericAnimatorBattleAnimationDriver>();
             genericDriver.Initialize(hero, visual);
@@ -1676,6 +1700,106 @@ namespace Fight.UI
             return state;
         }
 
+        private void SyncDeployableProxies(BattleContext context)
+        {
+            if (context?.DeployableProxies == null)
+            {
+                return;
+            }
+
+            var liveProxyIds = new HashSet<string>(StringComparer.Ordinal);
+            for (var i = 0; i < context.DeployableProxies.Count; i++)
+            {
+                var proxy = context.DeployableProxies[i];
+                if (proxy == null
+                    || proxy.IsExpired
+                    || string.IsNullOrWhiteSpace(proxy.ProxyId)
+                    || proxy.SourceEffect == null
+                    || proxy.SourceEffect.deployableProxyLoopVfxPrefab == null)
+                {
+                    continue;
+                }
+
+                liveProxyIds.Add(proxy.ProxyId);
+                if (!deployableProxyViews.TryGetValue(proxy.ProxyId, out var view))
+                {
+                    view = CreateDeployableProxyView(proxy);
+                    deployableProxyViews.Add(proxy.ProxyId, view);
+                }
+
+                var pos = Map(proxy.CurrentPosition) + proxy.SourceEffect.deployableProxyVfxLocalOffset;
+                var sortingOrder = Sort(pos.y, DeployableProxySortOrderOffset);
+                view.Root.transform.position = pos;
+                if (view.SortingGroup != null)
+                {
+                    view.SortingGroup.sortingOrder = sortingOrder;
+                }
+                else
+                {
+                    SetRendererSorting(view.Renderers, sortingOrder);
+                }
+            }
+
+            CleanupMissingDeployableProxies(liveProxyIds);
+        }
+
+        private DeployableProxyViewState CreateDeployableProxyView(RuntimeDeployableProxy proxy)
+        {
+            var state = new DeployableProxyViewState();
+            var instance = Instantiate(proxy.SourceEffect.deployableProxyLoopVfxPrefab, deployableProxyRoot);
+            instance.name = proxy.ProxyId;
+            instance.transform.localRotation = Quaternion.Euler(proxy.SourceEffect.deployableProxyVfxEulerAngles) * instance.transform.localRotation;
+            instance.transform.localScale = Vector3.Scale(instance.transform.localScale, proxy.SourceEffect.deployableProxyVfxScaleMultiplier);
+            RemovePrefabPhysics(instance);
+            ConfigureTransientParticleSystems(instance);
+
+            state.Root = instance;
+            state.SortingGroup = instance.GetComponent<SortingGroup>();
+            if (state.SortingGroup == null)
+            {
+                state.SortingGroup = instance.AddComponent<SortingGroup>();
+            }
+
+            state.Renderers = instance.GetComponentsInChildren<Renderer>(true);
+            return state;
+        }
+
+        private void CleanupMissingDeployableProxies(HashSet<string> liveProxyIds)
+        {
+            if (deployableProxyViews.Count == 0)
+            {
+                return;
+            }
+
+            List<string> staleIds = null;
+            foreach (var pair in deployableProxyViews)
+            {
+                if (liveProxyIds.Contains(pair.Key))
+                {
+                    continue;
+                }
+
+                staleIds ??= new List<string>();
+                staleIds.Add(pair.Key);
+            }
+
+            if (staleIds == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < staleIds.Count; i++)
+            {
+                var staleId = staleIds[i];
+                if (deployableProxyViews.TryGetValue(staleId, out var view) && view?.Root != null)
+                {
+                    Destroy(view.Root);
+                }
+
+                deployableProxyViews.Remove(staleId);
+            }
+        }
+
         private void SyncSkillAreas(BattleContext context)
         {
             for (var i = 0; i < context.SkillAreas.Count; i++)
@@ -2125,12 +2249,33 @@ namespace Fight.UI
                 PlayHealImpactVfx(healAppliedEvent);
             }
 
+            if (battleEvent is DamageAppliedEvent damageImpactEvent
+                && damageImpactEvent.Target != null
+                && damageImpactEvent.DamageAmount > 0f)
+            {
+                PlayDamageImpactVfx(damageImpactEvent);
+            }
+
             if (battleEvent is SkillCastEvent skillCastImpactEvent
                 && skillCastImpactEvent.PrimaryTarget != null
                 && skillCastImpactEvent.Skill != null
                 && skillCastImpactEvent.Skill.castImpactVfxPrefab != null)
             {
                 PlaySkillCastImpactVfx(skillCastImpactEvent);
+            }
+
+            if (battleEvent is DeployableProxySpawnedEvent deployableProxySpawnedEvent)
+            {
+                PlayDeployableProxyTransientVfx(
+                    deployableProxySpawnedEvent.Proxy,
+                    deployableProxySpawnedEvent.Proxy?.SourceEffect?.deployableProxySpawnVfxPrefab);
+            }
+
+            if (battleEvent is DeployableProxyRemovedEvent deployableProxyRemovedEvent)
+            {
+                PlayDeployableProxyTransientVfx(
+                    deployableProxyRemovedEvent.Proxy,
+                    deployableProxyRemovedEvent.Proxy?.SourceEffect?.deployableProxyRemovalVfxPrefab);
             }
 
             if (battleEvent is SkillCastEvent skillTargetIndicatorEvent
@@ -2293,6 +2438,37 @@ namespace Fight.UI
             SpawnTransientHeroVfx(targetView, healImpactPrefab, Vector3.zero, HealEventVfxSortOrderOffset, HealImpactTransientKey);
         }
 
+        private void PlayDamageImpactVfx(DamageAppliedEvent damageAppliedEvent)
+        {
+            if (damageAppliedEvent?.Target == null
+                || damageAppliedEvent.SourceSkill != null
+                || string.IsNullOrWhiteSpace(damageAppliedEvent.SourceBasicAttackVariantKey)
+                || !heroViews.TryGetValue(damageAppliedEvent.Target.RuntimeId, out var targetView))
+            {
+                return;
+            }
+
+            if (damageAppliedEvent.Target.IsDead || ShouldHideCorpse(targetView))
+            {
+                return;
+            }
+
+            var damageImpactPrefab = ResolveBasicAttackHitVfxPrefab(
+                damageAppliedEvent.Attacker,
+                damageAppliedEvent.SourceBasicAttackVariantKey);
+            if (damageImpactPrefab == null)
+            {
+                damageImpactPrefab = damageAppliedEvent.Attacker?.Definition?.visualConfig?.hitVfxPrefab;
+            }
+
+            if (damageImpactPrefab == null)
+            {
+                return;
+            }
+
+            SpawnTransientHeroVfx(targetView, damageImpactPrefab, Vector3.zero, DamageEventVfxSortOrderOffset);
+        }
+
         private static GameObject ResolveBasicAttackProjectilePrefab(RuntimeBasicAttackProjectile projectile)
         {
             var visualConfig = projectile?.Attacker?.Definition?.visualConfig;
@@ -2384,6 +2560,23 @@ namespace Fight.UI
                 sortingOrder,
                 rotation,
                 scale);
+        }
+
+        private void PlayDeployableProxyTransientVfx(RuntimeDeployableProxy proxy, GameObject prefab)
+        {
+            if (proxy?.SourceEffect == null || prefab == null)
+            {
+                return;
+            }
+
+            var worldPosition = Map(proxy.CurrentPosition) + proxy.SourceEffect.deployableProxyVfxLocalOffset;
+            var sortingOrder = Sort(worldPosition.y, DeployableProxySortOrderOffset);
+            SpawnTransientWorldVfx(
+                prefab,
+                worldPosition,
+                sortingOrder,
+                Quaternion.Euler(proxy.SourceEffect.deployableProxyVfxEulerAngles),
+                proxy.SourceEffect.deployableProxyVfxScaleMultiplier);
         }
 
         private Quaternion ResolveSkillCastImpactRotation(SkillCastEvent skillCastEvent)
@@ -3080,6 +3273,16 @@ namespace Fight.UI
                     {
                         lifetime = Mathf.Max(lifetime, clips[clipIndex].length);
                     }
+                }
+            }
+
+            var spriteTextureAnimators = instance.GetComponentsInChildren<SpriteTextureFrameAnimator>(true);
+            for (var i = 0; i < spriteTextureAnimators.Length; i++)
+            {
+                var animator = spriteTextureAnimators[i];
+                if (animator != null)
+                {
+                    lifetime = Mathf.Max(lifetime, animator.AnimationLengthSeconds);
                 }
             }
 

@@ -1,6 +1,6 @@
 # 第一阶段战斗特效表现使用说明
 
-最后更新：2026-04-20
+最后更新：2026-04-25
 
 ## 文档用途
 
@@ -70,6 +70,8 @@
 - batchmode 执行方法：`Fight.Editor.FireMageVfxPrefabBuilder.BuildFireMageVfxPrefabsBatch`
 - 编辑器菜单：`Fight -> Stage 01 -> Build Shared Dash Charge VFX`
 - batchmode 执行方法：`Fight.Editor.SharedDashChargeVfxPrefabBuilder.BuildSharedDashChargeVfxBatch`
+- 编辑器菜单：`Fight -> Stage 01 -> Build Pythoness Shrinemaiden VFX`
+- batchmode 执行方法：`Fight.Editor.PythonessVfxPrefabBuilder.BuildPythonessVfxPrefabsBatch`
 
 当前这条 builder 已覆盖：
 
@@ -77,6 +79,9 @@
 - 火法小技能 `Ember Burst`
 - 火法大招 `Meteor Fall`
 - 共享冲锋拖尾 `DashChargeTrail`
+- 巫女普攻伤害 / 治疗投射物与命中闪效
+- 巫女小技能 `Prayer Bloom` 的范围瞬时特效
+- 巫女大招 `Twin Rite Totem` 的出现、循环、消失三段部署物特效
 
 执行注意事项：
 
@@ -94,6 +99,8 @@
 - `game/Assets/Scripts/UI/BattleView.cs`
 - `game/Assets/Scripts/Editor/FireMageVfxPrefabBuilder.cs`
 - `game/Assets/Scripts/Editor/SharedDashChargeVfxPrefabBuilder.cs`
+- `game/Assets/Scripts/Editor/PythonessVfxPrefabBuilder.cs`
+- `game/Assets/Scripts/UI/Preview/SpriteTextureFrameAnimator.cs`
 - `game/Assets/Scripts/UI/Presentation/Skills/SkillAreaPresentationController.cs`
 - `game/Assets/Scripts/UI/Presentation/Skills/FireSeaSkillAreaPresentationController.cs`
 - `game/Assets/Scripts/Data/SkillAreaPresentationType.cs`
@@ -121,7 +128,32 @@
 - 小技能范围爆发
 - 大招持续范围
 
+当前巫女配置资产：
+
+- `game/Assets/Data/Stage01Demo/Heroes/support_004_shrinemaiden/Shrinemaiden.asset`
+- `game/Assets/Data/Stage01Demo/Skills/support_004_shrinemaiden/Prayer Bloom.asset`
+- `game/Assets/Data/Stage01Demo/Skills/support_004_shrinemaiden/Twin Rite Totem.asset`
+
+当前巫女 VFX prefab：
+
+- `game/Assets/Prefabs/VFX/Projectiles/ShrinemaidenDamageProjectile.prefab`
+- `game/Assets/Prefabs/VFX/Projectiles/ShrinemaidenHealProjectile.prefab`
+- `game/Assets/Prefabs/VFX/Shared/ShrinemaidenDamageImpact.prefab`
+- `game/Assets/Prefabs/VFX/Shared/ShrinemaidenHealImpact.prefab`
+- `game/Assets/Prefabs/VFX/Skills/ShrinemaidenPrayerBloomImpact.prefab`
+- `game/Assets/Prefabs/VFX/Skills/ShrinemaidenTotemSpawn.prefab`
+- `game/Assets/Prefabs/VFX/Skills/ShrinemaidenTotemLoop.prefab`
+- `game/Assets/Prefabs/VFX/Skills/ShrinemaidenTotemDisappear.prefab`
+
+当前巫女像素图接入规则：
+
+- 角色模型仍使用 `support_004_shrinemaiden/Shrinemaiden.prefab`，不要把 `mage_004_pythoness` 预览 prefab 当正式巫女本体
+- `pythoness__38.png` / `pythoness_effect__73.png` 只作为特效帧素材来源，实际运行引用整理后的项目 prefab
+- 部署物如果需要进入 / 循环 / 离场三段表现，优先使用 `SkillEffectData.deployableProxySpawnVfxPrefab`、`deployableProxyLoopVfxPrefab`、`deployableProxyRemovalVfxPrefab`，不要写英雄专属的播放分支
+
 ## 当前资源包速查索引
+
+更详细的人工校准记录见：`docs/planning/stage-01-vfx-asset-library-catalog.md`。如果用户已经在该文件中确认过某个资源库的实际内容，后续 AI 判断素材候选时应优先参考该文件，再结合本节的快速索引做路径检索。
 
 如果后续 AI 只是想“先快速找最可能用得上的资源”，建议优先按这个顺序看：
 
@@ -544,6 +576,25 @@
 - 如果想要的是“顶在角色前方一起飞的波锋 / 剑气”，优先走 `SkillData.dashTravelVfxPrefab` 这条共享 dash-follow 通路，不要单独再写英雄私有表现脚本
 - 如果是 `零时长` 的瞬移切位，继续走共享角色残影 + 淡入逻辑，不要和冲锋拖尾混着播
 - 不要在单个英雄脚本里额外手写“冲锋时挂一个 trail”的专用表现逻辑
+
+## 部署型代理体表现的当前规则
+
+当前第一阶段开始支持“部署型固定战斗代理体”的可见 loop 表现，用于巫女 `Twin Rite Totem` 这类不会成为完整英雄、但需要在战场上被读出来的短时召唤物。
+
+当前规则：
+
+- 代理体的创建、持续时间、攻击频率、目标选择和移除仍完全由 `RuntimeDeployableProxy` 与 `BattleDeployableProxySystem` 决定
+- 表现层只读取 `SkillEffectData.deployableProxyLoopVfxPrefab` 及其 offset / rotation / scale 字段来创建和同步可见对象
+- 代理体 VFX 应继续使用项目内整理过的 prefab，例如 `game/Assets/Prefabs/VFX/Skills/ShrinemaidenTotemLoop.prefab`
+- 这类 VFX 只能表达“这里有一个正在生效的代理体”，不能反向决定代理体持续时间、攻击时机、目标或数值
+- 如果后续需要生成 / 消失瞬间特效，优先继续扩展 `SkillEffectData` 的通用表现字段，不要为单个英雄在 `BattleView` 里写硬编码分支
+
+当前已接入示例：
+
+- `Twin Rite Totem`
+  - 项目内工程 prefab：`game/Assets/Prefabs/VFX/Skills/ShrinemaidenTotemLoop.prefab`
+  - 素材来源：`pythoness__38.png` 拆出的 `DoorLoop` 像素序列
+  - 接入方式：`BattleView` 在 `context.DeployableProxies` 中发现带有 `deployableProxyLoopVfxPrefab` 的代理体后创建、跟随并在代理体消失时清理对应 loop VFX
 
 ## 单位附着状态特效的当前规则
 
