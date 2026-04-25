@@ -133,12 +133,14 @@ namespace Fight.Editor
                 for (var i = 0; i < OutputFrameCount; i++)
                 {
                     var sourceFrame = Mathf.Min(i, SourceColumns - 1);
-                    var frameTexture = CropFrame(sourceTexture, spec.SourceRow, sourceFrame);
-                    if (spec.ComposeLastFrameWithPreviousBody && i == OutputFrameCount - 1)
+                    var shouldComposeLastFrame = spec.ComposeLastFrameWithPreviousBody && i == OutputFrameCount - 1;
+                    var frameTexture = CropFrame(sourceTexture, spec.SourceRow, sourceFrame, centerSubject: !shouldComposeLastFrame);
+                    if (shouldComposeLastFrame)
                     {
-                        var previousFrameTexture = CropFrame(sourceTexture, spec.SourceRow, sourceFrame - 1);
+                        var previousFrameTexture = CropFrame(sourceTexture, spec.SourceRow, sourceFrame - 1, centerSubject: false);
                         var projectileFrameTexture = frameTexture;
                         frameTexture = CompositeFrame(previousFrameTexture, projectileFrameTexture);
+                        CenterSubjectHorizontally(frameTexture);
                         UnityEngine.Object.DestroyImmediate(previousFrameTexture);
                         UnityEngine.Object.DestroyImmediate(projectileFrameTexture);
                     }
@@ -225,7 +227,7 @@ namespace Fight.Editor
             EditorUtility.SetDirty(hero);
         }
 
-        private static Texture2D CropFrame(Texture2D sourceTexture, int sourceRow, int sourceFrame)
+        private static Texture2D CropFrame(Texture2D sourceTexture, int sourceRow, int sourceFrame, bool centerSubject = true)
         {
             var sourceX = Mathf.RoundToInt(sourceFrame * sourceTexture.width / (float)SourceColumns);
             var sourceYTop = Mathf.RoundToInt(sourceRow * sourceTexture.height / (float)SourceRows);
@@ -253,6 +255,11 @@ namespace Fight.Editor
             }
 
             RemoveConnectedCheckerBackground(topLeftPixels, OutputFrameWidth, OutputFrameHeight);
+            RemoveHorizontalEdgeFragments(topLeftPixels, OutputFrameWidth, OutputFrameHeight);
+            if (centerSubject)
+            {
+                CenterSubjectHorizontally(topLeftPixels, OutputFrameWidth, OutputFrameHeight);
+            }
 
             var unityPixels = new Color32[topLeftPixels.Length];
             for (var y = 0; y < OutputFrameHeight; y++)
@@ -272,6 +279,14 @@ namespace Fight.Editor
             frameTexture.wrapMode = TextureWrapMode.Clamp;
             frameTexture.Apply();
             return frameTexture;
+        }
+
+        private static void CenterSubjectHorizontally(Texture2D texture)
+        {
+            var pixels = texture.GetPixels32();
+            CenterSubjectHorizontally(pixels, texture.width, texture.height);
+            texture.SetPixels32(pixels);
+            texture.Apply();
         }
 
         private static Texture2D CompositeFrame(Texture2D baseTexture, Texture2D overlayTexture)
@@ -339,6 +354,188 @@ namespace Fight.Editor
                 EnqueueIfBackground(x, y + 1, width, height, pixels, visited, queue);
                 EnqueueIfBackground(x, y - 1, width, height, pixels, visited, queue);
             }
+        }
+
+        private static void RemoveHorizontalEdgeFragments(Color32[] pixels, int width, int height)
+        {
+            var labels = new int[pixels.Length];
+            var components = BuildOpaqueComponentLabels(pixels, width, height, labels);
+            if (components.Count <= 1)
+            {
+                return;
+            }
+
+            var largest = FindLargestComponent(components);
+            foreach (var component in components)
+            {
+                if (component.Label == largest.Label
+                    || !IsHorizontalEdgeFragment(component, largest.Area, width))
+                {
+                    continue;
+                }
+
+                for (var i = 0; i < labels.Length; i++)
+                {
+                    if (labels[i] == component.Label)
+                    {
+                        pixels[i].a = 0;
+                    }
+                }
+            }
+        }
+
+        private static bool IsHorizontalEdgeFragment(FrameComponent component, int largestArea, int width)
+        {
+            if (component.MinX != 0 && component.MaxX != width - 1)
+            {
+                return false;
+            }
+
+            var centerX = (component.MinX + component.MaxX) * 0.5f;
+            var isInEdgeBand = centerX < width * 0.28f || centerX > width * 0.72f;
+            var maxFragmentArea = Mathf.Max(24, Mathf.RoundToInt(largestArea * 0.95f));
+            return isInEdgeBand && component.Area <= maxFragmentArea;
+        }
+
+        private static void CenterSubjectHorizontally(Color32[] pixels, int width, int height)
+        {
+            var labels = new int[pixels.Length];
+            var components = BuildOpaqueComponentLabels(pixels, width, height, labels);
+            if (components.Count == 0)
+            {
+                return;
+            }
+
+            var largest = FindLargestComponent(components);
+            var unionMinX = width;
+            var unionMaxX = 0;
+            foreach (var component in components)
+            {
+                unionMinX = Mathf.Min(unionMinX, component.MinX);
+                unionMaxX = Mathf.Max(unionMaxX, component.MaxX);
+            }
+
+            var subjectCenterX = (largest.MinX + largest.MaxX) * 0.5f;
+            var targetCenterX = (width - 1) * 0.5f;
+            var shiftX = Mathf.RoundToInt(targetCenterX - subjectCenterX);
+            var minShiftX = 2 - unionMinX;
+            var maxShiftX = (width - 3) - unionMaxX;
+            shiftX = minShiftX <= maxShiftX ? Mathf.Clamp(shiftX, minShiftX, maxShiftX) : 0;
+            if (shiftX == 0)
+            {
+                return;
+            }
+
+            var shifted = new Color32[pixels.Length];
+            for (var y = 0; y < height; y++)
+            {
+                var rowStart = y * width;
+                for (var x = 0; x < width; x++)
+                {
+                    var sourceIndex = rowStart + x;
+                    var color = pixels[sourceIndex];
+                    if (color.a == 0)
+                    {
+                        continue;
+                    }
+
+                    var targetX = x + shiftX;
+                    if (targetX < 0 || targetX >= width)
+                    {
+                        continue;
+                    }
+
+                    shifted[rowStart + targetX] = color;
+                }
+            }
+
+            Array.Copy(shifted, pixels, shifted.Length);
+        }
+
+        private static List<FrameComponent> BuildOpaqueComponentLabels(
+            Color32[] pixels,
+            int width,
+            int height,
+            int[] labels)
+        {
+            for (var i = 0; i < labels.Length; i++)
+            {
+                labels[i] = -1;
+            }
+
+            var components = new List<FrameComponent>();
+            var queue = new Queue<int>();
+            var nextLabel = 0;
+
+            for (var y = 0; y < height; y++)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    var index = y * width + x;
+                    if (labels[index] >= 0 || pixels[index].a == 0)
+                    {
+                        continue;
+                    }
+
+                    var component = new FrameComponent(nextLabel);
+                    labels[index] = nextLabel;
+                    queue.Enqueue(index);
+
+                    while (queue.Count > 0)
+                    {
+                        var currentIndex = queue.Dequeue();
+                        var currentX = currentIndex % width;
+                        var currentY = currentIndex / width;
+                        component.Include(currentX, currentY);
+
+                        for (var offsetY = -1; offsetY <= 1; offsetY++)
+                        {
+                            for (var offsetX = -1; offsetX <= 1; offsetX++)
+                            {
+                                if (offsetX == 0 && offsetY == 0)
+                                {
+                                    continue;
+                                }
+
+                                var neighborX = currentX + offsetX;
+                                var neighborY = currentY + offsetY;
+                                if (neighborX < 0 || neighborX >= width || neighborY < 0 || neighborY >= height)
+                                {
+                                    continue;
+                                }
+
+                                var neighborIndex = neighborY * width + neighborX;
+                                if (labels[neighborIndex] >= 0 || pixels[neighborIndex].a == 0)
+                                {
+                                    continue;
+                                }
+
+                                labels[neighborIndex] = nextLabel;
+                                queue.Enqueue(neighborIndex);
+                            }
+                        }
+                    }
+
+                    components.Add(component);
+                    nextLabel++;
+                }
+            }
+
+            return components;
+        }
+
+        private static FrameComponent FindLargestComponent(List<FrameComponent> components)
+        {
+            var largest = components[0];
+            for (var i = 1; i < components.Count; i++)
+            {
+                if (components[i].Area > largest.Area)
+                {
+                    largest = components[i];
+                }
+            }
+
+            return largest;
         }
 
         private static void EnqueueIfBackground(
@@ -511,6 +708,34 @@ namespace Fight.Editor
         private static DateTime Max(DateTime left, DateTime right)
         {
             return left >= right ? left : right;
+        }
+
+        private sealed class FrameComponent
+        {
+            public FrameComponent(int label)
+            {
+                Label = label;
+                MinX = int.MaxValue;
+                MinY = int.MaxValue;
+                MaxX = int.MinValue;
+                MaxY = int.MinValue;
+            }
+
+            public int Label { get; }
+            public int Area { get; private set; }
+            public int MinX { get; private set; }
+            public int MaxX { get; private set; }
+            public int MinY { get; private set; }
+            public int MaxY { get; private set; }
+
+            public void Include(int x, int y)
+            {
+                Area++;
+                MinX = Mathf.Min(MinX, x);
+                MaxX = Mathf.Max(MaxX, x);
+                MinY = Mathf.Min(MinY, y);
+                MaxY = Mathf.Max(MaxY, y);
+            }
         }
 
         private sealed class ClipBuildSpec
