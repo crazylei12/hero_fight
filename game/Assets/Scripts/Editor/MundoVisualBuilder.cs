@@ -20,11 +20,14 @@ namespace Fight.Editor
         private const string MundoHeroAssetPath = "Assets/Data/Stage01Demo/Heroes/tank_004_mundo/Mundo.asset";
         private const string BuilderScriptAssetPath = "Assets/Scripts/Editor/MundoVisualBuilder.cs";
         private const int SourceColumns = 8;
-        private const int SourceRows = 8;
         private const int OutputFrameCount = 8;
         private const int OutputFrameWidth = 167;
         private const int OutputFrameHeight = 148;
         private const float PixelsPerUnit = 64f;
+
+        // The sheet content is row-aligned, but the full PNG is not exactly 8 * 148 pixels tall.
+        // Explicit starts avoid sampling the previous row's trailing pixels on the lower rows.
+        private static readonly int[] SourceRowTopPixels = { 0, 148, 296, 451, 604, 752, 901, 1062 };
 
         private static readonly Vector2 FootPivot = new Vector2(0.5f, 0.07f);
 
@@ -225,7 +228,7 @@ namespace Fight.Editor
         private static Texture2D CropFrame(Texture2D sourceTexture, int sourceRow, int sourceFrame)
         {
             var sourceX = Mathf.RoundToInt(sourceFrame * sourceTexture.width / (float)SourceColumns);
-            var sourceYTop = Mathf.RoundToInt(sourceRow * sourceTexture.height / (float)SourceRows);
+            var sourceYTop = SourceRowTopPixels[sourceRow];
             var topLeftPixels = new Color32[OutputFrameWidth * OutputFrameHeight];
 
             for (var y = 0; y < OutputFrameHeight; y++)
