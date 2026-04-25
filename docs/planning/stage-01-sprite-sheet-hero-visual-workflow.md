@@ -12,7 +12,7 @@
 - 需要把新图临时或正式接到某个已有英雄上。
 - 原来的英雄模型需要保留备用，不要直接覆盖或删除。
 
-本流程以 2026-04-25 的风语司铃像素模型接入为例。
+本流程以 2026-04-25 的风语司铃像素模型接入为例，并补充同日 Mundo / 巫女精灵图透明底清理后的默认做法。
 
 ## 本次有效结论
 
@@ -25,6 +25,7 @@
 - 如果新 prefab 使用 `SpriteSheetBattleVisualConfig`，`animatorController` 必须置空，避免走 HeroEditor4D 动画控制器。
 - 后续样例内容重建脚本也要同步 prefab 路径，否则重建 demo 内容时可能切回旧模型。
 - 像素图接进战斗前必须检查 pivot。血条/脚底错位时，优先怀疑 sprite pivot 或帧裁切尺寸，而不是先改血条逻辑。
+- 如果源图是 `RGB`、带白底、棋盘格底，或透明边缘不干净，必须先做逐帧透明底清理，再接入英雄。默认使用“按帧裁切 -> 逐帧 `rembg` -> 保护分离特效像素 -> 重建运行帧”的流程，不要直接把整张复杂 sheet 一次性丢给 `rembg`。
 
 ## 风语司铃案例记录
 
@@ -107,7 +108,44 @@ game/Assets/Resources/HeroPreview/<hero_id>_<visual_key>/
 
 如果某个动作没有专用帧，可以先复用最接近的动作，但要在文档或脚本里写清楚。
 
-### 3. 新建 prefab，不覆盖旧模型
+### 3. 透明底清理必须逐帧处理
+
+后续所有用户提供的精灵图，只要不是已经确认干净的真透明 PNG，都先按这套流程处理透明底。
+
+触发条件：
+
+- 源图是 `RGB`，没有 alpha 通道。
+- 透明棋盘格、白底、浅灰底已经被烘进图片。
+- 已切出的运行帧虽然是 `RGBA`，但 alpha 是硬边，头发、符纸、技能光效等边缘在深浅背景上有明显残边。
+- 图中包含多个角色帧、动作格、网格线、漂浮符纸、飞行物、受击星点或技能光效。
+
+默认流程：
+
+- 先保留原始源图，不直接覆盖唯一输入。
+- 按当前 builder 使用的格子、固定帧尺寸或已确认动作映射逐帧裁切。
+- 对每一帧单独运行 `rembg`。不要把整张复杂 sheet 一次性输入 `rembg`，否则容易把整张图当成一个复杂主体，生成雾状半透明脏底。
+- 默认先用 `rembg` 的普通输出检查软边效果。`post_process_mask` 往往会变回硬边，`alpha_matting` 可能把背景色带进半透明区域，只有对比确认更好时才使用。
+- 如果角色周围有分离的小符纸、治疗光点、受击星点、弹体残影、技能光效，后处理时要主动保护这些饱和色像素，避免被 `rembg` 当作背景删掉。
+- 对依赖网格检测的源 sheet，例如 `ShrinemaidenWunvVisualBuilder` 这类按源图网格线检测 cell 的 builder，清理后的源 sheet 必须保留或重建网格线；否则后续自动重建会找不到格子。
+- 重建英雄专属 `Resources/HeroPreview/...` 运行帧，保留原 `.meta` 和 sprite importer 口径，尤其是 `alphaSource = FromInput`、`alphaIsTransparency = true`、`isReadable = true`、`filterMode = Point`、`spritePixelsPerUnit`。
+- 生成一张深色、白色、绿色、紫色等不同底色的 contact-sheet 预览，专门检查残底、白边、黑边和分离特效是否丢失。
+
+验收口径：
+
+- 源图和运行帧都应是真 `RGBA`。
+- 抽样帧应存在大量 `alpha = 0` 背景像素，并保留必要的半透明边缘。
+- 至少检查 `Idle`、一个攻击帧、一个技能/治疗帧、一个受击或死亡帧。
+- 在深色和浅色背景上都不应看到棋盘格残块或明显脏边。
+- 分离符纸、飞行物、技能光、受击星点等必须仍然可见。
+
+2026-04-25 的 Mundo / 巫女处理结论：
+
+- Mundo 的整张 sheet 直接跑 `rembg` 会产生大面积灰黑半透明雾底；逐帧处理后才干净。
+- 巫女原运行帧已经是 `RGBA`，但属于硬边抠除；逐帧 `rembg` 后头发、符纸和技能边缘更顺。
+- 巫女源 sheet 需要保留网格线，因为现有 `ShrinemaidenWunvVisualBuilder` 会检测网格来裁切动作帧。
+- 这套流程以后作为精灵图接入和修图的默认步骤。
+
+### 4. 新建 prefab，不覆盖旧模型
 
 当新图用于替换已有英雄时：
 
@@ -124,7 +162,7 @@ game/Assets/Resources/HeroPreview/<hero_id>_<visual_key>/
 - `SpriteTextureFrameAnimator`，用于编辑器里预览 idle
 - `SpriteSheetBattleVisualConfig`，用于战斗运行时加载各动作帧
 
-### 4. 同步样例内容生成器
+### 5. 同步样例内容生成器
 
 如果对应英雄在 `Stage01SampleContentBuilder` 里有 prefab 常量或默认生成逻辑，也必须同步。
 
