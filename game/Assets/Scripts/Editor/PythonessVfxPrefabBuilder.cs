@@ -176,14 +176,14 @@ namespace Fight.Editor
             SaveAnimatedPrefab(
                 "ShrinemaidenDamageProjectile",
                 DamageProjectilePrefabPath,
-                new Vector3(0.85f, 0.85f, 1f),
+                new Vector3(4.25f, 4.25f, 1f),
                 Layer("Core", "Atk1Projectile", 20f, 28f, Vector3.one, Color.white, 2, true),
                 Layer("Glow", "EffectAttack1", 20f, 128f, new Vector3(0.62f, 0.62f, 1f), new Color(1f, 1f, 1f, 0.9f), 1, true));
 
             SaveAnimatedPrefab(
                 "ShrinemaidenHealProjectile",
                 HealProjectilePrefabPath,
-                new Vector3(0.85f, 0.85f, 1f),
+                new Vector3(4.25f, 4.25f, 1f),
                 Layer("Core", "Atk2Projectile", 20f, 28f, Vector3.one, Color.white, 2, true),
                 Layer("Glow", "EffectAttack2", 20f, 128f, new Vector3(0.64f, 0.64f, 1f), new Color(1f, 1f, 1f, 0.9f), 1, true));
 
@@ -211,21 +211,21 @@ namespace Fight.Editor
             SaveAnimatedPrefab(
                 "ShrinemaidenTotemSpawn",
                 TotemSpawnPrefabPath,
-                new Vector3(0.95f, 0.95f, 1f),
+                new Vector3(4.75f, 4.75f, 1f),
                 Layer("Door", "DoorSpawn", 12f, 88f, Vector3.one, Color.white, 1, false),
                 Layer("UltFlare", "EffectUlt", 12f, 128f, new Vector3(0.9f, 0.9f, 1f), new Color(1f, 1f, 1f, 0.85f), 2, false));
 
             SaveAnimatedPrefab(
                 "ShrinemaidenTotemLoop",
                 TotemLoopPrefabPath,
-                new Vector3(0.95f, 0.95f, 1f),
+                new Vector3(4.75f, 4.75f, 1f),
                 Layer("Door", "DoorLoop", 10f, 88f, Vector3.one, Color.white, 1, true),
                 Layer("Pulse", "EffectUlt", 10f, 128f, new Vector3(0.74f, 0.74f, 1f), new Color(1f, 1f, 1f, 0.6f), 2, true));
 
             SaveAnimatedPrefab(
                 "ShrinemaidenTotemDisappear",
                 TotemDisappearPrefabPath,
-                new Vector3(0.95f, 0.95f, 1f),
+                new Vector3(4.75f, 4.75f, 1f),
                 Layer("Door", "DoorDisappear", 12f, 88f, Vector3.one, Color.white, 1, false),
                 Layer("UltFlare", "EffectUlt", 12f, 128f, new Vector3(0.86f, 0.86f, 1f), new Color(1f, 1f, 1f, 0.78f), 2, false));
         }
