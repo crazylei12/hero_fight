@@ -149,6 +149,7 @@
 
 - 当前巫女角色模型已切换为 `support_004_shrinemaiden/ShrinemaidenWunv.prefab`，使用用户提供的 `wunv.png` 精灵图作为正式战斗预览模型
 - `ShrinemaidenWunv.prefab` 通过 `SpriteSheetBattleVisualConfig` 读取 `Resources/HeroPreview/support_004_shrinemaiden_wunv` 下的 Idle / Run / Jump / Attack1 / Attack2 / Skill / Ult / Hit / Death 帧序列，不使用 HeroEditor animator controller
+- `wunv.png` 的每行动作按 8 帧源图处理；Attack1 / Attack2 的源图末帧是飞行物残留帧，builder 会沿用上一帧身体并叠加末帧飞行物，避免战斗动画中角色本体突然消失
 - 当前该 prefab 的根缩放为 `1.35`，每帧按 `64` pixels per unit 导入，pivot 使用脚底附近的 `{x: 0.5, y: 0.06}`
 - `pythoness__38.png` / `pythoness_effect__73.png` 继续作为特效帧素材来源，实际运行特效引用整理后的项目 prefab
 - 如果后续再次替换巫女本体模型，应同步修改 `Shrinemaiden.asset`、`Stage01SampleContentBuilder.cs`、`ShrinemaidenWunvVisualBuilder.cs` 和 `PythonessVfxPrefabBuilder.cs`，避免重建内容后引用回退

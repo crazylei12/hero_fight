@@ -19,10 +19,10 @@ namespace Fight.Editor
         private const string ShrinemaidenPrefabPath = "Assets/Prefabs/Heroes/support_004_shrinemaiden/ShrinemaidenWunv.prefab";
         private const string ShrinemaidenHeroAssetPath = "Assets/Data/Stage01Demo/Heroes/support_004_shrinemaiden/Shrinemaiden.asset";
         private const string BuilderScriptAssetPath = "Assets/Scripts/Editor/ShrinemaidenWunvVisualBuilder.cs";
-        private const int SourceColumns = 9;
+        private const int SourceColumns = 8;
         private const int SourceRows = 8;
-        private const int OutputFrameCount = 9;
-        private const int OutputFrameWidth = 148;
+        private const int OutputFrameCount = 8;
+        private const int OutputFrameWidth = 167;
         private const int OutputFrameHeight = 148;
         private const float PixelsPerUnit = 64f;
 
