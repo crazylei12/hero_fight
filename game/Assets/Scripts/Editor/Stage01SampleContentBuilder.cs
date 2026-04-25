@@ -57,7 +57,7 @@ namespace Fight.Editor
         private const string SupportPrefabPath = "Assets/Prefabs/Heroes/support_001_sunpriest/Sunpriest.prefab";
         private const string WindchimePrefabPath = "Assets/Prefabs/Heroes/support_002_windchime/Windchime.prefab";
         private const string MonkPrefabPath = "Assets/Prefabs/Heroes/support_003_monk/Monk.prefab";
-        private const string ShrinemaidenPrefabPath = "Assets/Prefabs/Heroes/support_004_shrinemaiden/Shrinemaiden.prefab";
+        private const string ShrinemaidenPrefabPath = "Assets/Prefabs/Heroes/support_004_shrinemaiden/ShrinemaidenPythoness.prefab";
         private const string WarriorPrefabPath = "Assets/Prefabs/Heroes/warrior_001_skybreaker/Skybreaker.prefab";
         private const string BladesmanPrefabPath = "Assets/Prefabs/Heroes/warrior_002_bladesman/Bladesman.prefab";
         private const string BerserkerPrefabPath = "Assets/Prefabs/Heroes/warrior_003_berserker/Berserker.prefab";
@@ -3237,9 +3237,7 @@ namespace Fight.Editor
 
             hero.visualConfig ??= new HeroVisualConfig();
             hero.visualConfig.battlePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ShrinemaidenPrefabPath);
-            hero.visualConfig.animatorController = hero.visualConfig.battlePrefab != null
-                ? AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(HeroEditorControllerPath)
-                : null;
+            hero.visualConfig.animatorController = null;
             hero.visualConfig.projectilePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ShrinemaidenDamageProjectilePrefabPath);
             hero.visualConfig.projectileAlignToMovement = true;
             hero.visualConfig.projectileEulerAngles = Vector3.zero;

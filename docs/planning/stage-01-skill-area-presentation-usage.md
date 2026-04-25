@@ -147,8 +147,11 @@
 
 当前巫女像素图接入规则：
 
-- 角色模型仍使用 `support_004_shrinemaiden/Shrinemaiden.prefab`，不要把 `mage_004_pythoness` 预览 prefab 当正式巫女本体
-- `pythoness__38.png` / `pythoness_effect__73.png` 只作为特效帧素材来源，实际运行引用整理后的项目 prefab
+- 当前巫女角色模型临时切换为 `support_004_shrinemaiden/ShrinemaidenPythoness.prefab`，用于实战预览 `mage_004_pythoness` 精灵图模型观感
+- `ShrinemaidenPythoness.prefab` 通过 `SpriteSheetBattleVisualConfig` 读取 `Resources/HeroPreview/mage_004_pythoness` 下的 Idle / Run / Attack / Skill / Ult / Hit / Death 帧序列，不使用 HeroEditor animator controller
+- 当前该预览 prefab 的根缩放为 `1.5`，用于补偿 64x64 像素帧在当前战斗视角下偏小的问题
+- `pythoness__38.png` / `pythoness_effect__73.png` 继续作为特效帧素材来源，实际运行特效引用整理后的项目 prefab
+- 如果后续用户确认要改回独立巫女正式模型，应同步修改 `Shrinemaiden.asset`、`Stage01SampleContentBuilder.cs` 和 `PythonessVfxPrefabBuilder.cs`，避免重建内容后引用回退
 - 部署物如果需要进入 / 循环 / 离场三段表现，优先使用 `SkillEffectData.deployableProxySpawnVfxPrefab`、`deployableProxyLoopVfxPrefab`、`deployableProxyRemovalVfxPrefab`，不要写英雄专属的播放分支
 
 ## 当前资源包速查索引

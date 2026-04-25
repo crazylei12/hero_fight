@@ -18,8 +18,7 @@ namespace Fight.Editor
         private const string ShrinemaidenHeroAssetPath = "Assets/Data/Stage01Demo/Heroes/support_004_shrinemaiden/Shrinemaiden.asset";
         private const string ShrinemaidenActiveSkillAssetPath = "Assets/Data/Stage01Demo/Skills/support_004_shrinemaiden/Prayer Bloom.asset";
         private const string ShrinemaidenUltimateSkillAssetPath = "Assets/Data/Stage01Demo/Skills/support_004_shrinemaiden/Twin Rite Totem.asset";
-        private const string ShrinemaidenPrefabPath = "Assets/Prefabs/Heroes/support_004_shrinemaiden/Shrinemaiden.prefab";
-        private const string HeroEditorControllerPath = "Assets/HeroEditor4D/Common/Animation/Controller.controller";
+        private const string ShrinemaidenPrefabPath = "Assets/Prefabs/Heroes/support_004_shrinemaiden/ShrinemaidenPythoness.prefab";
         private const string DamageProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/ShrinemaidenDamageProjectile.prefab";
         private const string HealProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/ShrinemaidenHealProjectile.prefab";
         private const string DamageImpactPrefabPath = "Assets/Prefabs/VFX/Shared/ShrinemaidenDamageImpact.prefab";
@@ -237,9 +236,7 @@ namespace Fight.Editor
             {
                 hero.visualConfig ??= new HeroVisualConfig();
                 hero.visualConfig.battlePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ShrinemaidenPrefabPath);
-                hero.visualConfig.animatorController = hero.visualConfig.battlePrefab != null
-                    ? AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(HeroEditorControllerPath)
-                    : null;
+                hero.visualConfig.animatorController = null;
                 hero.visualConfig.projectilePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(DamageProjectilePrefabPath);
                 hero.visualConfig.projectileAlignToMovement = true;
                 hero.visualConfig.projectileEulerAngles = Vector3.zero;
