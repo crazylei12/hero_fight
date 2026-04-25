@@ -54,6 +54,7 @@ namespace Fight.Editor
         private const string TidefinPrefabPath = "Assets/Prefabs/Heroes/assassin_002_tidefin/Tidefin.prefab";
         private const string MarksmanPrefabPath = "Assets/Prefabs/Heroes/marksman_001_longshot/Longshot.prefab";
         private const string RiflemanPrefabPath = "Assets/Prefabs/Heroes/marksman_002_rifleman/Rifleman.prefab";
+        private const string BoomerangerPrefabPath = "Assets/Prefabs/Heroes/marksman_004_boomeranger/Boomeranger.prefab";
         private const string SupportPrefabPath = "Assets/Prefabs/Heroes/support_001_sunpriest/Sunpriest.prefab";
         private const string WindchimePrefabPath = "Assets/Prefabs/Heroes/support_002_windchime/WindchimeBellcaster.prefab";
         private const string MonkPrefabPath = "Assets/Prefabs/Heroes/support_003_monk/Monk.prefab";
@@ -1128,6 +1129,7 @@ namespace Fight.Editor
             var battlePrefab = LoadBattlePrefab(heroId, heroClass);
             hero.visualConfig.battlePrefab = battlePrefab;
             hero.visualConfig.animatorController = heroId == "assassin_002_tidefin"
+                || heroId == "marksman_004_boomeranger"
                 || heroId == "support_002_windchime"
                 || heroId == "support_004_shrinemaiden"
                 ? null
@@ -1185,7 +1187,7 @@ namespace Fight.Editor
                 "marksman_001_longshot" => MarksmanPrefabPath,
                 "marksman_002_rifleman" => RiflemanPrefabPath,
                 "marksman_003_venomshooter" => MarksmanPrefabPath,
-                "marksman_004_boomeranger" => MarksmanPrefabPath,
+                "marksman_004_boomeranger" => BoomerangerPrefabPath,
                 "support_002_windchime" => WindchimePrefabPath,
                 "support_003_monk" => MonkPrefabPath,
                 "support_004_shrinemaiden" => ShrinemaidenPrefabPath,
