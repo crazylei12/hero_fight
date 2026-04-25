@@ -35,6 +35,11 @@ MonoBehaviour:
     targetType: 1
     targetPrioritySearchRadius: 0
     startingVariantIndex: 0
+    bounce:
+      maxAdditionalTargets: 0
+      searchRadius: 0
+      powerMultiplier: 0
+      bounceVariantKey: 
     onHitStatusEffects: []
     variants: []
   activeSkill: {fileID: 11400000, guid: 5689b258967051b418e1abd08992e39b, type: 2}

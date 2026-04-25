@@ -23,6 +23,8 @@ MonoBehaviour:
   fallbackTargetType: 1
   targetPrioritySearchRadius: 0
   targetPriorityRequiredUnitCount: 1
+  variantSelectionMode: 0
+  variants: []
   passiveSkill:
     missingHealthAttackPowerRatio: 0
     maxAttackPowerBonus: 0
@@ -31,11 +33,39 @@ MonoBehaviour:
     recentDirectHostileSourceWindowSeconds: 0
     recentDirectHostileSourceDefenseBonusPerSource: 0
     maxDefenseBonus: 0
+    periodicSelfHealIntervalSeconds: 0
+    periodicSelfHealMidHealthThreshold: 0
+    periodicSelfHealLowHealthThreshold: 0
+    periodicSelfHealHighHealthPercentMaxHealth: 0
+    periodicSelfHealMidHealthPercentMaxHealth: 0
+    periodicSelfHealLowHealthPercentMaxHealth: 0
     rejectExternalPositiveEffects: 0
     killParticipationAttackPowerBonusPerStack: 0
     killParticipationAttackSpeedBonusPerStack: 0
     killParticipationHealPercentMaxHealth: 0
     killParticipationMaxStacks: 0
+  damageTriggeredStatusCounter:
+    enabled: 0
+    countBasicAttackDamage: 1
+    countSkillDamage: 1
+    countSkillAreaPulseDamage: 1
+    countStatusEffectDamage: 1
+    countCounterTriggerDamage: 0
+    triggerThreshold: 3
+    clearCountedStatusesOnTrigger: 1
+    countedStatus:
+      effectType: 0
+      durationSeconds: 1
+      magnitude: 0
+      sourceAttackPowerMultiplier: 0
+      targetMaxHealthMultiplier: 0
+      activeSkillCooldownCapSeconds: 0
+      tickIntervalSeconds: 1
+      maxStacks: 1
+      stackGroupKey: 
+      statusThemeKey: 
+      refreshDurationOnReapply: 1
+    triggerStatusEffects: []
   castRange: 10.5
   areaRadius: 6
   cooldownSeconds: 0
@@ -48,6 +78,7 @@ MonoBehaviour:
     statusStackQueryThemeKey: 
     minimumRequiredStatusStacks: 0
     bonusPowerMultiplierPerStatusStack: 0
+    consumeQueriedStatusesOnHit: 0
     radiusOverride: 6
     durationSeconds: 0.45
     tickIntervalSeconds: 0.45
@@ -72,6 +103,16 @@ MonoBehaviour:
     deployableProxyAttackRange: 0
     deployableProxyProjectileSpeedOverride: 0
     deployableProxyStartingVariantIndex: 0
+    deployableProxySpawnVfxPrefab: {fileID: 0}
+    deployableProxyLoopVfxPrefab: {fileID: 0}
+    deployableProxyRemovalVfxPrefab: {fileID: 0}
+    deployableProxyVfxLocalOffset: {x: 0, y: 0, z: 0}
+    deployableProxyVfxEulerAngles: {x: 0, y: 0, z: 0}
+    deployableProxyVfxScaleMultiplier: {x: 1, y: 1, z: 1}
+    returningPathStrikePhase: 0
+    returningPathMaxDistance: 0
+    returningPathWidth: 0
+    returningPathDelaySeconds: 0
     forcedMovementDirection: 0
     forcedMovementDistance: 0
     forcedMovementDurationSeconds: 0
@@ -115,6 +156,7 @@ MonoBehaviour:
     interruptFlags: 3
   temporaryOverride:
     durationSeconds: 0
+    lifestealMode: 0
     lifestealRatio: 0
     visualScaleMultiplier: 1
     visualTintColor: {r: 1, g: 1, b: 1, a: 1}
@@ -140,6 +182,7 @@ MonoBehaviour:
   skillAreaPresentationType: 2
   ultimateDecision:
     targetingType: 4
+    minimumSelfHealthPercentToCast: 0
     primaryCondition:
       conditionType: 1
       searchRadius: 6
@@ -173,6 +216,18 @@ MonoBehaviour:
       secondaryOverrideRequiredUnitCount: 1
       secondaryOverrideHealthPercentThreshold: -1
       alternatePrimaryCondition:
+        conditionType: 0
+        searchRadius: 0
+        requiredUnitCount: 1
+        healthPercentThreshold: 1
+        durationSeconds: 0
+        highValueTargetType: 0
+        heroClassFilter: 2
+        statusEffectTypeFilter: 0
+        statusThemeKey: 
+        minimumStatusStacks: 1
+        requireTargetInCastRange: 1
+      alternateSecondaryCondition:
         conditionType: 0
         searchRadius: 0
         requiredUnitCount: 1

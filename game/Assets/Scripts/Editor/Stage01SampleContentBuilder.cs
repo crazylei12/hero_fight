@@ -66,6 +66,7 @@ namespace Fight.Editor
         private const string FrostMagePrefabPath = "Assets/Prefabs/Heroes/mage_002_frostmage/Frostmage.prefab";
         private const string TankPrefabPath = "Assets/Prefabs/Heroes/tank_001_ironwall/Ironwall.prefab";
         private const string ShieldwardenPrefabPath = "Assets/Prefabs/Heroes/tank_002_shieldwarden/Shieldwarden.prefab";
+        private const string MundoPrefabPath = "Assets/Prefabs/Heroes/tank_004_mundo/Mundo.prefab";
         private const string HeroEditorControllerPath = "Assets/HeroEditor4D/Common/Animation/Controller.controller";
         private const string FireMageProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/FireMageBasicAttackProjectile.prefab";
         private const string FrostMageProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/FrostMageBasicAttackProjectile.prefab";
@@ -1133,9 +1134,12 @@ namespace Fight.Editor
             var battlePrefab = LoadBattlePrefab(heroId, heroClass);
             hero.visualConfig.battlePrefab = battlePrefab;
             hero.visualConfig.animatorController = heroId == "assassin_002_tidefin"
+                || heroId == "warrior_001_skybreaker"
+                || heroId == "warrior_002_bladesman"
                 || heroId == "marksman_004_boomeranger"
                 || heroId == "support_002_windchime"
                 || heroId == "support_004_shrinemaiden"
+                || heroId == "tank_004_mundo"
                 ? null
                 : battlePrefab != null
                     ? AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(HeroEditorControllerPath)
@@ -1198,6 +1202,7 @@ namespace Fight.Editor
                 "warrior_002_bladesman" => BladesmanPrefabPath,
                 "warrior_003_berserker" => BerserkerPrefabPath,
                 "tank_002_shieldwarden" => ShieldwardenPrefabPath,
+                "tank_004_mundo" => MundoPrefabPath,
                 _ => heroClass switch
                 {
                     HeroClass.Marksman => MarksmanPrefabPath,

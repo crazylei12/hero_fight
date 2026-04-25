@@ -278,7 +278,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9ca832d34e8e49209d8791aa5dcb9f05, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Fight.UI.Presentation.Skills.LoopingRotationVfx
   localEulerDegreesPerSecond: {x: 0, y: 0, z: 115}
 --- !u!1 &7400000000000000041
@@ -383,7 +383,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9ca832d34e8e49209d8791aa5dcb9f05, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Fight.UI.Presentation.Skills.LoopingRotationVfx
   localEulerDegreesPerSecond: {x: 0, y: 0, z: -760}
 --- !u!1 &7400000000000000051
@@ -488,7 +488,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9ca832d34e8e49209d8791aa5dcb9f05, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Fight.UI.Presentation.Skills.LoopingRotationVfx
   localEulerDegreesPerSecond: {x: 0, y: 0, z: -760}
 --- !u!1 &7400000000000000061
@@ -593,7 +593,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9ca832d34e8e49209d8791aa5dcb9f05, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Fight.UI.Presentation.Skills.LoopingRotationVfx
   localEulerDegreesPerSecond: {x: 0, y: 0, z: -760}
 --- !u!1 &7400000000000000071
@@ -698,7 +698,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9ca832d34e8e49209d8791aa5dcb9f05, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Fight.UI.Presentation.Skills.LoopingRotationVfx
   localEulerDegreesPerSecond: {x: 0, y: 0, z: -760}
 --- !u!1 &7400000000000000081
@@ -803,7 +803,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9ca832d34e8e49209d8791aa5dcb9f05, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Fight.UI.Presentation.Skills.LoopingRotationVfx
   localEulerDegreesPerSecond: {x: 0, y: 0, z: -760}
 --- !u!1 &7400000000000000091
@@ -908,6 +908,6 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9ca832d34e8e49209d8791aa5dcb9f05, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Fight.UI.Presentation.Skills.LoopingRotationVfx
   localEulerDegreesPerSecond: {x: 0, y: 0, z: -760}

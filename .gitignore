@@ -69,11 +69,17 @@ Thumbs.db
 !/game/Assets/Resources/UI/BattleHud.meta
 !/game/Assets/Resources/UI/BattleHud/
 !/game/Assets/Resources/UI/BattleHud/**
+!/game/Assets/Resources/HeroPreview.meta
+!/game/Assets/Resources/HeroPreview/
+!/game/Assets/Resources/HeroPreview/**
 !/game/Assets/Resources/DOTweenSettings.asset
 !/game/Assets/Resources/DOTweenSettings.asset.meta
 
 !/game/Assets/Art.meta
 !/game/Assets/Art/
+!/game/Assets/Art/Heroes.meta
+!/game/Assets/Art/Heroes/
+!/game/Assets/Art/Heroes/**
 !/game/Assets/Art/UI.meta
 !/game/Assets/Art/UI/
 !/game/Assets/Art/UI/Mockups.meta
