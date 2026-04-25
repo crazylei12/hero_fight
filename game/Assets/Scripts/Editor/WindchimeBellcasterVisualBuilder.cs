@@ -20,7 +20,7 @@ namespace Fight.Editor
         private const string BuilderScriptAssetPath = "Assets/Scripts/Editor/WindchimeBellcasterVisualBuilder.cs";
         private const float PixelsPerUnit = 64f;
 
-        private static readonly Vector2 CenterPivot = new Vector2(0.5f, 0.5f);
+        private static readonly Vector2 FootPivot = new Vector2(0.5f, 0.08f);
 
         private static readonly ClipBuildSpec[] ClipBuildSpecs =
         {
@@ -150,7 +150,7 @@ namespace Fight.Editor
                 $"{WindchimeResourcePrefix}/Idle",
                 7f,
                 PixelsPerUnit,
-                CenterPivot,
+                FootPivot,
                 loop: true);
 
             var visualConfig = root.AddComponent<SpriteSheetBattleVisualConfig>();
@@ -166,7 +166,7 @@ namespace Fight.Editor
             serialized.FindProperty("spriteRenderer").objectReferenceValue = spriteRenderer;
             serialized.FindProperty("resourcesRoot").stringValue = WindchimeResourcePrefix;
             serialized.FindProperty("pixelsPerUnit").floatValue = PixelsPerUnit;
-            serialized.FindProperty("spritePivot").vector2Value = CenterPivot;
+            serialized.FindProperty("spritePivot").vector2Value = FootPivot;
 
             var clipsProperty = serialized.FindProperty("clips");
             clipsProperty.arraySize = ClipBuildSpecs.Length;

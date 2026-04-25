@@ -122,7 +122,7 @@ MonoBehaviour:
   resourcesFolder: HeroPreview/support_002_windchime_bellcaster/Idle
   framesPerSecond: 7
   pixelsPerUnit: 64
-  spritePivot: {x: 0.5, y: 0.5}
+  spritePivot: {x: 0.5, y: 0.08}
   playInEditMode: 1
   loop: 1
 --- !u!114 &616000000000000006
@@ -140,7 +140,7 @@ MonoBehaviour:
   spriteRenderer: {fileID: 616000000000000004}
   resourcesRoot: HeroPreview/support_002_windchime_bellcaster
   pixelsPerUnit: 64
-  spritePivot: {x: 0.5, y: 0.5}
+  spritePivot: {x: 0.5, y: 0.08}
   clips:
   - key: Idle
     resourcesFolder: Idle
