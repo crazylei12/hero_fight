@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using Fight.Battle;
+using Fight.Core;
 using Fight.Data;
 using Fight.Heroes;
 using Fight.UI.Preview;
@@ -48,6 +49,9 @@ namespace Fight.UI
         private const float DashChargeMinDistance = 0.2f;
         private const float DashChargeLifetimePaddingSeconds = 0.08f;
         private const float DashChargeMinLifetimeSeconds = 0.18f;
+        private const float ReturningPathProjectileHeightOffset = 0.24f;
+        private const float ReturningPathProjectileArcHeight = 0.18f;
+        private const float ReturningPathProjectileSpinDegreesPerFlight = -720f;
         private const int HealEventVfxSortOrderOffset = 190;
         private const int DamageEventVfxSortOrderOffset = 188;
         private const int DeployableProxySortOrderOffset = -3;
@@ -2225,6 +2229,11 @@ namespace Fight.UI
                 SpawnThrownProjectileImpact(skillAreaPulseEvent.Area);
             }
 
+            if (battleEvent is ReturningPathStrikeQueuedEvent returningPathStrikeQueuedEvent)
+            {
+                PlayReturningPathStrikeProjectileVfx(returningPathStrikeQueuedEvent);
+            }
+
             if (battleEvent is StatusAppliedEvent statusAppliedEvent)
             {
                 if (statusAppliedEvent.EffectType == StatusEffectType.DamageShare
@@ -3031,6 +3040,93 @@ namespace Fight.UI
                 SkillAreaEffectSortOrder,
                 Quaternion.Euler(area.Skill.persistentAreaVfxEulerAngles),
                 new Vector3(areaScale.x * multiplier, areaScale.y * multiplier, 1f));
+        }
+
+        private void PlayReturningPathStrikeProjectileVfx(ReturningPathStrikeQueuedEvent returningPath)
+        {
+            if (returningPath?.Skill?.castProjectileVfxPrefab == null || transientWorldVfxRoot == null)
+            {
+                return;
+            }
+
+            StartCoroutine(PlayReturningPathStrikeProjectileVfxRoutine(returningPath));
+        }
+
+        private IEnumerator PlayReturningPathStrikeProjectileVfxRoutine(ReturningPathStrikeQueuedEvent returningPath)
+        {
+            if (returningPath.DelaySeconds > Mathf.Epsilon)
+            {
+                yield return new WaitForSeconds(returningPath.DelaySeconds);
+            }
+
+            var prefab = returningPath.Skill != null ? returningPath.Skill.castProjectileVfxPrefab : null;
+            if (prefab == null || transientWorldVfxRoot == null)
+            {
+                yield break;
+            }
+
+            var instance = Instantiate(prefab, transientWorldVfxRoot, false);
+            instance.name = $"{prefab.name}_{returningPath.StrikeId}_Transient";
+            RemovePrefabPhysics(instance);
+            ConfigureTransientParticleSystems(instance, forceOneShotEmission: false);
+
+            var sortingGroup = instance.GetComponent<SortingGroup>();
+            var renderers = instance.GetComponentsInChildren<Renderer>(true);
+            var start = Map(returningPath.StartPosition) + new Vector3(0f, ReturningPathProjectileHeightOffset, 0f);
+            var end = Map(returningPath.EndPosition) + new Vector3(0f, ReturningPathProjectileHeightOffset, 0f);
+            var duration = Mathf.Max(0.05f, returningPath.TravelDurationSeconds);
+            var elapsed = 0f;
+
+            while (instance != null && elapsed < duration)
+            {
+                var progress = Mathf.Clamp01(elapsed / duration);
+                ApplyReturningPathProjectileTransform(instance.transform, sortingGroup, renderers, start, end, progress);
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            if (instance != null)
+            {
+                ApplyReturningPathProjectileTransform(instance.transform, sortingGroup, renderers, start, end, 1f);
+                Destroy(instance);
+            }
+        }
+
+        private void ApplyReturningPathProjectileTransform(
+            Transform projectile,
+            SortingGroup sortingGroup,
+            Renderer[] renderers,
+            Vector3 start,
+            Vector3 end,
+            float progress)
+        {
+            if (projectile == null)
+            {
+                return;
+            }
+
+            var position = Vector3.Lerp(start, end, Mathf.Clamp01(progress));
+            position.y += ParabolicMotionUtility.EvaluateHeightOffset(progress, ReturningPathProjectileArcHeight);
+            projectile.position = position;
+
+            var direction = end - start;
+            var baseAngle = direction.sqrMagnitude > 0.0001f
+                ? Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg
+                : 0f;
+            projectile.rotation = Quaternion.Euler(
+                0f,
+                0f,
+                baseAngle - 90f + (progress * ReturningPathProjectileSpinDegreesPerFlight));
+
+            var sortingOrder = Sort(position.y, ThrownProjectileSortOrderOffset);
+            if (sortingGroup != null)
+            {
+                sortingGroup.sortingOrder = sortingOrder;
+            }
+            else
+            {
+                SetRendererSorting(renderers, sortingOrder);
+            }
         }
 
         private IEnumerator FadeBlinkGhostSnapshot(

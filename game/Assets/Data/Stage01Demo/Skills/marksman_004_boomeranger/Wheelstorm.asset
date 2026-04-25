@@ -24,6 +24,8 @@ MonoBehaviour:
   fallbackTargetType: 0
   targetPrioritySearchRadius: 0
   targetPriorityRequiredUnitCount: 1
+  variantSelectionMode: 0
+  variants: []
   passiveSkill:
     missingHealthAttackPowerRatio: 0
     maxAttackPowerBonus: 0
@@ -61,8 +63,8 @@ MonoBehaviour:
       activeSkillCooldownCapSeconds: 0
       tickIntervalSeconds: 1
       maxStacks: 1
-      stackGroupKey: 
-      statusThemeKey: 
+      stackGroupKey:
+      statusThemeKey:
       refreshDurationOnReapply: 1
     triggerStatusEffects: []
   castRange: 0
@@ -74,7 +76,7 @@ MonoBehaviour:
     targetMode: 0
     powerMultiplier: 1.2
     statusStackQueryEffectType: 0
-    statusStackQueryThemeKey: 
+    statusStackQueryThemeKey:
     minimumRequiredStatusStacks: 0
     bonusPowerMultiplierPerStatusStack: 0
     consumeQueriedStatusesOnHit: 0
@@ -102,6 +104,12 @@ MonoBehaviour:
     deployableProxyAttackRange: 0
     deployableProxyProjectileSpeedOverride: 0
     deployableProxyStartingVariantIndex: 0
+    deployableProxySpawnVfxPrefab: {fileID: 0}
+    deployableProxyLoopVfxPrefab: {fileID: 0}
+    deployableProxyRemovalVfxPrefab: {fileID: 0}
+    deployableProxyVfxLocalOffset: {x: 0, y: 0, z: 0}
+    deployableProxyVfxEulerAngles: {x: 0, y: 0, z: 0}
+    deployableProxyVfxScaleMultiplier: {x: 1, y: 1, z: 1}
     returningPathStrikePhase: 0
     returningPathMaxDistance: 0
     returningPathWidth: 0
@@ -169,7 +177,7 @@ MonoBehaviour:
   dashTravelVfxEulerAngles: {x: 0, y: 0, z: 0}
   dashTravelVfxScaleMultiplier: {x: 1, y: 1, z: 1}
   dashTravelVfxPathWidthScaleMultiplier: 1
-  persistentAreaVfxPrefab: {fileID: 0}
+  persistentAreaVfxPrefab: {fileID: 7400000000000000001, guid: 729b9d616fee4ea393248eb5daef1d0e, type: 3}
   persistentAreaVfxScaleMultiplier: 1
   persistentAreaVfxEulerAngles: {x: 0, y: 0, z: 0}
   skillAreaPresentationType: 0
@@ -185,7 +193,7 @@ MonoBehaviour:
       highValueTargetType: 0
       heroClassFilter: 2
       statusEffectTypeFilter: 0
-      statusThemeKey: 
+      statusThemeKey:
       minimumStatusStacks: 1
       requireTargetInCastRange: 1
     secondaryCondition:
@@ -197,7 +205,7 @@ MonoBehaviour:
       highValueTargetType: 0
       heroClassFilter: 2
       statusEffectTypeFilter: 0
-      statusThemeKey: 
+      statusThemeKey:
       minimumStatusStacks: 1
       requireTargetInCastRange: 1
     fallback:
@@ -217,7 +225,19 @@ MonoBehaviour:
         highValueTargetType: 0
         heroClassFilter: 2
         statusEffectTypeFilter: 0
-        statusThemeKey: 
+        statusThemeKey:
+        minimumStatusStacks: 1
+        requireTargetInCastRange: 1
+      alternateSecondaryCondition:
+        conditionType: 0
+        searchRadius: 0
+        requiredUnitCount: 1
+        healthPercentThreshold: 1
+        durationSeconds: 0
+        highValueTargetType: 0
+        heroClassFilter: 2
+        statusEffectTypeFilter: 0
+        statusThemeKey:
         minimumStatusStacks: 1
         requireTargetInCastRange: 1
     combineMode: 0

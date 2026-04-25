@@ -52,14 +52,14 @@ MonoBehaviour:
     battlePrefab: {fileID: 618000000000000001, guid: 3867f32fdb6ce6a4ba4f298e8c5ee860, type: 3}
     animatorController: {fileID: 0}
     battlePrefabFacesLeftByDefault: 0
-    projectilePrefab: {fileID: 1000000000000000001, guid: 0b6d4f0aa0184954b8c50b3ee9bd5075, type: 3}
+    projectilePrefab: {fileID: 7100000000000000001, guid: 5f16f7aaae66489d870e3522c29db607, type: 3}
     projectileAlignToMovement: 1
     projectileEulerAngles: {x: 0, y: 0, z: 0}
     castVfxPrefab: {fileID: 0}
     hitVfxPrefab: {fileID: 0}
     basicAttackVariantVisuals:
     - variantKey: bounce
-      projectilePrefab: {fileID: 1000000000000000001, guid: 0b6d4f0aa0184954b8c50b3ee9bd5075, type: 3}
+      projectilePrefab: {fileID: 7200000000000000001, guid: 7652655cee664ed98dbce793f1e60274, type: 3}
       hitVfxPrefab: {fileID: 0}
     castSfx: {fileID: 0}
   debugNotes: Stage-01 demo hero for Marksman. Boomeranger validates short-range

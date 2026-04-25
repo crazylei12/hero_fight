@@ -70,6 +70,10 @@ namespace Fight.Editor
         private const string FireMageProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/FireMageBasicAttackProjectile.prefab";
         private const string FrostMageProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/FrostMageBasicAttackProjectile.prefab";
         private const string LongshotProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/LongshotBasicAttackProjectile.prefab";
+        private const string BoomerangerBasicProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/BoomerangerWheelProjectile.prefab";
+        private const string BoomerangerBounceProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/BoomerangerWheelBounceProjectile.prefab";
+        private const string BoomerangerActiveProjectileVfxPrefabPath = "Assets/Prefabs/VFX/Projectiles/BoomerangerReturningWheelProjectile.prefab";
+        private const string BoomerangerUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/BoomerangerWheelstormOrbit.prefab";
         private const string RiflemanProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/RiflemanBasicAttackProjectile.prefab";
         private const string ShrinemaidenDamageProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/ShrinemaidenDamageProjectile.prefab";
         private const string ShrinemaidenHealProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/ShrinemaidenHealProjectile.prefab";
@@ -1146,7 +1150,7 @@ namespace Fight.Editor
                 "marksman_001_longshot" => AssetDatabase.LoadAssetAtPath<GameObject>(LongshotProjectilePrefabPath),
                 "marksman_002_rifleman" => AssetDatabase.LoadAssetAtPath<GameObject>(RiflemanProjectilePrefabPath),
                 "marksman_003_venomshooter" => AssetDatabase.LoadAssetAtPath<GameObject>(LongshotProjectilePrefabPath),
-                "marksman_004_boomeranger" => AssetDatabase.LoadAssetAtPath<GameObject>(LongshotProjectilePrefabPath),
+                "marksman_004_boomeranger" => AssetDatabase.LoadAssetAtPath<GameObject>(BoomerangerBasicProjectilePrefabPath),
                 "support_001_sunpriest" => AssetDatabase.LoadAssetAtPath<GameObject>(SunpriestProjectilePrefabPath),
                 "support_002_windchime" => AssetDatabase.LoadAssetAtPath<GameObject>(SunpriestProjectilePrefabPath),
                 "support_004_shrinemaiden" => AssetDatabase.LoadAssetAtPath<GameObject>(ShrinemaidenDamageProjectilePrefabPath),
@@ -1760,6 +1764,7 @@ namespace Fight.Editor
                 0.4f,
                 ReturningPathStrikePhase.Return);
 
+            ConfigureBoomerangerActiveSkillVfx(skill);
             skill.description = "Stage-01 demo skill: throws a fixed-direction wheel that damages once on the outbound path and once again on the return path.";
             ResetActionSequence(skill);
             ResetUltimateDecision(skill);
@@ -1796,11 +1801,40 @@ namespace Fight.Editor
             skill.allowsSelfCast = true;
             skill.effects.Clear();
             AddPersistentAreaEffect(skill, PersistentAreaPulseEffectType.DirectDamage, PersistentAreaTargetType.Enemies, 1.2f, skill.areaRadius, 4.8f, 0.4f, true);
+            ConfigureBoomerangerUltimateSkillVfx(skill);
             skill.description = "Stage-01 demo skill: creates a short-range rotating wheel storm around the caster that repeatedly cuts nearby enemies.";
             ResetActionSequence(skill);
             ResetUltimateDecision(skill);
             EditorUtility.SetDirty(skill);
             return skill;
+        }
+
+        private static void ConfigureBoomerangerActiveSkillVfx(SkillData skill)
+        {
+            if (skill == null)
+            {
+                return;
+            }
+
+            skill.castProjectileVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(BoomerangerActiveProjectileVfxPrefabPath);
+            skill.persistentAreaVfxPrefab = null;
+            skill.persistentAreaVfxScaleMultiplier = 1f;
+            skill.persistentAreaVfxEulerAngles = Vector3.zero;
+            skill.skillAreaPresentationType = SkillAreaPresentationType.None;
+        }
+
+        private static void ConfigureBoomerangerUltimateSkillVfx(SkillData skill)
+        {
+            if (skill == null)
+            {
+                return;
+            }
+
+            skill.castProjectileVfxPrefab = null;
+            skill.persistentAreaVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(BoomerangerUltimateAreaVfxPrefabPath);
+            skill.persistentAreaVfxScaleMultiplier = 1f;
+            skill.persistentAreaVfxEulerAngles = Vector3.zero;
+            skill.skillAreaPresentationType = SkillAreaPresentationType.None;
         }
 
         private static SkillData CreateTidefinUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
@@ -3456,7 +3490,7 @@ namespace Fight.Editor
             hero.basicAttack.bounce.bounceVariantKey = "bounce";
 
             hero.visualConfig ??= new HeroVisualConfig();
-            hero.visualConfig.projectilePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(LongshotProjectilePrefabPath);
+            hero.visualConfig.projectilePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(BoomerangerBasicProjectilePrefabPath);
             hero.visualConfig.projectileAlignToMovement = true;
             hero.visualConfig.projectileEulerAngles = Vector3.zero;
             hero.visualConfig.basicAttackVariantVisuals = new[]
@@ -3464,7 +3498,7 @@ namespace Fight.Editor
                 new BasicAttackVariantVisualConfig
                 {
                     variantKey = "bounce",
-                    projectilePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(LongshotProjectilePrefabPath),
+                    projectilePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(BoomerangerBounceProjectilePrefabPath),
                     hitVfxPrefab = null,
                 },
             };
@@ -4384,6 +4418,7 @@ namespace Fight.Editor
             skill.areaRadius = 5f;
             skill.minTargetsToCast = 1;
             skill.allowsSelfCast = true;
+            ConfigureBoomerangerUltimateSkillVfx(skill);
 
             ResetUltimateDecision(skill);
             skill.ultimateDecision.targetingType = UltimateTargetingType.Self;

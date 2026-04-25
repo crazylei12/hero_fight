@@ -24,6 +24,8 @@ MonoBehaviour:
   fallbackTargetType: 3
   targetPrioritySearchRadius: 0
   targetPriorityRequiredUnitCount: 1
+  variantSelectionMode: 0
+  variants: []
   passiveSkill:
     missingHealthAttackPowerRatio: 0
     maxAttackPowerBonus: 0
@@ -61,8 +63,8 @@ MonoBehaviour:
       activeSkillCooldownCapSeconds: 0
       tickIntervalSeconds: 1
       maxStacks: 1
-      stackGroupKey: 
-      statusThemeKey: 
+      stackGroupKey:
+      statusThemeKey:
       refreshDurationOnReapply: 1
     triggerStatusEffects: []
   castRange: 9.2
@@ -74,7 +76,7 @@ MonoBehaviour:
     targetMode: 0
     powerMultiplier: 1.6
     statusStackQueryEffectType: 0
-    statusStackQueryThemeKey: 
+    statusStackQueryThemeKey:
     minimumRequiredStatusStacks: 0
     bonusPowerMultiplierPerStatusStack: 0
     consumeQueriedStatusesOnHit: 0
@@ -102,6 +104,12 @@ MonoBehaviour:
     deployableProxyAttackRange: 0
     deployableProxyProjectileSpeedOverride: 0
     deployableProxyStartingVariantIndex: 0
+    deployableProxySpawnVfxPrefab: {fileID: 0}
+    deployableProxyLoopVfxPrefab: {fileID: 0}
+    deployableProxyRemovalVfxPrefab: {fileID: 0}
+    deployableProxyVfxLocalOffset: {x: 0, y: 0, z: 0}
+    deployableProxyVfxEulerAngles: {x: 0, y: 0, z: 0}
+    deployableProxyVfxScaleMultiplier: {x: 1, y: 1, z: 1}
     returningPathStrikePhase: 0
     returningPathMaxDistance: 10.5
     returningPathWidth: 1.5
@@ -118,7 +126,7 @@ MonoBehaviour:
     targetMode: 0
     powerMultiplier: 1.2
     statusStackQueryEffectType: 0
-    statusStackQueryThemeKey: 
+    statusStackQueryThemeKey:
     minimumRequiredStatusStacks: 0
     bonusPowerMultiplierPerStatusStack: 0
     consumeQueriedStatusesOnHit: 0
@@ -146,6 +154,12 @@ MonoBehaviour:
     deployableProxyAttackRange: 0
     deployableProxyProjectileSpeedOverride: 0
     deployableProxyStartingVariantIndex: 0
+    deployableProxySpawnVfxPrefab: {fileID: 0}
+    deployableProxyLoopVfxPrefab: {fileID: 0}
+    deployableProxyRemovalVfxPrefab: {fileID: 0}
+    deployableProxyVfxLocalOffset: {x: 0, y: 0, z: 0}
+    deployableProxyVfxEulerAngles: {x: 0, y: 0, z: 0}
+    deployableProxyVfxScaleMultiplier: {x: 1, y: 1, z: 1}
     returningPathStrikePhase: 1
     returningPathMaxDistance: 10.5
     returningPathWidth: 1.5
@@ -206,7 +220,7 @@ MonoBehaviour:
   castImpactVfxAlignToTargetDirection: 0
   castImpactVfxScaleWithSkillArea: 0
   castImpactVfxAreaDiameterScaleMultiplier: 1
-  castProjectileVfxPrefab: {fileID: 0}
+  castProjectileVfxPrefab: {fileID: 7300000000000000001, guid: 04e853a7c9e34b578cbb237e5dbb0ab8, type: 3}
   dashTravelVfxPrefab: {fileID: 0}
   dashTravelVfxLocalOffset: {x: 0, y: 0, z: 0}
   dashTravelVfxForwardOffset: 0
@@ -229,7 +243,7 @@ MonoBehaviour:
       highValueTargetType: 0
       heroClassFilter: 2
       statusEffectTypeFilter: 0
-      statusThemeKey: 
+      statusThemeKey:
       minimumStatusStacks: 1
       requireTargetInCastRange: 1
     secondaryCondition:
@@ -241,7 +255,7 @@ MonoBehaviour:
       highValueTargetType: 0
       heroClassFilter: 2
       statusEffectTypeFilter: 0
-      statusThemeKey: 
+      statusThemeKey:
       minimumStatusStacks: 1
       requireTargetInCastRange: 1
     fallback:
@@ -261,7 +275,19 @@ MonoBehaviour:
         highValueTargetType: 0
         heroClassFilter: 2
         statusEffectTypeFilter: 0
-        statusThemeKey: 
+        statusThemeKey:
+        minimumStatusStacks: 1
+        requireTargetInCastRange: 1
+      alternateSecondaryCondition:
+        conditionType: 0
+        searchRadius: 0
+        requiredUnitCount: 1
+        healthPercentThreshold: 1
+        durationSeconds: 0
+        highValueTargetType: 0
+        heroClassFilter: 2
+        statusEffectTypeFilter: 0
+        statusThemeKey:
         minimumStatusStacks: 1
         requireTargetInCastRange: 1
     combineMode: 0
