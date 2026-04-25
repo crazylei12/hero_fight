@@ -147,11 +147,11 @@
 
 当前巫女像素图接入规则：
 
-- 当前巫女角色模型临时切换为 `support_004_shrinemaiden/ShrinemaidenPythoness.prefab`，用于实战预览 `mage_004_pythoness` 精灵图模型观感
-- `ShrinemaidenPythoness.prefab` 通过 `SpriteSheetBattleVisualConfig` 读取 `Resources/HeroPreview/mage_004_pythoness` 下的 Idle / Run / Attack / Skill / Ult / Hit / Death 帧序列，不使用 HeroEditor animator controller
-- 当前该预览 prefab 的根缩放为 `1.5`，用于补偿 64x64 像素帧在当前战斗视角下偏小的问题
+- 当前巫女角色模型已切换为 `support_004_shrinemaiden/ShrinemaidenWunv.prefab`，使用用户提供的 `wunv.png` 精灵图作为正式战斗预览模型
+- `ShrinemaidenWunv.prefab` 通过 `SpriteSheetBattleVisualConfig` 读取 `Resources/HeroPreview/support_004_shrinemaiden_wunv` 下的 Idle / Run / Jump / Attack1 / Attack2 / Skill / Ult / Hit / Death 帧序列，不使用 HeroEditor animator controller
+- 当前该 prefab 的根缩放为 `1.35`，每帧按 `64` pixels per unit 导入，pivot 使用脚底附近的 `{x: 0.5, y: 0.06}`
 - `pythoness__38.png` / `pythoness_effect__73.png` 继续作为特效帧素材来源，实际运行特效引用整理后的项目 prefab
-- 如果后续用户确认要改回独立巫女正式模型，应同步修改 `Shrinemaiden.asset`、`Stage01SampleContentBuilder.cs` 和 `PythonessVfxPrefabBuilder.cs`，避免重建内容后引用回退
+- 如果后续再次替换巫女本体模型，应同步修改 `Shrinemaiden.asset`、`Stage01SampleContentBuilder.cs`、`ShrinemaidenWunvVisualBuilder.cs` 和 `PythonessVfxPrefabBuilder.cs`，避免重建内容后引用回退
 - 部署物如果需要进入 / 循环 / 离场三段表现，优先使用 `SkillEffectData.deployableProxySpawnVfxPrefab`、`deployableProxyLoopVfxPrefab`、`deployableProxyRemovalVfxPrefab`，不要写英雄专属的播放分支
 
 ## 当前资源包速查索引

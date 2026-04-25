@@ -18,7 +18,7 @@ namespace Fight.Editor
         private const string ShrinemaidenHeroAssetPath = "Assets/Data/Stage01Demo/Heroes/support_004_shrinemaiden/Shrinemaiden.asset";
         private const string ShrinemaidenActiveSkillAssetPath = "Assets/Data/Stage01Demo/Skills/support_004_shrinemaiden/Prayer Bloom.asset";
         private const string ShrinemaidenUltimateSkillAssetPath = "Assets/Data/Stage01Demo/Skills/support_004_shrinemaiden/Twin Rite Totem.asset";
-        private const string ShrinemaidenPrefabPath = "Assets/Prefabs/Heroes/support_004_shrinemaiden/ShrinemaidenPythoness.prefab";
+        private const string ShrinemaidenPrefabPath = "Assets/Prefabs/Heroes/support_004_shrinemaiden/ShrinemaidenWunv.prefab";
         private const string DamageProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/ShrinemaidenDamageProjectile.prefab";
         private const string HealProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/ShrinemaidenHealProjectile.prefab";
         private const string DamageImpactPrefabPath = "Assets/Prefabs/VFX/Shared/ShrinemaidenDamageImpact.prefab";

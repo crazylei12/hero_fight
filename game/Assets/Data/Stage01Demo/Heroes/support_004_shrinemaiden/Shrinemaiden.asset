@@ -39,7 +39,7 @@ MonoBehaviour:
       maxAdditionalTargets: 0
       searchRadius: 0
       powerMultiplier: 0
-      bounceVariantKey: 
+      bounceVariantKey:
     onHitStatusEffects: []
     variants:
     - variantKey: attack_damage
@@ -60,10 +60,10 @@ MonoBehaviour:
   ultimateSkill: {fileID: 11400000, guid: 77a68935814e71745acaf50ce02e8030, type: 2}
   aiTemplateId: support_default
   usesSpecialLogic: 0
-  specialLogicNotes: 
+  specialLogicNotes:
   visualConfig:
     portrait: {fileID: 21300000, guid: da914a8601e453a42859225de8466e27, type: 3}
-    battlePrefab: {fileID: 615000000000000001, guid: d488ca5d0b5f4f4a8e6365d5deec30a1, type: 3}
+    battlePrefab: {fileID: 617000000000000001, guid: d0a4b7c611ed4d5bb4a9a2c5f1b0e48f, type: 3}
     animatorController: {fileID: 0}
     battlePrefabFacesLeftByDefault: 0
     projectilePrefab: {fileID: 615100000000000001, guid: a09b1006d2204a9bb74e7cb1394c8a01, type: 3}
