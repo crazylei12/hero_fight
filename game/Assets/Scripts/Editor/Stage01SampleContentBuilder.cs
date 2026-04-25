@@ -1328,7 +1328,7 @@ namespace Fight.Editor
                 "Shadow Blink",
                 SkillSlotType.ActiveSkill,
                 SkillType.Dash,
-                SkillTargetType.NearestEnemy,
+                SkillTargetType.BackmostEnemy,
                 Stage01ArenaSpec.FullMapTargetingRangeWorldUnits,
                 0f,
                 0f,
@@ -1342,7 +1342,8 @@ namespace Fight.Editor
             }
 
             skill.skillType = SkillType.Dash;
-            skill.targetType = SkillTargetType.NearestEnemy;
+            skill.targetType = SkillTargetType.BackmostEnemy;
+            skill.fallbackTargetType = SkillTargetType.NearestEnemy;
             skill.castRange = Stage01ArenaSpec.FullMapTargetingRangeWorldUnits;
             skill.areaRadius = 0f;
             skill.cooldownSeconds = 6f;

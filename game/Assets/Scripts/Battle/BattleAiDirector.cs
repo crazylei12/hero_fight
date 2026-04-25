@@ -803,9 +803,10 @@ namespace Fight.Battle
         private static RuntimeHero FindBackmostEnemy(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange)
         {
             RuntimeHero best = null;
-            var lowestSpawnDistance = float.MaxValue;
+            var bestRearDepth = float.MinValue;
             var lowestHealthRatio = float.MaxValue;
             var lowestCurrentHealth = float.MaxValue;
+            var nearestActorDistance = float.MaxValue;
 
             for (var i = 0; i < heroes.Count; i++)
             {
@@ -821,43 +822,60 @@ namespace Fight.Battle
                     continue;
                 }
 
-                var spawnDistance = Vector3.Distance(candidate.CurrentPosition, candidate.SpawnPosition);
+                var rearDepth = GetRearDepth(candidate);
                 var healthRatio = candidate.MaxHealth > 0f ? candidate.CurrentHealth / candidate.MaxHealth : 1f;
                 var currentHealth = candidate.CurrentHealth;
                 if (!IsBetterBackmostEnemyCandidate(
-                        spawnDistance,
+                        rearDepth,
                         healthRatio,
                         currentHealth,
-                        lowestSpawnDistance,
+                        distanceToActor,
+                        bestRearDepth,
                         lowestHealthRatio,
-                        lowestCurrentHealth))
+                        lowestCurrentHealth,
+                        nearestActorDistance))
                 {
                     continue;
                 }
 
-                lowestSpawnDistance = spawnDistance;
+                bestRearDepth = rearDepth;
                 lowestHealthRatio = healthRatio;
                 lowestCurrentHealth = currentHealth;
+                nearestActorDistance = distanceToActor;
                 best = candidate;
             }
 
             return best;
         }
 
+        private static float GetRearDepth(RuntimeHero hero)
+        {
+            if (hero == null)
+            {
+                return float.MinValue;
+            }
+
+            return hero.Side == TeamSide.Blue
+                ? -hero.CurrentPosition.x
+                : hero.CurrentPosition.x;
+        }
+
         private static bool IsBetterBackmostEnemyCandidate(
-            float spawnDistance,
+            float rearDepth,
             float healthRatio,
             float currentHealth,
-            float bestSpawnDistance,
+            float distanceToActor,
+            float bestRearDepth,
             float bestHealthRatio,
-            float bestCurrentHealth)
+            float bestCurrentHealth,
+            float bestDistanceToActor)
         {
-            if (spawnDistance < bestSpawnDistance - Mathf.Epsilon)
+            if (rearDepth > bestRearDepth + Mathf.Epsilon)
             {
                 return true;
             }
 
-            if (Mathf.Abs(spawnDistance - bestSpawnDistance) > Mathf.Epsilon)
+            if (Mathf.Abs(rearDepth - bestRearDepth) > Mathf.Epsilon)
             {
                 return false;
             }
@@ -872,7 +890,17 @@ namespace Fight.Battle
                 return false;
             }
 
-            return currentHealth < bestCurrentHealth - Mathf.Epsilon;
+            if (currentHealth < bestCurrentHealth - Mathf.Epsilon)
+            {
+                return true;
+            }
+
+            if (Mathf.Abs(currentHealth - bestCurrentHealth) > Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            return distanceToActor < bestDistanceToActor;
         }
 
         private static bool IsBetterHighestDamageEnemyCandidate(
