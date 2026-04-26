@@ -149,7 +149,7 @@ namespace Fight.Editor
 
                 for (var i = 0; i < frameRects.Length; i++)
                 {
-                    var frameTexture = CropFrame(sourceTexture, frameRects[i], outputFrameWidth, outputFrameHeight);
+                    var frameTexture = CropFrame(sourceTexture, frameRects[i], outputFrameWidth, outputFrameHeight, spec.SourceRow);
                     var assetPath = $"{folderPath}/{spec.FilePrefix}_{i:00}.png";
                     File.WriteAllBytes(ToAbsolutePath(assetPath), frameTexture.EncodeToPNG());
                     UnityEngine.Object.DestroyImmediate(frameTexture);
@@ -277,7 +277,7 @@ namespace Fight.Editor
             return rects;
         }
 
-        private static Texture2D CropFrame(Texture2D sourceTexture, RectInt pngRect, int outputFrameWidth, int outputFrameHeight)
+        private static Texture2D CropFrame(Texture2D sourceTexture, RectInt pngRect, int outputFrameWidth, int outputFrameHeight, int sourceRow)
         {
             var topLeftPixels = new Color32[outputFrameWidth * outputFrameHeight];
             var horizontalPadding = Mathf.Max(0, (outputFrameWidth - pngRect.width) / 2);
@@ -303,7 +303,7 @@ namespace Fight.Editor
                 }
             }
 
-            RemoveConnectedSheetBackground(topLeftPixels, outputFrameWidth, outputFrameHeight);
+            RemoveConnectedSheetBackground(topLeftPixels, outputFrameWidth, outputFrameHeight, sourceRow);
 
             var unityPixels = new Color32[topLeftPixels.Length];
             for (var y = 0; y < outputFrameHeight; y++)
@@ -433,7 +433,7 @@ namespace Fight.Editor
             return average <= 95f && max - min <= 35;
         }
 
-        private static void RemoveConnectedSheetBackground(Color32[] pixels, int width, int height)
+        private static void RemoveConnectedSheetBackground(Color32[] pixels, int width, int height, int sourceRow)
         {
             var visited = new bool[pixels.Length];
             var queue = new Queue<int>();
@@ -461,6 +461,82 @@ namespace Fight.Editor
                 EnqueueIfBackground(x - 1, y, width, height, pixels, visited, queue);
                 EnqueueIfBackground(x, y + 1, width, height, pixels, visited, queue);
                 EnqueueIfBackground(x, y - 1, width, height, pixels, visited, queue);
+            }
+
+            if (sourceRow != 6)
+            {
+                RemoveLowerBodyCheckerIslands(pixels, width, height);
+            }
+        }
+
+        private static void RemoveLowerBodyCheckerIslands(Color32[] pixels, int width, int height)
+        {
+            const int minIslandPixels = 24;
+            var scanStartY = Mathf.RoundToInt(height * 0.52f);
+            var mustReachY = Mathf.RoundToInt(height * 0.62f);
+            var visited = new bool[pixels.Length];
+            var queue = new Queue<int>();
+            var island = new List<int>();
+
+            for (var y = scanStartY; y < height; y++)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    var startIndex = y * width + x;
+                    if (visited[startIndex] || !IsOpaqueNeutralCheckerPixel(pixels[startIndex]))
+                    {
+                        continue;
+                    }
+
+                    var minY = y;
+                    var maxY = y;
+                    island.Clear();
+                    visited[startIndex] = true;
+                    queue.Enqueue(startIndex);
+
+                    while (queue.Count > 0)
+                    {
+                        var index = queue.Dequeue();
+                        island.Add(index);
+
+                        var currentY = index / width;
+                        minY = Mathf.Min(minY, currentY);
+                        maxY = Mathf.Max(maxY, currentY);
+                        var currentX = index % width;
+
+                        EnqueueIslandPixel(currentX + 1, currentY);
+                        EnqueueIslandPixel(currentX - 1, currentY);
+                        EnqueueIslandPixel(currentX, currentY + 1);
+                        EnqueueIslandPixel(currentX, currentY - 1);
+                    }
+
+                    if (island.Count < minIslandPixels || maxY < mustReachY || minY < scanStartY)
+                    {
+                        continue;
+                    }
+
+                    foreach (var index in island)
+                    {
+                        pixels[index].a = 0;
+                    }
+
+                    void EnqueueIslandPixel(int px, int py)
+                    {
+                        if (px < 0 || px >= width || py < scanStartY || py >= height)
+                        {
+                            return;
+                        }
+
+                        var nextIndex = py * width + px;
+                        if (visited[nextIndex] || !IsOpaqueNeutralCheckerPixel(pixels[nextIndex]))
+                        {
+                            return;
+                        }
+
+                        visited[nextIndex] = true;
+                        queue.Enqueue(nextIndex);
+                    }
+                }
             }
         }
 
@@ -504,6 +580,20 @@ namespace Fight.Editor
 
             return average >= 238f && spread <= 20
                 || average >= 218f && spread <= 12;
+        }
+
+        private static bool IsOpaqueNeutralCheckerPixel(Color32 color)
+        {
+            if (color.a == 0)
+            {
+                return false;
+            }
+
+            var min = Mathf.Min(color.r, Mathf.Min(color.g, color.b));
+            var max = Mathf.Max(color.r, Mathf.Max(color.g, color.b));
+            var average = (color.r + color.g + color.b) / 3f;
+            var spread = max - min;
+            return average >= 236f && spread <= 4;
         }
 
         private static bool TryLoadTexture(string assetPath, out Texture2D texture)
