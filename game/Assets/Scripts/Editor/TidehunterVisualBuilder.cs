@@ -24,6 +24,8 @@ namespace Fight.Editor
         private const int ExpectedActionRows = 8;
         private const float GridLineCoverageRatio = 0.8f;
         private const float PixelsPerUnit = 64f;
+        private const int SourceCellInsetPixels = 4;
+        private const int OutputBorderClearPixels = 4;
 
         private static readonly Vector2 FootPivot = new Vector2(0.5f, 0.07f);
 
@@ -272,12 +274,12 @@ namespace Fight.Editor
             }
 
             var rects = new RectInt[SourceFrameColumns];
-            var yMin = grid.HorizontalLines[sourceRow].Max + 1;
-            var yMax = grid.HorizontalLines[sourceRow + 1].Min - 1;
+            var yMin = grid.HorizontalLines[sourceRow].Max + 1 + SourceCellInsetPixels;
+            var yMax = grid.HorizontalLines[sourceRow + 1].Min - 1 - SourceCellInsetPixels;
             for (var i = 0; i < rects.Length; i++)
             {
-                var xMin = grid.VerticalLines[i].Max + 1;
-                var xMax = grid.VerticalLines[i + 1].Min - 1;
+                var xMin = grid.VerticalLines[i].Max + 1 + SourceCellInsetPixels;
+                var xMax = grid.VerticalLines[i + 1].Min - 1 - SourceCellInsetPixels;
                 rects[i] = new RectInt(
                     xMin,
                     yMin,
@@ -520,9 +522,8 @@ namespace Fight.Editor
                 return;
             }
 
-            const int borderWidth = 2;
-            var maxBorderX = Mathf.Min(borderWidth, width);
-            var maxBorderY = Mathf.Min(borderWidth, height);
+            var maxBorderX = Mathf.Min(OutputBorderClearPixels, width);
+            var maxBorderY = Mathf.Min(OutputBorderClearPixels, height);
 
             for (var y = 0; y < maxBorderY; y++)
             {
