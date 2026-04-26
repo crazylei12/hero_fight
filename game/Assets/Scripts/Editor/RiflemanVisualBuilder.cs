@@ -19,10 +19,10 @@ namespace Fight.Editor
         private const string RiflemanPortraitPath = "Assets/Prefabs/Heroes/marksman_002_rifleman/Rifleman_idle_front.png";
         private const string RiflemanHeroAssetPath = "Assets/Data/Stage01Demo/Heroes/marksman_002_rifleman/Rifleman.asset";
         private const string BuilderScriptAssetPath = "Assets/Scripts/Editor/RiflemanVisualBuilder.cs";
-        private const int SourceColumns = 8;
+        private const int SourceColumns = 9;
         private const int SourceRows = 7;
-        private const int OutputFrameWidth = 180;
-        private const int OutputFrameHeight = 160;
+        private const int OutputFrameWidth = 158;
+        private const int OutputFrameHeight = 158;
         private const float PixelsPerUnit = 64f;
 
         private static readonly Vector2 FootPivot = new Vector2(0.5f, 0.06f);
