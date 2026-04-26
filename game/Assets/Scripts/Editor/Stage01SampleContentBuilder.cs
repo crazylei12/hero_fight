@@ -1130,6 +1130,7 @@ namespace Fight.Editor
                 || heroId == "warrior_002_bladesman"
                 || heroId == "marksman_004_boomeranger"
                 || heroId == "support_004_shrinemaiden"
+                || heroId == "tank_002_shieldwarden"
                 || heroId == "tank_004_mundo"
                 ? null
                 : battlePrefab != null
