@@ -3945,6 +3945,8 @@ namespace Fight.Editor
             skill.allowsSelfCast = false;
 
             ResetUltimateDecision(skill);
+            skill.castProjectileVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ButcherHookChainProjectileVfxPrefabPath);
+            skill.skillAreaPresentationType = SkillAreaPresentationType.None;
             skill.ultimateDecision.targetingType = UltimateTargetingType.UseSkillTargetType;
             skill.ultimateDecision.combineMode = UltimateConditionCombineMode.PrimaryOnly;
             skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;
@@ -4002,8 +4004,6 @@ namespace Fight.Editor
             }
 
             ResetUltimateDecision(skill);
-            skill.castProjectileVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ButcherHookChainProjectileVfxPrefabPath);
-            skill.skillAreaPresentationType = SkillAreaPresentationType.None;
             skill.ultimateDecision.targetingType = UltimateTargetingType.UseSkillTargetType;
             skill.ultimateDecision.combineMode = UltimateConditionCombineMode.PrimaryOnly;
             skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;

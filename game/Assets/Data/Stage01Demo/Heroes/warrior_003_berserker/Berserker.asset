@@ -35,13 +35,18 @@ MonoBehaviour:
     targetType: 0
     targetPrioritySearchRadius: 0
     startingVariantIndex: 0
+    bounce:
+      maxAdditionalTargets: 0
+      searchRadius: 0
+      powerMultiplier: 0
+      bounceVariantKey:
     onHitStatusEffects: []
     variants: []
   activeSkill: {fileID: 11400000, guid: d769703fadf9d2642b9692bb5268ae81, type: 2}
   ultimateSkill: {fileID: 11400000, guid: c40ff6d6ec9b43d4fa3ec8e507f2e707, type: 2}
   aiTemplateId: warrior_default
   usesSpecialLogic: 0
-  specialLogicNotes: 
+  specialLogicNotes:
   visualConfig:
     portrait: {fileID: 21300000, guid: e45b24c0dae4f2549af5eae45f7eba14, type: 3}
     battlePrefab: {fileID: 192298359185670210, guid: 5ff49e768d360f748a5c7c1f21bc1029, type: 3}
