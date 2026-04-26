@@ -13,7 +13,8 @@ namespace Fight.Editor
     public static class BoomerangerVisualBuilder
     {
         private const string BuildMenuPath = "Fight/Stage 01/Build Boomeranger Visual";
-        private const string SourceSheetPath = "Assets/Art/Heroes/marksman_004_boomeranger/lunzima_source_sheet.png";
+        private const string BaseSourceSheetPath = "Assets/Art/Heroes/marksman_004_boomeranger/lunzima_source_sheet.png";
+        private const string RunSourceSheetPath = "Assets/Art/Heroes/marksman_004_boomeranger/boomeranger_run_source_sheet.png";
         private const string ResourcesRoot = "Assets/Resources/HeroPreview/marksman_004_boomeranger";
         private const string ResourcesPrefix = "HeroPreview/marksman_004_boomeranger";
         private const string BoomerangerPrefabPath = "Assets/Prefabs/Heroes/marksman_004_boomeranger/Boomeranger.prefab";
@@ -29,13 +30,13 @@ namespace Fight.Editor
 
         private static readonly ClipBuildSpec[] ClipBuildSpecs =
         {
-            new ClipBuildSpec("Idle", 0, "idle", 7f, true),
-            new ClipBuildSpec("Run", 1, "run", 12f, true),
-            new ClipBuildSpec("Attack1", 2, "attack", 16f, false),
-            new ClipBuildSpec("Skill", 3, "skill", 14f, false),
-            new ClipBuildSpec("Ult", 4, "ult", 12f, false),
-            new ClipBuildSpec("Hit", 6, "hit", 12f, false),
-            new ClipBuildSpec("Death", 7, "death", 9f, false),
+            new ClipBuildSpec("Idle", BaseSourceSheetPath, ExpectedActionRows + 1, 0, "idle", 7f, true),
+            new ClipBuildSpec("Run", RunSourceSheetPath, ExpectedActionRows + 1, 0, "run", 12f, true),
+            new ClipBuildSpec("Attack1", BaseSourceSheetPath, ExpectedActionRows + 1, 2, "attack", 16f, false),
+            new ClipBuildSpec("Skill", BaseSourceSheetPath, ExpectedActionRows + 1, 3, "skill", 14f, false),
+            new ClipBuildSpec("Ult", BaseSourceSheetPath, ExpectedActionRows + 1, 4, "ult", 12f, false),
+            new ClipBuildSpec("Hit", BaseSourceSheetPath, ExpectedActionRows + 1, 6, "hit", 12f, false),
+            new ClipBuildSpec("Death", BaseSourceSheetPath, ExpectedActionRows + 1, 7, "death", 9f, false),
         };
 
         private static bool autoBuildScheduled;
@@ -107,7 +108,7 @@ namespace Fight.Editor
                 }
             }
 
-            return GetLatestTimestampUtc(BuilderScriptAssetPath, SourceSheetPath)
+            return GetLatestTimestampUtc(BuilderScriptAssetPath, BaseSourceSheetPath, RunSourceSheetPath)
                 > GetLatestTimestampUtc(BoomerangerPrefabPath, ResourcesRoot);
         }
 
@@ -124,39 +125,60 @@ namespace Fight.Editor
 
         private static void GenerateFrameFolders()
         {
-            if (!TryLoadTexture(SourceSheetPath, out var sourceTexture))
-            {
-                throw new FileNotFoundException($"Missing Boomeranger source sheet: {SourceSheetPath}");
-            }
-
             EnsureFolder(ResourcesRoot);
-            var grid = DetectGrid(sourceTexture);
-            foreach (var spec in ClipBuildSpecs)
+            var textureCache = new Dictionary<string, Texture2D>(StringComparer.Ordinal);
+            var gridCache = new Dictionary<string, GridSpec>(StringComparer.Ordinal);
+            try
             {
-                var folderPath = $"{ResourcesRoot}/{spec.ClipKey}";
-                EnsureFolder(folderPath);
-                ClearGeneratedPngs(folderPath);
-
-                var frameRects = BuildFrameRects(grid, spec.SourceRow);
-                var outputFrameWidth = 1;
-                var outputFrameHeight = 1;
-                foreach (var rect in frameRects)
+                foreach (var spec in ClipBuildSpecs)
                 {
-                    outputFrameWidth = Mathf.Max(outputFrameWidth, rect.width);
-                    outputFrameHeight = Mathf.Max(outputFrameHeight, rect.height);
-                }
+                    if (!textureCache.TryGetValue(spec.SourceSheetPath, out var sourceTexture))
+                    {
+                        if (!TryLoadTexture(spec.SourceSheetPath, out sourceTexture))
+                        {
+                            throw new FileNotFoundException($"Missing Boomeranger source sheet: {spec.SourceSheetPath}");
+                        }
 
-                for (var i = 0; i < frameRects.Length; i++)
-                {
-                    var frameTexture = CropFrame(sourceTexture, frameRects[i], outputFrameWidth, outputFrameHeight);
-                    var assetPath = $"{folderPath}/{spec.FilePrefix}_{i:00}.png";
-                    File.WriteAllBytes(ToAbsolutePath(assetPath), frameTexture.EncodeToPNG());
-                    UnityEngine.Object.DestroyImmediate(frameTexture);
-                    ApplyFrameTextureImporter(assetPath);
+                        textureCache.Add(spec.SourceSheetPath, sourceTexture);
+                    }
+
+                    var gridCacheKey = $"{spec.SourceSheetPath}|{spec.ExpectedHorizontalLineCount}";
+                    if (!gridCache.TryGetValue(gridCacheKey, out var grid))
+                    {
+                        grid = DetectGrid(sourceTexture, spec.ExpectedHorizontalLineCount);
+                        gridCache.Add(gridCacheKey, grid);
+                    }
+
+                    var folderPath = $"{ResourcesRoot}/{spec.ClipKey}";
+                    EnsureFolder(folderPath);
+                    ClearGeneratedPngs(folderPath);
+
+                    var frameRects = BuildFrameRects(grid, spec.SourceRow);
+                    var outputFrameWidth = 1;
+                    var outputFrameHeight = 1;
+                    foreach (var rect in frameRects)
+                    {
+                        outputFrameWidth = Mathf.Max(outputFrameWidth, rect.width);
+                        outputFrameHeight = Mathf.Max(outputFrameHeight, rect.height);
+                    }
+
+                    for (var i = 0; i < frameRects.Length; i++)
+                    {
+                        var frameTexture = CropFrame(sourceTexture, frameRects[i], outputFrameWidth, outputFrameHeight);
+                        var assetPath = $"{folderPath}/{spec.FilePrefix}_{i:00}.png";
+                        File.WriteAllBytes(ToAbsolutePath(assetPath), frameTexture.EncodeToPNG());
+                        UnityEngine.Object.DestroyImmediate(frameTexture);
+                        ApplyFrameTextureImporter(assetPath);
+                    }
                 }
             }
-
-            UnityEngine.Object.DestroyImmediate(sourceTexture);
+            finally
+            {
+                foreach (var sourceTexture in textureCache.Values)
+                {
+                    UnityEngine.Object.DestroyImmediate(sourceTexture);
+                }
+            }
         }
 
         private static void CreateBoomerangerPrefab()
@@ -304,6 +326,7 @@ namespace Fight.Editor
 
             RemoveConnectedCheckerBackground(topLeftPixels, outputFrameWidth, outputFrameHeight);
             RemoveInteriorBrightCheckerComponents(topLeftPixels, outputFrameWidth, outputFrameHeight);
+            ClearOuterFrameBorder(topLeftPixels, outputFrameWidth, outputFrameHeight);
 
             var unityPixels = new Color32[topLeftPixels.Length];
             for (var y = 0; y < outputFrameHeight; y++)
@@ -325,7 +348,7 @@ namespace Fight.Editor
             return frameTexture;
         }
 
-        private static GridSpec DetectGrid(Texture2D sourceTexture)
+        private static GridSpec DetectGrid(Texture2D sourceTexture, int expectedHorizontalLineCount)
         {
             var verticalLines = DetectLineGroups(
                 sourceTexture,
@@ -335,7 +358,7 @@ namespace Fight.Editor
             var horizontalLines = DetectLineGroups(
                 sourceTexture,
                 scanColumns: false,
-                ExpectedActionRows + 1,
+                expectedHorizontalLineCount,
                 Mathf.RoundToInt(sourceTexture.width * GridLineCoverageRatio));
             return new GridSpec(verticalLines, horizontalLines);
         }
@@ -563,7 +586,39 @@ namespace Fight.Editor
             var min = Mathf.Min(color.r, Mathf.Min(color.g, color.b));
             var max = Mathf.Max(color.r, Mathf.Max(color.g, color.b));
             var average = (color.r + color.g + color.b) / 3f;
-            return average >= 170f && max - min <= 28;
+            var isCheckerFill = average >= 170f && max - min <= 28;
+            var isGridBorderLine = average >= 95f && average <= 220f && max - min <= 35;
+            return isCheckerFill || isGridBorderLine;
+        }
+
+        private static void ClearOuterFrameBorder(Color32[] pixels, int width, int height)
+        {
+            if (width <= 0 || height <= 0)
+            {
+                return;
+            }
+
+            const int borderWidth = 2;
+            var maxBorderX = Mathf.Min(borderWidth, width);
+            var maxBorderY = Mathf.Min(borderWidth, height);
+
+            for (var y = 0; y < maxBorderY; y++)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    pixels[y * width + x].a = 0;
+                    pixels[(height - 1 - y) * width + x].a = 0;
+                }
+            }
+
+            for (var x = 0; x < maxBorderX; x++)
+            {
+                for (var y = 0; y < height; y++)
+                {
+                    pixels[y * width + x].a = 0;
+                    pixels[y * width + width - 1 - x].a = 0;
+                }
+            }
         }
 
         private static bool IsBrightCheckerPixel(Color32 color)
@@ -634,11 +689,7 @@ namespace Fight.Editor
             foreach (var path in Directory.GetFiles(absoluteFolder, "*.png"))
             {
                 File.Delete(path);
-                var metaPath = $"{path}.meta";
-                if (File.Exists(metaPath))
-                {
-                    File.Delete(metaPath);
-                }
+                // Keep .meta files so replacing frames does not churn stable sprite asset GUIDs.
             }
         }
 
@@ -750,12 +801,16 @@ namespace Fight.Editor
         {
             public ClipBuildSpec(
                 string clipKey,
+                string sourceSheetPath,
+                int expectedHorizontalLineCount,
                 int sourceRow,
                 string filePrefix,
                 float framesPerSecond,
                 bool loop)
             {
                 ClipKey = clipKey;
+                SourceSheetPath = sourceSheetPath;
+                ExpectedHorizontalLineCount = expectedHorizontalLineCount;
                 SourceRow = sourceRow;
                 FilePrefix = filePrefix;
                 FramesPerSecond = framesPerSecond;
@@ -763,6 +818,8 @@ namespace Fight.Editor
             }
 
             public string ClipKey { get; }
+            public string SourceSheetPath { get; }
+            public int ExpectedHorizontalLineCount { get; }
             public int SourceRow { get; }
             public string FilePrefix { get; }
             public float FramesPerSecond { get; }
