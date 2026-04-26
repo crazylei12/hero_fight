@@ -70,6 +70,7 @@ namespace Fight.Editor
         private const string LightningmagePrefabPath = "Assets/Prefabs/Heroes/mage_004_lightningmage/Lightningmage.prefab";
         private const string TankPrefabPath = "Assets/Prefabs/Heroes/tank_001_ironwall/Ironwall.prefab";
         private const string ShieldwardenPrefabPath = "Assets/Prefabs/Heroes/tank_002_shieldwarden/Shieldwarden.prefab";
+        private const string TidehunterPrefabPath = "Assets/Prefabs/Heroes/tank_003_tidehunter/Tidehunter.prefab";
         private const string MundoPrefabPath = "Assets/Prefabs/Heroes/tank_004_mundo/Mundo.prefab";
         private const string HeroEditorControllerPath = "Assets/HeroEditor4D/Common/Animation/Controller.controller";
         private const string FireMageProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/FireMageBasicAttackProjectile.prefab";
@@ -1146,6 +1147,7 @@ namespace Fight.Editor
                 || heroId == "support_004_shrinemaiden"
                 || heroId == "tank_001_ironwall"
                 || heroId == "tank_002_shieldwarden"
+                || heroId == "tank_003_tidehunter"
                 || heroId == "tank_004_mundo"
                 ? null
                 : battlePrefab != null
@@ -1208,6 +1210,7 @@ namespace Fight.Editor
                 "warrior_003_berserker" => BerserkerPrefabPath,
                 "warrior_004_spellblade" => SpellbladePrefabPath,
                 "tank_002_shieldwarden" => ShieldwardenPrefabPath,
+                "tank_003_tidehunter" => TidehunterPrefabPath,
                 "tank_004_mundo" => MundoPrefabPath,
                 _ => heroClass switch
                 {
