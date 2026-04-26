@@ -52,12 +52,18 @@ namespace Fight.UI
         private const float ReturningPathProjectileHeightOffset = 0.24f;
         private const float ReturningPathProjectileArcHeight = 0.18f;
         private const float ReturningPathProjectileSpinDegreesPerFlight = -720f;
+        private const float HookChainHeightOffset = 0.28f;
+        private const float HookChainOutboundDurationFraction = 0.45f;
+        private const float HookChainMinOutboundDurationSeconds = 0.08f;
+        private const float HookChainMaxOutboundDurationSeconds = 0.18f;
+        private const float HookChainFadeOutSeconds = 0.08f;
         private const int HealEventVfxSortOrderOffset = 190;
         private const int DamageEventVfxSortOrderOffset = 188;
         private const int DeployableProxySortOrderOffset = -3;
         private const int DashChargeSortOrderOffset = -6;
         private const int SkillTargetIndicatorSortOrderOffset = 214;
         private const int SkillCastImpactVfxSortOrderOffset = 212;
+        private const int HookChainSortOrderOffset = 72;
         private const int ReactiveGuardLoopSortOrderOffset = 178;
         private const int ReactiveGuardTriggerSortOrderOffset = 206;
         private const int ThrownProjectileSortOrderOffset = -4;
@@ -2334,6 +2340,11 @@ namespace Fight.UI
                 {
                     PlayDashChargeVfx(forcedMovementAppliedEvent);
                 }
+
+                if (ShouldPlayHookChainVfx(forcedMovementAppliedEvent))
+                {
+                    PlayHookChainVfx(forcedMovementAppliedEvent);
+                }
             }
         }
 
@@ -2679,6 +2690,106 @@ namespace Fight.UI
             }
 
             return sharedDashChargePrefab;
+        }
+
+        private static bool ShouldPlayHookChainVfx(ForcedMovementAppliedEvent forcedMovementAppliedEvent)
+        {
+            return forcedMovementAppliedEvent?.SourceSkill?.castProjectileVfxPrefab != null
+                && forcedMovementAppliedEvent.Source != null
+                && forcedMovementAppliedEvent.Target != null
+                && !string.Equals(
+                    forcedMovementAppliedEvent.Source.RuntimeId,
+                    forcedMovementAppliedEvent.Target.RuntimeId,
+                    StringComparison.Ordinal);
+        }
+
+        private void PlayHookChainVfx(ForcedMovementAppliedEvent forcedMovementAppliedEvent)
+        {
+            if (transientWorldVfxRoot == null)
+            {
+                return;
+            }
+
+            StartCoroutine(PlayHookChainVfxRoutine(forcedMovementAppliedEvent));
+        }
+
+        private IEnumerator PlayHookChainVfxRoutine(ForcedMovementAppliedEvent forcedMovementAppliedEvent)
+        {
+            var prefab = forcedMovementAppliedEvent.SourceSkill != null
+                ? forcedMovementAppliedEvent.SourceSkill.castProjectileVfxPrefab
+                : null;
+            if (prefab == null || transientWorldVfxRoot == null)
+            {
+                yield break;
+            }
+
+            var instance = Instantiate(prefab, transientWorldVfxRoot, false);
+            instance.name = $"{prefab.name}_{forcedMovementAppliedEvent.Target.RuntimeId}_Transient";
+            RemovePrefabPhysics(instance);
+            ConfigureTransientParticleSystems(instance, forceOneShotEmission: false);
+
+            var hookChain = instance.GetComponentInChildren<ButcherHookChainVfx>(true);
+            if (hookChain == null)
+            {
+                Destroy(instance);
+                yield break;
+            }
+
+            var source = ResolveSkillProjectileLaunchPosition(forcedMovementAppliedEvent.Source);
+            var targetStart = Map(forcedMovementAppliedEvent.StartPosition) + new Vector3(0f, HookChainHeightOffset, 0f);
+            var outboundDuration = Mathf.Clamp(
+                forcedMovementAppliedEvent.DurationSeconds * HookChainOutboundDurationFraction,
+                HookChainMinOutboundDurationSeconds,
+                HookChainMaxOutboundDurationSeconds);
+            var pullDuration = Mathf.Max(0.05f, forcedMovementAppliedEvent.DurationSeconds);
+            var elapsed = 0f;
+
+            while (instance != null && elapsed < pullDuration)
+            {
+                source = ResolveSkillProjectileLaunchPosition(forcedMovementAppliedEvent.Source);
+                var progress = Mathf.Clamp01(elapsed / outboundDuration);
+                var hookFront = elapsed < outboundDuration
+                    ? Vector3.Lerp(source, targetStart, Mathf.SmoothStep(0f, 1f, progress))
+                    : ResolveHookChainTargetPosition(forcedMovementAppliedEvent);
+                hookChain.ApplyEndpoints(source, hookFront, ResolveHookChainSortingOrder(source, hookFront), 1f);
+
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            var fadeElapsed = 0f;
+            while (instance != null && fadeElapsed < HookChainFadeOutSeconds)
+            {
+                source = ResolveSkillProjectileLaunchPosition(forcedMovementAppliedEvent.Source);
+                var hookFront = ResolveHookChainTargetPosition(forcedMovementAppliedEvent);
+                var alpha = 1f - Mathf.Clamp01(fadeElapsed / HookChainFadeOutSeconds);
+                hookChain.ApplyEndpoints(source, hookFront, ResolveHookChainSortingOrder(source, hookFront), alpha);
+
+                fadeElapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            if (instance != null)
+            {
+                Destroy(instance);
+            }
+        }
+
+        private Vector3 ResolveHookChainTargetPosition(ForcedMovementAppliedEvent forcedMovementAppliedEvent)
+        {
+            if (forcedMovementAppliedEvent?.Target != null)
+            {
+                return Map(forcedMovementAppliedEvent.Target.CurrentPosition) + new Vector3(0f, HookChainHeightOffset, 0f);
+            }
+
+            return forcedMovementAppliedEvent != null
+                ? Map(forcedMovementAppliedEvent.Destination) + new Vector3(0f, HookChainHeightOffset, 0f)
+                : Vector3.zero;
+        }
+
+        private int ResolveHookChainSortingOrder(Vector3 sourcePosition, Vector3 hookFrontPosition)
+        {
+            return Sort(Mathf.Min(sourcePosition.y, hookFrontPosition.y), HookChainSortOrderOffset);
         }
 
         private static bool ShouldPlayBlinkPhaseVfx(ForcedMovementAppliedEvent forcedMovementAppliedEvent)

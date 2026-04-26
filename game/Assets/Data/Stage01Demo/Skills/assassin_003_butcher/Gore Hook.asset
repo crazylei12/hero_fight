@@ -177,7 +177,7 @@ MonoBehaviour:
   castImpactVfxAlignToTargetDirection: 0
   castImpactVfxScaleWithSkillArea: 0
   castImpactVfxAreaDiameterScaleMultiplier: 1
-  castProjectileVfxPrefab: {fileID: 0}
+  castProjectileVfxPrefab: {fileID: 5454662105336075387, guid: 9cf32206b7904054fb89e1ed85cb8a8b, type: 3}
   dashTravelVfxPrefab: {fileID: 0}
   dashTravelVfxLocalOffset: {x: 0, y: 0, z: 0}
   dashTravelVfxForwardOffset: 0

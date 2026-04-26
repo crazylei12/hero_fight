@@ -30,6 +30,7 @@
 - 释放目标：优先按共享 `BackmostEnemy` 目标策略锁定敌方当前最后排、通常也是距离自己最远的合法敌方英雄；若当前没有明显后排目标，则回退到最近的合法敌方英雄
 - 效果：
   - 向目标发出一段单体钩链命中表现
+  - 当前表现 prefab：`Assets/Prefabs/VFX/Projectiles/ButcherHookChainProjectile.prefab`
   - 命中后将目标沿施法者与目标的连线方向强制拉到施法者身前的合法近身落点
   - 目标落点默认位于施法者前方约 `1.15` 的位置，若该点被占用，则回退到施法者身边最近的合法落点
   - 命中后为目标附加一次 `HealTakenModifier`
@@ -52,6 +53,7 @@
 - 释放目标：所有合法敌方英雄
 - 效果：
   - 同时向所有敌方英雄发出钩链命中表现
+  - 当前表现 prefab：`Assets/Prefabs/VFX/Projectiles/ButcherHookChainProjectile.prefab`
   - 对每个目标分别结算一次 `TowardSource` 的强制位移，将其拉向屠夫身边
   - 系统会优先为每个目标分配屠夫周围 `1.2 ~ 2.2` 的合法落点，而不是全部叠在同一个坐标点
   - 若某个目标原本已经比该分配环更靠近屠夫，则保持 `TowardSource` 只拉近、不反向外推的约束，不会为了凑环形站位把目标再推出去

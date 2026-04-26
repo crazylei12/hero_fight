@@ -77,6 +77,7 @@ namespace Fight.Editor
         private const string BoomerangerBounceProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/BoomerangerWheelBounceProjectile.prefab";
         private const string BoomerangerActiveProjectileVfxPrefabPath = "Assets/Prefabs/VFX/Projectiles/BoomerangerReturningWheelProjectile.prefab";
         private const string BoomerangerUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/BoomerangerWheelstormOrbit.prefab";
+        private const string ButcherHookChainProjectileVfxPrefabPath = "Assets/Prefabs/VFX/Projectiles/ButcherHookChainProjectile.prefab";
         private const string RiflemanProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/RiflemanBasicAttackProjectile.prefab";
         private const string MageActiveAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FireMageEmberBurst.prefab";
         private const string FrostMageActiveAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FrostMageFrostBurst.prefab";
@@ -1133,6 +1134,7 @@ namespace Fight.Editor
                 || heroId == "warrior_002_bladesman"
                 || heroId == "warrior_003_berserker"
                 || heroId == "mage_004_lightningmage"
+                || heroId == "marksman_002_rifleman"
                 || heroId == "marksman_004_boomeranger"
                 || heroId == "support_004_shrinemaiden"
                 || heroId == "tank_002_shieldwarden"
@@ -1509,6 +1511,8 @@ namespace Fight.Editor
             });
 
             skill.description = "Stage-01 demo skill: pulls the backmost enemy into melee range and applies 100% healing reduction.";
+            skill.castProjectileVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ButcherHookChainProjectileVfxPrefabPath);
+            skill.skillAreaPresentationType = SkillAreaPresentationType.None;
             ResetActionSequence(skill);
             ResetUltimateDecision(skill);
             EditorUtility.SetDirty(skill);
@@ -1951,6 +1955,8 @@ namespace Fight.Editor
             });
 
             skill.description = "Stage-01 demo skill: yanks every enemy toward the caster and applies team-wide 100% healing reduction.";
+            skill.castProjectileVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ButcherHookChainProjectileVfxPrefabPath);
+            skill.skillAreaPresentationType = SkillAreaPresentationType.None;
             ResetActionSequence(skill);
             ResetUltimateDecision(skill);
             EditorUtility.SetDirty(skill);
@@ -3984,6 +3990,8 @@ namespace Fight.Editor
             }
 
             ResetUltimateDecision(skill);
+            skill.castProjectileVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ButcherHookChainProjectileVfxPrefabPath);
+            skill.skillAreaPresentationType = SkillAreaPresentationType.None;
             skill.ultimateDecision.targetingType = UltimateTargetingType.UseSkillTargetType;
             skill.ultimateDecision.combineMode = UltimateConditionCombineMode.PrimaryOnly;
             skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;

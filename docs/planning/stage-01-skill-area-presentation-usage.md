@@ -1,6 +1,6 @@
 # 第一阶段战斗特效表现使用说明
 
-最后更新：2026-04-25
+最后更新：2026-04-26
 
 ## 文档用途
 
@@ -70,6 +70,8 @@
 - batchmode 执行方法：`Fight.Editor.FireMageVfxPrefabBuilder.BuildFireMageVfxPrefabsBatch`
 - 编辑器菜单：`Fight -> Stage 01 -> Build Shared Dash Charge VFX`
 - batchmode 执行方法：`Fight.Editor.SharedDashChargeVfxPrefabBuilder.BuildSharedDashChargeVfxBatch`
+- 编辑器菜单：`Fight -> Stage 01 -> Build Butcher Hook VFX Prefab`
+- batchmode 执行方法：`Fight.Editor.ButcherHookVfxPrefabBuilder.BuildButcherHookVfxPrefabBatch`
 
 当前这条 builder 已覆盖：
 
@@ -77,6 +79,7 @@
 - 火法小技能 `Ember Burst`
 - 火法大招 `Meteor Fall`
 - 共享冲锋拖尾 `DashChargeTrail`
+- 屠夫钩链投射表现 `ButcherHookChainProjectile`
 
 执行注意事项：
 
@@ -94,6 +97,8 @@
 - `game/Assets/Scripts/UI/BattleView.cs`
 - `game/Assets/Scripts/Editor/FireMageVfxPrefabBuilder.cs`
 - `game/Assets/Scripts/Editor/SharedDashChargeVfxPrefabBuilder.cs`
+- `game/Assets/Scripts/Editor/ButcherHookVfxPrefabBuilder.cs`
+- `game/Assets/Scripts/UI/Presentation/Skills/ButcherHookChainVfx.cs`
 - `game/Assets/Scripts/UI/Preview/SpriteTextureFrameAnimator.cs`
 - `game/Assets/Scripts/UI/Presentation/Skills/SkillAreaPresentationController.cs`
 - `game/Assets/Scripts/UI/Presentation/Skills/FireSeaSkillAreaPresentationController.cs`
@@ -121,6 +126,20 @@
 - 普攻投射物
 - 小技能范围爆发
 - 大招持续范围
+
+当前屠夫钩链配置资产：
+
+- `game/Assets/Data/Stage01Demo/Skills/assassin_003_butcher/Gore Hook.asset`
+- `game/Assets/Data/Stage01Demo/Skills/assassin_003_butcher/Carnage Reel.asset`
+- `game/Assets/Prefabs/VFX/Projectiles/ButcherHookChainProjectile.prefab`
+
+当前屠夫钩链接入规则：
+
+- 源图保存在 `game/Assets/Art/VFX/Source/ButcherHookChainSource.png`
+- builder 会从源图切出 `ButcherHookHead.png` 与 `ButcherHookChainSegment.png`，并把棋盘格背景转成透明像素
+- `Gore Hook` 和 `Carnage Reel` 都通过 `SkillData.castProjectileVfxPrefab` 指向 `ButcherHookChainProjectile.prefab`
+- `BattleView` 在收到带有 `castProjectileVfxPrefab` 的 `ForcedMovementAppliedEvent` 时创建钩链表现；钩头跟随目标前端，链条使用 tiled sprite 按施法者到目标的距离伸缩
+- 这条表现只同步已有 `ApplyForcedMovement(TowardSource)` 的起止位置、持续时间和当前目标位置，不新增命中判定、路径碰撞或屠夫专属底层状态
 
 当前巫女配置资产：
 
