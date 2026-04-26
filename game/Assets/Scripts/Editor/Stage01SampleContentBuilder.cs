@@ -364,6 +364,8 @@ namespace Fight.Editor
                 ConfigureTankUltimate(tankUltimateSkill, overwriteExistingContent, tankUltimateExisted),
                 overwriteExistingContent,
                 HeroTag.Melee, HeroTag.Control, HeroTag.Buff);
+            EnsureHeroSkillReferences(tank, tankActive, tankUltimateSkill);
+            EnsureHeroBattlePrefabReference(tank, LoadBattlePrefab("tank_001_ironwall", HeroClass.Tank));
 
             var shieldwardenActive = CreateShieldwardenActiveSkill(overwriteExistingContent);
             var shieldwardenUltimateSkill = CreateShieldwardenUltimateSkill(overwriteExistingContent, out var shieldwardenUltimateExisted);
@@ -1141,6 +1143,7 @@ namespace Fight.Editor
                 || heroId == "marksman_003_venomshooter"
                 || heroId == "marksman_004_boomeranger"
                 || heroId == "support_004_shrinemaiden"
+                || heroId == "tank_001_ironwall"
                 || heroId == "tank_002_shieldwarden"
                 || heroId == "tank_004_mundo"
                 ? null
