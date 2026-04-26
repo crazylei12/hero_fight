@@ -1128,6 +1128,7 @@ namespace Fight.Editor
             hero.visualConfig.animatorController = heroId == "assassin_002_tidefin"
                 || heroId == "warrior_001_skybreaker"
                 || heroId == "warrior_002_bladesman"
+                || heroId == "warrior_003_berserker"
                 || heroId == "marksman_004_boomeranger"
                 || heroId == "support_004_shrinemaiden"
                 || heroId == "tank_002_shieldwarden"

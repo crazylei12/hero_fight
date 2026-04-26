@@ -17,6 +17,8 @@ namespace Fight.UI
         private const string RunClipKey = "Run";
         private const string Attack1ClipKey = "Attack1";
         private const string Attack2ClipKey = "Attack2";
+        private const string RageIdleClipKey = "RageIdle";
+        private const string RageAttack1ClipKey = "RageAttack1";
         private const string SkillClipKey = "Skill";
         private const string UltimateClipKey = "Ult";
         private const string HitClipKey = "Hit";
@@ -103,7 +105,7 @@ namespace Fight.UI
 
             if (!IsActionLocked())
             {
-                PlayClip(isInMoveState ? RunClipKey : IdleClipKey, restart: false);
+                PlayClip(isInMoveState ? RunClipKey : ResolveIdleClipKey(), restart: false);
             }
 
             lastPosition = hero.CurrentPosition;
@@ -238,6 +240,16 @@ namespace Fight.UI
                 return clip;
             }
 
+            if (string.Equals(key, RageIdleClipKey, StringComparison.Ordinal) && clips.TryGetValue(IdleClipKey, out clip))
+            {
+                return clip;
+            }
+
+            if (string.Equals(key, RageAttack1ClipKey, StringComparison.Ordinal) && clips.TryGetValue(Attack1ClipKey, out clip))
+            {
+                return clip;
+            }
+
             if (string.Equals(key, UltimateClipKey, StringComparison.Ordinal) && clips.TryGetValue(SkillClipKey, out clip))
             {
                 return clip;
@@ -250,6 +262,13 @@ namespace Fight.UI
             }
 
             return clips.TryGetValue(IdleClipKey, out clip) ? clip : null;
+        }
+
+        private string ResolveIdleClipKey()
+        {
+            return IsTemporaryOverrideVisualStateActive() && clips.ContainsKey(RageIdleClipKey)
+                ? RageIdleClipKey
+                : IdleClipKey;
         }
 
         private void TickAnimation()
@@ -397,11 +416,21 @@ namespace Fight.UI
                 && string.Equals(candidate.RuntimeId, hero.RuntimeId, StringComparison.Ordinal);
         }
 
-        private static string ResolveAttackClipKey(string variantKey)
+        private string ResolveAttackClipKey(string variantKey)
         {
+            if (IsTemporaryOverrideVisualStateActive() && clips.ContainsKey(RageAttack1ClipKey))
+            {
+                return RageAttack1ClipKey;
+            }
+
             return string.Equals(variantKey, "attack_heal", StringComparison.Ordinal)
                 ? Attack2ClipKey
                 : Attack1ClipKey;
+        }
+
+        private bool IsTemporaryOverrideVisualStateActive()
+        {
+            return hero != null && hero.CurrentTemporaryOverrideSourceSkill != null;
         }
 
         private static Vector2 ToCardinalDirection(Vector3 vector)
