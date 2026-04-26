@@ -309,7 +309,10 @@ namespace Fight.Editor
                 }
             }
 
-            RemoveConnectedCheckerBackground(topLeftPixels, outputFrameWidth, outputFrameHeight);
+            RemoveConnectedFrameEdgeBackground(topLeftPixels, outputFrameWidth, outputFrameHeight);
+            RemoveInteriorCheckerBackgroundComponents(topLeftPixels, outputFrameWidth, outputFrameHeight);
+            RemoveLightMatteComponents(topLeftPixels, outputFrameWidth, outputFrameHeight);
+            RemoveLowNeutralBottomLineComponents(topLeftPixels, outputFrameWidth, outputFrameHeight);
             ClearOuterFrameBorder(topLeftPixels, outputFrameWidth, outputFrameHeight);
 
             var unityPixels = new Color32[topLeftPixels.Length];
@@ -425,7 +428,7 @@ namespace Fight.Editor
                 && color.b <= 55;
         }
 
-        private static void RemoveConnectedCheckerBackground(Color32[] pixels, int width, int height)
+        private static void RemoveConnectedFrameEdgeBackground(Color32[] pixels, int width, int height)
         {
             const int edgeSeedDepth = 4;
             var visited = new bool[pixels.Length];
@@ -465,6 +468,294 @@ namespace Fight.Editor
             }
         }
 
+        private static void RemoveInteriorCheckerBackgroundComponents(Color32[] pixels, int width, int height)
+        {
+            const int minInteriorCheckerArea = 20;
+            const int minLowerInteriorCheckerArea = 8;
+
+            var visited = new bool[pixels.Length];
+            var queue = new Queue<int>();
+            var component = new List<int>();
+            var lowerRegionMinY = Mathf.RoundToInt(height * 0.65f);
+
+            for (var startIndex = 0; startIndex < pixels.Length; startIndex++)
+            {
+                if (visited[startIndex] || !IsCheckerBackgroundPixel(pixels[startIndex]))
+                {
+                    continue;
+                }
+
+                visited[startIndex] = true;
+                queue.Enqueue(startIndex);
+                component.Clear();
+                var maxY = 0;
+
+                while (queue.Count > 0)
+                {
+                    var index = queue.Dequeue();
+                    component.Add(index);
+
+                    var x = index % width;
+                    var y = index / width;
+                    maxY = Mathf.Max(maxY, y);
+
+                    EnqueueComponentNeighbor(x + 1, y);
+                    EnqueueComponentNeighbor(x - 1, y);
+                    EnqueueComponentNeighbor(x, y + 1);
+                    EnqueueComponentNeighbor(x, y - 1);
+                }
+
+                var isLargeCheckerPocket = component.Count >= minInteriorCheckerArea;
+                var isLowerCheckerPocket = maxY >= lowerRegionMinY && component.Count >= minLowerInteriorCheckerArea;
+                if (!isLargeCheckerPocket && !isLowerCheckerPocket)
+                {
+                    continue;
+                }
+
+                foreach (var index in component)
+                {
+                    pixels[index].a = 0;
+                }
+            }
+
+            void EnqueueComponentNeighbor(int x, int y)
+            {
+                if (x < 0 || x >= width || y < 0 || y >= height)
+                {
+                    return;
+                }
+
+                var index = y * width + x;
+                if (visited[index] || !IsCheckerBackgroundPixel(pixels[index]))
+                {
+                    return;
+                }
+
+                visited[index] = true;
+                queue.Enqueue(index);
+            }
+        }
+
+        private static void RemoveLightMatteComponents(Color32[] pixels, int width, int height)
+        {
+            const int minLowerMatteArea = 8;
+            const int maxSpeckleArea = 16;
+            const int maxLowerEdgeSpeckleArea = 32;
+
+            var visited = new bool[pixels.Length];
+            var queue = new Queue<int>();
+            var component = new List<int>();
+            var lowerRegionMinY = Mathf.RoundToInt(height * 0.72f);
+            var lowerRegionMaxY = Mathf.RoundToInt(height * 0.78f);
+            var lowerEdgeCleanupMinY = Mathf.RoundToInt(height * 0.80f);
+
+            for (var startIndex = 0; startIndex < pixels.Length; startIndex++)
+            {
+                if (visited[startIndex] || !IsLightNeutralMattePixel(pixels[startIndex]))
+                {
+                    continue;
+                }
+
+                visited[startIndex] = true;
+                queue.Enqueue(startIndex);
+                component.Clear();
+                var minY = height;
+                var maxY = 0;
+                var touchesTransparent = false;
+
+                while (queue.Count > 0)
+                {
+                    var index = queue.Dequeue();
+                    component.Add(index);
+
+                    var x = index % width;
+                    var y = index / width;
+                    minY = Mathf.Min(minY, y);
+                    maxY = Mathf.Max(maxY, y);
+                    touchesTransparent |= HasTransparentNeighbor(x, y, width, height, pixels);
+
+                    EnqueueComponentNeighbor(x + 1, y);
+                    EnqueueComponentNeighbor(x - 1, y);
+                    EnqueueComponentNeighbor(x, y + 1);
+                    EnqueueComponentNeighbor(x, y - 1);
+                }
+
+                if (!touchesTransparent)
+                {
+                    continue;
+                }
+
+                var isLowerMattePocket = minY >= lowerRegionMinY
+                    && maxY >= lowerRegionMaxY
+                    && component.Count >= minLowerMatteArea;
+                var isLightSpeckle = component.Count <= maxSpeckleArea;
+                var isLowerEdgeSpeckle = maxY >= lowerEdgeCleanupMinY
+                    && component.Count <= maxLowerEdgeSpeckleArea;
+                if (!isLowerMattePocket && !isLightSpeckle && !isLowerEdgeSpeckle)
+                {
+                    continue;
+                }
+
+                foreach (var index in component)
+                {
+                    pixels[index].a = 0;
+                }
+            }
+
+            void EnqueueComponentNeighbor(int x, int y)
+            {
+                if (x < 0 || x >= width || y < 0 || y >= height)
+                {
+                    return;
+                }
+
+                var index = y * width + x;
+                if (visited[index] || !IsLightNeutralMattePixel(pixels[index]))
+                {
+                    return;
+                }
+
+                visited[index] = true;
+                queue.Enqueue(index);
+            }
+        }
+
+        private static bool HasTransparentNeighbor(int x, int y, int width, int height, Color32[] pixels)
+        {
+            for (var offsetY = -1; offsetY <= 1; offsetY++)
+            {
+                for (var offsetX = -1; offsetX <= 1; offsetX++)
+                {
+                    if (offsetX == 0 && offsetY == 0)
+                    {
+                        continue;
+                    }
+
+                    var neighborX = x + offsetX;
+                    var neighborY = y + offsetY;
+                    if (neighborX < 0 || neighborX >= width || neighborY < 0 || neighborY >= height)
+                    {
+                        continue;
+                    }
+
+                    if (pixels[neighborY * width + neighborX].a == 0)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsLightNeutralMattePixel(Color32 color)
+        {
+            if (color.a == 0)
+            {
+                return false;
+            }
+
+            var min = Mathf.Min(color.r, Mathf.Min(color.g, color.b));
+            var max = Mathf.Max(color.r, Mathf.Max(color.g, color.b));
+            var average = (color.r + color.g + color.b) / 3f;
+            return average >= 145f && max - min <= 45;
+        }
+
+        private static void RemoveLowNeutralBottomLineComponents(Color32[] pixels, int width, int height)
+        {
+            const int minLineWidth = 6;
+            const int maxLineHeight = 2;
+            const int maxLineArea = 64;
+
+            var visited = new bool[pixels.Length];
+            var queue = new Queue<int>();
+            var component = new List<int>();
+            var bottomLineMinY = Mathf.RoundToInt(height * 0.86f);
+
+            for (var startIndex = 0; startIndex < pixels.Length; startIndex++)
+            {
+                if (visited[startIndex] || !IsLowNeutralMatteLinePixel(pixels[startIndex]))
+                {
+                    continue;
+                }
+
+                visited[startIndex] = true;
+                queue.Enqueue(startIndex);
+                component.Clear();
+                var minX = width;
+                var maxX = 0;
+                var minY = height;
+                var maxY = 0;
+                var touchesTransparent = false;
+
+                while (queue.Count > 0)
+                {
+                    var index = queue.Dequeue();
+                    component.Add(index);
+
+                    var x = index % width;
+                    var y = index / width;
+                    minX = Mathf.Min(minX, x);
+                    maxX = Mathf.Max(maxX, x);
+                    minY = Mathf.Min(minY, y);
+                    maxY = Mathf.Max(maxY, y);
+                    touchesTransparent |= HasTransparentNeighbor(x, y, width, height, pixels);
+
+                    EnqueueComponentNeighbor(x + 1, y);
+                    EnqueueComponentNeighbor(x - 1, y);
+                    EnqueueComponentNeighbor(x, y + 1);
+                    EnqueueComponentNeighbor(x, y - 1);
+                }
+
+                var componentWidth = maxX - minX + 1;
+                var componentHeight = maxY - minY + 1;
+                var isBottomLine = touchesTransparent
+                    && minY >= bottomLineMinY
+                    && componentWidth >= minLineWidth
+                    && componentHeight <= maxLineHeight
+                    && component.Count <= maxLineArea;
+                if (!isBottomLine)
+                {
+                    continue;
+                }
+
+                foreach (var index in component)
+                {
+                    pixels[index].a = 0;
+                }
+            }
+
+            void EnqueueComponentNeighbor(int x, int y)
+            {
+                if (x < 0 || x >= width || y < 0 || y >= height)
+                {
+                    return;
+                }
+
+                var index = y * width + x;
+                if (visited[index] || !IsLowNeutralMatteLinePixel(pixels[index]))
+                {
+                    return;
+                }
+
+                visited[index] = true;
+                queue.Enqueue(index);
+            }
+        }
+
+        private static bool IsLowNeutralMatteLinePixel(Color32 color)
+        {
+            if (color.a == 0)
+            {
+                return false;
+            }
+
+            var min = Mathf.Min(color.r, Mathf.Min(color.g, color.b));
+            var max = Mathf.Max(color.r, Mathf.Max(color.g, color.b));
+            var average = (color.r + color.g + color.b) / 3f;
+            return average >= 120f && max - min <= 65;
+        }
+
         private static void EnqueueIfBackground(
             int x,
             int y,
@@ -480,7 +771,7 @@ namespace Fight.Editor
             }
 
             var index = y * width + x;
-            if (visited[index] || !IsCheckerBackgroundPixel(pixels[index]))
+            if (visited[index] || !IsFrameEdgeBackgroundPixel(pixels[index]))
             {
                 return;
             }
@@ -502,6 +793,19 @@ namespace Fight.Editor
             return average >= 225f && max - min <= 35;
         }
 
+        private static bool IsFrameEdgeBackgroundPixel(Color32 color)
+        {
+            if (color.a == 0)
+            {
+                return false;
+            }
+
+            var min = Mathf.Min(color.r, Mathf.Min(color.g, color.b));
+            var max = Mathf.Max(color.r, Mathf.Max(color.g, color.b));
+            var average = (color.r + color.g + color.b) / 3f;
+            return average >= 142f && max - min <= 52;
+        }
+
         private static void ClearOuterFrameBorder(Color32[] pixels, int width, int height)
         {
             if (width <= 0 || height <= 0)
@@ -509,7 +813,7 @@ namespace Fight.Editor
                 return;
             }
 
-            const int borderWidth = 4;
+            const int borderWidth = 6;
             var maxBorderX = Mathf.Min(borderWidth, width);
             var maxBorderY = Mathf.Min(borderWidth, height);
 
