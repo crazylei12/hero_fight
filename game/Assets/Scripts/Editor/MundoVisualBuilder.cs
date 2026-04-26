@@ -17,30 +17,27 @@ namespace Fight.Editor
         private const string ResourcesRoot = "Assets/Resources/HeroPreview/tank_004_mundo";
         private const string ResourcesPrefix = "HeroPreview/tank_004_mundo";
         private const string MundoPrefabPath = "Assets/Prefabs/Heroes/tank_004_mundo/Mundo.prefab";
-        private const string MundoPortraitPath = "Assets/Prefabs/Heroes/tank_004_mundo/Mundo_idle_front.png";
         private const string MundoHeroAssetPath = "Assets/Data/Stage01Demo/Heroes/tank_004_mundo/Mundo.asset";
         private const string BuilderScriptAssetPath = "Assets/Scripts/Editor/MundoVisualBuilder.cs";
-        private const int ExpectedFrameColumns = 9;
-        private const int ExpectedActionRows = 8;
-        private const float GridLineCoverageRatio = 0.70f;
-        private const int GridLinePaddingPixels = 1;
-        private const int EdgeLineMaxDistancePixels = 4;
-        private const int GridLineMergeGapPixels = 2;
-        private const int InteriorCheckerBackgroundMinPixels = 16;
-        private const float InteriorCheckerBackgroundMinBrightRatio = 0.18f;
-        private const float InteriorCheckerBackgroundMaxBrightRatio = 0.92f;
+        private const int SourceColumns = 8;
+        private const int OutputFrameCount = 8;
+        private const int OutputFrameWidth = 167;
+        private const int OutputFrameHeight = 148;
         private const float PixelsPerUnit = 64f;
+
+        // The sheet content is row-aligned, but the full PNG is not exactly 8 * 148 pixels tall.
+        // Explicit starts avoid sampling the previous row's trailing pixels on the lower rows.
+        private static readonly int[] SourceRowTopPixels = { 0, 148, 296, 451, 604, 752, 901, 1062 };
 
         private static readonly Vector2 FootPivot = new Vector2(0.5f, 0.07f);
 
         private static readonly ClipBuildSpec[] ClipBuildSpecs =
         {
-            new ClipBuildSpec("Idle", 0, "idle", 7f, true),
+            new ClipBuildSpec("Idle", 0, "idle", 7f, true, new[] { 0, 1, 2, 2, 4, 5, 6, 7 }),
             new ClipBuildSpec("Run", 1, "run", 12f, true),
             new ClipBuildSpec("Attack1", 2, "attack", 15f, false),
-            new ClipBuildSpec("Skill", 3, "brute_metabolism", 12f, false),
-            new ClipBuildSpec("Ult", 4, "monstrous_recovery", 10f, false),
-            new ClipBuildSpec("Hit", 5, "hurt", 10f, false),
+            new ClipBuildSpec("Hit", 4, "hurt", 10f, false),
+            new ClipBuildSpec("Ult", 5, "monstrous_recovery", 10f, false),
             new ClipBuildSpec("Death", 7, "death", 8f, false),
         };
 
@@ -114,13 +111,13 @@ namespace Fight.Editor
             }
 
             return GetLatestTimestampUtc(BuilderScriptAssetPath, SourceSheetPath)
-                > GetLatestTimestampUtc(MundoPrefabPath, ResourcesRoot, MundoPortraitPath);
+                > GetLatestTimestampUtc(MundoPrefabPath, ResourcesRoot);
         }
 
         private static void BuildAll()
         {
+            ApplySourceTextureImporter(SourceSheetPath);
             GenerateFrameFolders();
-            CreateMundoPortrait();
             CreateMundoPrefab();
             SyncMundoHeroAsset();
 
@@ -136,25 +133,16 @@ namespace Fight.Editor
             }
 
             EnsureFolder(ResourcesRoot);
-            var grid = DetectGrid(sourceTexture);
             foreach (var spec in ClipBuildSpecs)
             {
                 var folderPath = $"{ResourcesRoot}/{spec.ClipKey}";
                 EnsureFolder(folderPath);
                 ClearGeneratedPngs(folderPath);
 
-                var frameRects = BuildFrameRects(grid, spec.SourceRow);
-                var outputFrameWidth = 1;
-                var outputFrameHeight = 1;
-                foreach (var rect in frameRects)
+                for (var i = 0; i < OutputFrameCount; i++)
                 {
-                    outputFrameWidth = Mathf.Max(outputFrameWidth, rect.width);
-                    outputFrameHeight = Mathf.Max(outputFrameHeight, rect.height);
-                }
-
-                for (var i = 0; i < frameRects.Length; i++)
-                {
-                    var frameTexture = CropFrame(sourceTexture, frameRects[i], outputFrameWidth, outputFrameHeight);
+                    var sourceFrame = spec.ResolveSourceFrame(i);
+                    var frameTexture = CropFrame(sourceTexture, spec.SourceRow, sourceFrame);
                     var assetPath = $"{folderPath}/{spec.FilePrefix}_{i:00}.png";
                     File.WriteAllBytes(ToAbsolutePath(assetPath), frameTexture.EncodeToPNG());
                     UnityEngine.Object.DestroyImmediate(frameTexture);
@@ -163,20 +151,6 @@ namespace Fight.Editor
             }
 
             UnityEngine.Object.DestroyImmediate(sourceTexture);
-        }
-
-        private static void CreateMundoPortrait()
-        {
-            EnsureFolder("Assets/Prefabs/Heroes/tank_004_mundo");
-            var sourcePath = $"{ResourcesRoot}/Idle/idle_00.png";
-            var absoluteSourcePath = ToAbsolutePath(sourcePath);
-            if (!File.Exists(absoluteSourcePath))
-            {
-                return;
-            }
-
-            File.Copy(absoluteSourcePath, ToAbsolutePath(MundoPortraitPath), true);
-            ApplyFrameTextureImporter(MundoPortraitPath);
         }
 
         private static void CreateMundoPrefab()
@@ -238,19 +212,11 @@ namespace Fight.Editor
             }
 
             hero.visualConfig ??= new HeroVisualConfig();
-            var portrait = AssetDatabase.LoadAssetAtPath<Sprite>(MundoPortraitPath);
-            var hasCurrentPortrait = portrait == null || hero.visualConfig.portrait == portrait;
             if (hero.visualConfig.battlePrefab == prefab
                 && hero.visualConfig.animatorController == null
-                && !hero.visualConfig.battlePrefabFacesLeftByDefault
-                && hasCurrentPortrait)
+                && !hero.visualConfig.battlePrefabFacesLeftByDefault)
             {
                 return;
-            }
-
-            if (portrait != null)
-            {
-                hero.visualConfig.portrait = portrait;
             }
 
             hero.visualConfig.battlePrefab = prefab;
@@ -259,42 +225,19 @@ namespace Fight.Editor
             EditorUtility.SetDirty(hero);
         }
 
-        private static RectInt[] BuildFrameRects(GridSpec grid, int sourceRow)
+        private static Texture2D CropFrame(Texture2D sourceTexture, int sourceRow, int sourceFrame)
         {
-            if (sourceRow < 0 || sourceRow >= grid.HorizontalLines.Length - 1)
+            var sourceX = Mathf.RoundToInt(sourceFrame * sourceTexture.width / (float)SourceColumns);
+            var sourceYTop = SourceRowTopPixels[sourceRow];
+            var topLeftPixels = new Color32[OutputFrameWidth * OutputFrameHeight];
+
+            for (var y = 0; y < OutputFrameHeight; y++)
             {
-                throw new InvalidOperationException($"Mundo source row {sourceRow} is outside the detected grid.");
-            }
-
-            var rects = new RectInt[ExpectedFrameColumns];
-            var yMin = grid.HorizontalLines[sourceRow].Max + 1 + GridLinePaddingPixels;
-            var yMax = grid.HorizontalLines[sourceRow + 1].Min - 1 - GridLinePaddingPixels;
-            for (var i = 0; i < rects.Length; i++)
-            {
-                var xMin = grid.VerticalLines[i].Max + 1 + GridLinePaddingPixels;
-                var xMax = grid.VerticalLines[i + 1].Min - 1 - GridLinePaddingPixels;
-                rects[i] = new RectInt(
-                    xMin,
-                    yMin,
-                    Mathf.Max(1, xMax - xMin + 1),
-                    Mathf.Max(1, yMax - yMin + 1));
-            }
-
-            return rects;
-        }
-
-        private static Texture2D CropFrame(Texture2D sourceTexture, RectInt pngRect, int outputFrameWidth, int outputFrameHeight)
-        {
-            var topLeftPixels = new Color32[outputFrameWidth * outputFrameHeight];
-            var horizontalPadding = Mathf.Max(0, (outputFrameWidth - pngRect.width) / 2);
-
-            for (var y = 0; y < pngRect.height && y < outputFrameHeight; y++)
-            {
-                var sourceY = pngRect.y + y;
-                for (var x = 0; x < pngRect.width && x + horizontalPadding < outputFrameWidth; x++)
+                var sourceY = sourceYTop + y;
+                for (var x = 0; x < OutputFrameWidth; x++)
                 {
-                    var sourceXPosition = pngRect.x + x;
-                    var outputIndex = y * outputFrameWidth + x + horizontalPadding;
+                    var sourceXPosition = sourceX + x;
+                    var outputIndex = y * OutputFrameWidth + x;
                     if (sourceXPosition < 0
                         || sourceXPosition >= sourceTexture.width
                         || sourceY < 0
@@ -309,21 +252,21 @@ namespace Fight.Editor
                 }
             }
 
-            RemoveCheckerBackground(topLeftPixels, outputFrameWidth, outputFrameHeight);
+            RemoveConnectedCheckerBackground(topLeftPixels, OutputFrameWidth, OutputFrameHeight);
 
             var unityPixels = new Color32[topLeftPixels.Length];
-            for (var y = 0; y < outputFrameHeight; y++)
+            for (var y = 0; y < OutputFrameHeight; y++)
             {
-                var unityY = outputFrameHeight - 1 - y;
+                var unityY = OutputFrameHeight - 1 - y;
                 Array.Copy(
                     topLeftPixels,
-                    y * outputFrameWidth,
+                    y * OutputFrameWidth,
                     unityPixels,
-                    unityY * outputFrameWidth,
-                    outputFrameWidth);
+                    unityY * OutputFrameWidth,
+                    OutputFrameWidth);
             }
 
-            var frameTexture = new Texture2D(outputFrameWidth, outputFrameHeight, TextureFormat.RGBA32, false);
+            var frameTexture = new Texture2D(OutputFrameWidth, OutputFrameHeight, TextureFormat.RGBA32, false);
             frameTexture.SetPixels32(unityPixels);
             frameTexture.filterMode = FilterMode.Point;
             frameTexture.wrapMode = TextureWrapMode.Clamp;
@@ -331,150 +274,7 @@ namespace Fight.Editor
             return frameTexture;
         }
 
-        private static GridSpec DetectGrid(Texture2D sourceTexture)
-        {
-            var verticalLines = DetectLineGroups(
-                sourceTexture,
-                scanColumns: true,
-                ExpectedFrameColumns + 1,
-                Mathf.RoundToInt(sourceTexture.height * GridLineCoverageRatio));
-            var horizontalLines = DetectLineGroups(
-                sourceTexture,
-                scanColumns: false,
-                ExpectedActionRows + 1,
-                Mathf.RoundToInt(sourceTexture.width * GridLineCoverageRatio));
-            return new GridSpec(verticalLines, horizontalLines);
-        }
-
-        private static GridLine[] DetectLineGroups(
-            Texture2D sourceTexture,
-            bool scanColumns,
-            int expectedCount,
-            int threshold)
-        {
-            var majorLength = scanColumns ? sourceTexture.width : sourceTexture.height;
-            var minorLength = scanColumns ? sourceTexture.height : sourceTexture.width;
-            var groups = new List<GridLine>();
-            var currentMin = -1;
-            var currentMax = -1;
-            var currentPeak = 0;
-
-            for (var major = 0; major < majorLength; major++)
-            {
-                var count = 0;
-                for (var minor = 0; minor < minorLength; minor++)
-                {
-                    var x = scanColumns ? major : minor;
-                    var yTop = scanColumns ? minor : major;
-                    if (IsGridLinePixel(GetPixelTopLeft(sourceTexture, x, yTop)))
-                    {
-                        count++;
-                    }
-                }
-
-                if (count >= threshold)
-                {
-                    if (currentMin < 0)
-                    {
-                        currentMin = major;
-                    }
-
-                    currentMax = major;
-                    currentPeak = Mathf.Max(currentPeak, count);
-                    continue;
-                }
-
-                AddCurrentGroup();
-            }
-
-            AddCurrentGroup();
-            NormalizeDetectedLines(groups, expectedCount, majorLength);
-
-            if (groups.Count != expectedCount)
-            {
-                throw new InvalidOperationException(
-                    $"Mundo source grid detection expected {expectedCount} {(scanColumns ? "vertical" : "horizontal")} lines, found {groups.Count}.");
-            }
-
-            return groups.ToArray();
-
-            void AddCurrentGroup()
-            {
-                if (currentMin < 0)
-                {
-                    return;
-                }
-
-                groups.Add(new GridLine(currentMin, currentMax, currentPeak));
-                currentMin = -1;
-                currentMax = -1;
-                currentPeak = 0;
-            }
-        }
-
-        private static void NormalizeDetectedLines(List<GridLine> groups, int expectedCount, int majorLength)
-        {
-            MergeNearbyLineGroups(groups);
-
-            if (groups.Count != expectedCount - 1 || groups.Count == 0)
-            {
-                return;
-            }
-
-            if (groups[0].Min > EdgeLineMaxDistancePixels)
-            {
-                groups.Insert(0, new GridLine(0, GridLinePaddingPixels, 0));
-                return;
-            }
-
-            var lastGroup = groups[groups.Count - 1];
-            if (lastGroup.Max < majorLength - 1 - EdgeLineMaxDistancePixels)
-            {
-                groups.Add(new GridLine(majorLength - 1 - GridLinePaddingPixels, majorLength - 1, 0));
-            }
-        }
-
-        private static void MergeNearbyLineGroups(List<GridLine> groups)
-        {
-            for (var i = 0; i < groups.Count - 1; i++)
-            {
-                var current = groups[i];
-                var next = groups[i + 1];
-                if (next.Min - current.Max - 1 > GridLineMergeGapPixels)
-                {
-                    continue;
-                }
-
-                groups[i] = new GridLine(
-                    current.Min,
-                    next.Max,
-                    Mathf.Max(current.Peak, next.Peak));
-                groups.RemoveAt(i + 1);
-                i--;
-            }
-        }
-
-        private static Color32 GetPixelTopLeft(Texture2D sourceTexture, int x, int yTop)
-        {
-            return sourceTexture.GetPixel(x, sourceTexture.height - 1 - yTop);
-        }
-
-        private static bool IsGridLinePixel(Color32 color)
-        {
-            if (color.a == 0)
-            {
-                return false;
-            }
-
-            var min = Mathf.Min(color.r, Mathf.Min(color.g, color.b));
-            var max = Mathf.Max(color.r, Mathf.Max(color.g, color.b));
-            var average = (color.r + color.g + color.b) / 3f;
-            var isDarkLine = average <= 110f && max - min <= 45;
-            var isMediumLine = average >= 120f && average <= 220f && max - min <= 12;
-            return isDarkLine || isMediumLine;
-        }
-
-        private static void RemoveCheckerBackground(Color32[] pixels, int width, int height)
+        private static void RemoveConnectedCheckerBackground(Color32[] pixels, int width, int height)
         {
             var visited = new bool[pixels.Length];
             var queue = new Queue<int>();
@@ -503,8 +303,6 @@ namespace Fight.Editor
                 EnqueueIfBackground(x, y + 1, width, height, pixels, visited, queue);
                 EnqueueIfBackground(x, y - 1, width, height, pixels, visited, queue);
             }
-
-            RemoveInteriorCheckerBackground(pixels, width, height);
         }
 
         private static void EnqueueIfBackground(
@@ -541,122 +339,7 @@ namespace Fight.Editor
             var min = Mathf.Min(color.r, Mathf.Min(color.g, color.b));
             var max = Mathf.Max(color.r, Mathf.Max(color.g, color.b));
             var average = (color.r + color.g + color.b) / 3f;
-            var isCheckerFill = average >= 168f && max - min <= 34;
-            var isGridBorderLine = average >= 120f && average <= 220f && max - min <= 12;
-            return isCheckerFill || isGridBorderLine;
-        }
-
-        private static void RemoveInteriorCheckerBackground(Color32[] pixels, int width, int height)
-        {
-            var visited = new bool[pixels.Length];
-            var queue = new Queue<int>();
-            var component = new List<int>();
-
-            for (var i = 0; i < pixels.Length; i++)
-            {
-                if (visited[i] || !IsCheckerBackgroundPixel(pixels[i]))
-                {
-                    continue;
-                }
-
-                CollectBackgroundComponent(i, width, height, pixels, visited, queue, component);
-                if (!ShouldRemoveInteriorCheckerBackground(component, pixels))
-                {
-                    continue;
-                }
-
-                for (var componentIndex = 0; componentIndex < component.Count; componentIndex++)
-                {
-                    pixels[component[componentIndex]].a = 0;
-                }
-            }
-        }
-
-        private static void CollectBackgroundComponent(
-            int startIndex,
-            int width,
-            int height,
-            Color32[] pixels,
-            bool[] visited,
-            Queue<int> queue,
-            List<int> component)
-        {
-            queue.Clear();
-            component.Clear();
-
-            visited[startIndex] = true;
-            queue.Enqueue(startIndex);
-
-            while (queue.Count > 0)
-            {
-                var index = queue.Dequeue();
-                component.Add(index);
-
-                var x = index % width;
-                var y = index / width;
-                EnqueueComponentPixel(x + 1, y, width, height, pixels, visited, queue);
-                EnqueueComponentPixel(x - 1, y, width, height, pixels, visited, queue);
-                EnqueueComponentPixel(x, y + 1, width, height, pixels, visited, queue);
-                EnqueueComponentPixel(x, y - 1, width, height, pixels, visited, queue);
-            }
-        }
-
-        private static void EnqueueComponentPixel(
-            int x,
-            int y,
-            int width,
-            int height,
-            Color32[] pixels,
-            bool[] visited,
-            Queue<int> queue)
-        {
-            if (x < 0 || x >= width || y < 0 || y >= height)
-            {
-                return;
-            }
-
-            var index = y * width + x;
-            if (visited[index] || !IsCheckerBackgroundPixel(pixels[index]))
-            {
-                return;
-            }
-
-            visited[index] = true;
-            queue.Enqueue(index);
-        }
-
-        private static bool ShouldRemoveInteriorCheckerBackground(List<int> component, Color32[] pixels)
-        {
-            if (component.Count < InteriorCheckerBackgroundMinPixels)
-            {
-                return false;
-            }
-
-            var brightPixelCount = 0;
-            for (var i = 0; i < component.Count; i++)
-            {
-                if (IsBrightCheckerBackgroundPixel(pixels[component[i]]))
-                {
-                    brightPixelCount++;
-                }
-            }
-
-            var brightRatio = brightPixelCount / (float)component.Count;
-            return brightRatio >= InteriorCheckerBackgroundMinBrightRatio
-                && brightRatio <= InteriorCheckerBackgroundMaxBrightRatio;
-        }
-
-        private static bool IsBrightCheckerBackgroundPixel(Color32 color)
-        {
-            if (color.a == 0)
-            {
-                return false;
-            }
-
-            var min = Mathf.Min(color.r, Mathf.Min(color.g, color.b));
-            var max = Mathf.Max(color.r, Mathf.Max(color.g, color.b));
-            var average = (color.r + color.g + color.b) / 3f;
-            return average >= 218f && max - min <= 35;
+            return min >= 224 && max - min <= 28 && average >= 226f;
         }
 
         private static bool TryLoadTexture(string assetPath, out Texture2D texture)
@@ -732,7 +415,11 @@ namespace Fight.Editor
             foreach (var path in Directory.GetFiles(absoluteFolder, "*.png"))
             {
                 File.Delete(path);
-                // Keep .meta files so replacing frames does not churn stable sprite asset GUIDs.
+                var metaPath = $"{path}.meta";
+                if (File.Exists(metaPath))
+                {
+                    File.Delete(metaPath);
+                }
             }
         }
 
@@ -798,46 +485,24 @@ namespace Fight.Editor
             return left >= right ? left : right;
         }
 
-        private readonly struct GridSpec
-        {
-            public GridSpec(GridLine[] verticalLines, GridLine[] horizontalLines)
-            {
-                VerticalLines = verticalLines ?? Array.Empty<GridLine>();
-                HorizontalLines = horizontalLines ?? Array.Empty<GridLine>();
-            }
-
-            public GridLine[] VerticalLines { get; }
-            public GridLine[] HorizontalLines { get; }
-        }
-
-        private readonly struct GridLine
-        {
-            public GridLine(int min, int max, int peak)
-            {
-                Min = min;
-                Max = max;
-                Peak = peak;
-            }
-
-            public int Min { get; }
-            public int Max { get; }
-            public int Peak { get; }
-        }
-
         private sealed class ClipBuildSpec
         {
+            private readonly int[] sourceFrameMap;
+
             public ClipBuildSpec(
                 string clipKey,
                 int sourceRow,
                 string filePrefix,
                 float framesPerSecond,
-                bool loop)
+                bool loop,
+                int[] sourceFrameMap = null)
             {
                 ClipKey = clipKey;
                 SourceRow = sourceRow;
                 FilePrefix = filePrefix;
                 FramesPerSecond = framesPerSecond;
                 Loop = loop;
+                this.sourceFrameMap = sourceFrameMap ?? Array.Empty<int>();
             }
 
             public string ClipKey { get; }
@@ -845,6 +510,16 @@ namespace Fight.Editor
             public string FilePrefix { get; }
             public float FramesPerSecond { get; }
             public bool Loop { get; }
+
+            public int ResolveSourceFrame(int frameIndex)
+            {
+                if (frameIndex >= 0 && frameIndex < sourceFrameMap.Length)
+                {
+                    return Mathf.Clamp(sourceFrameMap[frameIndex], 0, SourceColumns - 1);
+                }
+
+                return Mathf.Clamp(frameIndex, 0, SourceColumns - 1);
+            }
         }
     }
 }

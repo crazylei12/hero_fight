@@ -35,17 +35,22 @@ MonoBehaviour:
     targetType: 0
     targetPrioritySearchRadius: 0
     startingVariantIndex: 0
+    bounce:
+      maxAdditionalTargets: 0
+      searchRadius: 0
+      powerMultiplier: 0
+      bounceVariantKey:
     onHitStatusEffects: []
     variants: []
   activeSkill: {fileID: 11400000, guid: 09647fa8414deb64cac11f74370feca1, type: 2}
   ultimateSkill: {fileID: 11400000, guid: 6cccee9a9ceb3014eb2bca3f5ed6bbca, type: 2}
   aiTemplateId: assassin_default
   usesSpecialLogic: 0
-  specialLogicNotes: 
+  specialLogicNotes:
   visualConfig:
-    portrait: {fileID: 21300000, guid: 359efe92f7da4f44b8901c243d752682, type: 3}
-    battlePrefab: {fileID: 6942281271074320862, guid: 56818cfb00350d64b80b18f0e2d27211, type: 3}
-    animatorController: {fileID: 9100000, guid: c0fbc9a82051e94429aa17cc4b2f48e5, type: 2}
+    portrait: {fileID: 21300000, guid: 271aea3f24a8b4a48a7439df4ea06f5f, type: 3}
+    battlePrefab: {fileID: 4704310067148659675, guid: 26a45d7bb2b1dc5468597b30e1eaf343, type: 3}
+    animatorController: {fileID: 0}
     battlePrefabFacesLeftByDefault: 0
     projectilePrefab: {fileID: 0}
     projectileAlignToMovement: 0

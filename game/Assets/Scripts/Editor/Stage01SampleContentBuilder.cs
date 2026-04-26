@@ -52,6 +52,7 @@ namespace Fight.Editor
         private const string MonkUltimateImpactVfxPrefabPath = "Assets/Prefabs/VFX/Skills/MonkGuardianMantraBubbleImpact.prefab";
         private const string AssassinPrefabPath = "Assets/Prefabs/Heroes/assassin_001_shadowstep/Shadowstep.prefab";
         private const string TidefinPrefabPath = "Assets/Prefabs/Heroes/assassin_002_tidefin/Tidefin.prefab";
+        private const string ButcherPrefabPath = "Assets/Prefabs/Heroes/assassin_003_butcher/Butcher.prefab";
         private const string MarksmanPrefabPath = "Assets/Prefabs/Heroes/marksman_001_longshot/Longshot.prefab";
         private const string RiflemanPrefabPath = "Assets/Prefabs/Heroes/marksman_002_rifleman/Rifleman.prefab";
         private const string BoomerangerPrefabPath = "Assets/Prefabs/Heroes/marksman_004_boomeranger/Boomeranger.prefab";
@@ -1127,6 +1128,7 @@ namespace Fight.Editor
             var battlePrefab = LoadBattlePrefab(heroId, heroClass);
             hero.visualConfig.battlePrefab = battlePrefab;
             hero.visualConfig.animatorController = heroId == "assassin_002_tidefin"
+                || heroId == "assassin_003_butcher"
                 || heroId == "warrior_001_skybreaker"
                 || heroId == "warrior_002_bladesman"
                 || heroId == "warrior_003_berserker"
@@ -1179,7 +1181,7 @@ namespace Fight.Editor
             {
                 "assassin_001_shadowstep" => AssassinPrefabPath,
                 "assassin_002_tidefin" => TidefinPrefabPath,
-                "assassin_003_butcher" => AssassinPrefabPath,
+                "assassin_003_butcher" => ButcherPrefabPath,
                 "assassin_004_loner" => AssassinPrefabPath,
                 "mage_001_firemage" => FireMagePrefabPath,
                 "mage_002_frostmage" => FrostMagePrefabPath,
