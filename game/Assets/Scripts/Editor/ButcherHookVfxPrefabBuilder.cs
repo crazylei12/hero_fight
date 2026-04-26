@@ -26,7 +26,7 @@ namespace Fight.Editor
         private const float HookPixelsPerUnit = 512f;
         private const int MinimumVisibleAlpha = 8;
         private static readonly RectInt HookHeadSourceRect = new RectInt(7, 6, 437, 430);
-        private static readonly RectInt ChainSegmentSourceRect = new RectInt(1340, 6, 436, 430);
+        private static readonly RectInt ChainSegmentSourceRect = new RectInt(1340, 145, 436, 155);
         private static bool autoBuildScheduled;
 
         [InitializeOnLoadMethod]
@@ -131,7 +131,7 @@ namespace Fight.Editor
                 Vector3.zero,
                 Vector3.one,
                 SpriteDrawMode.Tiled,
-                new Vector2(0.8f, 0.34f));
+                new Vector2(0.8f, 0.42f));
             var chain = CreateSprite(
                 root.transform,
                 "Chain",
@@ -141,7 +141,7 @@ namespace Fight.Editor
                 Vector3.zero,
                 Vector3.one,
                 SpriteDrawMode.Tiled,
-                new Vector2(0.8f, 0.25f));
+                new Vector2(0.8f, 0.32f));
             var hookHead = CreateSprite(
                 root.transform,
                 "HookHead",
@@ -149,17 +149,17 @@ namespace Fight.Editor
                 Color.white,
                 8,
                 Vector3.zero,
-                Vector3.one * 0.42f);
+                Vector3.one * 0.62f);
 
             root.AddComponent<ButcherHookChainVfx>().Configure(
                 chain,
                 chainShadow,
                 hookHead,
                 sortingGroup,
-                0.25f,
+                0.32f,
                 0.16f,
-                0.26f,
-                0.52f,
+                0.3f,
+                0.38f,
                 180f,
                 0.05f);
 
