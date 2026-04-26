@@ -24,9 +24,6 @@ namespace Fight.Editor
         private const int ExpectedActionRows = 7;
         private const float GridLineCoverageRatio = 0.72f;
         private const int GridLinePaddingPixels = 1;
-        private const int InteriorCheckerBackgroundMinPixels = 16;
-        private const float InteriorCheckerBackgroundMinBrightRatio = 0.18f;
-        private const float InteriorCheckerBackgroundMaxBrightRatio = 0.92f;
         private const float PixelsPerUnit = 64f;
 
         private static readonly Vector2 FootPivot = new Vector2(0.5f, 0.07f);
@@ -454,8 +451,6 @@ namespace Fight.Editor
                 EnqueueIfBackground(x, y + 1, width, height, pixels, visited, queue);
                 EnqueueIfBackground(x, y - 1, width, height, pixels, visited, queue);
             }
-
-            RemoveInteriorCheckerBackground(pixels, width, height);
         }
 
         private static void EnqueueIfBackground(
@@ -492,122 +487,10 @@ namespace Fight.Editor
             var min = Mathf.Min(color.r, Mathf.Min(color.g, color.b));
             var max = Mathf.Max(color.r, Mathf.Max(color.g, color.b));
             var average = (color.r + color.g + color.b) / 3f;
-            var isCheckerFill = average >= 168f && max - min <= 34;
-            var isGridBorderLine = average >= 120f && average <= 220f && max - min <= 12;
+            var colorSpread = max - min;
+            var isCheckerFill = average >= 218f && colorSpread <= 8;
+            var isGridBorderLine = average >= 150f && average <= 235f && colorSpread <= 8;
             return isCheckerFill || isGridBorderLine;
-        }
-
-        private static void RemoveInteriorCheckerBackground(Color32[] pixels, int width, int height)
-        {
-            var visited = new bool[pixels.Length];
-            var queue = new Queue<int>();
-            var component = new List<int>();
-
-            for (var i = 0; i < pixels.Length; i++)
-            {
-                if (visited[i] || !IsCheckerBackgroundPixel(pixels[i]))
-                {
-                    continue;
-                }
-
-                CollectBackgroundComponent(i, width, height, pixels, visited, queue, component);
-                if (!ShouldRemoveInteriorCheckerBackground(component, pixels))
-                {
-                    continue;
-                }
-
-                for (var componentIndex = 0; componentIndex < component.Count; componentIndex++)
-                {
-                    pixels[component[componentIndex]].a = 0;
-                }
-            }
-        }
-
-        private static void CollectBackgroundComponent(
-            int startIndex,
-            int width,
-            int height,
-            Color32[] pixels,
-            bool[] visited,
-            Queue<int> queue,
-            List<int> component)
-        {
-            queue.Clear();
-            component.Clear();
-
-            visited[startIndex] = true;
-            queue.Enqueue(startIndex);
-
-            while (queue.Count > 0)
-            {
-                var index = queue.Dequeue();
-                component.Add(index);
-
-                var x = index % width;
-                var y = index / width;
-                EnqueueComponentPixel(x + 1, y, width, height, pixels, visited, queue);
-                EnqueueComponentPixel(x - 1, y, width, height, pixels, visited, queue);
-                EnqueueComponentPixel(x, y + 1, width, height, pixels, visited, queue);
-                EnqueueComponentPixel(x, y - 1, width, height, pixels, visited, queue);
-            }
-        }
-
-        private static void EnqueueComponentPixel(
-            int x,
-            int y,
-            int width,
-            int height,
-            Color32[] pixels,
-            bool[] visited,
-            Queue<int> queue)
-        {
-            if (x < 0 || x >= width || y < 0 || y >= height)
-            {
-                return;
-            }
-
-            var index = y * width + x;
-            if (visited[index] || !IsCheckerBackgroundPixel(pixels[index]))
-            {
-                return;
-            }
-
-            visited[index] = true;
-            queue.Enqueue(index);
-        }
-
-        private static bool ShouldRemoveInteriorCheckerBackground(List<int> component, Color32[] pixels)
-        {
-            if (component.Count < InteriorCheckerBackgroundMinPixels)
-            {
-                return false;
-            }
-
-            var brightPixelCount = 0;
-            for (var i = 0; i < component.Count; i++)
-            {
-                if (IsBrightCheckerBackgroundPixel(pixels[component[i]]))
-                {
-                    brightPixelCount++;
-                }
-            }
-
-            var brightRatio = brightPixelCount / (float)component.Count;
-            return brightRatio >= InteriorCheckerBackgroundMinBrightRatio
-                && brightRatio <= InteriorCheckerBackgroundMaxBrightRatio;
-        }
-
-        private static bool IsBrightCheckerBackgroundPixel(Color32 color)
-        {
-            if (color.a == 0)
-            {
-                return false;
-            }
-
-            var min = Mathf.Min(color.r, Mathf.Min(color.g, color.b));
-            var max = Mathf.Max(color.r, Mathf.Max(color.g, color.b));
-            var average = (color.r + color.g + color.b) / 3f;
-            return average >= 218f && max - min <= 35;
         }
 
         private static bool TryLoadTexture(string assetPath, out Texture2D texture)
