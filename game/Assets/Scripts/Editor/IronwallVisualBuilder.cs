@@ -427,19 +427,28 @@ namespace Fight.Editor
 
         private static void RemoveConnectedCheckerBackground(Color32[] pixels, int width, int height)
         {
+            const int edgeSeedDepth = 4;
             var visited = new bool[pixels.Length];
             var queue = new Queue<int>();
+            var seedDepthX = Mathf.Min(edgeSeedDepth, width);
+            var seedDepthY = Mathf.Min(edgeSeedDepth, height);
 
             for (var x = 0; x < width; x++)
             {
-                EnqueueIfBackground(x, 0, width, height, pixels, visited, queue);
-                EnqueueIfBackground(x, height - 1, width, height, pixels, visited, queue);
+                for (var y = 0; y < seedDepthY; y++)
+                {
+                    EnqueueIfBackground(x, y, width, height, pixels, visited, queue);
+                    EnqueueIfBackground(x, height - 1 - y, width, height, pixels, visited, queue);
+                }
             }
 
             for (var y = 0; y < height; y++)
             {
-                EnqueueIfBackground(0, y, width, height, pixels, visited, queue);
-                EnqueueIfBackground(width - 1, y, width, height, pixels, visited, queue);
+                for (var x = 0; x < seedDepthX; x++)
+                {
+                    EnqueueIfBackground(x, y, width, height, pixels, visited, queue);
+                    EnqueueIfBackground(width - 1 - x, y, width, height, pixels, visited, queue);
+                }
             }
 
             while (queue.Count > 0)
@@ -490,9 +499,7 @@ namespace Fight.Editor
             var min = Mathf.Min(color.r, Mathf.Min(color.g, color.b));
             var max = Mathf.Max(color.r, Mathf.Max(color.g, color.b));
             var average = (color.r + color.g + color.b) / 3f;
-            var isCheckerFill = average >= 170f && max - min <= 28;
-            var isGridBorderLine = average >= 95f && average <= 220f && max - min <= 35;
-            return isCheckerFill || isGridBorderLine;
+            return average >= 225f && max - min <= 35;
         }
 
         private static void ClearOuterFrameBorder(Color32[] pixels, int width, int height)
@@ -502,7 +509,7 @@ namespace Fight.Editor
                 return;
             }
 
-            const int borderWidth = 2;
+            const int borderWidth = 4;
             var maxBorderX = Mathf.Min(borderWidth, width);
             var maxBorderY = Mathf.Min(borderWidth, height);
 
