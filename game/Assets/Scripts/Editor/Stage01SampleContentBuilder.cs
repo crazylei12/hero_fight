@@ -64,6 +64,7 @@ namespace Fight.Editor
         private const string WarriorPrefabPath = "Assets/Prefabs/Heroes/warrior_001_skybreaker/Skybreaker.prefab";
         private const string BladesmanPrefabPath = "Assets/Prefabs/Heroes/warrior_002_bladesman/Bladesman.prefab";
         private const string BerserkerPrefabPath = "Assets/Prefabs/Heroes/warrior_003_berserker/Berserker.prefab";
+        private const string SpellbladePrefabPath = "Assets/Prefabs/Heroes/warrior_004_spellblade/Spellblade.prefab";
         private const string FireMagePrefabPath = "Assets/Prefabs/Heroes/mage_001_firemage/FIREMAGE.prefab";
         private const string FrostMagePrefabPath = "Assets/Prefabs/Heroes/mage_002_frostmage/Frostmage.prefab";
         private const string LightningmagePrefabPath = "Assets/Prefabs/Heroes/mage_004_lightningmage/Lightningmage.prefab";
@@ -1134,6 +1135,7 @@ namespace Fight.Editor
                 || heroId == "warrior_001_skybreaker"
                 || heroId == "warrior_002_bladesman"
                 || heroId == "warrior_003_berserker"
+                || heroId == "warrior_004_spellblade"
                 || heroId == "mage_004_lightningmage"
                 || heroId == "marksman_002_rifleman"
                 || heroId == "marksman_003_venomshooter"
@@ -1200,6 +1202,7 @@ namespace Fight.Editor
                 "support_004_shrinemaiden" => ShrinemaidenPrefabPath,
                 "warrior_002_bladesman" => BladesmanPrefabPath,
                 "warrior_003_berserker" => BerserkerPrefabPath,
+                "warrior_004_spellblade" => SpellbladePrefabPath,
                 "tank_002_shieldwarden" => ShieldwardenPrefabPath,
                 "tank_004_mundo" => MundoPrefabPath,
                 _ => heroClass switch
