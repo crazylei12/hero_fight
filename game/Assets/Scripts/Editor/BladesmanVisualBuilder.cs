@@ -13,7 +13,8 @@ namespace Fight.Editor
     public static class BladesmanVisualBuilder
     {
         private const string BuildMenuPath = "Fight/Stage 01/Build Bladesman Visual";
-        private const string SourceSheetPath = "Assets/Art/Heroes/warrior_002_bladesman/bladesman_source_sheet.png";
+        private const string BaseSourceSheetPath = "Assets/Art/Heroes/warrior_002_bladesman/bladesman_source_sheet.png";
+        private const string RunSourceSheetPath = "Assets/Art/Heroes/warrior_002_bladesman/bladesman_run_source_sheet.png";
         private const string ResourcesRoot = "Assets/Resources/HeroPreview/warrior_002_bladesman";
         private const string ResourcesPrefix = "HeroPreview/warrior_002_bladesman";
         private const string BladesmanPrefabPath = "Assets/Prefabs/Heroes/warrior_002_bladesman/Bladesman.prefab";
@@ -29,13 +30,13 @@ namespace Fight.Editor
 
         private static readonly ClipBuildSpec[] ClipBuildSpecs =
         {
-            new ClipBuildSpec("Idle", 0, "idle", 7f, true),
-            new ClipBuildSpec("Run", 1, "run", 12f, true),
-            new ClipBuildSpec("Attack1", 2, "attack", 16f, false),
-            new ClipBuildSpec("Skill", 3, "rending_slash", 14f, false),
-            new ClipBuildSpec("Ult", 4, "flying_swallow", 12f, false),
-            new ClipBuildSpec("Hit", 5, "hit", 12f, false),
-            new ClipBuildSpec("Death", 6, "death", 9f, false),
+            new ClipBuildSpec("Idle", BaseSourceSheetPath, 0, "idle", 7f, true),
+            new ClipBuildSpec("Run", RunSourceSheetPath, 1, "run", 12f, true),
+            new ClipBuildSpec("Attack1", BaseSourceSheetPath, 2, "attack", 16f, false),
+            new ClipBuildSpec("Skill", BaseSourceSheetPath, 3, "rending_slash", 14f, false),
+            new ClipBuildSpec("Ult", BaseSourceSheetPath, 4, "flying_swallow", 12f, false),
+            new ClipBuildSpec("Hit", BaseSourceSheetPath, 5, "hit", 12f, false),
+            new ClipBuildSpec("Death", BaseSourceSheetPath, 6, "death", 9f, false),
         };
 
         private static bool autoBuildScheduled;
@@ -107,7 +108,7 @@ namespace Fight.Editor
                 }
             }
 
-            return GetLatestTimestampUtc(BuilderScriptAssetPath, SourceSheetPath)
+            return GetLatestTimestampUtc(BuilderScriptAssetPath, BaseSourceSheetPath, RunSourceSheetPath)
                 > GetLatestTimestampUtc(BladesmanPrefabPath, ResourcesRoot, BladesmanPortraitPath);
         }
 
@@ -124,39 +125,59 @@ namespace Fight.Editor
 
         private static void GenerateFrameFolders()
         {
-            if (!TryLoadTexture(SourceSheetPath, out var sourceTexture))
-            {
-                throw new FileNotFoundException($"Missing Bladesman source sheet: {SourceSheetPath}");
-            }
-
             EnsureFolder(ResourcesRoot);
-            var grid = DetectGrid(sourceTexture);
-            foreach (var spec in ClipBuildSpecs)
+            var textureCache = new Dictionary<string, Texture2D>(StringComparer.Ordinal);
+            var gridCache = new Dictionary<string, GridSpec>(StringComparer.Ordinal);
+            try
             {
-                var folderPath = $"{ResourcesRoot}/{spec.ClipKey}";
-                EnsureFolder(folderPath);
-                ClearGeneratedPngs(folderPath);
-
-                var frameRects = BuildFrameRects(grid, spec.SourceRow);
-                var outputFrameWidth = 1;
-                var outputFrameHeight = 1;
-                foreach (var rect in frameRects)
+                foreach (var spec in ClipBuildSpecs)
                 {
-                    outputFrameWidth = Mathf.Max(outputFrameWidth, rect.width);
-                    outputFrameHeight = Mathf.Max(outputFrameHeight, rect.height);
-                }
+                    if (!textureCache.TryGetValue(spec.SourceSheetPath, out var sourceTexture))
+                    {
+                        if (!TryLoadTexture(spec.SourceSheetPath, out sourceTexture))
+                        {
+                            throw new FileNotFoundException($"Missing Bladesman source sheet: {spec.SourceSheetPath}");
+                        }
 
-                for (var i = 0; i < frameRects.Length; i++)
-                {
-                    var frameTexture = CropFrame(sourceTexture, frameRects[i], outputFrameWidth, outputFrameHeight);
-                    var assetPath = $"{folderPath}/{spec.FilePrefix}_{i:00}.png";
-                    File.WriteAllBytes(ToAbsolutePath(assetPath), frameTexture.EncodeToPNG());
-                    UnityEngine.Object.DestroyImmediate(frameTexture);
-                    ApplyFrameTextureImporter(assetPath);
+                        textureCache.Add(spec.SourceSheetPath, sourceTexture);
+                    }
+
+                    if (!gridCache.TryGetValue(spec.SourceSheetPath, out var grid))
+                    {
+                        grid = DetectGrid(sourceTexture);
+                        gridCache.Add(spec.SourceSheetPath, grid);
+                    }
+
+                    var folderPath = $"{ResourcesRoot}/{spec.ClipKey}";
+                    EnsureFolder(folderPath);
+                    ClearGeneratedPngs(folderPath);
+
+                    var frameRects = BuildFrameRects(grid, spec.SourceRow);
+                    var outputFrameWidth = 1;
+                    var outputFrameHeight = 1;
+                    foreach (var rect in frameRects)
+                    {
+                        outputFrameWidth = Mathf.Max(outputFrameWidth, rect.width);
+                        outputFrameHeight = Mathf.Max(outputFrameHeight, rect.height);
+                    }
+
+                    for (var i = 0; i < frameRects.Length; i++)
+                    {
+                        var frameTexture = CropFrame(sourceTexture, frameRects[i], outputFrameWidth, outputFrameHeight);
+                        var assetPath = $"{folderPath}/{spec.FilePrefix}_{i:00}.png";
+                        File.WriteAllBytes(ToAbsolutePath(assetPath), frameTexture.EncodeToPNG());
+                        UnityEngine.Object.DestroyImmediate(frameTexture);
+                        ApplyFrameTextureImporter(assetPath);
+                    }
                 }
             }
-
-            UnityEngine.Object.DestroyImmediate(sourceTexture);
+            finally
+            {
+                foreach (var sourceTexture in textureCache.Values)
+                {
+                    UnityEngine.Object.DestroyImmediate(sourceTexture);
+                }
+            }
         }
 
         private static void CreateBladesmanPrefab()
@@ -481,7 +502,9 @@ namespace Fight.Editor
             var min = Mathf.Min(color.r, Mathf.Min(color.g, color.b));
             var max = Mathf.Max(color.r, Mathf.Max(color.g, color.b));
             var average = (color.r + color.g + color.b) / 3f;
-            return average >= 170f && max - min <= 28;
+            var isCheckerFill = average >= 170f && max - min <= 28;
+            var isGridBorderLine = average >= 95f && average <= 220f && max - min <= 35;
+            return isCheckerFill || isGridBorderLine;
         }
 
         private static bool TryLoadTexture(string assetPath, out Texture2D texture)
@@ -539,11 +562,7 @@ namespace Fight.Editor
             foreach (var path in Directory.GetFiles(absoluteFolder, "*.png"))
             {
                 File.Delete(path);
-                var metaPath = $"{path}.meta";
-                if (File.Exists(metaPath))
-                {
-                    File.Delete(metaPath);
-                }
+                // Keep .meta files so replacing frames does not churn stable sprite asset GUIDs.
             }
         }
 
@@ -639,12 +658,14 @@ namespace Fight.Editor
         {
             public ClipBuildSpec(
                 string clipKey,
+                string sourceSheetPath,
                 int sourceRow,
                 string filePrefix,
                 float framesPerSecond,
                 bool loop)
             {
                 ClipKey = clipKey;
+                SourceSheetPath = sourceSheetPath;
                 SourceRow = sourceRow;
                 FilePrefix = filePrefix;
                 FramesPerSecond = framesPerSecond;
@@ -652,6 +673,7 @@ namespace Fight.Editor
             }
 
             public string ClipKey { get; }
+            public string SourceSheetPath { get; }
             public int SourceRow { get; }
             public string FilePrefix { get; }
             public float FramesPerSecond { get; }
