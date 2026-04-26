@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Fight.Data;
 using Fight.UI;
@@ -12,7 +13,8 @@ namespace Fight.Editor
     public static class RiflemanVisualBuilder
     {
         private const string BuildMenuPath = "Fight/Stage 01/Build Rifleman Visual";
-        private const string SourceSheetPath = "Assets/Art/Heroes/marksman_002_rifleman/rifleman_clean_sheet.png";
+        private const string SourceSheetPath = "Assets/Art/Heroes/marksman_002_rifleman/rifleman_source_sheet.png";
+        private const string NormalizedSheetPath = "Assets/Art/Heroes/marksman_002_rifleman/rifleman_clean_sheet.png";
         private const string ResourcesRoot = "Assets/Resources/HeroPreview/marksman_002_rifleman";
         private const string ResourcesPrefix = "HeroPreview/marksman_002_rifleman";
         private const string RiflemanPrefabPath = "Assets/Prefabs/Heroes/marksman_002_rifleman/Rifleman.prefab";
@@ -26,6 +28,10 @@ namespace Fight.Editor
         private const float PixelsPerUnit = 64f;
 
         private static readonly Vector2 FootPivot = new Vector2(0.5f, 0.06f);
+        private static readonly int[] SourceColumnLefts = { 5, 162, 319, 476, 633, 791, 949, 1106, 1264 };
+        private static readonly int[] SourceColumnRights = { 159, 317, 474, 631, 788, 946, 1104, 1261, 1418 };
+        private static readonly int[] SourceRowTops = { 5, 158, 308, 459, 612, 762, 912 };
+        private static readonly int[] SourceRowBottoms = { 155, 306, 457, 609, 759, 909, 1100 };
 
         private static readonly ClipBuildSpec[] ClipBuildSpecs =
         {
@@ -131,6 +137,15 @@ namespace Fight.Editor
             }
 
             EnsureFolder(ResourcesRoot);
+            var normalizedSheet = new Texture2D(
+                SourceColumns * OutputFrameWidth,
+                SourceRows * OutputFrameHeight,
+                TextureFormat.RGBA32,
+                false);
+            normalizedSheet.filterMode = FilterMode.Point;
+            normalizedSheet.wrapMode = TextureWrapMode.Clamp;
+            FillTexture(normalizedSheet, new Color32(0, 0, 0, 0));
+
             foreach (var spec in ClipBuildSpecs)
             {
                 var folderPath = $"{ResourcesRoot}/{spec.ClipKey}";
@@ -142,11 +157,15 @@ namespace Fight.Editor
                     var frameTexture = CropFrame(sourceTexture, spec.SourceRow, i);
                     var assetPath = $"{folderPath}/{spec.FilePrefix}_{i:00}.png";
                     File.WriteAllBytes(ToAbsolutePath(assetPath), frameTexture.EncodeToPNG());
+                    WriteFrameToNormalizedSheet(normalizedSheet, frameTexture, spec.SourceRow, i);
                     UnityEngine.Object.DestroyImmediate(frameTexture);
                     ApplyFrameTextureImporter(assetPath);
                 }
             }
 
+            File.WriteAllBytes(ToAbsolutePath(NormalizedSheetPath), normalizedSheet.EncodeToPNG());
+            UnityEngine.Object.DestroyImmediate(normalizedSheet);
+            ApplySourceTextureImporter(NormalizedSheetPath);
             UnityEngine.Object.DestroyImmediate(sourceTexture);
         }
 
@@ -245,17 +264,19 @@ namespace Fight.Editor
 
         private static Texture2D CropFrame(Texture2D sourceTexture, int sourceRow, int sourceFrame)
         {
-            var sourceX = sourceFrame * OutputFrameWidth;
-            var sourceYTop = sourceRow * OutputFrameHeight;
-            var topLeftPixels = new Color32[OutputFrameWidth * OutputFrameHeight];
+            var sourceX = SourceColumnLefts[sourceFrame];
+            var sourceYTop = SourceRowTops[sourceRow];
+            var sourceWidth = SourceColumnRights[sourceFrame] - sourceX;
+            var sourceHeight = SourceRowBottoms[sourceRow] - sourceYTop;
+            var topLeftPixels = new Color32[sourceWidth * sourceHeight];
 
-            for (var y = 0; y < OutputFrameHeight; y++)
+            for (var y = 0; y < sourceHeight; y++)
             {
                 var sourceY = sourceYTop + y;
-                for (var x = 0; x < OutputFrameWidth; x++)
+                for (var x = 0; x < sourceWidth; x++)
                 {
                     var sourceXPosition = sourceX + x;
-                    var outputIndex = y * OutputFrameWidth + x;
+                    var outputIndex = y * sourceWidth + x;
                     if (sourceXPosition < 0
                         || sourceXPosition >= sourceTexture.width
                         || sourceY < 0
@@ -270,12 +291,25 @@ namespace Fight.Editor
                 }
             }
 
-            var unityPixels = new Color32[topLeftPixels.Length];
+            ClearConnectedPreviewBackground(topLeftPixels, sourceWidth, sourceHeight);
+
+            var scaledTopLeftPixels = new Color32[OutputFrameWidth * OutputFrameHeight];
+            for (var y = 0; y < OutputFrameHeight; y++)
+            {
+                var sourceY = Mathf.Min(sourceHeight - 1, Mathf.FloorToInt(y * sourceHeight / (float)OutputFrameHeight));
+                for (var x = 0; x < OutputFrameWidth; x++)
+                {
+                    var sourceXPosition = Mathf.Min(sourceWidth - 1, Mathf.FloorToInt(x * sourceWidth / (float)OutputFrameWidth));
+                    scaledTopLeftPixels[y * OutputFrameWidth + x] = topLeftPixels[sourceY * sourceWidth + sourceXPosition];
+                }
+            }
+
+            var unityPixels = new Color32[scaledTopLeftPixels.Length];
             for (var y = 0; y < OutputFrameHeight; y++)
             {
                 var unityY = OutputFrameHeight - 1 - y;
                 Array.Copy(
-                    topLeftPixels,
+                    scaledTopLeftPixels,
                     y * OutputFrameWidth,
                     unityPixels,
                     unityY * OutputFrameWidth,
@@ -288,6 +322,114 @@ namespace Fight.Editor
             frameTexture.wrapMode = TextureWrapMode.Clamp;
             frameTexture.Apply();
             return frameTexture;
+        }
+
+        private static void ClearConnectedPreviewBackground(Color32[] topLeftPixels, int width, int height)
+        {
+            if (topLeftPixels == null || width <= 0 || height <= 0)
+            {
+                return;
+            }
+
+            var visited = new bool[topLeftPixels.Length];
+            var queue = new Queue<int>();
+
+            void TryEnqueue(int x, int y)
+            {
+                if (x < 0 || x >= width || y < 0 || y >= height)
+                {
+                    return;
+                }
+
+                var index = y * width + x;
+                if (visited[index] || !IsPreviewBackground(topLeftPixels[index]))
+                {
+                    return;
+                }
+
+                visited[index] = true;
+                queue.Enqueue(index);
+            }
+
+            for (var x = 0; x < width; x++)
+            {
+                TryEnqueue(x, 0);
+                TryEnqueue(x, height - 1);
+            }
+
+            for (var y = 0; y < height; y++)
+            {
+                TryEnqueue(0, y);
+                TryEnqueue(width - 1, y);
+            }
+
+            while (queue.Count > 0)
+            {
+                var index = queue.Dequeue();
+                var color = topLeftPixels[index];
+                topLeftPixels[index] = new Color32(color.r, color.g, color.b, 0);
+
+                var x = index % width;
+                var y = index / width;
+                TryEnqueue(x - 1, y);
+                TryEnqueue(x + 1, y);
+                TryEnqueue(x, y - 1);
+                TryEnqueue(x, y + 1);
+            }
+
+            for (var i = 0; i < topLeftPixels.Length; i++)
+            {
+                if (topLeftPixels[i].a == 0 || !IsBrightCheckerPixel(topLeftPixels[i]))
+                {
+                    continue;
+                }
+
+                var color = topLeftPixels[i];
+                topLeftPixels[i] = new Color32(color.r, color.g, color.b, 0);
+            }
+        }
+
+        private static bool IsPreviewBackground(Color32 color)
+        {
+            if (color.a == 0)
+            {
+                return true;
+            }
+
+            var max = Mathf.Max(color.r, color.g, color.b);
+            var min = Mathf.Min(color.r, color.g, color.b);
+            return min >= 205 && max - min <= 48;
+        }
+
+        private static bool IsBrightCheckerPixel(Color32 color)
+        {
+            var max = Mathf.Max(color.r, color.g, color.b);
+            var min = Mathf.Min(color.r, color.g, color.b);
+            return min >= 232 && max - min <= 30;
+        }
+
+        private static void FillTexture(Texture2D texture, Color32 color)
+        {
+            var pixels = new Color32[texture.width * texture.height];
+            for (var i = 0; i < pixels.Length; i++)
+            {
+                pixels[i] = color;
+            }
+
+            texture.SetPixels32(pixels);
+            texture.Apply();
+        }
+
+        private static void WriteFrameToNormalizedSheet(Texture2D normalizedSheet, Texture2D frameTexture, int sourceRow, int sourceFrame)
+        {
+            var targetY = (SourceRows - 1 - sourceRow) * OutputFrameHeight;
+            normalizedSheet.SetPixels32(
+                sourceFrame * OutputFrameWidth,
+                targetY,
+                OutputFrameWidth,
+                OutputFrameHeight,
+                frameTexture.GetPixels32());
+            normalizedSheet.Apply();
         }
 
         private static bool TryLoadTexture(string assetPath, out Texture2D texture)
