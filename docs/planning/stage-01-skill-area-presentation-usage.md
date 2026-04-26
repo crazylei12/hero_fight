@@ -70,8 +70,6 @@
 - batchmode 执行方法：`Fight.Editor.FireMageVfxPrefabBuilder.BuildFireMageVfxPrefabsBatch`
 - 编辑器菜单：`Fight -> Stage 01 -> Build Shared Dash Charge VFX`
 - batchmode 执行方法：`Fight.Editor.SharedDashChargeVfxPrefabBuilder.BuildSharedDashChargeVfxBatch`
-- 编辑器菜单：`Fight -> Stage 01 -> Build Pythoness Shrinemaiden VFX`
-- batchmode 执行方法：`Fight.Editor.PythonessVfxPrefabBuilder.BuildPythonessVfxPrefabsBatch`
 
 当前这条 builder 已覆盖：
 
@@ -79,9 +77,6 @@
 - 火法小技能 `Ember Burst`
 - 火法大招 `Meteor Fall`
 - 共享冲锋拖尾 `DashChargeTrail`
-- 巫女普攻伤害 / 治疗投射物与命中闪效
-- 巫女小技能 `Prayer Bloom` 的范围瞬时特效
-- 巫女大招 `Twin Rite Totem` 的出现、循环、消失三段部署物特效
 
 执行注意事项：
 
@@ -99,7 +94,6 @@
 - `game/Assets/Scripts/UI/BattleView.cs`
 - `game/Assets/Scripts/Editor/FireMageVfxPrefabBuilder.cs`
 - `game/Assets/Scripts/Editor/SharedDashChargeVfxPrefabBuilder.cs`
-- `game/Assets/Scripts/Editor/PythonessVfxPrefabBuilder.cs`
 - `game/Assets/Scripts/UI/Preview/SpriteTextureFrameAnimator.cs`
 - `game/Assets/Scripts/UI/Presentation/Skills/SkillAreaPresentationController.cs`
 - `game/Assets/Scripts/UI/Presentation/Skills/FireSeaSkillAreaPresentationController.cs`
@@ -136,24 +130,18 @@
 
 当前巫女 VFX prefab：
 
-- `game/Assets/Prefabs/VFX/Projectiles/ShrinemaidenDamageProjectile.prefab`
-- `game/Assets/Prefabs/VFX/Projectiles/ShrinemaidenHealProjectile.prefab`
-- `game/Assets/Prefabs/VFX/Shared/ShrinemaidenDamageImpact.prefab`
-- `game/Assets/Prefabs/VFX/Shared/ShrinemaidenHealImpact.prefab`
-- `game/Assets/Prefabs/VFX/Skills/ShrinemaidenPrayerBloomImpact.prefab`
-- `game/Assets/Prefabs/VFX/Skills/ShrinemaidenTotemSpawn.prefab`
-- `game/Assets/Prefabs/VFX/Skills/ShrinemaidenTotemLoop.prefab`
-- `game/Assets/Prefabs/VFX/Skills/ShrinemaidenTotemDisappear.prefab`
+- 2026-04-26 清理后，不再保留旧 `pythoness__38.png` / `pythoness_effect__73.png` 派生的巫女专属 VFX prefab。
+- 巫女普攻投射物暂时走 `BattleView` 的默认投射物占位表现。
+- `Prayer Bloom` 和 `Twin Rite Totem` 暂时不绑定专属 cast/deployable VFX，避免引用已删除的旧预览资源。
 
 当前巫女像素图接入规则：
 
 - 当前巫女角色模型已切换为 `support_004_shrinemaiden/ShrinemaidenWunv.prefab`，使用用户提供的 `wunv.png` 精灵图作为正式战斗预览模型
-- `ShrinemaidenWunv.prefab` 通过 `SpriteSheetBattleVisualConfig` 读取 `Resources/HeroPreview/support_004_shrinemaiden_wunv` 下的 Idle / Run / Jump / Attack1 / Attack2 / Skill / Ult / Hit / Death 帧序列，不使用 HeroEditor animator controller
+- `ShrinemaidenWunv.prefab` 通过 `SpriteSheetBattleVisualConfig` 读取 `Resources/HeroPreview/support_004_shrinemaiden` 下的 Idle / Run / Attack1 / Attack2 / Skill / Hit / Death 帧序列，不使用 HeroEditor animator controller
 - `wunv.png` 的每行动作按 8 帧源图处理；Attack1 / Attack2 的源图末帧是飞行物残留帧，builder 会沿用上一帧身体并叠加末帧飞行物，避免战斗动画中角色本体突然消失
 - 由于源图每格角色站位不完全对齐，builder 会剔除贴左右边缘的非主体残片，并按主体连通区域做横向居中
 - 当前该 prefab 的根缩放为 `1.35`，每帧按 `64` pixels per unit 导入，pivot 使用脚底附近的 `{x: 0.5, y: 0.06}`
-- `pythoness__38.png` / `pythoness_effect__73.png` 继续作为特效帧素材来源，实际运行特效引用整理后的项目 prefab
-- 如果后续再次替换巫女本体模型，应同步修改 `Shrinemaiden.asset`、`Stage01SampleContentBuilder.cs`、`ShrinemaidenWunvVisualBuilder.cs` 和 `PythonessVfxPrefabBuilder.cs`，避免重建内容后引用回退
+- 如果后续再次替换巫女本体模型，应同步修改 `Shrinemaiden.asset`、`Stage01SampleContentBuilder.cs` 和 `ShrinemaidenWunvVisualBuilder.cs`，避免重建内容后引用回退
 - 部署物如果需要进入 / 循环 / 离场三段表现，优先使用 `SkillEffectData.deployableProxySpawnVfxPrefab`、`deployableProxyLoopVfxPrefab`、`deployableProxyRemovalVfxPrefab`，不要写英雄专属的播放分支
 
 ## 当前资源包速查索引
@@ -591,16 +579,15 @@
 - 代理体的创建、持续时间、攻击频率、目标选择和移除仍完全由 `RuntimeDeployableProxy` 与 `BattleDeployableProxySystem` 决定
 - 代理体创建后应按自身剩余持续时间独立运作；拥有者死亡或等待复活不应让已存在的周期攻击 / 脉冲代理体停机，拥有者只继续作为阵营、数值、日志和结算归属来源
 - 表现层只读取 `SkillEffectData.deployableProxyLoopVfxPrefab` 及其 offset / rotation / scale 字段来创建和同步可见对象
-- 代理体 VFX 应继续使用项目内整理过的 prefab，例如 `game/Assets/Prefabs/VFX/Skills/ShrinemaidenTotemLoop.prefab`
+- 代理体 VFX 应继续使用项目内整理过的 prefab；如果对应 prefab 已被清理，则必须先把 `deployableProxyLoopVfxPrefab` 置空或改指向仍存在的 prefab，不能保留悬空引用
 - 这类 VFX 只能表达“这里有一个正在生效的代理体”，不能反向决定代理体持续时间、攻击时机、目标或数值
 - 如果后续需要生成 / 消失瞬间特效，优先继续扩展 `SkillEffectData` 的通用表现字段，不要为单个英雄在 `BattleView` 里写硬编码分支
 
 当前已接入示例：
 
 - `Twin Rite Totem`
-  - 项目内工程 prefab：`game/Assets/Prefabs/VFX/Skills/ShrinemaidenTotemLoop.prefab`
-  - 素材来源：`pythoness__38.png` 拆出的 `DoorLoop` 像素序列
-  - 接入方式：`BattleView` 在 `context.DeployableProxies` 中发现带有 `deployableProxyLoopVfxPrefab` 的代理体后创建、跟随并在代理体消失时清理对应 loop VFX
+  - 2026-04-26 清理旧 Pythoness 派生 VFX 后，当前不再绑定项目内工程 prefab
+  - 接入方式仍保留：`BattleView` 在 `context.DeployableProxies` 中发现带有 `deployableProxyLoopVfxPrefab` 的代理体后创建、跟随并在代理体消失时清理对应 loop VFX
 
 ## 单位附着状态特效的当前规则
 

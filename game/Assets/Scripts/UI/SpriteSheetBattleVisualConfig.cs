@@ -24,7 +24,7 @@ namespace Fight.UI
     public sealed class SpriteSheetBattleVisualConfig : MonoBehaviour
     {
         [SerializeField] private SpriteRenderer spriteRenderer;
-        [SerializeField] private string resourcesRoot = "HeroPreview/mage_004_pythoness";
+        [SerializeField] private string resourcesRoot = "HeroPreview/support_004_shrinemaiden";
         [SerializeField] private float pixelsPerUnit = 32f;
         [SerializeField] private Vector2 spritePivot = new Vector2(0.5f, 0.5f);
         [SerializeField] private SpriteSheetBattleClipConfig[] clips = Array.Empty<SpriteSheetBattleClipConfig>();

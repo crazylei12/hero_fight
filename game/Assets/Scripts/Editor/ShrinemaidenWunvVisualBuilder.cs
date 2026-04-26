@@ -14,8 +14,8 @@ namespace Fight.Editor
     {
         private const string BuildMenuPath = "Fight/Stage 01/Build Shrinemaiden Wunv Visual";
         private const string SourceSheetPath = "Assets/Art/Heroes/support_004_shrinemaiden/wunv_source_sheet.png";
-        private const string ResourcesRoot = "Assets/Resources/HeroPreview/support_004_shrinemaiden_wunv";
-        private const string ResourcesPrefix = "HeroPreview/support_004_shrinemaiden_wunv";
+        private const string ResourcesRoot = "Assets/Resources/HeroPreview/support_004_shrinemaiden";
+        private const string ResourcesPrefix = "HeroPreview/support_004_shrinemaiden";
         private const string ShrinemaidenPrefabPath = "Assets/Prefabs/Heroes/support_004_shrinemaiden/ShrinemaidenWunv.prefab";
         private const string ShrinemaidenHeroAssetPath = "Assets/Data/Stage01Demo/Heroes/support_004_shrinemaiden/Shrinemaiden.asset";
         private const string BuilderScriptAssetPath = "Assets/Scripts/Editor/ShrinemaidenWunvVisualBuilder.cs";

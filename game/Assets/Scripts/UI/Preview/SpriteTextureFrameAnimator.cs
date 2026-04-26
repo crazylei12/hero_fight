@@ -14,7 +14,7 @@ namespace Fight.UI.Preview
     [RequireComponent(typeof(SpriteRenderer))]
     public sealed class SpriteTextureFrameAnimator : MonoBehaviour
     {
-        [SerializeField] private string resourcesFolder = "HeroPreview/warrior_004_spellblade/Idle";
+        [SerializeField] private string resourcesFolder = "HeroPreview/support_004_shrinemaiden/Idle";
         [SerializeField] private float framesPerSecond = 8f;
         [SerializeField] private float pixelsPerUnit = 100f;
         [SerializeField] private Vector2 spritePivot = new Vector2(0.5f, 0.08f);

@@ -66,18 +66,12 @@ MonoBehaviour:
     battlePrefab: {fileID: 617000000000000001, guid: d0a4b7c611ed4d5bb4a9a2c5f1b0e48f, type: 3}
     animatorController: {fileID: 0}
     battlePrefabFacesLeftByDefault: 0
-    projectilePrefab: {fileID: 615100000000000001, guid: a09b1006d2204a9bb74e7cb1394c8a01, type: 3}
-    projectileAlignToMovement: 1
+    projectilePrefab: {fileID: 0}
+    projectileAlignToMovement: 0
     projectileEulerAngles: {x: 0, y: 0, z: 0}
     castVfxPrefab: {fileID: 0}
     hitVfxPrefab: {fileID: 0}
-    basicAttackVariantVisuals:
-    - variantKey: attack_damage
-      projectilePrefab: {fileID: 615100000000000001, guid: a09b1006d2204a9bb74e7cb1394c8a01, type: 3}
-      hitVfxPrefab: {fileID: 615200000000000001, guid: c09b1006d2204a9bb74e7cb1394c8a03, type: 3}
-    - variantKey: attack_heal
-      projectilePrefab: {fileID: 615100000000000101, guid: b09b1006d2204a9bb74e7cb1394c8a02, type: 3}
-      hitVfxPrefab: {fileID: 615200000000000101, guid: d09b1006d2204a9bb74e7cb1394c8a04, type: 3}
+    basicAttackVariantVisuals: []
     castSfx: {fileID: 0}
   debugNotes: Stage-01 demo hero for Support. Shrinemaiden validates alternating
     damage/heal projectile basic attacks, missing-enemy fallback healing, and periodic

@@ -104,9 +104,9 @@ MonoBehaviour:
     deployableProxyAttackRange: 56
     deployableProxyProjectileSpeedOverride: 16
     deployableProxyStartingVariantIndex: 0
-    deployableProxySpawnVfxPrefab: {fileID: 2874111517984913438, guid: 17263d4b81100d14c8b8eeda91680556, type: 3}
-    deployableProxyLoopVfxPrefab: {fileID: 615300000000000101, guid: f09b1006d2204a9bb74e7cb1394c8a06, type: 3}
-    deployableProxyRemovalVfxPrefab: {fileID: 5771285974671304140, guid: 782f8e8feba8e764c822f5579399a436, type: 3}
+    deployableProxySpawnVfxPrefab: {fileID: 0}
+    deployableProxyLoopVfxPrefab: {fileID: 0}
+    deployableProxyRemovalVfxPrefab: {fileID: 0}
     deployableProxyVfxLocalOffset: {x: 0, y: 0.28, z: 0}
     deployableProxyVfxEulerAngles: {x: 0, y: 0, z: 0}
     deployableProxyVfxScaleMultiplier: {x: 1, y: 1, z: 1}

@@ -1,6 +1,6 @@
 # Stage 01 Sprite Sheet Hero Visual Workflow
 
-最后更新：2026-04-25
+最后更新：2026-04-26
 
 ## 文档用途
 
@@ -26,6 +26,7 @@
 - 后续样例内容重建脚本也要同步 prefab 路径，否则重建 demo 内容时可能切回旧模型。
 - 像素图接进战斗前必须检查 pivot。血条/脚底错位时，优先怀疑 sprite pivot 或帧裁切尺寸，而不是先改血条逻辑。
 - 如果源图是 `RGB`、带白底、棋盘格底，或透明边缘不干净，必须先做逐帧透明底清理，再接入英雄。默认使用“按帧裁切 -> 逐帧 `rembg` -> 保护分离特效像素 -> 重建运行帧”的流程，不要直接把整张复杂 sheet 一次性丢给 `rembg`。
+- 用户后续每次提供新的精灵图、动作行替换图或要求“扣干净/抠图”时，都必须把逐帧 `rembg` 当成默认必经步骤。颜色阈值、连通域清理、外框擦除只能作为 `rembg` 之后的补充修边，不能替代 `rembg`。
 
 ## 风语司铃案例记录
 
@@ -44,18 +45,30 @@
 
 落地文件：
 
-- 原动作预览资源：`game/Assets/Resources/HeroPreview/chatgpt_20260425_bellcaster/`
-- 风语司铃专属战斗帧：`game/Assets/Resources/HeroPreview/support_002_windchime_bellcaster/`
-- 新战斗 prefab：`game/Assets/Prefabs/Heroes/support_002_windchime/WindchimeBellcaster.prefab`
+- 原动作预览资源：`game/Assets/Resources/HeroPreview/chatgpt_20260425_bellcaster/`（2026-04-26 已随不满意资源清理）
+- 风语司铃专属战斗帧：`game/Assets/Resources/HeroPreview/support_002_windchime_bellcaster/`（2026-04-26 已随不满意资源清理）
+- 新战斗 prefab：`game/Assets/Prefabs/Heroes/support_002_windchime/WindchimeBellcaster.prefab`（2026-04-26 已删除，当前回退到 `Windchime.prefab`）
 - 旧模型保留：`game/Assets/Prefabs/Heroes/support_002_windchime/Windchime.prefab`
 - 英雄数据：`game/Assets/Data/Stage01Demo/Heroes/support_002_windchime/Windchime.asset`
-- 自动生成/同步脚本：`game/Assets/Scripts/Editor/WindchimeBellcasterVisualBuilder.cs`
+- 自动生成/同步脚本：`game/Assets/Scripts/Editor/WindchimeBellcasterVisualBuilder.cs`（2026-04-26 已删除）
 - 样例内容生成器引用：`game/Assets/Scripts/Editor/Stage01SampleContentBuilder.cs`
 
 本次提交：
 
 - `b3bf4dd`：接入风语司铃新像素模型。
 - `9e43a56`：把风语司铃新模型 pivot 从中心点改为脚底点，修正血条/脚底错位。
+
+## 2026-04-26 HeroPreview 清理
+
+当前 `game/Assets/Resources/HeroPreview/` 只保留用户确认继续观察的五套目录：
+
+- `marksman_004_boomeranger`
+- `support_004_shrinemaiden`
+- `tank_004_mundo`
+- `warrior_001_skybreaker`
+- `warrior_002_bladesman`
+
+已删除资源对应的源图、预览 prefab、专用 builder 和旧 Pythoness 派生巫女 VFX 也同步清理；保留 hero 资源若需要表现回退，应指向仍存在的旧 prefab 或使用运行时默认占位表现。
 
 ## 推荐落地流程
 
@@ -123,9 +136,11 @@ game/Assets/Resources/HeroPreview/<hero_id>_<visual_key>/
 
 - 先保留原始源图，不直接覆盖唯一输入。
 - 按当前 builder 使用的格子、固定帧尺寸或已确认动作映射逐帧裁切。
-- 对每一帧单独运行 `rembg`。不要把整张复杂 sheet 一次性输入 `rembg`，否则容易把整张图当成一个复杂主体，生成雾状半透明脏底。
+- 对每一帧单独运行 `rembg`。这是用户提供精灵图接入和动作替换的默认必经步骤；不要把颜色阈值、边缘透明化或手写背景检测当成主要抠图方案。
+- 不要把整张复杂 sheet 一次性输入 `rembg`，否则容易把整张图当成一个复杂主体，生成雾状半透明脏底。
 - 默认先用 `rembg` 的普通输出检查软边效果。`post_process_mask` 往往会变回硬边，`alpha_matting` 可能把背景色带进半透明区域，只有对比确认更好时才使用。
 - 如果角色周围有分离的小符纸、治疗光点、受击星点、弹体残影、技能光效，后处理时要主动保护这些饱和色像素，避免被 `rembg` 当作背景删掉。
+- 后处理要保守：只能清掉明确连到边缘的背景、网格线或细框，不能把中间帧的头发、身体、武器、轮廓暗部和分离特效擦成透明。若出现主体变薄、身体穿洞或中间几帧明显少像素，必须回退清理强度并重新生成。
 - 对依赖网格检测的源 sheet，例如 `ShrinemaidenWunvVisualBuilder` 这类按源图网格线检测 cell 的 builder，清理后的源 sheet 必须保留或重建网格线；否则后续自动重建会找不到格子。
 - 重建英雄专属 `Resources/HeroPreview/...` 运行帧，保留原 `.meta` 和 sprite importer 口径，尤其是 `alphaSource = FromInput`、`alphaIsTransparency = true`、`isReadable = true`、`filterMode = Point`、`spritePixelsPerUnit`。
 - 生成一张深色、白色、绿色、紫色等不同底色的 contact-sheet 预览，专门检查残底、白边、黑边和分离特效是否丢失。
@@ -137,6 +152,7 @@ game/Assets/Resources/HeroPreview/<hero_id>_<visual_key>/
 - 至少检查 `Idle`、一个攻击帧、一个技能/治疗帧、一个受击或死亡帧。
 - 在深色和浅色背景上都不应看到棋盘格残块或明显脏边。
 - 分离符纸、飞行物、技能光、受击星点等必须仍然可见。
+- 对动作替换只改某一行的情况，也要验证“只有目标动作目录变化”，同时检查每帧非透明像素数量没有异常下跌，避免为了去细框把主体擦穿。
 
 2026-04-25 的 Mundo / 巫女处理结论：
 
@@ -237,4 +253,4 @@ footUiOffset = (0, -0.36, 0)
 - 自动估算脚底 pivot。
 - 自动生成一个临时 battle preview 场景或测试阵容。
 
-在通用工具完成前，可以继续参考 `WindchimeBellcasterVisualBuilder.cs` 作为专用 builder 模板。
+在通用工具完成前，可以继续参考当前仍保留的单英雄 builder，例如 `BladesmanVisualBuilder.cs`、`MundoVisualBuilder.cs`、`ShrinemaidenWunvVisualBuilder.cs`。

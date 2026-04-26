@@ -213,7 +213,7 @@ MonoBehaviour:
     visualTintColor: {r: 1, g: 1, b: 1, a: 1}
     visualTintStrength: 0
   targetIndicatorVfxPrefab: {fileID: 0}
-  castImpactVfxPrefab: {fileID: 615300000000000001, guid: e09b1006d2204a9bb74e7cb1394c8a05, type: 3}
+  castImpactVfxPrefab: {fileID: 0}
   castImpactVfxLocalOffset: {x: 0, y: 0, z: 0}
   castImpactVfxEulerAngles: {x: 0, y: 0, z: 0}
   castImpactVfxScaleMultiplier: {x: 1, y: 1, z: 1}

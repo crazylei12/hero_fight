@@ -56,7 +56,7 @@ namespace Fight.Editor
         private const string RiflemanPrefabPath = "Assets/Prefabs/Heroes/marksman_002_rifleman/Rifleman.prefab";
         private const string BoomerangerPrefabPath = "Assets/Prefabs/Heroes/marksman_004_boomeranger/Boomeranger.prefab";
         private const string SupportPrefabPath = "Assets/Prefabs/Heroes/support_001_sunpriest/Sunpriest.prefab";
-        private const string WindchimePrefabPath = "Assets/Prefabs/Heroes/support_002_windchime/WindchimeBellcaster.prefab";
+        private const string WindchimePrefabPath = "Assets/Prefabs/Heroes/support_002_windchime/Windchime.prefab";
         private const string MonkPrefabPath = "Assets/Prefabs/Heroes/support_003_monk/Monk.prefab";
         private const string ShrinemaidenPrefabPath = "Assets/Prefabs/Heroes/support_004_shrinemaiden/ShrinemaidenWunv.prefab";
         private const string WarriorPrefabPath = "Assets/Prefabs/Heroes/warrior_001_skybreaker/Skybreaker.prefab";
@@ -76,14 +76,6 @@ namespace Fight.Editor
         private const string BoomerangerActiveProjectileVfxPrefabPath = "Assets/Prefabs/VFX/Projectiles/BoomerangerReturningWheelProjectile.prefab";
         private const string BoomerangerUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/BoomerangerWheelstormOrbit.prefab";
         private const string RiflemanProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/RiflemanBasicAttackProjectile.prefab";
-        private const string ShrinemaidenDamageProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/ShrinemaidenDamageProjectile.prefab";
-        private const string ShrinemaidenHealProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/ShrinemaidenHealProjectile.prefab";
-        private const string ShrinemaidenDamageImpactPrefabPath = "Assets/Prefabs/VFX/Shared/ShrinemaidenDamageImpact.prefab";
-        private const string ShrinemaidenHealImpactPrefabPath = "Assets/Prefabs/VFX/Shared/ShrinemaidenHealImpact.prefab";
-        private const string ShrinemaidenPrayerBloomImpactPrefabPath = "Assets/Prefabs/VFX/Skills/ShrinemaidenPrayerBloomImpact.prefab";
-        private const string ShrinemaidenTotemSpawnPrefabPath = "Assets/Prefabs/VFX/Skills/ShrinemaidenTotemSpawn.prefab";
-        private const string ShrinemaidenTotemLoopPrefabPath = "Assets/Prefabs/VFX/Skills/ShrinemaidenTotemLoop.prefab";
-        private const string ShrinemaidenTotemDisappearPrefabPath = "Assets/Prefabs/VFX/Skills/ShrinemaidenTotemDisappear.prefab";
         private const string MageActiveAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FireMageEmberBurst.prefab";
         private const string FrostMageActiveAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FrostMageFrostBurst.prefab";
         private const string FrostMageUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FrostMageBlizzardField.prefab";
@@ -1137,7 +1129,6 @@ namespace Fight.Editor
                 || heroId == "warrior_001_skybreaker"
                 || heroId == "warrior_002_bladesman"
                 || heroId == "marksman_004_boomeranger"
-                || heroId == "support_002_windchime"
                 || heroId == "support_004_shrinemaiden"
                 || heroId == "tank_004_mundo"
                 ? null
@@ -1157,7 +1148,6 @@ namespace Fight.Editor
                 "marksman_004_boomeranger" => AssetDatabase.LoadAssetAtPath<GameObject>(BoomerangerBasicProjectilePrefabPath),
                 "support_001_sunpriest" => AssetDatabase.LoadAssetAtPath<GameObject>(SunpriestProjectilePrefabPath),
                 "support_002_windchime" => AssetDatabase.LoadAssetAtPath<GameObject>(SunpriestProjectilePrefabPath),
-                "support_004_shrinemaiden" => AssetDatabase.LoadAssetAtPath<GameObject>(ShrinemaidenDamageProjectilePrefabPath),
                 _ => null,
             };
             hero.visualConfig.projectileAlignToMovement =
@@ -1170,8 +1160,7 @@ namespace Fight.Editor
                 || heroId == "marksman_003_venomshooter"
                 || heroId == "marksman_004_boomeranger"
                 || heroId == "support_001_sunpriest"
-                || heroId == "support_002_windchime"
-                || heroId == "support_004_shrinemaiden";
+                || heroId == "support_002_windchime";
             hero.visualConfig.projectileEulerAngles = Vector3.zero;
             hero.visualConfig.hitVfxPrefab = null;
             hero.visualConfig.basicAttackVariantVisuals = Array.Empty<BasicAttackVariantVisualConfig>();
@@ -3282,24 +3271,10 @@ namespace Fight.Editor
             hero.visualConfig ??= new HeroVisualConfig();
             hero.visualConfig.battlePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ShrinemaidenPrefabPath);
             hero.visualConfig.animatorController = null;
-            hero.visualConfig.projectilePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ShrinemaidenDamageProjectilePrefabPath);
-            hero.visualConfig.projectileAlignToMovement = true;
+            hero.visualConfig.projectilePrefab = null;
+            hero.visualConfig.projectileAlignToMovement = false;
             hero.visualConfig.projectileEulerAngles = Vector3.zero;
-            hero.visualConfig.basicAttackVariantVisuals = new[]
-            {
-                new BasicAttackVariantVisualConfig
-                {
-                    variantKey = "attack_damage",
-                    projectilePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ShrinemaidenDamageProjectilePrefabPath),
-                    hitVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ShrinemaidenDamageImpactPrefabPath),
-                },
-                new BasicAttackVariantVisualConfig
-                {
-                    variantKey = "attack_heal",
-                    projectilePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ShrinemaidenHealProjectilePrefabPath),
-                    hitVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ShrinemaidenHealImpactPrefabPath),
-                },
-            };
+            hero.visualConfig.basicAttackVariantVisuals = Array.Empty<BasicAttackVariantVisualConfig>();
             hero.debugNotes = "Stage-01 demo hero for Support. Shrinemaiden validates alternating damage/heal projectile basic attacks, missing-enemy fallback healing, and periodic deployable proxy attack sequences.";
             EditorUtility.SetDirty(hero);
         }
@@ -4144,7 +4119,7 @@ namespace Fight.Editor
             damageEffect.targetMode = SkillEffectTargetMode.EnemiesInRadiusAroundPrimaryTarget;
             damageEffect.radiusOverride = skill.areaRadius;
 
-            skill.castImpactVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ShrinemaidenPrayerBloomImpactPrefabPath);
+            skill.castImpactVfxPrefab = null;
             skill.castImpactVfxLocalOffset = Vector3.zero;
             skill.castImpactVfxEulerAngles = Vector3.zero;
             skill.castImpactVfxScaleMultiplier = Vector3.one;
@@ -4206,9 +4181,9 @@ namespace Fight.Editor
             deployableEffect.deployableProxyAttackRange = Stage01ArenaSpec.FullMapTargetingRangeWorldUnits;
             deployableEffect.deployableProxyProjectileSpeedOverride = 16f;
             deployableEffect.deployableProxyStartingVariantIndex = 0;
-            deployableEffect.deployableProxySpawnVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ShrinemaidenTotemSpawnPrefabPath);
-            deployableEffect.deployableProxyLoopVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ShrinemaidenTotemLoopPrefabPath);
-            deployableEffect.deployableProxyRemovalVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ShrinemaidenTotemDisappearPrefabPath);
+            deployableEffect.deployableProxySpawnVfxPrefab = null;
+            deployableEffect.deployableProxyLoopVfxPrefab = null;
+            deployableEffect.deployableProxyRemovalVfxPrefab = null;
             deployableEffect.deployableProxyVfxLocalOffset = new Vector3(0f, 0.28f, 0f);
             deployableEffect.deployableProxyVfxEulerAngles = Vector3.zero;
             deployableEffect.deployableProxyVfxScaleMultiplier = Vector3.one;
