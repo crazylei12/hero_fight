@@ -55,6 +55,7 @@ namespace Fight.Editor
         private const string ButcherPrefabPath = "Assets/Prefabs/Heroes/assassin_003_butcher/Butcher.prefab";
         private const string MarksmanPrefabPath = "Assets/Prefabs/Heroes/marksman_001_longshot/Longshot.prefab";
         private const string RiflemanPrefabPath = "Assets/Prefabs/Heroes/marksman_002_rifleman/Rifleman.prefab";
+        private const string VenomshooterPrefabPath = "Assets/Prefabs/Heroes/marksman_003_venomshooter/Venomshooter.prefab";
         private const string BoomerangerPrefabPath = "Assets/Prefabs/Heroes/marksman_004_boomeranger/Boomeranger.prefab";
         private const string SupportPrefabPath = "Assets/Prefabs/Heroes/support_001_sunpriest/Sunpriest.prefab";
         private const string WindchimePrefabPath = "Assets/Prefabs/Heroes/support_002_windchime/Windchime.prefab";
@@ -1135,6 +1136,7 @@ namespace Fight.Editor
                 || heroId == "warrior_003_berserker"
                 || heroId == "mage_004_lightningmage"
                 || heroId == "marksman_002_rifleman"
+                || heroId == "marksman_003_venomshooter"
                 || heroId == "marksman_004_boomeranger"
                 || heroId == "support_004_shrinemaiden"
                 || heroId == "tank_002_shieldwarden"
@@ -1191,7 +1193,7 @@ namespace Fight.Editor
                 "mage_004_lightningmage" => LightningmagePrefabPath,
                 "marksman_001_longshot" => MarksmanPrefabPath,
                 "marksman_002_rifleman" => RiflemanPrefabPath,
-                "marksman_003_venomshooter" => MarksmanPrefabPath,
+                "marksman_003_venomshooter" => VenomshooterPrefabPath,
                 "marksman_004_boomeranger" => BoomerangerPrefabPath,
                 "support_002_windchime" => WindchimePrefabPath,
                 "support_003_monk" => MonkPrefabPath,
