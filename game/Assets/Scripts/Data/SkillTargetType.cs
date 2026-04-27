@@ -20,5 +20,6 @@ namespace Fight.Data
         CurrentEnemyTarget = 15,
         HighestDamageAllyInRange = 16,
         HighestDamageTakenAllyInRange = 17,
+        FarthestEnemyFromSelf = 18,
     }
 }

@@ -52,9 +52,10 @@ namespace Fight.UI
                 return;
             }
 
-            if (hero.Definition?.visualConfig?.animatorController != null)
+            var animatorController = hero.Definition?.visualConfig?.ResolveAnimatorController(hero.CurrentVisualFormKey);
+            if (animatorController != null)
             {
-                animator.runtimeAnimatorController = hero.Definition.visualConfig.animatorController;
+                animator.runtimeAnimatorController = animatorController;
             }
 
             CacheAnimatorParameters();
@@ -259,7 +260,7 @@ namespace Fight.UI
             var facesLeftByDefault = hero != null
                 && hero.Definition != null
                 && hero.Definition.visualConfig != null
-                && hero.Definition.visualConfig.battlePrefabFacesLeftByDefault;
+                && hero.Definition.visualConfig.ResolveBattlePrefabFacesLeftByDefault(hero.CurrentVisualFormKey);
             var facingSign = direction.x >= 0f
                 ? (facesLeftByDefault ? -1f : 1f)
                 : (facesLeftByDefault ? 1f : -1f);

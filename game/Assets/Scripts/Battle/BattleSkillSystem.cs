@@ -879,6 +879,12 @@ namespace Fight.Battle
                     return SelectThreatenedRangedAllyOrEnemyAnchor(context, caster, skill, effectiveCastRange);
                 case SkillTargetType.HighestDamageEnemyInRange:
                     return BattleAiDirector.SelectHighestDamageEnemyTarget(context.Heroes, caster, effectiveCastRange);
+                case SkillTargetType.FarthestEnemyFromSelf:
+                    return BattleAiDirector.SelectFarthestEnemyFromSelfTarget(
+                        context.Heroes,
+                        caster,
+                        effectiveCastRange,
+                        skill.minimumTargetDistance);
                 case SkillTargetType.DensestEnemyArea:
                     return FindDensestEnemyAnchor(context.Heroes, caster, effectiveCastRange, skill.areaRadius);
                 case SkillTargetType.BackmostEnemy:
@@ -1203,7 +1209,14 @@ namespace Fight.Battle
                 return true;
             }
 
-            if (Vector3.Distance(caster.CurrentPosition, primaryTarget.CurrentPosition) > effectiveCastRange)
+            var distance = Vector3.Distance(caster.CurrentPosition, primaryTarget.CurrentPosition);
+            if (distance > effectiveCastRange)
+            {
+                return false;
+            }
+
+            if (skill.minimumTargetDistance > Mathf.Epsilon
+                && distance + Mathf.Epsilon < skill.minimumTargetDistance)
             {
                 return false;
             }
@@ -1247,6 +1260,7 @@ namespace Fight.Battle
                         && (candidate != caster || skill.allowsSelfCast);
                 case SkillTargetType.AllEnemies:
                 case SkillTargetType.CurrentEnemyTarget:
+                case SkillTargetType.FarthestEnemyFromSelf:
                     return candidate.Side != caster.Side;
                 case SkillTargetType.ThreatenedRangedAllyOrEnemyDensestAnchor:
                     return true;
@@ -2874,6 +2888,12 @@ namespace Fight.Battle
                 case SkillEffectType.ApplyForcedMovement:
                     ApplyForcedMovementToTargets(context, caster, skill, effect, effectTargets);
                     break;
+                case SkillEffectType.SwapPositionsWithPrimaryTarget:
+                    ApplyPositionSwap(context, caster, skill, effect, primaryTarget);
+                    break;
+                case SkillEffectType.ApplyCombatFormOverride:
+                    ApplyCombatFormOverride(context, caster, skill, effect);
+                    break;
                 case SkillEffectType.RepositionNearPrimaryTarget:
                     if (primaryTarget != null)
                     {
@@ -3015,6 +3035,64 @@ namespace Fight.Battle
                 sourceSkill,
                 effect,
                 targets);
+        }
+
+        private static void ApplyPositionSwap(
+            BattleContext context,
+            RuntimeHero caster,
+            SkillData sourceSkill,
+            SkillEffectData effect,
+            RuntimeHero primaryTarget)
+        {
+            if (context?.EventBus == null
+                || caster == null
+                || primaryTarget == null
+                || caster.IsDead
+                || primaryTarget.IsDead)
+            {
+                return;
+            }
+
+            var casterStart = caster.CurrentPosition;
+            var targetStart = primaryTarget.CurrentPosition;
+            var durationSeconds = effect != null
+                ? Mathf.Max(0f, effect.durationSeconds > Mathf.Epsilon ? effect.durationSeconds : effect.forcedMovementDurationSeconds)
+                : 0f;
+            var peakHeight = effect != null ? Mathf.Max(0f, effect.forcedMovementPeakHeight) : 0f;
+
+            caster.StartForcedMovement(targetStart, durationSeconds, peakHeight);
+            primaryTarget.StartForcedMovement(casterStart, durationSeconds, peakHeight);
+
+            context.EventBus.Publish(new ForcedMovementAppliedEvent(
+                caster,
+                caster,
+                casterStart,
+                targetStart,
+                durationSeconds,
+                peakHeight,
+                sourceSkill));
+            context.EventBus.Publish(new ForcedMovementAppliedEvent(
+                caster,
+                primaryTarget,
+                targetStart,
+                casterStart,
+                durationSeconds,
+                peakHeight,
+                sourceSkill));
+        }
+
+        private static void ApplyCombatFormOverride(
+            BattleContext context,
+            RuntimeHero caster,
+            SkillData sourceSkill,
+            SkillEffectData effect)
+        {
+            if (caster == null || effect?.formOverride == null)
+            {
+                return;
+            }
+
+            caster.ApplyCombatFormOverride(sourceSkill, effect.formOverride);
         }
 
         private static Dictionary<string, Vector3> ResolveTowardSourceSpreadDestinations(
@@ -4262,7 +4340,8 @@ namespace Fight.Battle
                 || effect.effectType == SkillEffectType.DirectHeal
                 || effect.effectType == SkillEffectType.ApplyStatusEffects
                 || effect.effectType == SkillEffectType.CreateFocusFireCommand
-                || effect.effectType == SkillEffectType.ApplyForcedMovement;
+                || effect.effectType == SkillEffectType.ApplyForcedMovement
+                || effect.effectType == SkillEffectType.SwapPositionsWithPrimaryTarget;
         }
 
         private static bool IsDirectTargetAllowed(SkillData skill, RuntimeHero caster, RuntimeHero candidate)
@@ -4613,7 +4692,7 @@ namespace Fight.Battle
                 return true;
             }
 
-            return candidate.Definition.basicAttack != null && candidate.Definition.basicAttack.usesProjectile;
+            return candidate.UsesProjectileBasicAttack;
         }
 
         private static void TryRegisterReactiveGuard(BattleContext context, RuntimeHero caster, SkillData skill, RuntimeHero primaryTarget)

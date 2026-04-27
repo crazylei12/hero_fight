@@ -101,6 +101,7 @@ namespace Fight.Editor
         private const string VenomshooterPoisonStackGroupKey = "venomshooter_poison_pool";
         private const string ShockStatusThemeKey = "shock";
         private const string LightningmageShockStackGroupKey = "lightningmage_shock_pool";
+        private const string DemonGreaterFormKey = "greater_demon";
         private static bool autoEnsureScheduled;
 
         private static float ScaleRangedHeroDistance(float value)
@@ -372,6 +373,24 @@ namespace Fight.Editor
             EnsureHeroSkillReferences(loner, lonerActive, lonerUltimateSkill);
             EnsureHeroBattlePrefabReference(loner, LoadBattlePrefab("assassin_004_loner", HeroClass.Assassin));
 
+            var demonActive = CreateDemonActiveSkill(overwriteExistingContent);
+            var demonUltimateSkill = CreateDemonUltimateSkill(overwriteExistingContent, out var demonUltimateExisted);
+
+            var demon = CreateHero(
+                "assassin_005_demon",
+                "Demon",
+                HeroClass.Assassin,
+                315f, 42f, 10f, 1f / 0.88f, 5.1f, 0.14f, 1.7f, 1.35f,
+                demonActive,
+                ConfigureDemonUltimate(demonUltimateSkill, overwriteExistingContent, demonUltimateExisted),
+                overwriteExistingContent,
+                out var demonHeroExisted,
+                HeroTag.Melee, HeroTag.Dive, HeroTag.SustainedDamage);
+            ConfigureDemonBasicAttack(demon, overwriteExistingContent, demonHeroExisted);
+            ConfigureDemonVisualForms(demon, overwriteExistingContent, demonHeroExisted);
+            EnsureHeroSkillReferences(demon, demonActive, demonUltimateSkill);
+            EnsureHeroBattlePrefabReference(demon, LoadBattlePrefab("assassin_005_demon", HeroClass.Assassin));
+
             var tankActive = CreateIronwallActiveSkill(overwriteExistingContent);
             var tankUltimateSkill = CreateBuffSkill("skill_tank_ultimate_ironoath", "Iron Oath", SkillSlotType.Ultimate, SkillTargetType.AllAllies, 6f, 6f, 1f, 0f, StatusEffectType.DefenseModifier, 8f, 2.5f, overwriteExistingContent, out var tankUltimateExisted);
 
@@ -603,7 +622,7 @@ namespace Fight.Editor
             EnsureHeroSkillReferences(boomeranger, boomerangerActive, boomerangerUltimateSkill);
             EnsureHeroBattlePrefabReference(boomeranger, LoadBattlePrefab("marksman_004_boomeranger", HeroClass.Marksman));
 
-            CreateHeroCatalog(warrior, bladesman, berserker, spellblade, trollwarlord, mage, frostmage, sandemperor, lightningmage, assassin, tidefin, butcher, loner, tank, shieldwarden, tidehunter, mundo, support, windchime, monk, shrinemaiden, chef, commander, marksman, rifleman, venomshooter, boomeranger);
+            CreateHeroCatalog(warrior, bladesman, berserker, spellblade, trollwarlord, mage, frostmage, sandemperor, lightningmage, assassin, tidefin, butcher, loner, demon, tank, shieldwarden, tidehunter, mundo, support, windchime, monk, shrinemaiden, chef, commander, marksman, rifleman, venomshooter, boomeranger);
 
             var battleInput = CreateBattleInput(
                 "Stage01DemoBattleInput",
@@ -1235,6 +1254,7 @@ namespace Fight.Editor
                 "assassin_002_tidefin" => TidefinPrefabPath,
                 "assassin_003_butcher" => ButcherPrefabPath,
                 "assassin_004_loner" => AssassinPrefabPath,
+                "assassin_005_demon" => AssassinPrefabPath,
                 "mage_001_firemage" => FireMagePrefabPath,
                 "mage_002_frostmage" => FrostMagePrefabPath,
                 "mage_003_sandemperor" => FireMagePrefabPath,
@@ -1328,6 +1348,7 @@ namespace Fight.Editor
             skill.preferredEnemyHeroClass = HeroClass.Assassin;
             skill.fallbackTargetType = SkillTargetType.NearestEnemy;
             skill.targetPrioritySearchRadius = 0f;
+            skill.minimumTargetDistance = 0f;
             skill.targetPriorityRequiredUnitCount = 1;
             skill.castRange = castRange;
             skill.areaRadius = areaRadius;
@@ -2103,6 +2124,108 @@ namespace Fight.Editor
             ResetTemporaryOverride(skill);
             ResetUltimateDecision(skill);
             EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateDemonActiveSkill(bool overwriteExistingContent)
+        {
+            var skill = CreateSkill(
+                "skill_demon_active_infernalexchange",
+                "Infernal Exchange",
+                SkillSlotType.ActiveSkill,
+                SkillType.Dash,
+                SkillTargetType.FarthestEnemyFromSelf,
+                Stage01ArenaSpec.FullMapTargetingRangeWorldUnits,
+                0f,
+                0f,
+                9f,
+                1,
+                overwriteExistingContent,
+                out var existedBefore);
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.skillType = SkillType.Dash;
+            skill.targetType = SkillTargetType.FarthestEnemyFromSelf;
+            skill.fallbackTargetType = SkillTargetType.None;
+            skill.castRange = Stage01ArenaSpec.FullMapTargetingRangeWorldUnits;
+            skill.areaRadius = 0f;
+            skill.cooldownSeconds = 9f;
+            skill.minTargetsToCast = 1;
+            skill.minimumTargetDistance = ScaleRangedHeroDistance(4.5f);
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+
+            var swapEffect = AddSwapPositionsEffect(skill, 0.2f, 0f);
+            swapEffect.targetMode = SkillEffectTargetMode.PrimaryTarget;
+            skill.description = "Stage-01 demo skill: swaps positions with the farthest enemy from self without damage or hard control.";
+            ResetUltimateDecision(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateDemonUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
+        {
+            var skill = CreateSkill(
+                "skill_demon_ultimate_greaterdemonform",
+                "Greater Demon Form",
+                SkillSlotType.Ultimate,
+                SkillType.Buff,
+                SkillTargetType.Self,
+                0f,
+                0f,
+                0f,
+                0f,
+                1,
+                overwriteExistingContent,
+                out existedBefore);
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.activationMode = SkillActivationMode.Active;
+            skill.skillType = SkillType.Buff;
+            skill.targetType = SkillTargetType.Self;
+            skill.fallbackTargetType = SkillTargetType.None;
+            skill.castRange = 0f;
+            skill.areaRadius = 0f;
+            skill.cooldownSeconds = 0f;
+            skill.minTargetsToCast = 1;
+            skill.minimumTargetDistance = 0f;
+            skill.allowsSelfCast = true;
+            skill.effects.Clear();
+
+            var formEffect = AddCombatFormOverrideEffect(skill);
+            formEffect.targetMode = SkillEffectTargetMode.Caster;
+            formEffect.formOverride.formKey = DemonGreaterFormKey;
+            formEffect.formOverride.expiresOnDeath = true;
+            formEffect.formOverride.durationSeconds = 0f;
+            formEffect.formOverride.overrideUsesProjectile = true;
+            formEffect.formOverride.usesProjectile = true;
+            formEffect.formOverride.attackRangeOverride = ScaleRangedHeroDistance(6.2f);
+            formEffect.formOverride.projectileSpeedOverride = 13f;
+            formEffect.formOverride.attackPowerModifier = 0.45f;
+            formEffect.formOverride.attackSpeedModifier = 0.2f;
+
+            skill.description = "Stage-01 demo ultimate: transforms into a greater demon until death, switching to ranged projectile basic attacks with higher attack power, attack speed, and attack range.";
+            ResetUltimateDecision(skill);
+            skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.InCombatDuration;
+            skill.ultimateDecision.primaryCondition.durationSeconds = 3f;
+            skill.ultimateDecision.combineMode = UltimateConditionCombineMode.PrimaryOnly;
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData ConfigureDemonUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (skill == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
             return skill;
         }
 
@@ -3197,6 +3320,33 @@ namespace Fight.Editor
             return effect;
         }
 
+        private static SkillEffectData AddSwapPositionsEffect(
+            SkillData skill,
+            float durationSeconds,
+            float peakHeight)
+        {
+            var effect = new SkillEffectData
+            {
+                effectType = SkillEffectType.SwapPositionsWithPrimaryTarget,
+                durationSeconds = durationSeconds,
+                forcedMovementDurationSeconds = durationSeconds,
+                forcedMovementPeakHeight = peakHeight,
+            };
+            skill.effects.Add(effect);
+            return effect;
+        }
+
+        private static SkillEffectData AddCombatFormOverrideEffect(SkillData skill)
+        {
+            var effect = new SkillEffectData
+            {
+                effectType = SkillEffectType.ApplyCombatFormOverride,
+                formOverride = new CombatFormOverrideData(),
+            };
+            skill.effects.Add(effect);
+            return effect;
+        }
+
         private static SkillEffectData AddPersistentAreaEffect(
             SkillData skill,
             PersistentAreaPulseEffectType pulseEffectType,
@@ -3567,6 +3717,60 @@ namespace Fight.Editor
             EnsureBasicAttackStatusList(hero.basicAttack);
             hero.basicAttack.onHitStatusEffects.Clear();
             hero.debugNotes = "Stage-01 demo hero for Assassin. Loner validates lowest-health dive targeting, allied positive-effect rejection, and kill-participation passive stacking.";
+            EditorUtility.SetDirty(hero);
+        }
+
+        private static void ConfigureDemonBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (hero == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return;
+            }
+
+            hero.basicAttack.damageMultiplier = 1f;
+            hero.basicAttack.attackInterval = 0.88f;
+            hero.basicAttack.rangeOverride = 1.35f;
+            hero.basicAttack.usesProjectile = false;
+            hero.basicAttack.projectileSpeed = 0f;
+            hero.basicAttack.effectType = BasicAttackEffectType.Damage;
+            hero.basicAttack.targetType = BasicAttackTargetType.NearestEnemy;
+            hero.basicAttack.targetPrioritySearchRadius = 0f;
+            EnsureBasicAttackStatusList(hero.basicAttack);
+            hero.basicAttack.variants.Clear();
+            hero.basicAttack.onHitStatusEffects.Clear();
+            hero.debugNotes = "Stage-01 demo hero for Assassin. Demon validates farthest-enemy position exchange, death-ended combat form overrides, and transformed ranged kiting logic.";
+            EditorUtility.SetDirty(hero);
+        }
+
+        private static void ConfigureDemonVisualForms(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (hero == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return;
+            }
+
+            hero.visualConfig.battlePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(AssassinPrefabPath);
+            hero.visualConfig.animatorController = AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(HeroEditorControllerPath);
+            hero.visualConfig.battlePrefabFacesLeftByDefault = false;
+            hero.visualConfig.projectilePrefab = null;
+            hero.visualConfig.projectileAlignToMovement = false;
+            hero.visualConfig.projectileEulerAngles = Vector3.zero;
+            hero.visualConfig.basicAttackVariantVisuals = Array.Empty<BasicAttackVariantVisualConfig>();
+            hero.visualConfig.formVisuals = new[]
+            {
+                new HeroFormVisualConfig
+                {
+                    formKey = DemonGreaterFormKey,
+                    battlePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ButcherPrefabPath),
+                    animatorController = null,
+                    battlePrefabFacesLeftByDefault = false,
+                    projectilePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(LongshotProjectilePrefabPath),
+                    projectileAlignToMovement = true,
+                    projectileEulerAngles = Vector3.zero,
+                    basicAttackVariantVisuals = Array.Empty<BasicAttackVariantVisualConfig>(),
+                },
+            };
+
             EditorUtility.SetDirty(hero);
         }
 
@@ -5874,6 +6078,8 @@ namespace Fight.Editor
                 "skill_butcher_ultimate_carnagereel" => "assassin_003_butcher",
                 "skill_loner_active_lonepursuit" => "assassin_004_loner",
                 "skill_loner_ultimate_loneinstinct" => "assassin_004_loner",
+                "skill_demon_active_infernalexchange" => "assassin_005_demon",
+                "skill_demon_ultimate_greaterdemonform" => "assassin_005_demon",
                 "skill_shieldwarden_active_wardenscall" => "tank_002_shieldwarden",
                 "skill_shieldwarden_ultimate_lastbastion" => "tank_002_shieldwarden",
                 "skill_windchime_active_echocanopy" => "support_002_windchime",

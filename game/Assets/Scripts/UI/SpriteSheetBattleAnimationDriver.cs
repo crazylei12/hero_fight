@@ -375,7 +375,7 @@ namespace Fight.UI
             var facesLeftByDefault = hero != null
                 && hero.Definition != null
                 && hero.Definition.visualConfig != null
-                && hero.Definition.visualConfig.battlePrefabFacesLeftByDefault;
+                && hero.Definition.visualConfig.ResolveBattlePrefabFacesLeftByDefault(hero.CurrentVisualFormKey);
             var facingSign = direction.x >= 0f
                 ? (facesLeftByDefault ? -1f : 1f)
                 : (facesLeftByDefault ? 1f : -1f);

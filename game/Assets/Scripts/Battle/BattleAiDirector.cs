@@ -29,6 +29,15 @@ namespace Fight.Battle
             return FindNearestEnemy(heroes, actor, maxRange);
         }
 
+        public static RuntimeHero SelectFarthestEnemyFromSelfTarget(
+            IReadOnlyList<RuntimeHero> heroes,
+            RuntimeHero actor,
+            float maxRange,
+            float minimumDistance = 0f)
+        {
+            return FindFarthestEnemyFromSelf(heroes, actor, maxRange, minimumDistance);
+        }
+
         public static RuntimeHero SelectBackmostEnemyTarget(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange)
         {
             return FindBackmostEnemy(heroes, actor, maxRange);
@@ -117,7 +126,7 @@ namespace Fight.Battle
                 HeroClass.Marksman => baseRange * 0.92f,
                 HeroClass.Mage => baseRange * 0.9f,
                 HeroClass.Support => IsBacklineSupport(actor) ? Mathf.Max(3f, baseRange * 0.85f) : baseRange,
-                HeroClass.Assassin => Mathf.Min(baseRange, 1.1f),
+                HeroClass.Assassin => actor.UsesProjectileBasicAttack ? baseRange * 0.88f : Mathf.Min(baseRange, 1.1f),
                 _ => baseRange,
             };
         }
@@ -140,7 +149,7 @@ namespace Fight.Battle
                 return false;
             }
 
-            if (!actor.Definition.basicAttack.usesProjectile || actor.AttackCooldownRemainingSeconds <= ThreatRetreatMinimumAttackCooldownSeconds)
+            if (!actor.UsesProjectileBasicAttack || actor.AttackCooldownRemainingSeconds <= ThreatRetreatMinimumAttackCooldownSeconds)
             {
                 return false;
             }
@@ -187,7 +196,7 @@ namespace Fight.Battle
                 return false;
             }
 
-            if (!threat.Definition.basicAttack.usesProjectile)
+            if (!threat.UsesProjectileBasicAttack)
             {
                 return true;
             }
@@ -219,7 +228,7 @@ namespace Fight.Battle
                 }
             }
 
-            return actor.Definition.basicAttack != null && actor.Definition.basicAttack.usesProjectile;
+            return actor.UsesProjectileBasicAttack;
         }
 
         private static RuntimeHero FindNearestEnemy(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange)
@@ -283,6 +292,53 @@ namespace Fight.Battle
                 lowestRatio = ratio;
                 farthestDistance = distance;
                 best = candidate;
+            }
+
+            return best;
+        }
+
+        private static RuntimeHero FindFarthestEnemyFromSelf(
+            IReadOnlyList<RuntimeHero> heroes,
+            RuntimeHero actor,
+            float maxRange,
+            float minimumDistance)
+        {
+            RuntimeHero best = null;
+            var bestDistance = float.MinValue;
+            var lowestHealthRatio = float.MaxValue;
+            var lowestCurrentHealth = float.MaxValue;
+            var minDistance = Mathf.Max(0f, minimumDistance);
+
+            for (var i = 0; i < heroes.Count; i++)
+            {
+                var candidate = heroes[i];
+                if (candidate.IsDead || candidate.Side == actor.Side || !candidate.CanBeDirectTargeted)
+                {
+                    continue;
+                }
+
+                var distance = Vector3.Distance(actor.CurrentPosition, candidate.CurrentPosition);
+                if (distance > maxRange || distance + Mathf.Epsilon < minDistance)
+                {
+                    continue;
+                }
+
+                var healthRatio = candidate.MaxHealth > 0f ? candidate.CurrentHealth / candidate.MaxHealth : 1f;
+                if (distance > bestDistance + Mathf.Epsilon
+                    || Mathf.Abs(distance - bestDistance) <= Mathf.Epsilon
+                    && IsBetterLowestHealthEnemyCandidate(
+                        candidate.CurrentHealth,
+                        healthRatio,
+                        distance,
+                        lowestCurrentHealth,
+                        lowestHealthRatio,
+                        bestDistance))
+                {
+                    bestDistance = distance;
+                    lowestHealthRatio = healthRatio;
+                    lowestCurrentHealth = candidate.CurrentHealth;
+                    best = candidate;
+                }
             }
 
             return best;
@@ -1116,7 +1172,7 @@ namespace Fight.Battle
                 return true;
             }
 
-            return hero.Definition.basicAttack != null && hero.Definition.basicAttack.usesProjectile;
+            return hero.UsesProjectileBasicAttack;
         }
 
         private static bool IsBacklineThreatCandidate(RuntimeHero hero)

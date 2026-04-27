@@ -1,0 +1,105 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bea5ec4d01f80a948a332187ac325d06, type: 3}
+  m_Name: Greater Demon Form
+  m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
+  skillId: skill_demon_ultimate_greaterdemonform
+  displayName: Greater Demon Form
+  description: 'Stage-01 demo ultimate: transforms into a greater demon until death,
+    switching to ranged projectile basic attacks with higher attack power, attack
+    speed, and attack range.'
+  slotType: 1
+  activationMode: 0
+  skillType: 3
+  targetType: 5
+  preferredEnemyHeroClass: 2
+  fallbackTargetType: 0
+  targetPrioritySearchRadius: 0
+  minimumTargetDistance: 0
+  targetPriorityRequiredUnitCount: 1
+  variantSelectionMode: 0
+  variants: []
+  passiveSkill:
+    missingHealthAttackPowerRatio: 0
+    maxAttackPowerBonus: 0
+    lowHealthLifestealThreshold: 0
+    lowHealthLifestealRatio: 0
+    recentDirectHostileSourceWindowSeconds: 0
+    recentDirectHostileSourceDefenseBonusPerSource: 0
+    maxDefenseBonus: 0
+    rejectExternalPositiveEffects: 0
+    killParticipationAttackPowerBonusPerStack: 0
+    killParticipationAttackSpeedBonusPerStack: 0
+    killParticipationHealPercentMaxHealth: 0
+    killParticipationMaxStacks: 0
+  castRange: 0
+  areaRadius: 0
+  cooldownSeconds: 0
+  minTargetsToCast: 1
+  effects:
+  - effectType: 11
+    targetMode: 1
+    powerMultiplier: 1
+    formOverride:
+      formKey: greater_demon
+      durationSeconds: 0
+      expiresOnDeath: 1
+      overrideUsesProjectile: 1
+      usesProjectile: 1
+      attackRangeOverride: 9.3
+      projectileSpeedOverride: 13
+      attackPowerModifier: 0.45
+      attackSpeedModifier: 0.2
+    forcedMovementDirection: 0
+    forcedMovementDistance: 0
+    forcedMovementDurationSeconds: 0
+    forcedMovementPeakHeight: 0
+    radialSweepDirection: 0
+    radialSweepStartDelaySeconds: 0
+    radialSweepRingWidth: 1
+    statusEffects: []
+  allowsSelfCast: 1
+  targetIndicatorVfxPrefab: {fileID: 0}
+  castImpactVfxPrefab: {fileID: 0}
+  castImpactVfxLocalOffset: {x: 0, y: 0, z: 0}
+  castImpactVfxEulerAngles: {x: 0, y: 0, z: 0}
+  castImpactVfxScaleMultiplier: {x: 1, y: 1, z: 1}
+  castImpactVfxAlignToTargetDirection: 0
+  castImpactVfxScaleWithSkillArea: 0
+  castImpactVfxAreaDiameterScaleMultiplier: 1
+  castProjectileVfxPrefab: {fileID: 0}
+  dashTravelVfxPrefab: {fileID: 0}
+  dashTravelVfxLocalOffset: {x: 0, y: 0, z: 0}
+  dashTravelVfxForwardOffset: 0
+  dashTravelVfxEulerAngles: {x: 0, y: 0, z: 0}
+  dashTravelVfxScaleMultiplier: {x: 1, y: 1, z: 1}
+  dashTravelVfxPathWidthScaleMultiplier: 1
+  persistentAreaVfxPrefab: {fileID: 0}
+  persistentAreaVfxScaleMultiplier: 1
+  persistentAreaVfxEulerAngles: {x: 0, y: 0, z: 0}
+  skillAreaPresentationType: 0
+  ultimateDecision:
+    targetingType: 0
+    minimumSelfHealthPercentToCast: 0
+    primaryCondition:
+      conditionType: 7
+      searchRadius: 0
+      requiredUnitCount: 1
+      healthPercentThreshold: 1
+      durationSeconds: 3
+      highValueTargetType: 0
+      heroClassFilter: 2
+      statusEffectTypeFilter: 0
+      statusThemeKey: 
+      minimumStatusStacks: 1
+      requireTargetInCastRange: 1
+    combineMode: 0

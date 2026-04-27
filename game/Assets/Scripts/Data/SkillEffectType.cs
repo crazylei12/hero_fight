@@ -12,5 +12,7 @@ namespace Fight.Data
         CreateRadialSweep = 7,
         CreateReturningPathStrike = 8,
         CreateFocusFireCommand = 9,
+        SwapPositionsWithPrimaryTarget = 10,
+        ApplyCombatFormOverride = 11,
     }
 }

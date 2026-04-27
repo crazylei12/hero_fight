@@ -35,6 +35,7 @@ namespace Fight.Data
         public HeroClass preferredEnemyHeroClass = HeroClass.Assassin;
         public SkillTargetType fallbackTargetType = SkillTargetType.NearestEnemy;
         [Min(0f)] public float targetPrioritySearchRadius = 0f;
+        [Min(0f)] public float minimumTargetDistance = 0f;
         [Min(1)] public int targetPriorityRequiredUnitCount = 1;
 
         [Header("Variants")]

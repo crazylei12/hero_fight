@@ -20,6 +20,7 @@ namespace Fight.Battle
             BasicAttackTargetType targetType,
             IReadOnlyList<StatusEffectData> onHitStatusEffects,
             string primaryVariantKey,
+            string visualFormKey,
             string bounceVariantKey)
         {
             ChainId = $"basic_attack_bounce_{nextChainId++:D4}";
@@ -31,6 +32,7 @@ namespace Fight.Battle
             TargetType = targetType;
             OnHitStatusEffects = onHitStatusEffects ?? Array.Empty<StatusEffectData>();
             PrimaryVariantKey = primaryVariantKey ?? string.Empty;
+            VisualFormKey = visualFormKey ?? string.Empty;
             BounceVariantKey = bounceVariantKey ?? string.Empty;
         }
 
@@ -51,6 +53,8 @@ namespace Fight.Battle
         public IReadOnlyList<StatusEffectData> OnHitStatusEffects { get; }
 
         public string PrimaryVariantKey { get; }
+
+        public string VisualFormKey { get; }
 
         public string BounceVariantKey { get; }
 

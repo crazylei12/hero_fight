@@ -114,6 +114,63 @@ namespace Fight.Heroes
             public bool IsExpired => RemainingDurationSeconds <= Mathf.Epsilon;
         }
 
+        private sealed class RuntimeCombatFormOverride
+        {
+            public RuntimeCombatFormOverride(SkillData sourceSkill, CombatFormOverrideData definition)
+            {
+                SourceSkill = sourceSkill;
+                Refresh(definition);
+            }
+
+            public SkillData SourceSkill { get; }
+
+            public string FormKey { get; private set; }
+
+            public float RemainingDurationSeconds { get; private set; }
+
+            public bool HasFiniteDuration { get; private set; }
+
+            public bool ExpiresOnDeath { get; private set; }
+
+            public bool OverrideUsesProjectile { get; private set; }
+
+            public bool UsesProjectile { get; private set; }
+
+            public float AttackRangeOverride { get; private set; }
+
+            public float ProjectileSpeedOverride { get; private set; }
+
+            public float AttackPowerModifier { get; private set; }
+
+            public float AttackSpeedModifier { get; private set; }
+
+            public void Refresh(CombatFormOverrideData definition)
+            {
+                FormKey = definition != null ? definition.formKey ?? string.Empty : string.Empty;
+                HasFiniteDuration = definition != null && definition.durationSeconds > Mathf.Epsilon;
+                RemainingDurationSeconds = HasFiniteDuration ? Mathf.Max(0f, definition.durationSeconds) : 0f;
+                ExpiresOnDeath = definition == null || definition.expiresOnDeath;
+                OverrideUsesProjectile = definition != null && definition.overrideUsesProjectile;
+                UsesProjectile = definition != null && definition.usesProjectile;
+                AttackRangeOverride = definition != null ? Mathf.Max(0f, definition.attackRangeOverride) : 0f;
+                ProjectileSpeedOverride = definition != null ? Mathf.Max(0f, definition.projectileSpeedOverride) : 0f;
+                AttackPowerModifier = definition != null ? definition.attackPowerModifier : 0f;
+                AttackSpeedModifier = definition != null ? definition.attackSpeedModifier : 0f;
+            }
+
+            public void Tick(float deltaTime)
+            {
+                if (!HasFiniteDuration)
+                {
+                    return;
+                }
+
+                RemainingDurationSeconds = Mathf.Max(0f, RemainingDurationSeconds - Mathf.Max(0f, deltaTime));
+            }
+
+            public bool IsExpired => HasFiniteDuration && RemainingDurationSeconds <= Mathf.Epsilon;
+        }
+
         private sealed class RuntimeContributionRecord
         {
             public RuntimeContributionRecord(RuntimeHero contributor, float timeSeconds)
@@ -261,6 +318,11 @@ namespace Fight.Heroes
                 var baseRange = Definition.basicAttack.rangeOverride > 0f
                     ? Definition.basicAttack.rangeOverride
                     : Definition.baseStats.attackRange;
+                if (activeCombatFormOverride != null && activeCombatFormOverride.AttackRangeOverride > Mathf.Epsilon)
+                {
+                    baseRange = activeCombatFormOverride.AttackRangeOverride;
+                }
+
                 var modifiedRange = StatusEffectSystem.GetModifiedStat(this, baseRange, StatusEffectType.AttackRangeModifier);
                 if (activeCombatActionSequence == null || activeCombatActionSequence.TemporaryBasicAttackRangeOverride <= 0f)
                 {
@@ -283,7 +345,8 @@ namespace Fight.Heroes
                 }
 
                 var totalModifierDelta = StatusEffectSystem.GetTotalMagnitude(this, StatusEffectType.AttackPowerModifier)
-                    + PassiveAttackPowerBonusMultiplier;
+                    + PassiveAttackPowerBonusMultiplier
+                    + CurrentCombatFormAttackPowerModifier;
                 return Definition.baseStats.attackPower * Mathf.Max(0.1f, 1f + totalModifierDelta);
             }
         }
@@ -340,7 +403,7 @@ namespace Fight.Heroes
 
                 var speedMultiplier =
                     StatusEffectSystem.GetMultiplier(this, StatusEffectType.AttackSpeedModifier)
-                    * Mathf.Max(0.1f, 1f + PassiveAttackSpeedBonusMultiplier + SameTargetBasicAttackSpeedBonusMultiplier);
+                    * Mathf.Max(0.1f, 1f + PassiveAttackSpeedBonusMultiplier + SameTargetBasicAttackSpeedBonusMultiplier + CurrentCombatFormAttackSpeedModifier);
                 var baseAttackSpeed = Mathf.Max(0.01f, Definition.baseStats.attackSpeed);
                 return 1f / (baseAttackSpeed * speedMultiplier);
             }
@@ -392,6 +455,18 @@ namespace Fight.Heroes
 
         public float CurrentVisualTintStrength => GetCurrentVisualTintStrength();
 
+        public string CurrentVisualFormKey => activeCombatFormOverride != null ? activeCombatFormOverride.FormKey : string.Empty;
+
+        public SkillData CurrentCombatFormSourceSkill => activeCombatFormOverride?.SourceSkill;
+
+        public bool UsesProjectileBasicAttack => GetCurrentBasicAttackUsesProjectile();
+
+        public float CurrentBasicAttackProjectileSpeed => GetCurrentBasicAttackProjectileSpeed();
+
+        public float CurrentCombatFormAttackPowerModifier => activeCombatFormOverride != null ? activeCombatFormOverride.AttackPowerModifier : 0f;
+
+        public float CurrentCombatFormAttackSpeedModifier => activeCombatFormOverride != null ? activeCombatFormOverride.AttackSpeedModifier : 0f;
+
         public SkillData CurrentTemporaryOverrideSourceSkill => GetCurrentTemporaryOverrideSourceSkill();
 
         public SkillData CurrentLifestealSourceSkill => GetCurrentLifestealSourceSkill();
@@ -404,6 +479,7 @@ namespace Fight.Heroes
         private readonly List<RuntimePassiveSkillState> passiveSkillStates = new List<RuntimePassiveSkillState>();
         private RuntimeForcedMovement activeForcedMovement;
         private RuntimeCombatActionSequence activeCombatActionSequence;
+        private RuntimeCombatFormOverride activeCombatFormOverride;
         private PendingCombatAction pendingCombatAction;
         private RuntimeHero sameTargetBasicAttackStackTarget;
         private BasicAttackSameTargetStackData activeSameTargetBasicAttackStacking;
@@ -433,6 +509,7 @@ namespace Fight.Heroes
             activeForcedMovement = null;
             forcedMovementInterruptTicksRemaining = 0;
             activeTemporarySkillOverrides.Clear();
+            activeCombatFormOverride = null;
             ResetPassiveSkillStatesForSpawn();
             ClearThreatTracking();
             ClearContributionHistory();
@@ -500,6 +577,7 @@ namespace Fight.Heroes
             UpdateStatusDrivenVisualHeightOffset();
             ClampActiveSkillCooldownToStatusCap();
             TickTemporarySkillOverrides(deltaTime);
+            TickCombatFormOverride(deltaTime);
             if (HasHardControl)
             {
                 ClearCombatActionState();
@@ -923,6 +1001,10 @@ namespace Fight.Heroes
             ClearThreatTracking();
             ClearContributionHistory();
             activeTemporarySkillOverrides.Clear();
+            if (activeCombatFormOverride == null || activeCombatFormOverride.ExpiresOnDeath)
+            {
+                activeCombatFormOverride = null;
+            }
         }
 
         public bool ReadyToRevive()
@@ -1052,6 +1134,23 @@ namespace Fight.Heroes
             }
 
             activeTemporarySkillOverrides.Add(new RuntimeSkillTemporaryOverride(sourceSkill, definition));
+        }
+
+        public bool ApplyCombatFormOverride(SkillData sourceSkill, CombatFormOverrideData definition)
+        {
+            if (sourceSkill == null || definition == null || !definition.HasAnyOverride)
+            {
+                return false;
+            }
+
+            if (activeCombatFormOverride != null && activeCombatFormOverride.SourceSkill == sourceSkill)
+            {
+                activeCombatFormOverride.Refresh(definition);
+                return true;
+            }
+
+            activeCombatFormOverride = new RuntimeCombatFormOverride(sourceSkill, definition);
+            return true;
         }
 
         public void InitializeUltimateDecisionSchedule(float firstCheckTimeSeconds)
@@ -1303,6 +1402,40 @@ namespace Fight.Heroes
                     activeTemporarySkillOverrides.RemoveAt(i);
                 }
             }
+        }
+
+        private void TickCombatFormOverride(float deltaTime)
+        {
+            if (activeCombatFormOverride == null)
+            {
+                return;
+            }
+
+            activeCombatFormOverride.Tick(deltaTime);
+            if (activeCombatFormOverride.IsExpired)
+            {
+                activeCombatFormOverride = null;
+            }
+        }
+
+        private bool GetCurrentBasicAttackUsesProjectile()
+        {
+            if (activeCombatFormOverride != null && activeCombatFormOverride.OverrideUsesProjectile)
+            {
+                return activeCombatFormOverride.UsesProjectile;
+            }
+
+            return Definition?.basicAttack != null && Definition.basicAttack.usesProjectile;
+        }
+
+        private float GetCurrentBasicAttackProjectileSpeed()
+        {
+            if (activeCombatFormOverride != null && activeCombatFormOverride.ProjectileSpeedOverride > Mathf.Epsilon)
+            {
+                return activeCombatFormOverride.ProjectileSpeedOverride;
+            }
+
+            return Definition?.basicAttack != null ? Mathf.Max(0f, Definition.basicAttack.projectileSpeed) : 0f;
         }
 
         private float GetPassiveAttackPowerBonusMultiplier()

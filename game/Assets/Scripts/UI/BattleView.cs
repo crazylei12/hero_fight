@@ -178,6 +178,7 @@ namespace Fight.UI
             public GameObject Root;
             public SortingGroup SortingGroup;
             public Transform VisualRoot;
+            public Transform ModelRoot;
             public Transform ProjectileLaunchAnchor;
             public Renderer[] VisualRenderers;
             public SpriteRenderer[] VisualSpriteRenderers;
@@ -210,6 +211,7 @@ namespace Fight.UI
             public Color ImpactPulseBaseColor = Color.white;
             public bool WasAirborne;
             public bool LastDeadState;
+            public string ActiveVisualFormKey = string.Empty;
             public float DeathStartedAtSeconds = -1f;
             public float HitFlashUntilSeconds = -1f;
             public float BlinkRevealStartedAtSeconds = -1f;
@@ -386,6 +388,11 @@ namespace Fight.UI
             view.SortingGroup.sortingOrder = heroSortingOrder;
             var airborneOffset = new Vector3(0f, hero.VisualHeightOffset, 0f);
             view.VisualRoot.localPosition = airborneOffset;
+            if (!string.Equals(view.ActiveVisualFormKey, hero.CurrentVisualFormKey, StringComparison.Ordinal))
+            {
+                RebuildHeroVisual(hero, view);
+            }
+
             if (view.FootUiRoot != null)
             {
                 view.FootUiRoot.localPosition = footUiOffset + (airborneOffset * airborneUiFollowFactor);
@@ -478,13 +485,58 @@ namespace Fight.UI
             view.ImpactPulseBaseScale = view.ImpactPulse.transform.localScale;
             view.VisualRoot = new GameObject("Visual").transform;
             view.VisualRoot.SetParent(view.Root.transform, false);
+            view.ModelRoot = new GameObject("Model").transform;
+            view.ModelRoot.SetParent(view.VisualRoot, false);
             view.StatusEffectRoot = new GameObject("StatusVfx").transform;
             view.StatusEffectRoot.SetParent(view.VisualRoot, false);
             view.DirectionalTrail = MakeSprite("DirectionalTrail", view.VisualRoot, squareSprite, new Color(1f, 1f, 1f, 0f), 19, new Vector3(0f, -0.06f, 0f), new Vector3(0.18f, 0.18f, 1f));
 
-            if (hero.Definition.visualConfig.battlePrefab != null)
+            RebuildHeroVisual(hero, view);
+
+            view.FootUiRoot = new GameObject("FootUi").transform;
+            view.FootUiRoot.SetParent(view.Root.transform, false);
+            view.FootUiRoot.localPosition = footUiOffset;
+            view.HealthBack = MakeSprite("HealthBack", view.FootUiRoot, squareSprite, new Color(0.08f, 0.1f, 0.12f, 0.92f), 300, Vector3.zero, new Vector3(HealthBarWidth, HealthBarBackgroundHeight, 1f));
+            view.HealthFill = MakeSprite("HealthFill", view.FootUiRoot, squareSprite, Color.green, 301, Vector3.zero, new Vector3(HealthBarWidth, HealthBarFillHeight, 1f));
+            UpdateHealthFill(view.HealthFill, 1f, Color.green);
+            view.ShieldFill = MakeSprite("ShieldFill", view.FootUiRoot, squareSprite, shieldBarColor, 302, Vector3.zero, new Vector3(0f, HealthBarFillHeight, 1f));
+            UpdateShieldFill(view.ShieldFill, 1f, 0f, shieldBarColor);
+            view.UltimateIcon = MakeSprite("UltimateIcon", view.FootUiRoot, squareSprite, new Color(1f, 0.9f, 0.36f, 0.98f), 303, new Vector3(-0.58f, 0f, 0f), new Vector3(0.16f, 0.16f, 1f));
+            view.UltimateIcon.transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
+            return view;
+        }
+
+        private void RebuildHeroVisual(RuntimeHero hero, HeroViewState view)
+        {
+            if (hero?.Definition == null || view?.ModelRoot == null)
             {
-                var visual = Instantiate(hero.Definition.visualConfig.battlePrefab, view.VisualRoot);
+                return;
+            }
+
+            if (view.AnimationDriver != null)
+            {
+                Destroy(view.AnimationDriver);
+                view.AnimationDriver = null;
+            }
+
+            heroAnimationDrivers.Remove(hero.RuntimeId);
+            for (var i = view.ModelRoot.childCount - 1; i >= 0; i--)
+            {
+                Destroy(view.ModelRoot.GetChild(i).gameObject);
+            }
+
+            view.Body = null;
+            view.Accent = null;
+            view.ProjectileLaunchAnchor = null;
+            view.ActiveVisualFormKey = hero.CurrentVisualFormKey ?? string.Empty;
+
+            var visualConfig = hero.Definition.visualConfig;
+            var battlePrefab = visualConfig != null
+                ? visualConfig.ResolveBattlePrefab(view.ActiveVisualFormKey)
+                : null;
+            if (battlePrefab != null)
+            {
+                var visual = Instantiate(battlePrefab, view.ModelRoot);
                 visual.name = $"{hero.Definition.displayName}_Visual";
                 visual.transform.localPosition = new Vector3(0f, -0.1f, 0f);
                 visual.transform.localScale *= prefabVisualScale;
@@ -506,37 +558,37 @@ namespace Fight.UI
             }
             else
             {
-                view.Body = MakeSprite("Body", view.VisualRoot, circleSprite, Team(hero.Side), 20, Vector3.zero, Vector3.one * (0.82f * heroMarkerScale));
-                view.Accent = MakeSprite("Accent", view.VisualRoot, squareSprite, Accent(hero.Definition.heroClass), 21, new Vector3(0f, 0.05f, 0f), new Vector3(0.22f, 0.22f, 1f));
+                view.Body = MakeSprite("Body", view.ModelRoot, circleSprite, Team(hero.Side), 20, Vector3.zero, Vector3.one * (0.82f * heroMarkerScale));
+                view.Accent = MakeSprite("Accent", view.ModelRoot, squareSprite, Accent(hero.Definition.heroClass), 21, new Vector3(0f, 0.05f, 0f), new Vector3(0.22f, 0.22f, 1f));
                 view.Accent.transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
             }
 
             view.ProjectileLaunchAnchor ??= view.VisualRoot;
+            CacheHeroVisualRenderers(view);
+        }
+
+        private static void CacheHeroVisualRenderers(HeroViewState view)
+        {
+            if (view?.VisualRoot == null)
+            {
+                return;
+            }
 
             view.VisualRenderers = view.VisualRoot.GetComponentsInChildren<Renderer>(true);
             view.VisualSpriteRenderers = view.VisualRoot.GetComponentsInChildren<SpriteRenderer>(true);
-            if (view.VisualSpriteRenderers != null && view.VisualSpriteRenderers.Length > 0)
+            if (view.VisualSpriteRenderers == null || view.VisualSpriteRenderers.Length == 0)
             {
-                view.VisualSpriteBaseColors = new Color[view.VisualSpriteRenderers.Length];
-                for (var i = 0; i < view.VisualSpriteRenderers.Length; i++)
-                {
-                    view.VisualSpriteBaseColors[i] = view.VisualSpriteRenderers[i] != null
-                        ? view.VisualSpriteRenderers[i].color
-                        : Color.white;
-                }
+                view.VisualSpriteBaseColors = Array.Empty<Color>();
+                return;
             }
 
-            view.FootUiRoot = new GameObject("FootUi").transform;
-            view.FootUiRoot.SetParent(view.Root.transform, false);
-            view.FootUiRoot.localPosition = footUiOffset;
-            view.HealthBack = MakeSprite("HealthBack", view.FootUiRoot, squareSprite, new Color(0.08f, 0.1f, 0.12f, 0.92f), 300, Vector3.zero, new Vector3(HealthBarWidth, HealthBarBackgroundHeight, 1f));
-            view.HealthFill = MakeSprite("HealthFill", view.FootUiRoot, squareSprite, Color.green, 301, Vector3.zero, new Vector3(HealthBarWidth, HealthBarFillHeight, 1f));
-            UpdateHealthFill(view.HealthFill, 1f, Color.green);
-            view.ShieldFill = MakeSprite("ShieldFill", view.FootUiRoot, squareSprite, shieldBarColor, 302, Vector3.zero, new Vector3(0f, HealthBarFillHeight, 1f));
-            UpdateShieldFill(view.ShieldFill, 1f, 0f, shieldBarColor);
-            view.UltimateIcon = MakeSprite("UltimateIcon", view.FootUiRoot, squareSprite, new Color(1f, 0.9f, 0.36f, 0.98f), 303, new Vector3(-0.58f, 0f, 0f), new Vector3(0.16f, 0.16f, 1f));
-            view.UltimateIcon.transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
-            return view;
+            view.VisualSpriteBaseColors = new Color[view.VisualSpriteRenderers.Length];
+            for (var i = 0; i < view.VisualSpriteRenderers.Length; i++)
+            {
+                view.VisualSpriteBaseColors[i] = view.VisualSpriteRenderers[i] != null
+                    ? view.VisualSpriteRenderers[i].color
+                    : Color.white;
+            }
         }
 
         private static HeroBattleAnimationDriver TryCreateAnimationDriver(GameObject host, RuntimeHero hero, GameObject visual)
@@ -2497,13 +2549,7 @@ namespace Fight.UI
                 return null;
             }
 
-            var variantVisual = visualConfig.FindBasicAttackVariantVisual(projectile.VariantKey);
-            if (variantVisual?.projectilePrefab != null)
-            {
-                return variantVisual.projectilePrefab;
-            }
-
-            return visualConfig.projectilePrefab;
+            return visualConfig.ResolveProjectilePrefab(projectile.VisualFormKey, projectile.VariantKey);
         }
 
         private static GameObject ResolveBasicAttackHitVfxPrefab(RuntimeHero attacker, string variantKey)
@@ -2514,7 +2560,7 @@ namespace Fight.UI
                 return null;
             }
 
-            var variantVisual = visualConfig.FindBasicAttackVariantVisual(variantKey);
+            var variantVisual = visualConfig.FindBasicAttackVariantVisual(attacker.CurrentVisualFormKey, variantKey);
             return variantVisual?.hitVfxPrefab;
         }
 
@@ -3701,7 +3747,7 @@ namespace Fight.UI
         {
             if (projectile?.Attacker?.Definition?.visualConfig == null
                 || view?.Root == null
-                || !projectile.Attacker.Definition.visualConfig.projectileAlignToMovement)
+                || !projectile.Attacker.Definition.visualConfig.ResolveProjectileAlignToMovement(projectile.VisualFormKey))
             {
                 return;
             }
@@ -3727,7 +3773,7 @@ namespace Fight.UI
             }
 
             var angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-            var offset = Quaternion.Euler(projectile.Attacker.Definition.visualConfig.projectileEulerAngles);
+            var offset = Quaternion.Euler(projectile.Attacker.Definition.visualConfig.ResolveProjectileEulerAngles(projectile.VisualFormKey));
             view.Root.transform.rotation = Quaternion.Euler(0f, 0f, angle) * offset;
             view.LastPosition = position;
             view.HasLastPosition = true;

@@ -221,7 +221,9 @@ namespace Fight.Battle
                 proxy.AttackRange,
                 false,
                 true,
+                proxy.Owner.Definition.basicAttack.usesProjectile,
                 proxy.ProjectileSpeed,
+                proxy.Owner.CurrentVisualFormKey,
                 proxy.PowerMultiplierScale,
                 proxy,
                 out target,
@@ -315,7 +317,9 @@ namespace Fight.Battle
                 HeroWideFallbackSearchRange,
                 true,
                 allowHealthyHealFallback,
-                0f,
+                attacker.UsesProjectileBasicAttack,
+                attacker.CurrentBasicAttackProjectileSpeed,
+                attacker.CurrentVisualFormKey,
                 1f,
                 null,
                 out target,
@@ -332,7 +336,9 @@ namespace Fight.Battle
             float missingTargetFallbackSearchRange,
             bool allowForcedEnemyTarget,
             bool allowHealthyHealFallback,
+            bool usesProjectileOverride,
             float projectileSpeedOverride,
+            string visualFormKey,
             float powerMultiplierScale,
             RuntimeDeployableProxy sourceProxy,
             out RuntimeHero target,
@@ -356,7 +362,9 @@ namespace Fight.Battle
                 basicAttack,
                 currentVariant,
                 sourcePosition,
+                usesProjectileOverride,
                 projectileSpeedOverride,
+                visualFormKey,
                 powerMultiplierScale,
                 advanceSequenceOnUse: hasVariantSequence);
 
@@ -401,7 +409,9 @@ namespace Fight.Battle
                 basicAttack,
                 fallbackVariant,
                 sourcePosition,
+                usesProjectileOverride,
                 projectileSpeedOverride,
+                visualFormKey,
                 powerMultiplierScale,
                 advanceSequenceOnUse: false);
             if (!TryResolveSelectionForAttack(
@@ -425,7 +435,9 @@ namespace Fight.Battle
             BasicAttackData basicAttack,
             BasicAttackVariantData variant,
             Vector3 launchPosition,
+            bool usesProjectileOverride,
             float projectileSpeedOverride,
+            string visualFormKey,
             float powerMultiplierScale,
             bool advanceSequenceOnUse)
         {
@@ -443,8 +455,9 @@ namespace Fight.Battle
                 targetType,
                 powerMultiplier * Mathf.Max(0f, powerMultiplierScale),
                 targetPrioritySearchRadius,
-                basicAttack.usesProjectile,
+                usesProjectileOverride,
                 projectileSpeed,
+                visualFormKey,
                 bounce != null ? bounce.maxAdditionalTargets : 0,
                 bounce != null ? bounce.searchRadius : 0f,
                 bounce != null ? bounce.powerMultiplier * Mathf.Max(0f, powerMultiplierScale) : 0f,
@@ -829,6 +842,7 @@ namespace Fight.Battle
                 resolvedAttack.TargetType,
                 resolvedAttack.OnHitStatusEffects,
                 resolvedAttack.VariantKey,
+                resolvedAttack.VisualFormKey,
                 resolvedAttack.BounceVariantKey);
         }
 
@@ -1025,6 +1039,7 @@ namespace Fight.Battle
                 impactAmount,
                 bounceChain.EffectType,
                 variantKey,
+                bounceChain.VisualFormKey,
                 bounceChain.TargetType,
                 null,
                 bounceChain.OnHitStatusEffects,
@@ -1073,6 +1088,7 @@ namespace Fight.Battle
                 impactAmount,
                 resolvedAttack.EffectType,
                 resolvedAttack.VariantKey,
+                resolvedAttack.VisualFormKey,
                 resolvedAttack.TargetType,
                 resolvedAttack.SameTargetStacking,
                 resolvedAttack.OnHitStatusEffects,

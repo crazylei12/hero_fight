@@ -64,9 +64,10 @@ namespace Fight.UI
                 return;
             }
 
-            if (hero.Definition.visualConfig.animatorController != null)
+            var animatorController = hero.Definition.visualConfig.ResolveAnimatorController(hero.CurrentVisualFormKey);
+            if (animatorController != null)
             {
-                animator.runtimeAnimatorController = hero.Definition.visualConfig.animatorController;
+                animator.runtimeAnimatorController = animatorController;
             }
 
             character.Initialize();
@@ -184,7 +185,7 @@ namespace Fight.UI
                 return;
             }
 
-            if (basicAttack.usesProjectile)
+            if (hero.UsesProjectileBasicAttack)
             {
                 if (definition.heroClass is HeroClass.Mage or HeroClass.Support)
                 {

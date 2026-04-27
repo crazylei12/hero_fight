@@ -65,6 +65,29 @@ namespace Fight.Data
     }
 
     [Serializable]
+    public class CombatFormOverrideData
+    {
+        public string formKey = string.Empty;
+        [Min(0f)] public float durationSeconds = 0f;
+        public bool expiresOnDeath = true;
+        public bool overrideUsesProjectile;
+        public bool usesProjectile;
+        [Min(0f)] public float attackRangeOverride = 0f;
+        [Min(0f)] public float projectileSpeedOverride = 0f;
+        public float attackPowerModifier = 0f;
+        public float attackSpeedModifier = 0f;
+
+        public bool HasAnyOverride =>
+            !string.IsNullOrWhiteSpace(formKey)
+            || durationSeconds > Mathf.Epsilon
+            || overrideUsesProjectile
+            || attackRangeOverride > Mathf.Epsilon
+            || projectileSpeedOverride > Mathf.Epsilon
+            || Mathf.Abs(attackPowerModifier) > Mathf.Epsilon
+            || Mathf.Abs(attackSpeedModifier) > Mathf.Epsilon;
+    }
+
+    [Serializable]
     public class SkillEffectData
     {
         public SkillEffectType effectType = SkillEffectType.DirectDamage;
@@ -110,6 +133,7 @@ namespace Fight.Data
         [Min(0f)] public float returningPathMaxDistance = 0f;
         [Min(0f)] public float returningPathWidth = 0f;
         [Min(0f)] public float returningPathDelaySeconds = 0f;
+        public CombatFormOverrideData formOverride = new CombatFormOverrideData();
         public ForcedMovementDirectionMode forcedMovementDirection = ForcedMovementDirectionMode.AwayFromSource;
         [Min(0f)] public float forcedMovementDistance = 0f;
         [Min(0f)] public float forcedMovementDurationSeconds = 0f;

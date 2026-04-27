@@ -14,6 +14,7 @@ namespace Fight.Battle
             float targetPrioritySearchRadius,
             bool usesProjectile,
             float projectileSpeed,
+            string visualFormKey,
             int maxAdditionalBounceTargets,
             float bounceSearchRadius,
             float bouncePowerMultiplier,
@@ -30,6 +31,7 @@ namespace Fight.Battle
             TargetPrioritySearchRadius = Mathf.Max(0f, targetPrioritySearchRadius);
             UsesProjectile = usesProjectile;
             ProjectileSpeed = Mathf.Max(0f, projectileSpeed);
+            VisualFormKey = visualFormKey ?? string.Empty;
             MaxAdditionalBounceTargets = Mathf.Max(0, maxAdditionalBounceTargets);
             BounceSearchRadius = Mathf.Max(0f, bounceSearchRadius);
             BouncePowerMultiplier = Mathf.Max(0f, bouncePowerMultiplier);
@@ -53,6 +55,8 @@ namespace Fight.Battle
         public bool UsesProjectile { get; }
 
         public float ProjectileSpeed { get; }
+
+        public string VisualFormKey { get; }
 
         public int MaxAdditionalBounceTargets { get; }
 

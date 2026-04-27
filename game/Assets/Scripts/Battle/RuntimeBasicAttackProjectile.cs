@@ -17,6 +17,7 @@ namespace Fight.Battle
             float impactAmount,
             BasicAttackEffectType effectType,
             string variantKey,
+            string visualFormKey,
             BasicAttackTargetType targetType,
             BasicAttackSameTargetStackData sameTargetStacking,
             IReadOnlyList<StatusEffectData> onHitStatusEffects,
@@ -32,6 +33,7 @@ namespace Fight.Battle
             ImpactAmount = Mathf.Max(0f, impactAmount);
             EffectType = effectType;
             VariantKey = variantKey ?? string.Empty;
+            VisualFormKey = visualFormKey ?? string.Empty;
             TargetType = targetType;
             SameTargetStacking = sameTargetStacking;
             OnHitStatusEffects = onHitStatusEffects ?? System.Array.Empty<StatusEffectData>();
@@ -56,6 +58,8 @@ namespace Fight.Battle
         public BasicAttackEffectType EffectType { get; }
 
         public string VariantKey { get; }
+
+        public string VisualFormKey { get; }
 
         public BasicAttackTargetType TargetType { get; }
 
