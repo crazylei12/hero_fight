@@ -1249,6 +1249,7 @@ namespace Fight.Editor
                 || heroId == "warrior_004_spellblade"
                 || heroId == "warrior_005_trollwarlord"
                 || heroId == "mage_001_firemage"
+                || heroId == "mage_002_frostmage"
                 || heroId == "mage_004_lightningmage"
                 || heroId == "marksman_001_longshot"
                 || heroId == "marksman_002_rifleman"
