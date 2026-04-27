@@ -490,13 +490,18 @@ namespace Fight.Editor
             }
 
             var index = y * width + x;
-            if (visited[index] || !IsCheckerBackgroundPixel(pixels[index]))
+            if (visited[index] || !IsBackgroundTraversalPixel(pixels[index]))
             {
                 return;
             }
 
             visited[index] = true;
             queue.Enqueue(index);
+        }
+
+        private static bool IsBackgroundTraversalPixel(Color32 color)
+        {
+            return color.a == 0 || IsCheckerBackgroundPixel(color);
         }
 
         private static bool IsCheckerBackgroundPixel(Color32 color)
@@ -509,7 +514,7 @@ namespace Fight.Editor
             var min = Mathf.Min(color.r, Mathf.Min(color.g, color.b));
             var max = Mathf.Max(color.r, Mathf.Max(color.g, color.b));
             var average = (color.r + color.g + color.b) / 3f;
-            return average >= 225f && max - min <= 10;
+            return average >= 200f && max - min <= 12;
         }
 
         private static bool TryLoadTexture(string assetPath, out Texture2D texture)
