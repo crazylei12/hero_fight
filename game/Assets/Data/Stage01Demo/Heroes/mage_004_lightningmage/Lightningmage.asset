@@ -40,6 +40,13 @@ MonoBehaviour:
       searchRadius: 0
       powerMultiplier: 0
       bounceVariantKey: 
+    sameTargetStacking:
+      enabled: 0
+      maxStacks: 1
+      modifierEffectType: 4
+      magnitudePerStack: 0
+      targetRetentionRange: 0
+      fullStackOverrideStatusEffectType: 0
     onHitStatusEffects: []
     variants: []
   activeSkill: {fileID: 11400000, guid: cff2024b405b8a04e9b2101bbe7b9013, type: 2}
@@ -58,6 +65,7 @@ MonoBehaviour:
     castVfxPrefab: {fileID: 0}
     hitVfxPrefab: {fileID: 0}
     basicAttackVariantVisuals: []
+    formVisuals: []
     castSfx: {fileID: 0}
   debugNotes: Stage-01 demo hero for Mage. Lightningmage validates shared damage-triggered
     shock counters, frequent short stuns, and global action-sequence ult pulses.

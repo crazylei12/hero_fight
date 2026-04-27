@@ -64,8 +64,8 @@ MonoBehaviour:
       activeSkillCooldownCapSeconds: 0
       tickIntervalSeconds: 1
       maxStacks: 1
-      stackGroupKey:
-      statusThemeKey:
+      stackGroupKey: 
+      statusThemeKey: 
       refreshDurationOnReapply: 1
     triggerStatusEffects: []
   castRange: 0
@@ -77,7 +77,7 @@ MonoBehaviour:
     targetMode: 0
     powerMultiplier: 1
     statusStackQueryEffectType: 0
-    statusStackQueryThemeKey:
+    statusStackQueryThemeKey: 
     minimumRequiredStatusStacks: 0
     bonusPowerMultiplierPerStatusStack: 0
     consumeQueriedStatusesOnHit: 0
@@ -124,7 +124,7 @@ MonoBehaviour:
     returningPathWidth: 0
     returningPathDelaySeconds: 0
     formOverride:
-      formKey:
+      formKey: 
       durationSeconds: 0
       expiresOnDeath: 1
       overrideUsesProjectile: 0
@@ -145,7 +145,7 @@ MonoBehaviour:
     targetMode: 0
     powerMultiplier: 0
     statusStackQueryEffectType: 0
-    statusStackQueryThemeKey:
+    statusStackQueryThemeKey: 
     minimumRequiredStatusStacks: 0
     bonusPowerMultiplierPerStatusStack: 0
     consumeQueriedStatusesOnHit: 0
@@ -192,7 +192,7 @@ MonoBehaviour:
     returningPathWidth: 0
     returningPathDelaySeconds: 0
     formOverride:
-      formKey:
+      formKey: 
       durationSeconds: 0
       expiresOnDeath: 1
       overrideUsesProjectile: 0
@@ -329,7 +329,7 @@ MonoBehaviour:
       highValueTargetType: 0
       heroClassFilter: 2
       statusEffectTypeFilter: 0
-      statusThemeKey:
+      statusThemeKey: 
       minimumStatusStacks: 1
       requireTargetInCastRange: 1
     secondaryCondition:
@@ -341,7 +341,7 @@ MonoBehaviour:
       highValueTargetType: 0
       heroClassFilter: 2
       statusEffectTypeFilter: 0
-      statusThemeKey:
+      statusThemeKey: 
       minimumStatusStacks: 1
       requireTargetInCastRange: 1
     fallback:
@@ -361,7 +361,7 @@ MonoBehaviour:
         highValueTargetType: 0
         heroClassFilter: 2
         statusEffectTypeFilter: 0
-        statusThemeKey:
+        statusThemeKey: 
         minimumStatusStacks: 1
         requireTargetInCastRange: 1
       alternateSecondaryCondition:
@@ -373,7 +373,7 @@ MonoBehaviour:
         highValueTargetType: 0
         heroClassFilter: 2
         statusEffectTypeFilter: 0
-        statusThemeKey:
+        statusThemeKey: 
         minimumStatusStacks: 1
         requireTargetInCastRange: 1
     combineMode: 1

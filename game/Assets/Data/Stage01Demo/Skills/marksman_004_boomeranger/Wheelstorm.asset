@@ -23,6 +23,7 @@ MonoBehaviour:
   preferredEnemyHeroClass: 2
   fallbackTargetType: 0
   targetPrioritySearchRadius: 0
+  minimumTargetDistance: 0
   targetPriorityRequiredUnitCount: 1
   variantSelectionMode: 0
   variants: []
@@ -95,7 +96,15 @@ MonoBehaviour:
     deployableProxySpawnMode: 0
     deployableProxyTriggerMode: 0
     deployableProxyStrikeRadius: 0
+    deployableProxyTriggerRadius: 0
+    deployableProxyEffectRadius: 0
     deployableProxySpawnOffsetDistance: 0
+    deployableProxySpawnCount: 1
+    deployableProxyPersistUntilTriggered: 0
+    deployableProxyRandomForwardMinDistance: 0
+    deployableProxyRandomForwardMaxDistance: 0
+    deployableProxyRandomForwardWidth: 0
+    deployableProxyRandomForwardMinSpacing: 0
     deployableProxyMaxCount: 0
     deployableProxyReplaceOldestWhenLimitReached: 1
     deployableProxyImmediateStrikeOnSpawn: 0
@@ -114,6 +123,16 @@ MonoBehaviour:
     returningPathMaxDistance: 0
     returningPathWidth: 0
     returningPathDelaySeconds: 0
+    formOverride:
+      formKey: 
+      durationSeconds: 0
+      expiresOnDeath: 1
+      overrideUsesProjectile: 0
+      usesProjectile: 0
+      attackRangeOverride: 0
+      projectileSpeedOverride: 0
+      attackPowerModifier: 0
+      attackSpeedModifier: 0
     forcedMovementDirection: 0
     forcedMovementDistance: 0
     forcedMovementDurationSeconds: 0
@@ -142,6 +161,19 @@ MonoBehaviour:
     triggerVfxLocalOffset: {x: 0, y: 0, z: 0}
     triggerVfxLocalScale: {x: 1, y: 1, z: 1}
     triggerVfxEulerAngles: {x: 0, y: 0, z: 0}
+  reactiveCounter:
+    enabled: 0
+    durationSeconds: 0
+    blocksBasicAttacks: 1
+    blocksSkillCasts: 1
+    triggerOnBasicAttackDamage: 1
+    requireNonProjectileBasicAttack: 1
+    sourceTriggerCooldownSeconds: 0
+    counterDamagePowerMultiplier: 0
+    forcedMovementDistance: 0
+    forcedMovementDurationSeconds: 0
+    forcedMovementPeakHeight: 0
+    onTriggerStatusEffects: []
   actionSequence:
     enabled: 0
     payloadType: 0
@@ -171,6 +203,9 @@ MonoBehaviour:
   castImpactVfxScaleWithSkillArea: 0
   castImpactVfxAreaDiameterScaleMultiplier: 1
   castProjectileVfxPrefab: {fileID: 0}
+  playCastProjectileOnSkillCast: 0
+  castProjectileVfxFlightDurationSeconds: 0.36
+  castProjectileVfxScaleMultiplier: {x: 1, y: 1, z: 1}
   dashTravelVfxPrefab: {fileID: 0}
   dashTravelVfxLocalOffset: {x: 0, y: 0, z: 0}
   dashTravelVfxForwardOffset: 0

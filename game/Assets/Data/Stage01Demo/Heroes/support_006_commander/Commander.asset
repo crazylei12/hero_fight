@@ -39,7 +39,7 @@ MonoBehaviour:
       maxAdditionalTargets: 0
       searchRadius: 0
       powerMultiplier: 0
-      bounceVariantKey:
+      bounceVariantKey: 
     sameTargetStacking:
       enabled: 0
       maxStacks: 1
@@ -53,9 +53,9 @@ MonoBehaviour:
   ultimateSkill: {fileID: 11400000, guid: d268d3269adab2445be3370abf235d6c, type: 2}
   aiTemplateId: support_default
   usesSpecialLogic: 0
-  specialLogicNotes:
+  specialLogicNotes: 
   visualConfig:
-    portrait: {fileID: 0}
+    portrait: {fileID: 21300000, guid: da914a8601e453a42859225de8466e27, type: 3}
     battlePrefab: {fileID: 33178510622993888, guid: 2d8afc1ad51aba04fae4b3303a3a7588, type: 3}
     animatorController: {fileID: 9100000, guid: c0fbc9a82051e94429aa17cc4b2f48e5, type: 2}
     battlePrefabFacesLeftByDefault: 0
@@ -65,6 +65,7 @@ MonoBehaviour:
     castVfxPrefab: {fileID: 0}
     hitVfxPrefab: {fileID: 0}
     basicAttackVariantVisuals: []
+    formVisuals: []
     castSfx: {fileID: 0}
   debugNotes: Stage-01 demo hero for Support. Commander validates output amplification
     and team focus-fire target priority without using hard taunt.

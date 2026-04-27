@@ -39,7 +39,7 @@ MonoBehaviour:
       maxAdditionalTargets: 0
       searchRadius: 0
       powerMultiplier: 0
-      bounceVariantKey:
+      bounceVariantKey: 
     sameTargetStacking:
       enabled: 0
       maxStacks: 1
@@ -53,9 +53,9 @@ MonoBehaviour:
   ultimateSkill: {fileID: 11400000, guid: 7c3b421665019764ab9429f40a92b02c, type: 2}
   aiTemplateId: tank_default
   usesSpecialLogic: 0
-  specialLogicNotes:
+  specialLogicNotes: 
   visualConfig:
-    portrait: {fileID: 0}
+    portrait: {fileID: 21300000, guid: e51a4ac3ab19a864a974db7715b791f0, type: 3}
     battlePrefab: {fileID: 8201802764806222458, guid: def196cdcafa40847b8ac793bb99dc63, type: 3}
     animatorController: {fileID: 0}
     battlePrefabFacesLeftByDefault: 0

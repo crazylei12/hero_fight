@@ -40,6 +40,13 @@ MonoBehaviour:
       searchRadius: 0
       powerMultiplier: 0
       bounceVariantKey: 
+    sameTargetStacking:
+      enabled: 0
+      maxStacks: 1
+      modifierEffectType: 4
+      magnitudePerStack: 0
+      targetRetentionRange: 0
+      fullStackOverrideStatusEffectType: 0
     onHitStatusEffects: []
     variants: []
   activeSkill: {fileID: 11400000, guid: 5689b258967051b418e1abd08992e39b, type: 2}
@@ -58,5 +65,6 @@ MonoBehaviour:
     castVfxPrefab: {fileID: 0}
     hitVfxPrefab: {fileID: 0}
     basicAttackVariantVisuals: []
+    formVisuals: []
     castSfx: {fileID: 0}
   debugNotes: Stage-01 support healer with ally-targeted projectile basic attacks.

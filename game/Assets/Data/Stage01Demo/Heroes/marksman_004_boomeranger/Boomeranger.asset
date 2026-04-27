@@ -40,6 +40,13 @@ MonoBehaviour:
       searchRadius: 3.1999998
       powerMultiplier: 0.48
       bounceVariantKey: bounce
+    sameTargetStacking:
+      enabled: 0
+      maxStacks: 1
+      modifierEffectType: 4
+      magnitudePerStack: 0
+      targetRetentionRange: 0
+      fullStackOverrideStatusEffectType: 0
     onHitStatusEffects: []
     variants: []
   activeSkill: {fileID: 11400000, guid: 664f4872f51d5bc4587755b4d695fa4a, type: 2}
@@ -61,6 +68,7 @@ MonoBehaviour:
     - variantKey: bounce
       projectilePrefab: {fileID: 7200000000000000001, guid: 7652655cee664ed98dbce793f1e60274, type: 3}
       hitVfxPrefab: {fileID: 0}
+    formVisuals: []
     castSfx: {fileID: 0}
   debugNotes: Stage-01 demo hero for Marksman. Boomeranger validates short-range
     projectile bounce chains, fixed-direction returning path damage, and self-following

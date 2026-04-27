@@ -23,6 +23,7 @@ MonoBehaviour:
   preferredEnemyHeroClass: 2
   fallbackTargetType: 1
   targetPrioritySearchRadius: 0
+  minimumTargetDistance: 0
   targetPriorityRequiredUnitCount: 1
   variantSelectionMode: 0
   variants: []
@@ -63,8 +64,8 @@ MonoBehaviour:
       activeSkillCooldownCapSeconds: 0
       tickIntervalSeconds: 1
       maxStacks: 1
-      stackGroupKey:
-      statusThemeKey:
+      stackGroupKey: 
+      statusThemeKey: 
       refreshDurationOnReapply: 1
     triggerStatusEffects: []
   castRange: 56
@@ -76,7 +77,7 @@ MonoBehaviour:
     targetMode: 0
     powerMultiplier: 1
     statusStackQueryEffectType: 0
-    statusStackQueryThemeKey:
+    statusStackQueryThemeKey: 
     minimumRequiredStatusStacks: 0
     bonusPowerMultiplierPerStatusStack: 0
     consumeQueriedStatusesOnHit: 0
@@ -95,7 +96,15 @@ MonoBehaviour:
     deployableProxySpawnMode: 0
     deployableProxyTriggerMode: 0
     deployableProxyStrikeRadius: 0
+    deployableProxyTriggerRadius: 0
+    deployableProxyEffectRadius: 0
     deployableProxySpawnOffsetDistance: 0
+    deployableProxySpawnCount: 1
+    deployableProxyPersistUntilTriggered: 0
+    deployableProxyRandomForwardMinDistance: 0
+    deployableProxyRandomForwardMaxDistance: 0
+    deployableProxyRandomForwardWidth: 0
+    deployableProxyRandomForwardMinSpacing: 0
     deployableProxyMaxCount: 0
     deployableProxyReplaceOldestWhenLimitReached: 1
     deployableProxyImmediateStrikeOnSpawn: 0
@@ -114,6 +123,16 @@ MonoBehaviour:
     returningPathMaxDistance: 0
     returningPathWidth: 0
     returningPathDelaySeconds: 0
+    formOverride:
+      formKey: 
+      durationSeconds: 0
+      expiresOnDeath: 1
+      overrideUsesProjectile: 0
+      usesProjectile: 0
+      attackRangeOverride: 0
+      projectileSpeedOverride: 0
+      attackPowerModifier: 0
+      attackSpeedModifier: 0
     forcedMovementDirection: 1
     forcedMovementDistance: 56
     forcedMovementDurationSeconds: 0.35
@@ -126,7 +145,7 @@ MonoBehaviour:
     targetMode: 0
     powerMultiplier: 1
     statusStackQueryEffectType: 0
-    statusStackQueryThemeKey:
+    statusStackQueryThemeKey: 
     minimumRequiredStatusStacks: 0
     bonusPowerMultiplierPerStatusStack: 0
     consumeQueriedStatusesOnHit: 0
@@ -145,7 +164,15 @@ MonoBehaviour:
     deployableProxySpawnMode: 0
     deployableProxyTriggerMode: 0
     deployableProxyStrikeRadius: 0
+    deployableProxyTriggerRadius: 0
+    deployableProxyEffectRadius: 0
     deployableProxySpawnOffsetDistance: 0
+    deployableProxySpawnCount: 1
+    deployableProxyPersistUntilTriggered: 0
+    deployableProxyRandomForwardMinDistance: 0
+    deployableProxyRandomForwardMaxDistance: 0
+    deployableProxyRandomForwardWidth: 0
+    deployableProxyRandomForwardMinSpacing: 0
     deployableProxyMaxCount: 0
     deployableProxyReplaceOldestWhenLimitReached: 1
     deployableProxyImmediateStrikeOnSpawn: 0
@@ -164,6 +191,16 @@ MonoBehaviour:
     returningPathMaxDistance: 0
     returningPathWidth: 0
     returningPathDelaySeconds: 0
+    formOverride:
+      formKey: 
+      durationSeconds: 0
+      expiresOnDeath: 1
+      overrideUsesProjectile: 0
+      usesProjectile: 0
+      attackRangeOverride: 0
+      projectileSpeedOverride: 0
+      attackPowerModifier: 0
+      attackSpeedModifier: 0
     forcedMovementDirection: 0
     forcedMovementDistance: 0
     forcedMovementDurationSeconds: 0
@@ -180,8 +217,8 @@ MonoBehaviour:
       activeSkillCooldownCapSeconds: 0
       tickIntervalSeconds: 1
       maxStacks: 1
-      stackGroupKey:
-      statusThemeKey:
+      stackGroupKey: 
+      statusThemeKey: 
       refreshDurationOnReapply: 1
   allowsSelfCast: 0
   reactiveGuard:
@@ -203,6 +240,19 @@ MonoBehaviour:
     triggerVfxLocalOffset: {x: 0, y: 0, z: 0}
     triggerVfxLocalScale: {x: 1, y: 1, z: 1}
     triggerVfxEulerAngles: {x: 0, y: 0, z: 0}
+  reactiveCounter:
+    enabled: 0
+    durationSeconds: 0
+    blocksBasicAttacks: 1
+    blocksSkillCasts: 1
+    triggerOnBasicAttackDamage: 1
+    requireNonProjectileBasicAttack: 1
+    sourceTriggerCooldownSeconds: 0
+    counterDamagePowerMultiplier: 0
+    forcedMovementDistance: 0
+    forcedMovementDurationSeconds: 0
+    forcedMovementPeakHeight: 0
+    onTriggerStatusEffects: []
   actionSequence:
     enabled: 0
     payloadType: 0
@@ -232,6 +282,9 @@ MonoBehaviour:
   castImpactVfxScaleWithSkillArea: 0
   castImpactVfxAreaDiameterScaleMultiplier: 1
   castProjectileVfxPrefab: {fileID: 5454662105336075387, guid: 9cf32206b7904054fb89e1ed85cb8a8b, type: 3}
+  playCastProjectileOnSkillCast: 0
+  castProjectileVfxFlightDurationSeconds: 0.36
+  castProjectileVfxScaleMultiplier: {x: 1, y: 1, z: 1}
   dashTravelVfxPrefab: {fileID: 0}
   dashTravelVfxLocalOffset: {x: 0, y: 0, z: 0}
   dashTravelVfxForwardOffset: 0
@@ -254,7 +307,7 @@ MonoBehaviour:
       highValueTargetType: 0
       heroClassFilter: 2
       statusEffectTypeFilter: 0
-      statusThemeKey:
+      statusThemeKey: 
       minimumStatusStacks: 1
       requireTargetInCastRange: 1
     secondaryCondition:
@@ -266,7 +319,7 @@ MonoBehaviour:
       highValueTargetType: 0
       heroClassFilter: 2
       statusEffectTypeFilter: 0
-      statusThemeKey:
+      statusThemeKey: 
       minimumStatusStacks: 1
       requireTargetInCastRange: 1
     fallback:
@@ -286,7 +339,7 @@ MonoBehaviour:
         highValueTargetType: 0
         heroClassFilter: 2
         statusEffectTypeFilter: 0
-        statusThemeKey:
+        statusThemeKey: 
         minimumStatusStacks: 1
         requireTargetInCastRange: 1
       alternateSecondaryCondition:
@@ -298,7 +351,7 @@ MonoBehaviour:
         highValueTargetType: 0
         heroClassFilter: 2
         statusEffectTypeFilter: 0
-        statusThemeKey:
+        statusThemeKey: 
         minimumStatusStacks: 1
         requireTargetInCastRange: 1
     combineMode: 0

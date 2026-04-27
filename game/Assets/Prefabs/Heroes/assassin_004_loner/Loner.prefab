@@ -102,7 +102,7 @@ SpriteRenderer:
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
-  m_Size: {x: 1.56, y: 1.53}
+  m_Size: {x: 2.46875, y: 2.359375}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 0
@@ -117,7 +117,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 12e135ebfdef26a45bd0801d5490c462, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Fight.UI.Preview.SpriteTextureFrameAnimator
   resourcesFolder: HeroPreview/assassin_004_loner/Idle
   framesPerSecond: 7
@@ -135,7 +135,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f280dce8c1e544f48a42a8b0e1b25780, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Fight.UI.SpriteSheetBattleVisualConfig
   spriteRenderer: {fileID: 5320738049873456059}
   resourcesRoot: HeroPreview/assassin_004_loner

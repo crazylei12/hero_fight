@@ -35,11 +35,24 @@ MonoBehaviour:
     targetType: 0
     targetPrioritySearchRadius: 0
     startingVariantIndex: 0
+    bounce:
+      maxAdditionalTargets: 0
+      searchRadius: 0
+      powerMultiplier: 0
+      bounceVariantKey: 
+    sameTargetStacking:
+      enabled: 0
+      maxStacks: 1
+      modifierEffectType: 4
+      magnitudePerStack: 0
+      targetRetentionRange: 0
+      fullStackOverrideStatusEffectType: 0
     onHitStatusEffects:
     - effectType: 2
       durationSeconds: 3
       magnitude: -0.05
       sourceAttackPowerMultiplier: 0
+      targetMaxHealthMultiplier: 0
       activeSkillCooldownCapSeconds: 0
       tickIntervalSeconds: 1
       maxStacks: 5
@@ -63,6 +76,7 @@ MonoBehaviour:
     castVfxPrefab: {fileID: 0}
     hitVfxPrefab: {fileID: 0}
     basicAttackVariantVisuals: []
+    formVisuals: []
     castSfx: {fileID: 0}
   debugNotes: Stage-01 demo hero for Assassin. Tidefin validates shared basic-attack
     on-hit debuffs and high-output target suppression.
