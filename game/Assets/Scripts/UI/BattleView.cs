@@ -41,6 +41,12 @@ namespace Fight.UI
         private const float HealthBarWidth = 0.9f;
         private const float HealthBarBackgroundHeight = 0.11f;
         private const float HealthBarFillHeight = 0.07f;
+        private const string LonerHeroId = "assassin_004_loner";
+        private const int UltimateStackGlowSortOrder = 299;
+        private const int UltimateIconSortOrder = 303;
+        private const int UltimateStackTextShadowSortOrder = 304;
+        private const int UltimateStackTextSortOrder = 305;
+        private const float UltimateStackTextBaseCharacterSize = 0.0042f;
         private const float ArenaBackgroundHeight = Stage01ArenaSpec.HeightWorldUnits;
         private const float MinAirborneEffectHeight = 0.12f;
         private const float DefaultTransientVfxLifetime = 1f;
@@ -74,6 +80,11 @@ namespace Fight.UI
         private const int ThrownProjectileSortOrderOffset = -4;
         private const string HealImpactTransientKey = "heal_received";
         private const string DashChargeTransientKey = "dash_charge";
+        private static readonly Vector3 UltimateIconLocalPosition = new Vector3(-0.58f, 0f, 0f);
+        private static readonly Vector3 UltimateIconNormalScale = new Vector3(0.16f, 0.16f, 1f);
+        private static readonly Vector3 UltimateStackGlowScale = new Vector3(0.31f, 0.31f, 1f);
+        private static readonly Vector3 UltimateStackIconMinScale = new Vector3(0.19f, 0.19f, 1f);
+        private static readonly Vector3 UltimateStackIconMaxScale = new Vector3(0.23f, 0.23f, 1f);
         private static readonly Dictionary<StatusEffectType, StatusEffectVfxConfig> StatusEffectVfxConfigs = new Dictionary<StatusEffectType, StatusEffectVfxConfig>
         {
             { StatusEffectType.Stun, new StatusEffectVfxConfig(StunStatusLoopVfxResourcesPath, new Vector3(0f, 1.1f, 0f), Vector3.one * 0.85f, Vector3.zero, 180) },
@@ -200,7 +211,10 @@ namespace Fight.UI
             public SpriteRenderer HealthBack;
             public SpriteRenderer HealthFill;
             public SpriteRenderer ShieldFill;
+            public SpriteRenderer UltimateStackGlow;
             public SpriteRenderer UltimateIcon;
+            public TextMesh UltimateStackTextShadow;
+            public TextMesh UltimateStackText;
             public HeroBattleAnimationDriver AnimationDriver;
             public Vector3 ShadowBaseScale = Vector3.one;
             public Color ShadowBaseColor = Color.white;
@@ -454,10 +468,7 @@ namespace Fight.UI
 
             if (view.UltimateIcon != null)
             {
-                var ultimateColor = hero.HasCastUltimate
-                    ? new Color(0.26f, 0.26f, 0.29f, 0.55f)
-                    : new Color(1f, 0.9f, 0.36f, 0.98f);
-                view.UltimateIcon.color = ultimateColor;
+                SyncUltimateIndicator(hero, view);
             }
 
             UpdateForcedMovementPresentation(hero, view);
@@ -506,9 +517,138 @@ namespace Fight.UI
             UpdateHealthFill(view.HealthFill, 1f, Color.green);
             view.ShieldFill = MakeSprite("ShieldFill", view.FootUiRoot, squareSprite, shieldBarColor, 302, Vector3.zero, new Vector3(0f, HealthBarFillHeight, 1f));
             UpdateShieldFill(view.ShieldFill, 1f, 0f, shieldBarColor);
-            view.UltimateIcon = MakeSprite("UltimateIcon", view.FootUiRoot, squareSprite, new Color(1f, 0.9f, 0.36f, 0.98f), 303, new Vector3(-0.58f, 0f, 0f), new Vector3(0.16f, 0.16f, 1f));
+            view.UltimateStackGlow = MakeSprite("UltimateStackGlow", view.FootUiRoot, circleSprite, Color.clear, UltimateStackGlowSortOrder, UltimateIconLocalPosition, UltimateStackGlowScale);
+            view.UltimateStackGlow.gameObject.SetActive(false);
+            view.UltimateIcon = MakeSprite("UltimateIcon", view.FootUiRoot, squareSprite, new Color(1f, 0.9f, 0.36f, 0.98f), UltimateIconSortOrder, UltimateIconLocalPosition, UltimateIconNormalScale);
             view.UltimateIcon.transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
+            view.UltimateStackTextShadow = MakeText("UltimateStackTextShadow", view.FootUiRoot, string.Empty, new Color(0.02f, 0.02f, 0.03f, 0.92f), UltimateStackTextShadowSortOrder, UltimateIconLocalPosition + new Vector3(0.012f, -0.012f, 0f), UltimateStackTextBaseCharacterSize);
+            view.UltimateStackText = MakeText("UltimateStackText", view.FootUiRoot, string.Empty, Color.white, UltimateStackTextSortOrder, UltimateIconLocalPosition + new Vector3(0f, 0.002f, 0f), UltimateStackTextBaseCharacterSize);
+            SetUltimateStackTextVisible(view, false);
             return view;
+        }
+
+        private void SyncUltimateIndicator(RuntimeHero hero, HeroViewState view)
+        {
+            if (view?.UltimateIcon == null)
+            {
+                return;
+            }
+
+            if (TryGetUltimatePassiveStackDisplay(hero, out var stackCount, out var maxStacks))
+            {
+                var stackProgress = maxStacks > 0
+                    ? Mathf.Clamp01((float)stackCount / maxStacks)
+                    : 0f;
+                view.UltimateIcon.color = Color.Lerp(
+                    new Color(0.16f, 0.18f, 0.22f, 0.96f),
+                    new Color(1f, 0.72f, 0.18f, 1f),
+                    stackProgress);
+                view.UltimateIcon.transform.localScale = Vector3.Lerp(
+                    UltimateStackIconMinScale,
+                    UltimateStackIconMaxScale,
+                    stackProgress);
+                view.UltimateIcon.transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
+
+                if (view.UltimateStackGlow != null)
+                {
+                    view.UltimateStackGlow.gameObject.SetActive(true);
+                    view.UltimateStackGlow.color = Color.Lerp(
+                        new Color(0.2f, 0.32f, 0.52f, 0.26f),
+                        new Color(1f, 0.78f, 0.2f, 0.42f),
+                        stackProgress);
+                }
+
+                SyncUltimateStackText(view, stackCount, maxStacks);
+                return;
+            }
+
+            if (view.UltimateStackGlow != null)
+            {
+                view.UltimateStackGlow.gameObject.SetActive(false);
+            }
+
+            SetUltimateStackTextVisible(view, false);
+            view.UltimateIcon.transform.localScale = UltimateIconNormalScale;
+            view.UltimateIcon.transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
+            view.UltimateIcon.color = hero != null && hero.HasCastUltimate
+                ? new Color(0.26f, 0.26f, 0.29f, 0.55f)
+                : new Color(1f, 0.9f, 0.36f, 0.98f);
+        }
+
+        private static bool TryGetUltimatePassiveStackDisplay(RuntimeHero hero, out int stackCount, out int maxStacks)
+        {
+            stackCount = 0;
+            maxStacks = 0;
+            var definition = hero?.Definition;
+            if (definition == null || !string.Equals(definition.heroId, LonerHeroId, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            var ultimateSkill = definition.ultimateSkill;
+            if (ultimateSkill == null
+                || ultimateSkill.activationMode != SkillActivationMode.Passive
+                || ultimateSkill.passiveSkill == null
+                || !ultimateSkill.passiveSkill.HasKillParticipationTrigger)
+            {
+                return false;
+            }
+
+            maxStacks = Mathf.Max(0, ultimateSkill.passiveSkill.killParticipationMaxStacks);
+            if (maxStacks <= 0)
+            {
+                return false;
+            }
+
+            stackCount = Mathf.Clamp(hero.GetPassiveKillParticipationStackCount(ultimateSkill), 0, maxStacks);
+            return true;
+        }
+
+        private static void SyncUltimateStackText(HeroViewState view, int stackCount, int maxStacks)
+        {
+            if (view == null)
+            {
+                return;
+            }
+
+            var label = Mathf.Max(0, stackCount).ToString();
+            var characterSize = label.Length > 1
+                ? UltimateStackTextBaseCharacterSize * 0.82f
+                : UltimateStackTextBaseCharacterSize;
+            var isMaxed = maxStacks > 0 && stackCount >= maxStacks;
+            var textColor = isMaxed
+                ? new Color(1f, 0.96f, 0.68f, 1f)
+                : stackCount > 0
+                    ? new Color(1f, 0.98f, 0.9f, 1f)
+                    : new Color(0.74f, 0.8f, 0.88f, 0.96f);
+
+            if (view.UltimateStackTextShadow != null)
+            {
+                view.UltimateStackTextShadow.text = label;
+                view.UltimateStackTextShadow.characterSize = characterSize;
+                view.UltimateStackTextShadow.gameObject.SetActive(true);
+            }
+
+            if (view.UltimateStackText != null)
+            {
+                view.UltimateStackText.text = label;
+                view.UltimateStackText.characterSize = characterSize;
+                view.UltimateStackText.color = textColor;
+                view.UltimateStackText.gameObject.SetActive(true);
+            }
+        }
+
+        private static void SetUltimateStackTextVisible(HeroViewState view, bool visible)
+        {
+            if (view?.UltimateStackTextShadow != null)
+            {
+                view.UltimateStackTextShadow.gameObject.SetActive(visible);
+            }
+
+            if (view?.UltimateStackText != null)
+            {
+                view.UltimateStackText.gameObject.SetActive(visible);
+            }
         }
 
         private void RebuildHeroVisual(RuntimeHero hero, HeroViewState view)
@@ -2114,6 +2254,31 @@ namespace Fight.UI
             renderer.color = color;
             renderer.sortingOrder = order;
             return renderer;
+        }
+
+        private static TextMesh MakeText(string name, Transform parent, string value, Color color, int order, Vector3 localPos, float characterSize)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = localPos;
+
+            var text = go.AddComponent<TextMesh>();
+            text.text = value;
+            text.anchor = TextAnchor.MiddleCenter;
+            text.alignment = TextAlignment.Center;
+            text.fontSize = 64;
+            text.fontStyle = FontStyle.Bold;
+            text.characterSize = characterSize;
+            text.color = color;
+            text.richText = false;
+
+            var renderer = go.GetComponent<MeshRenderer>();
+            if (renderer != null)
+            {
+                renderer.sortingOrder = order;
+            }
+
+            return text;
         }
 
         private Vector3 Map(Vector3 battlePos)

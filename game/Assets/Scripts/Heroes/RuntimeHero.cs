@@ -914,6 +914,12 @@ namespace Fight.Heroes
             return !RejectsExternalPositiveEffects;
         }
 
+        public int GetPassiveKillParticipationStackCount(SkillData sourceSkill)
+        {
+            var state = GetPassiveSkillState(sourceSkill);
+            return state != null ? Mathf.Max(0, state.KillParticipationStacks) : 0;
+        }
+
         public void ResolveKillParticipationRewards(Action<SkillData, int, int, int, float, float, float> onResolved)
         {
             ForEachPassiveSkill((skill, passiveData) =>
