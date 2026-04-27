@@ -511,7 +511,7 @@ namespace Fight.Editor
                 EnqueueIfBackground(x, y - 1, width, height, pixels, visited, queue);
             }
 
-            RemoveInteriorCheckerBackground(pixels, width, height);
+            // Keep pale cloth and fade frames intact; only remove checker pixels connected to the frame edge.
         }
 
         private static void EnqueueIfBackground(
