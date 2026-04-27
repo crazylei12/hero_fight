@@ -23,6 +23,8 @@ namespace Fight.Editor
         private const int ExpectedFrameColumns = 9;
         private const int ExpectedActionRows = 7;
         private const int GridLinePaddingPixels = 4;
+        private const int EdgeArtifactScanPixels = 12;
+        private const float EdgeArtifactLineCoverageRatio = 0.55f;
         private const int InteriorCheckerBackgroundMinPixels = 16;
         private const float InteriorCheckerBackgroundMinBrightRatio = 0.18f;
         private const float InteriorCheckerBackgroundMaxBrightRatio = 0.96f;
@@ -317,6 +319,7 @@ namespace Fight.Editor
             }
 
             RemoveCheckerBackground(topLeftPixels, outputFrameWidth, outputFrameHeight);
+            RemoveEdgeDividerArtifacts(topLeftPixels, outputFrameWidth, outputFrameHeight);
 
             var unityPixels = new Color32[topLeftPixels.Length];
             for (var y = 0; y < outputFrameHeight; y++)
@@ -371,6 +374,101 @@ namespace Fight.Editor
             RemoveInteriorCheckerBackground(pixels, width, height);
         }
 
+        private static void RemoveEdgeDividerArtifacts(Color32[] pixels, int width, int height)
+        {
+            var scanRows = Mathf.Min(EdgeArtifactScanPixels, height);
+            var scanColumns = Mathf.Min(EdgeArtifactScanPixels, width);
+            for (var y = 0; y < scanRows; y++)
+            {
+                if (GetRowDividerCoverage(pixels, width, y) >= EdgeArtifactLineCoverageRatio)
+                {
+                    ClearRowDividerPixels(pixels, width, y);
+                }
+            }
+
+            for (var y = height - scanRows; y < height; y++)
+            {
+                if (GetRowDividerCoverage(pixels, width, y) >= EdgeArtifactLineCoverageRatio)
+                {
+                    ClearRowDividerPixels(pixels, width, y);
+                }
+            }
+
+            for (var x = 0; x < scanColumns; x++)
+            {
+                if (GetColumnDividerCoverage(pixels, width, height, x) >= EdgeArtifactLineCoverageRatio)
+                {
+                    ClearColumnDividerPixels(pixels, width, height, x);
+                }
+            }
+
+            for (var x = width - scanColumns; x < width; x++)
+            {
+                if (GetColumnDividerCoverage(pixels, width, height, x) >= EdgeArtifactLineCoverageRatio)
+                {
+                    ClearColumnDividerPixels(pixels, width, height, x);
+                }
+            }
+        }
+
+        private static float GetRowDividerCoverage(Color32[] pixels, int width, int y)
+        {
+            var count = 0;
+            var rowStart = y * width;
+            for (var x = 0; x < width; x++)
+            {
+                if (IsGridDividerArtifactPixel(pixels[rowStart + x]))
+                {
+                    count++;
+                }
+            }
+
+            return count / (float)width;
+        }
+
+        private static float GetColumnDividerCoverage(Color32[] pixels, int width, int height, int x)
+        {
+            var count = 0;
+            for (var y = 0; y < height; y++)
+            {
+                if (IsGridDividerArtifactPixel(pixels[y * width + x]))
+                {
+                    count++;
+                }
+            }
+
+            return count / (float)height;
+        }
+
+        private static void ClearRowDividerPixels(Color32[] pixels, int width, int y)
+        {
+            var rowStart = y * width;
+            for (var x = 0; x < width; x++)
+            {
+                ClearDividerPixel(pixels, rowStart + x);
+            }
+        }
+
+        private static void ClearColumnDividerPixels(Color32[] pixels, int width, int height, int x)
+        {
+            for (var y = 0; y < height; y++)
+            {
+                ClearDividerPixel(pixels, y * width + x);
+            }
+        }
+
+        private static void ClearDividerPixel(Color32[] pixels, int index)
+        {
+            if (!IsGridDividerArtifactPixel(pixels[index]))
+            {
+                return;
+            }
+
+            var color = pixels[index];
+            color.a = 0;
+            pixels[index] = color;
+        }
+
         private static void EnqueueIfBackground(
             int x,
             int y,
@@ -406,6 +504,26 @@ namespace Fight.Editor
             var max = Mathf.Max(color.r, Mathf.Max(color.g, color.b));
             var average = (color.r + color.g + color.b) / 3f;
             return average >= 168f && max - min <= 34;
+        }
+
+        private static bool IsGridDividerArtifactPixel(Color32 color)
+        {
+            if (color.a == 0)
+            {
+                return false;
+            }
+
+            var min = Mathf.Min(color.r, Mathf.Min(color.g, color.b));
+            var max = Mathf.Max(color.r, Mathf.Max(color.g, color.b));
+            var average = (color.r + color.g + color.b) / 3f;
+            var isPurpleDivider = color.b >= color.r + 8
+                && color.b >= color.g + 6
+                && color.r >= 70
+                && color.g >= 45
+                && average >= 80f
+                && average <= 230f;
+            var isNeutralDivider = average >= 120f && average <= 235f && max - min <= 22;
+            return isPurpleDivider || isNeutralDivider;
         }
 
         private static void RemoveInteriorCheckerBackground(Color32[] pixels, int width, int height)
