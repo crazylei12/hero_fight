@@ -8,6 +8,18 @@ set "UNITY_LOG=%REPO_ROOT%\Temp\stage01_offline_sim_unity.log"
 
 if not exist "%REPO_ROOT%\Temp" mkdir "%REPO_ROOT%\Temp"
 
+if not defined UNITY_EXE (
+    if exist "C:\Program Files\Unity\Hub\Editor\6000.3.13f1\Editor\Unity.exe" (
+        set "UNITY_EXE=C:\Program Files\Unity\Hub\Editor\6000.3.13f1\Editor\Unity.exe"
+    )
+)
+
+if not defined UNITY_EXE (
+    if exist "C:\Program Files\Unity 6000.3.13f1\Editor\Unity.exe" (
+        set "UNITY_EXE=C:\Program Files\Unity 6000.3.13f1\Editor\Unity.exe"
+    )
+)
+
 if not defined UNITY_EXE set "UNITY_EXE=C:\Program Files\Unity 6000.3.13f1\Editor\Unity.exe"
 
 if not exist "%UNITY_EXE%" (

@@ -15,6 +15,8 @@ namespace Fight.Tools.OfflineSimulationLauncher
         private const int BattleSlotCount = 5;
         private const string DefaultInputAssetPath = "Assets/Resources/Stage01Demo/Stage01DemoBattleInput.asset";
         private const string DefaultHeroCatalogAssetPath = "Assets/Resources/Stage01Demo/Stage01HeroCatalog.asset";
+        private const string UnityHubEditorPath = @"C:\Program Files\Unity\Hub\Editor\6000.3.13f1\Editor\Unity.exe";
+        private const string LegacyUnityEditorPath = @"C:\Program Files\Unity 6000.3.13f1\Editor\Unity.exe";
 
         private readonly string repoRoot;
         private readonly string batchPath;
@@ -22,6 +24,8 @@ namespace Fight.Tools.OfflineSimulationLauncher
         private readonly List<HeroCatalogEntry> heroCatalogEntries;
 
         private readonly Label repoRootValueLabel;
+        private readonly ComboBox unityExecutableComboBox;
+        private readonly Label unityExecutableStatusLabel;
         private readonly ComboBox modeComboBox;
         private readonly Label modeHintLabel;
         private readonly NumericUpDown countNumericUpDown;
@@ -90,7 +94,7 @@ namespace Fight.Tools.OfflineSimulationLauncher
             settingsLayout.Dock = DockStyle.Top;
             settingsLayout.AutoSize = true;
             settingsLayout.ColumnCount = 3;
-            settingsLayout.RowCount = 7;
+            settingsLayout.RowCount = 8;
             settingsLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
             settingsLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
             settingsLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
@@ -100,13 +104,37 @@ namespace Fight.Tools.OfflineSimulationLauncher
             repoRootValueLabel = AddValueLabel(settingsLayout, 0, string.IsNullOrWhiteSpace(repoRoot) ? "未找到仓库根目录" : repoRoot);
             settingsLayout.SetColumnSpan(repoRootValueLabel, 2);
 
-            AddLabel(settingsLayout, 1, "运行模式");
+            AddLabel(settingsLayout, 1, "Unity 位置");
+            FlowLayoutPanel unityPathPanel = new FlowLayoutPanel();
+            unityPathPanel.AutoSize = true;
+            unityPathPanel.FlowDirection = FlowDirection.LeftToRight;
+            unityPathPanel.WrapContents = false;
+            unityPathPanel.Dock = DockStyle.Fill;
+            settingsLayout.Controls.Add(unityPathPanel, 1, 1);
+            settingsLayout.SetColumnSpan(unityPathPanel, 2);
+
+            unityExecutableComboBox = new ComboBox();
+            unityExecutableComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+            unityExecutableComboBox.Width = 620;
+            unityExecutableComboBox.DisplayMember = "DisplayText";
+            unityExecutableComboBox.Items.Add(new UnityExecutableOption("本机 Unity Hub", UnityHubEditorPath));
+            unityExecutableComboBox.Items.Add(new UnityExecutableOption("旧电脑路径", LegacyUnityEditorPath));
+            unityExecutableComboBox.SelectedIndex = ResolveDefaultUnityExecutableOptionIndex();
+            unityExecutableComboBox.SelectedIndexChanged += HandleUnityExecutableChanged;
+            unityPathPanel.Controls.Add(unityExecutableComboBox);
+
+            unityExecutableStatusLabel = new Label();
+            unityExecutableStatusLabel.AutoSize = true;
+            unityExecutableStatusLabel.Margin = new Padding(12, 8, 0, 0);
+            unityPathPanel.Controls.Add(unityExecutableStatusLabel);
+
+            AddLabel(settingsLayout, 2, "运行模式");
             FlowLayoutPanel modePanel = new FlowLayoutPanel();
             modePanel.AutoSize = true;
             modePanel.FlowDirection = FlowDirection.LeftToRight;
             modePanel.WrapContents = false;
             modePanel.Dock = DockStyle.Fill;
-            settingsLayout.Controls.Add(modePanel, 1, 1);
+            settingsLayout.Controls.Add(modePanel, 1, 2);
             settingsLayout.SetColumnSpan(modePanel, 2);
 
             modeComboBox = new ComboBox();
@@ -124,46 +152,46 @@ namespace Fight.Tools.OfflineSimulationLauncher
             modeHintLabel.Margin = new Padding(12, 8, 0, 0);
             modePanel.Controls.Add(modeHintLabel);
 
-            AddLabel(settingsLayout, 2, "运行次数");
+            AddLabel(settingsLayout, 3, "运行次数");
             countNumericUpDown = new NumericUpDown();
             countNumericUpDown.Minimum = 1;
             countNumericUpDown.Maximum = 100000;
             countNumericUpDown.Value = 100;
             countNumericUpDown.Width = 160;
-            settingsLayout.Controls.Add(countNumericUpDown, 1, 2);
+            settingsLayout.Controls.Add(countNumericUpDown, 1, 3);
 
-            AddLabel(settingsLayout, 3, "Seed 起点");
+            AddLabel(settingsLayout, 4, "Seed 起点");
             seedStartNumericUpDown = new NumericUpDown();
             seedStartNumericUpDown.Minimum = 0;
             seedStartNumericUpDown.Maximum = 2147483647;
             seedStartNumericUpDown.Value = 0;
             seedStartNumericUpDown.Width = 160;
-            settingsLayout.Controls.Add(seedStartNumericUpDown, 1, 3);
+            settingsLayout.Controls.Add(seedStartNumericUpDown, 1, 4);
 
-            AddLabel(settingsLayout, 4, "输出文件");
+            AddLabel(settingsLayout, 5, "输出文件");
             outputPathTextBox = new TextBox();
             outputPathTextBox.Dock = DockStyle.Fill;
             outputPathTextBox.Text = LauncherPaths.ToDisplayPath(repoRoot, BuildNextOutputPathSuggestion());
-            settingsLayout.Controls.Add(outputPathTextBox, 1, 4);
+            settingsLayout.Controls.Add(outputPathTextBox, 1, 5);
 
             browseOutputButton = new Button();
             browseOutputButton.Text = "选择...";
             browseOutputButton.AutoSize = true;
             browseOutputButton.Click += HandleBrowseOutputClicked;
-            settingsLayout.Controls.Add(browseOutputButton, 2, 4);
+            settingsLayout.Controls.Add(browseOutputButton, 2, 5);
 
-            AddLabel(settingsLayout, 5, "输入资产");
+            AddLabel(settingsLayout, 6, "输入资产");
             inputAssetPathTextBox = new TextBox();
             inputAssetPathTextBox.Dock = DockStyle.Fill;
             inputAssetPathTextBox.Text = DefaultInputAssetPath;
-            settingsLayout.Controls.Add(inputAssetPathTextBox, 1, 5);
+            settingsLayout.Controls.Add(inputAssetPathTextBox, 1, 6);
             settingsLayout.SetColumnSpan(inputAssetPathTextBox, 2);
 
-            AddLabel(settingsLayout, 6, "英雄池资产");
+            AddLabel(settingsLayout, 7, "英雄池资产");
             heroCatalogAssetPathTextBox = new TextBox();
             heroCatalogAssetPathTextBox.Dock = DockStyle.Fill;
             heroCatalogAssetPathTextBox.Text = DefaultHeroCatalogAssetPath;
-            settingsLayout.Controls.Add(heroCatalogAssetPathTextBox, 1, 6);
+            settingsLayout.Controls.Add(heroCatalogAssetPathTextBox, 1, 7);
             settingsLayout.SetColumnSpan(heroCatalogAssetPathTextBox, 2);
 
             FlowLayoutPanel optionsPanel = new FlowLayoutPanel();
@@ -297,8 +325,14 @@ namespace Fight.Tools.OfflineSimulationLauncher
             progressTimer.Tick += HandleProgressTimerTick;
 
             UpdateModeState();
+            UpdateUnityExecutableState();
             UpdateRepositoryState();
             AppendLogLine("[launcher] Ready.");
+        }
+
+        private void HandleUnityExecutableChanged(object sender, EventArgs e)
+        {
+            UpdateUnityExecutableState();
         }
 
         private void HandleModeChanged(object sender, EventArgs e)
@@ -398,6 +432,13 @@ namespace Fight.Tools.OfflineSimulationLauncher
                 return;
             }
 
+            string unityExecutablePath = ResolveUnityExecutablePathFromForm();
+            if (string.IsNullOrWhiteSpace(unityExecutablePath) || !File.Exists(unityExecutablePath))
+            {
+                MessageBox.Show(this, "所选 Unity.exe 不存在，请先切换 Unity 位置。", "无法启动", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             string outputBasePath = ResolveOutputPathFromForm();
             if (string.IsNullOrWhiteSpace(outputBasePath))
             {
@@ -463,6 +504,7 @@ namespace Fight.Tools.OfflineSimulationLauncher
             startInfo.CreateNoWindow = true;
             startInfo.RedirectStandardOutput = true;
             startInfo.RedirectStandardError = true;
+            startInfo.EnvironmentVariables["UNITY_EXE"] = unityExecutablePath;
 
             runningProcess = new Process();
             runningProcess.StartInfo = startInfo;
@@ -479,6 +521,7 @@ namespace Fight.Tools.OfflineSimulationLauncher
                 progressSummaryLabel.Text = "准备启动...";
                 statusValueLabel.Text = "正在启动 Unity batchmode。";
                 AppendLogLine("[launcher] Starting offline simulation.");
+                AppendLogLine("[launcher] Unity: " + unityExecutablePath);
                 AppendLogLine("[launcher] Output: " + outputPath);
                 runningProcess.Start();
                 runningProcess.BeginOutputReadLine();
@@ -750,19 +793,40 @@ namespace Fight.Tools.OfflineSimulationLauncher
                     : "固定模式会直接使用 BattleInputConfig 中已配置的双方阵容。";
         }
 
+        private void UpdateUnityExecutableState()
+        {
+            string unityExecutablePath = ResolveUnityExecutablePathFromForm();
+            if (!string.IsNullOrWhiteSpace(unityExecutablePath) && File.Exists(unityExecutablePath))
+            {
+                unityExecutableStatusLabel.Text = "已找到";
+            }
+            else
+            {
+                unityExecutableStatusLabel.Text = "未找到";
+            }
+
+            UpdateRepositoryState();
+        }
+
         private void UpdateRepositoryState()
         {
             bool repositoryReady = !string.IsNullOrWhiteSpace(repoRoot) && File.Exists(batchPath);
-            startButton.Enabled = repositoryReady;
+            bool unityExecutableReady = IsSelectedUnityExecutableReady();
+            startButton.Enabled = repositoryReady && unityExecutableReady;
             if (!repositoryReady)
             {
                 statusValueLabel.Text = "未找到仓库根目录或 bat 入口。";
                 AppendLogLine("[launcher] Could not resolve repository root or batch entry.");
             }
+            else if (!unityExecutableReady)
+            {
+                statusValueLabel.Text = "所选 Unity.exe 不存在，请切换 Unity 位置。";
+            }
         }
 
         private void SetRunningState(bool isRunning)
         {
+            unityExecutableComboBox.Enabled = !isRunning;
             modeComboBox.Enabled = !isRunning;
             countNumericUpDown.Enabled = !isRunning;
             seedStartNumericUpDown.Enabled = !isRunning;
@@ -773,7 +837,7 @@ namespace Fight.Tools.OfflineSimulationLauncher
             outputPathTextBox.Enabled = !isRunning;
             browseOutputButton.Enabled = !isRunning;
             manualSelectionGroupBox.Enabled = !isRunning && IsManualSelectionMode();
-            startButton.Enabled = !isRunning && !string.IsNullOrWhiteSpace(repoRoot) && File.Exists(batchPath);
+            startButton.Enabled = !isRunning && !string.IsNullOrWhiteSpace(repoRoot) && File.Exists(batchPath) && IsSelectedUnityExecutableReady();
         }
 
         private bool IsRandomMode()
@@ -789,6 +853,32 @@ namespace Fight.Tools.OfflineSimulationLauncher
         private string ResolveOutputPathFromForm()
         {
             return LauncherPaths.ResolveUserPath(repoRoot, outputPathTextBox.Text.Trim());
+        }
+
+        private string ResolveUnityExecutablePathFromForm()
+        {
+            UnityExecutableOption option = unityExecutableComboBox.SelectedItem as UnityExecutableOption;
+            return option == null ? string.Empty : option.ExecutablePath;
+        }
+
+        private bool IsSelectedUnityExecutableReady()
+        {
+            string unityExecutablePath = ResolveUnityExecutablePathFromForm();
+            return !string.IsNullOrWhiteSpace(unityExecutablePath) && File.Exists(unityExecutablePath);
+        }
+
+        private int ResolveDefaultUnityExecutableOptionIndex()
+        {
+            for (int i = 0; i < unityExecutableComboBox.Items.Count; i++)
+            {
+                UnityExecutableOption option = unityExecutableComboBox.Items[i] as UnityExecutableOption;
+                if (option != null && File.Exists(option.ExecutablePath))
+                {
+                    return i;
+                }
+            }
+
+            return 0;
         }
 
         private string BuildNextOutputPathSuggestion()
@@ -840,6 +930,27 @@ namespace Fight.Tools.OfflineSimulationLauncher
             }
 
             return path.Replace("/", "\\");
+        }
+
+        private sealed class UnityExecutableOption
+        {
+            public UnityExecutableOption(string label, string executablePath)
+            {
+                Label = label;
+                ExecutablePath = executablePath;
+            }
+
+            public string Label { get; private set; }
+
+            public string ExecutablePath { get; private set; }
+
+            public string DisplayText
+            {
+                get
+                {
+                    return Label + " - " + ExecutablePath;
+                }
+            }
         }
     }
 }

@@ -1,6 +1,6 @@
 # 第一阶段离线战斗模拟使用说明
 
-最后更新：2026-04-23
+最后更新：2026-04-27
 
 ## 文档用途
 
@@ -33,7 +33,8 @@
 
 运行前默认假设：
 - 你在仓库根目录下执行命令
-- 本机 Unity 路径可用：
+- 本机 Unity 路径可用，当前工具会优先自动检查：
+  - `C:\Program Files\Unity\Hub\Editor\6000.3.13f1\Editor\Unity.exe`
   - `C:\Program Files\Unity 6000.3.13f1\Editor\Unity.exe`
 
 如果你的 Unity 不在这个路径，先在当前命令行里设置：
@@ -57,6 +58,9 @@ set UNITY_EXE=D:\Unity\Editor\Unity.exe
 - `tools/OfflineSimulationLauncher/FightOfflineSimulationLauncher.exe`
 
 打开后可以直接设置：
+- Unity 位置：
+  - `本机 Unity Hub`
+  - `旧电脑路径`
 - `RandomCatalog` 或 `FixedInput`
 - `ManualSelection`
 - 运行多少场
@@ -66,6 +70,8 @@ set UNITY_EXE=D:\Unity\Editor\Unity.exe
 - 输出 JSON 路径
 
 补充说明：
+- 启动器默认会选中当前电脑上实际存在的 Unity 路径
+- 点击“开始运行”时，启动器会把所选路径写入 `UNITY_EXE` 后再调用 bat
 - exe 每次点击“开始运行”时，都会自动把当前时间戳追加到结果文件名里
 - 这样即使你连续跑很多次，也会保留多份结果，不会直接覆盖上一份
 - 例如你填的是 `exports/stage01_offline_simulation/offline_simulation_report.json`
@@ -544,8 +550,8 @@ tools\run_stage01_offline_sim.bat -fightOfflineMode RandomCatalog -fightOfflineC
 ```
 
 处理方式：
-- 先设置 `UNITY_EXE`
-- 再重新运行
+- 如果使用 Windows 图形启动器，先切换界面里的 `Unity 位置`
+- 如果直接运行 bat，先设置 `UNITY_EXE`，再重新运行
 
 示例：
 
