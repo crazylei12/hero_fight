@@ -46,7 +46,7 @@ namespace Fight.UI
         private const int UltimateIconSortOrder = 303;
         private const int UltimateStackTextShadowSortOrder = 304;
         private const int UltimateStackTextSortOrder = 305;
-        private const float UltimateStackTextBaseCharacterSize = 0.018f;
+        private const float UltimateStackTextBaseCharacterSize = 0.054f;
         private const float ArenaBackgroundHeight = Stage01ArenaSpec.HeightWorldUnits;
         private const float MinAirborneEffectHeight = 0.12f;
         private const float DefaultTransientVfxLifetime = 1f;
