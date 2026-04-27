@@ -60,6 +60,7 @@ namespace Fight.Editor
         private const string RiflemanPrefabPath = "Assets/Prefabs/Heroes/marksman_002_rifleman/Rifleman.prefab";
         private const string VenomshooterPrefabPath = "Assets/Prefabs/Heroes/marksman_003_venomshooter/Venomshooter.prefab";
         private const string BoomerangerPrefabPath = "Assets/Prefabs/Heroes/marksman_004_boomeranger/Boomeranger.prefab";
+        private const string SniperPrefabPath = "Assets/Prefabs/Heroes/marksman_002_rifleman/Rifleman.prefab";
         private const string SupportPrefabPath = "Assets/Prefabs/Heroes/support_001_sunpriest/Sunpriest.prefab";
         private const string WindchimePrefabPath = "Assets/Prefabs/Heroes/support_002_windchime/Windchime.prefab";
         private const string MonkPrefabPath = "Assets/Prefabs/Heroes/support_003_monk/Monk.prefab";
@@ -637,7 +638,24 @@ namespace Fight.Editor
             EnsureHeroSkillReferences(boomeranger, boomerangerActive, boomerangerUltimateSkill);
             EnsureHeroBattlePrefabReference(boomeranger, LoadBattlePrefab("marksman_004_boomeranger", HeroClass.Marksman));
 
-            CreateHeroCatalog(warrior, bladesman, berserker, spellblade, trollwarlord, mage, frostmage, sandemperor, lightningmage, assassin, tidefin, butcher, loner, demon, tank, shieldwarden, tidehunter, mundo, blastshield, support, windchime, monk, shrinemaiden, chef, commander, marksman, rifleman, venomshooter, boomeranger);
+            var sniperActive = CreateSniperActiveSkill(overwriteExistingContent);
+            var sniperUltimateSkill = CreateSniperUltimateSkill(overwriteExistingContent, out var sniperUltimateExisted);
+
+            var sniper = CreateHero(
+                "marksman_005_sniper",
+                "Sniper",
+                HeroClass.Marksman,
+                275f, 42f, 5f, 1f / 1.8f, 3.1f, 0.2f, 1.85f, ScaleRangedHeroDistance(8f),
+                sniperActive,
+                ConfigureSniperUltimate(sniperUltimateSkill, overwriteExistingContent, sniperUltimateExisted),
+                overwriteExistingContent,
+                out var sniperHeroExisted,
+                HeroTag.Ranged, HeroTag.SustainedDamage);
+            ConfigureSniperBasicAttack(sniper, overwriteExistingContent, sniperHeroExisted);
+            EnsureHeroSkillReferences(sniper, sniperActive, sniperUltimateSkill);
+            EnsureHeroBattlePrefabReference(sniper, LoadBattlePrefab("marksman_005_sniper", HeroClass.Marksman));
+
+            CreateHeroCatalog(warrior, bladesman, berserker, spellblade, trollwarlord, mage, frostmage, sandemperor, lightningmage, assassin, tidefin, butcher, loner, demon, tank, shieldwarden, tidehunter, mundo, blastshield, support, windchime, monk, shrinemaiden, chef, commander, marksman, rifleman, venomshooter, boomeranger, sniper);
 
             var battleInput = CreateBattleInput(
                 "Stage01DemoBattleInput",
@@ -1216,6 +1234,7 @@ namespace Fight.Editor
                 || heroId == "marksman_002_rifleman"
                 || heroId == "marksman_003_venomshooter"
                 || heroId == "marksman_004_boomeranger"
+                || heroId == "marksman_005_sniper"
                 || heroId == "support_004_shrinemaiden"
                 || heroId == "tank_001_ironwall"
                 || heroId == "tank_002_shieldwarden"
@@ -1237,6 +1256,7 @@ namespace Fight.Editor
                 "marksman_002_rifleman" => AssetDatabase.LoadAssetAtPath<GameObject>(RiflemanProjectilePrefabPath),
                 "marksman_003_venomshooter" => AssetDatabase.LoadAssetAtPath<GameObject>(LongshotProjectilePrefabPath),
                 "marksman_004_boomeranger" => AssetDatabase.LoadAssetAtPath<GameObject>(BoomerangerBasicProjectilePrefabPath),
+                "marksman_005_sniper" => AssetDatabase.LoadAssetAtPath<GameObject>(RiflemanProjectilePrefabPath),
                 "support_001_sunpriest" => AssetDatabase.LoadAssetAtPath<GameObject>(SunpriestProjectilePrefabPath),
                 "support_002_windchime" => AssetDatabase.LoadAssetAtPath<GameObject>(SunpriestProjectilePrefabPath),
                 "support_006_commander" => AssetDatabase.LoadAssetAtPath<GameObject>(SunpriestProjectilePrefabPath),
@@ -1251,6 +1271,7 @@ namespace Fight.Editor
                 || heroId == "marksman_002_rifleman"
                 || heroId == "marksman_003_venomshooter"
                 || heroId == "marksman_004_boomeranger"
+                || heroId == "marksman_005_sniper"
                 || heroId == "support_001_sunpriest"
                 || heroId == "support_002_windchime"
                 || heroId == "support_006_commander";
@@ -1279,6 +1300,7 @@ namespace Fight.Editor
                 "marksman_002_rifleman" => RiflemanPrefabPath,
                 "marksman_003_venomshooter" => VenomshooterPrefabPath,
                 "marksman_004_boomeranger" => BoomerangerPrefabPath,
+                "marksman_005_sniper" => SniperPrefabPath,
                 "support_002_windchime" => WindchimePrefabPath,
                 "support_003_monk" => MonkPrefabPath,
                 "support_004_shrinemaiden" => ShrinemaidenPrefabPath,
@@ -1714,6 +1736,84 @@ namespace Fight.Editor
             skill.effects.Clear();
             AddPersistentAreaEffect(skill, PersistentAreaPulseEffectType.DirectDamage, PersistentAreaTargetType.Enemies, 7f, skill.areaRadius, 0.45f, 0.45f, false);
             skill.description = "Stage-01 demo skill: Frag Grenade";
+            ResetActionSequence(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateSniperActiveSkill(bool overwriteExistingContent)
+        {
+            var skill = CreateSkill(
+                "skill_sniper_active_deadeyeshot",
+                "Deadeye Shot",
+                SkillSlotType.ActiveSkill,
+                SkillType.SingleTargetDamage,
+                SkillTargetType.FarthestEnemyFromSelf,
+                ScaleRangedHeroDistance(16f),
+                0f,
+                2.35f,
+                7f,
+                1,
+                overwriteExistingContent,
+                out var existedBefore);
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.skillType = SkillType.SingleTargetDamage;
+            skill.targetType = SkillTargetType.FarthestEnemyFromSelf;
+            skill.fallbackTargetType = SkillTargetType.None;
+            skill.castRange = ScaleRangedHeroDistance(16f);
+            skill.minimumTargetDistance = 0f;
+            skill.areaRadius = 0f;
+            skill.cooldownSeconds = 7f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+            AddDamageEffect(skill, 2.35f);
+            skill.targetIndicatorVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(RiflemanActiveTargetIndicatorVfxPrefabPath);
+            skill.castProjectileVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(RiflemanProjectilePrefabPath);
+            skill.description = "Stage-01 demo skill: target the farthest legal enemy within twice Sniper's basic attack range and fire one high-powered shot.";
+            ResetActionSequence(skill);
+            ResetUltimateDecision(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateSniperUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
+        {
+            var skill = CreateSkill(
+                "skill_sniper_ultimate_killzone",
+                "Kill Zone",
+                SkillSlotType.Ultimate,
+                SkillType.SingleTargetDamage,
+                SkillTargetType.FarthestEnemyFromSelf,
+                Stage01ArenaSpec.FullMapTargetingRangeWorldUnits,
+                0f,
+                3.05f,
+                0f,
+                1,
+                overwriteExistingContent,
+                out existedBefore);
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.skillType = SkillType.SingleTargetDamage;
+            skill.targetType = SkillTargetType.FarthestEnemyFromSelf;
+            skill.fallbackTargetType = SkillTargetType.None;
+            skill.castRange = Stage01ArenaSpec.FullMapTargetingRangeWorldUnits;
+            skill.minimumTargetDistance = 0f;
+            skill.areaRadius = 0f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+            AddDamageEffect(skill, 3.05f);
+            skill.targetIndicatorVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(RiflemanActiveTargetIndicatorVfxPrefabPath);
+            skill.castProjectileVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(RiflemanProjectilePrefabPath);
+            skill.description = "Stage-01 demo skill: enter a scoped kill zone, then snipe each legal enemy once from farthest to nearest.";
             ResetActionSequence(skill);
             EditorUtility.SetDirty(skill);
             return skill;
@@ -3955,6 +4055,32 @@ namespace Fight.Editor
             EditorUtility.SetDirty(hero);
         }
 
+        private static void ConfigureSniperBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (hero == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return;
+            }
+
+            hero.basicAttack.damageMultiplier = 1f;
+            hero.basicAttack.attackInterval = 1.8f;
+            hero.basicAttack.rangeOverride = ScaleRangedHeroDistance(8f);
+            hero.basicAttack.usesProjectile = true;
+            hero.basicAttack.projectileSpeed = 24f;
+            hero.basicAttack.effectType = BasicAttackEffectType.Damage;
+            hero.basicAttack.targetType = BasicAttackTargetType.NearestEnemy;
+            hero.basicAttack.targetPrioritySearchRadius = 0f;
+            EnsureBasicAttackStatusList(hero.basicAttack);
+            hero.basicAttack.onHitStatusEffects.Clear();
+            hero.basicAttack.variants.Clear();
+            hero.basicAttack.bounce.maxAdditionalTargets = 0;
+            hero.basicAttack.bounce.searchRadius = 0f;
+            hero.basicAttack.bounce.powerMultiplier = 0f;
+            hero.basicAttack.bounce.bounceVariantKey = string.Empty;
+            hero.debugNotes = "Stage-01 demo hero for Marksman. Sniper validates longest-range slow projectile basics, farthest-enemy targeting, and unique-target ultimate shot sequences.";
+            EditorUtility.SetDirty(hero);
+        }
+
         private static void ConfigureSandemperorBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
         {
             if (hero == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
@@ -5030,6 +5156,48 @@ namespace Fight.Editor
             skill.ultimateDecision.fallback.fallbackType = UltimateFallbackType.LowerPrimaryThreshold;
             skill.ultimateDecision.fallback.triggerAfterSeconds = 45f;
             skill.ultimateDecision.fallback.overrideRequiredUnitCount = 1;
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData ConfigureSniperUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.skillType = SkillType.SingleTargetDamage;
+            skill.targetType = SkillTargetType.FarthestEnemyFromSelf;
+            skill.fallbackTargetType = SkillTargetType.None;
+            skill.castRange = Stage01ArenaSpec.FullMapTargetingRangeWorldUnits;
+            skill.minimumTargetDistance = 0f;
+            skill.areaRadius = 0f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+
+            ResetActionSequence(skill);
+            skill.actionSequence.enabled = true;
+            skill.actionSequence.payloadType = CombatActionSequencePayloadType.SourceSkill;
+            skill.actionSequence.repeatMode = CombatActionSequenceRepeatMode.FixedCount;
+            skill.actionSequence.repeatCount = 4;
+            skill.actionSequence.durationSeconds = 1.4f;
+            skill.actionSequence.intervalSeconds = 0.35f;
+            skill.actionSequence.windupSeconds = 0f;
+            skill.actionSequence.recoverySeconds = 0f;
+            skill.actionSequence.temporaryBasicAttackRangeOverride = 0f;
+            skill.actionSequence.temporarySkillCastRangeOverride = Stage01ArenaSpec.FullMapTargetingRangeWorldUnits;
+            skill.actionSequence.targetRefreshMode = CombatActionSequenceTargetRefreshMode.RefreshEveryIterationUniqueTarget;
+            skill.actionSequence.interruptFlags =
+                CombatActionSequenceInterruptFlags.HardControl | CombatActionSequenceInterruptFlags.ForcedMovement;
+
+            ResetUltimateDecision(skill);
+            skill.ultimateDecision.targetingType = UltimateTargetingType.UseSkillTargetType;
+            skill.ultimateDecision.combineMode = UltimateConditionCombineMode.PrimaryOnly;
+            skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;
+            skill.ultimateDecision.primaryCondition.searchRadius = Stage01ArenaSpec.FullMapTargetingRangeWorldUnits;
+            skill.ultimateDecision.primaryCondition.requiredUnitCount = 4;
+            ApplyCountFallback(skill, 38f, 3, 52f, 1);
             EditorUtility.SetDirty(skill);
             return skill;
         }
@@ -6298,6 +6466,8 @@ namespace Fight.Editor
                 "skill_venomshooter_ultimate_venomdetonation" => "marksman_003_venomshooter",
                 "skill_boomeranger_active_returningwheel" => "marksman_004_boomeranger",
                 "skill_boomeranger_ultimate_wheelstorm" => "marksman_004_boomeranger",
+                "skill_sniper_active_deadeyeshot" => "marksman_005_sniper",
+                "skill_sniper_ultimate_killzone" => "marksman_005_sniper",
                 "skill_sandemperor_active_raisesandguard" => "mage_003_sandemperor",
                 "skill_sandemperor_ultimate_imperialencirclement" => "mage_003_sandemperor",
                 "skill_lightningmage_active_thunderline" => "mage_004_lightningmage",

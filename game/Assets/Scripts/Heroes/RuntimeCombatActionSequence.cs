@@ -1,4 +1,6 @@
 using Fight.Data;
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Fight.Heroes
@@ -6,10 +8,18 @@ namespace Fight.Heroes
     public sealed class RuntimeCombatActionSequence
     {
         private readonly int maxExecutionCount;
+        private readonly HashSet<string> executedTargetIds = new HashSet<string>();
+        private readonly List<RuntimeHero> uniqueTargetSnapshot = new List<RuntimeHero>();
+        private readonly bool hasTargetSnapshot;
         private float intervalRemainingSeconds;
         private bool waitingForCurrentActionToFinish;
+        private string pendingQueuedTargetId;
 
-        public RuntimeCombatActionSequence(SkillData sourceSkill, CombatActionSequenceData definition, RuntimeHero initialTarget)
+        public RuntimeCombatActionSequence(
+            SkillData sourceSkill,
+            CombatActionSequenceData definition,
+            RuntimeHero initialTarget,
+            IReadOnlyList<RuntimeHero> targetSnapshot = null)
         {
             SourceSkill = sourceSkill;
             PayloadType = definition != null
@@ -37,6 +47,23 @@ namespace Fight.Heroes
                 ? Mathf.Max(0f, definition.temporarySkillCastRangeOverride)
                 : 0f;
             PreferredTarget = initialTarget;
+            hasTargetSnapshot = targetSnapshot != null;
+            if (targetSnapshot != null)
+            {
+                for (var i = 0; i < targetSnapshot.Count; i++)
+                {
+                    if (targetSnapshot[i] != null)
+                    {
+                        uniqueTargetSnapshot.Add(targetSnapshot[i]);
+                    }
+                }
+            }
+
+            if (TargetRefreshMode == CombatActionSequenceTargetRefreshMode.RefreshEveryIterationUniqueTarget)
+            {
+                RegisterExecutedTarget(initialTarget);
+            }
+
             intervalRemainingSeconds = 0f;
         }
 
@@ -66,6 +93,8 @@ namespace Fight.Heroes
 
         public RuntimeHero PreferredTarget { get; private set; }
 
+        public bool HasTargetSnapshot => hasTargetSnapshot;
+
         public bool IsReady => HasAvailableExecutions && !waitingForCurrentActionToFinish && intervalRemainingSeconds <= Mathf.Epsilon;
 
         public bool IsComplete => !HasAvailableExecutions && !waitingForCurrentActionToFinish && intervalRemainingSeconds <= Mathf.Epsilon;
@@ -83,6 +112,7 @@ namespace Fight.Heroes
                 if (owner != null && !owner.HasPendingCombatAction && !owner.IsActionLocked)
                 {
                     waitingForCurrentActionToFinish = false;
+                    pendingQueuedTargetId = null;
                     intervalRemainingSeconds = HasAvailableExecutions
                         ? IntervalSeconds
                         : 0f;
@@ -110,6 +140,7 @@ namespace Fight.Heroes
             PreferredTarget = target;
             waitingForCurrentActionToFinish = true;
             intervalRemainingSeconds = 0f;
+            pendingQueuedTargetId = RegisterExecutedTarget(target);
 
             if (RepeatMode == CombatActionSequenceRepeatMode.FixedCount)
             {
@@ -139,6 +170,11 @@ namespace Fight.Heroes
 
             waitingForCurrentActionToFinish = false;
             intervalRemainingSeconds = 0f;
+            if (!string.IsNullOrWhiteSpace(pendingQueuedTargetId))
+            {
+                executedTargetIds.Remove(pendingQueuedTargetId);
+                pendingQueuedTargetId = null;
+            }
 
             if (RepeatMode == CombatActionSequenceRepeatMode.FixedCount)
             {
@@ -165,6 +201,43 @@ namespace Fight.Heroes
             }
 
             return false;
+        }
+
+        public bool HasExecutedTarget(RuntimeHero target)
+        {
+            return target != null
+                && !string.IsNullOrWhiteSpace(target.RuntimeId)
+                && executedTargetIds.Contains(target.RuntimeId);
+        }
+
+        public RuntimeHero SelectNextSnapshotTarget(Func<RuntimeHero, bool> predicate)
+        {
+            for (var i = 0; i < uniqueTargetSnapshot.Count; i++)
+            {
+                var candidate = uniqueTargetSnapshot[i];
+                if (candidate == null || HasExecutedTarget(candidate))
+                {
+                    continue;
+                }
+
+                if (predicate == null || predicate(candidate))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+
+        private string RegisterExecutedTarget(RuntimeHero target)
+        {
+            if (target == null || string.IsNullOrWhiteSpace(target.RuntimeId))
+            {
+                return null;
+            }
+
+            executedTargetIds.Add(target.RuntimeId);
+            return target.RuntimeId;
         }
 
         private bool HasAvailableExecutions =>

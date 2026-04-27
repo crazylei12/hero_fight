@@ -33,9 +33,10 @@ namespace Fight.Battle
             IReadOnlyList<RuntimeHero> heroes,
             RuntimeHero actor,
             float maxRange,
-            float minimumDistance = 0f)
+            float minimumDistance = 0f,
+            RuntimeCombatActionSequence excludedSequenceTargets = null)
         {
-            return FindFarthestEnemyFromSelf(heroes, actor, maxRange, minimumDistance);
+            return FindFarthestEnemyFromSelf(heroes, actor, maxRange, minimumDistance, excludedSequenceTargets);
         }
 
         public static RuntimeHero SelectBackmostEnemyTarget(IReadOnlyList<RuntimeHero> heroes, RuntimeHero actor, float maxRange)
@@ -301,7 +302,8 @@ namespace Fight.Battle
             IReadOnlyList<RuntimeHero> heroes,
             RuntimeHero actor,
             float maxRange,
-            float minimumDistance)
+            float minimumDistance,
+            RuntimeCombatActionSequence excludedSequenceTargets = null)
         {
             RuntimeHero best = null;
             var bestDistance = float.MinValue;
@@ -313,6 +315,11 @@ namespace Fight.Battle
             {
                 var candidate = heroes[i];
                 if (candidate.IsDead || candidate.Side == actor.Side || !candidate.CanBeDirectTargeted)
+                {
+                    continue;
+                }
+
+                if (excludedSequenceTargets != null && excludedSequenceTargets.HasExecutedTarget(candidate))
                 {
                     continue;
                 }

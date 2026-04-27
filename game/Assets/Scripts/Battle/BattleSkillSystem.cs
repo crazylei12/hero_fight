@@ -693,7 +693,8 @@ namespace Fight.Battle
                 ResolvedSkillCast.FromSkill(skill),
                 preferredTarget,
                 targetRefreshMode,
-                effectiveCastRange);
+                effectiveCastRange,
+                sequence: null);
         }
 
         private static RuntimeHero SelectSequencePrimaryTarget(
@@ -702,10 +703,21 @@ namespace Fight.Battle
             ResolvedSkillCast resolvedSkill,
             RuntimeHero preferredTarget,
             CombatActionSequenceTargetRefreshMode targetRefreshMode,
-            float effectiveCastRange)
+            float effectiveCastRange,
+            RuntimeCombatActionSequence sequence)
         {
-            var preferredTargetIsValid = IsPrimaryTargetStillValidForCastRange(resolvedSkill, caster, preferredTarget, effectiveCastRange);
-            if (targetRefreshMode != CombatActionSequenceTargetRefreshMode.RefreshEveryIteration && preferredTargetIsValid)
+            var requiresUniqueTarget = targetRefreshMode == CombatActionSequenceTargetRefreshMode.RefreshEveryIterationUniqueTarget;
+            var preferredTargetIsValid = IsPrimaryTargetStillValidForCastRange(resolvedSkill, caster, preferredTarget, effectiveCastRange)
+                && (!requiresUniqueTarget || sequence == null || !sequence.HasExecutedTarget(preferredTarget));
+            if (requiresUniqueTarget && sequence != null && sequence.HasTargetSnapshot)
+            {
+                return sequence.SelectNextSnapshotTarget(target =>
+                    IsPrimaryTargetStillValidForCastRange(resolvedSkill, caster, target, effectiveCastRange));
+            }
+
+            if (targetRefreshMode != CombatActionSequenceTargetRefreshMode.RefreshEveryIteration
+                && !requiresUniqueTarget
+                && preferredTargetIsValid)
             {
                 return preferredTarget;
             }
@@ -721,7 +733,8 @@ namespace Fight.Battle
                 resolvedSkill,
                 resolvedSkill != null ? resolvedSkill.TargetType : SkillTargetType.None,
                 effectiveCastRange,
-                allowFallbackForPriorityTarget: true);
+                allowFallbackForPriorityTarget: true,
+                excludedSequenceTargets: requiresUniqueTarget ? sequence : null);
         }
 
         private static RuntimeHero SelectPrimaryTargetByType(
@@ -730,7 +743,8 @@ namespace Fight.Battle
             SkillData skill,
             SkillTargetType targetType,
             float effectiveCastRange,
-            bool allowFallbackForPriorityTarget)
+            bool allowFallbackForPriorityTarget,
+            RuntimeCombatActionSequence excludedSequenceTargets = null)
         {
             return SelectPrimaryTargetByType(
                 context,
@@ -738,7 +752,8 @@ namespace Fight.Battle
                 ResolvedSkillCast.FromSkill(skill),
                 targetType,
                 effectiveCastRange,
-                allowFallbackForPriorityTarget);
+                allowFallbackForPriorityTarget,
+                excludedSequenceTargets);
         }
 
         private static RuntimeHero SelectPrimaryTargetByType(
@@ -747,7 +762,8 @@ namespace Fight.Battle
             ResolvedSkillCast resolvedSkill,
             SkillTargetType targetType,
             float effectiveCastRange,
-            bool allowFallbackForPriorityTarget)
+            bool allowFallbackForPriorityTarget,
+            RuntimeCombatActionSequence excludedSequenceTargets = null)
         {
             var skill = resolvedSkill?.Skill;
             if (context == null || caster == null || skill == null)
@@ -785,7 +801,8 @@ namespace Fight.Battle
                             resolvedSkill,
                             currentFallbackTargetType,
                             effectiveCastRange,
-                            allowFallbackForPriorityTarget: false);
+                            allowFallbackForPriorityTarget: false,
+                            excludedSequenceTargets: excludedSequenceTargets);
                 case SkillTargetType.LowestHealthEnemy:
                     return FindLowestHealth(context.Heroes, caster, skill, includeAllies: false, effectiveCastRange);
                 case SkillTargetType.LowestHealthAlly:
@@ -809,7 +826,8 @@ namespace Fight.Battle
                             resolvedSkill,
                             fallbackTargetType,
                             effectiveCastRange,
-                            allowFallbackForPriorityTarget: false);
+                            allowFallbackForPriorityTarget: false,
+                            excludedSequenceTargets: excludedSequenceTargets);
                 case SkillTargetType.HighestDamageTakenAllyInRange:
                     var highestDamageTakenAlly = BattleAiDirector.SelectHighestDamageTakenAllyTarget(
                         context.Heroes,
@@ -829,7 +847,8 @@ namespace Fight.Battle
                             resolvedSkill,
                             fallbackTargetType,
                             effectiveCastRange,
-                            allowFallbackForPriorityTarget: false);
+                            allowFallbackForPriorityTarget: false,
+                            excludedSequenceTargets: excludedSequenceTargets);
                 case SkillTargetType.LowestHealthRangedAlly:
                     return BattleAiDirector.SelectLowestHealthRangedAllyTarget(context.Heroes, caster, effectiveCastRange, allowHealthyFallback: false);
                 case SkillTargetType.ThreatenedRangedAlly:
@@ -852,7 +871,8 @@ namespace Fight.Battle
                             resolvedSkill,
                             fallbackTargetType,
                             effectiveCastRange,
-                            allowFallbackForPriorityTarget: false);
+                            allowFallbackForPriorityTarget: false,
+                            excludedSequenceTargets: excludedSequenceTargets);
                 case SkillTargetType.ThreatenedAlly:
                     var threatenedAnyAlly = BattleAiDirector.SelectThreatenedAllyTarget(
                         context.Heroes,
@@ -874,7 +894,8 @@ namespace Fight.Battle
                             resolvedSkill,
                             fallbackTargetType,
                             effectiveCastRange,
-                            allowFallbackForPriorityTarget: false);
+                            allowFallbackForPriorityTarget: false,
+                            excludedSequenceTargets: excludedSequenceTargets);
                 case SkillTargetType.ThreatenedRangedAllyOrEnemyDensestAnchor:
                     return SelectThreatenedRangedAllyOrEnemyAnchor(context, caster, skill, effectiveCastRange);
                 case SkillTargetType.HighestDamageEnemyInRange:
@@ -884,7 +905,8 @@ namespace Fight.Battle
                         context.Heroes,
                         caster,
                         effectiveCastRange,
-                        skill.minimumTargetDistance);
+                        skill.minimumTargetDistance,
+                        excludedSequenceTargets);
                 case SkillTargetType.DensestEnemyArea:
                     return FindDensestEnemyAnchor(context.Heroes, caster, effectiveCastRange, skill.areaRadius);
                 case SkillTargetType.BackmostEnemy:
@@ -911,7 +933,8 @@ namespace Fight.Battle
                             resolvedSkill,
                             priorityFallbackTargetType,
                             effectiveCastRange,
-                            allowFallbackForPriorityTarget: false);
+                            allowFallbackForPriorityTarget: false,
+                            excludedSequenceTargets: excludedSequenceTargets);
                 default:
                     return null;
             }
@@ -2270,6 +2293,7 @@ namespace Fight.Battle
             RuntimeHero preferredTarget,
             CombatActionSequenceTargetRefreshMode targetRefreshMode,
             float castRangeOverride,
+            RuntimeCombatActionSequence sequence,
             out RuntimeHero primaryTarget,
             out List<RuntimeHero> affectedTargets)
         {
@@ -2281,24 +2305,26 @@ namespace Fight.Battle
             }
 
             var effectiveCastRange = GetSequenceCastRange(skill, castRangeOverride);
+            var resolvedSkill = ResolvedSkillCast.FromSkill(skill);
             primaryTarget = SelectSequencePrimaryTarget(
                 context,
                 caster,
-                skill,
+                resolvedSkill,
                 preferredTarget,
                 targetRefreshMode,
-                effectiveCastRange);
-            if (!IsPrimaryTargetStillValidForCastRange(skill, caster, primaryTarget, effectiveCastRange))
+                effectiveCastRange,
+                sequence);
+            if (!IsPrimaryTargetStillValidForCastRange(resolvedSkill, caster, primaryTarget, effectiveCastRange))
             {
                 return false;
             }
 
-            if (primaryTarget == null && !skill.allowsSelfCast && !AllowsMissingPrimaryTarget(skill))
+            if (primaryTarget == null && !skill.allowsSelfCast && !AllowsMissingPrimaryTarget(resolvedSkill))
             {
                 return false;
             }
 
-            affectedTargets = CollectTargetsForCastRange(context, caster, skill, primaryTarget, effectiveCastRange);
+            affectedTargets = CollectTargetsForCastRange(context, caster, resolvedSkill, primaryTarget, effectiveCastRange);
             return affectedTargets.Count >= Mathf.Max(1, skill.minTargetsToCast);
         }
 
@@ -2611,7 +2637,7 @@ namespace Fight.Battle
 
             if (allowActionSequenceTrigger)
             {
-                BattleCombatActionSequenceSystem.TryStartSequence(caster, skill, primaryTarget);
+                BattleCombatActionSequenceSystem.TryStartSequence(context, caster, skill, primaryTarget);
             }
         }
 

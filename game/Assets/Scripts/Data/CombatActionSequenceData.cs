@@ -20,6 +20,7 @@ namespace Fight.Data
         KeepCurrentTarget = 0,
         RefreshOnInvalid = 1,
         RefreshEveryIteration = 2,
+        RefreshEveryIterationUniqueTarget = 3,
     }
 
     [Flags]
