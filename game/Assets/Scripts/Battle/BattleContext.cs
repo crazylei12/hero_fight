@@ -106,6 +106,7 @@ namespace Fight.Battle
             DeployableProxies = new List<RuntimeDeployableProxy>();
             DelayedSkillEffects = new List<RuntimeDelayedSkillEffect>();
             ReactiveGuards = new List<RuntimeReactiveGuard>();
+            FocusFireCommands = new List<RuntimeFocusFireCommand>();
         }
 
         public BattleInputConfig Input { get; }
@@ -133,6 +134,8 @@ namespace Fight.Battle
         public List<RuntimeDelayedSkillEffect> DelayedSkillEffects { get; }
 
         public List<RuntimeReactiveGuard> ReactiveGuards { get; }
+
+        public List<RuntimeFocusFireCommand> FocusFireCommands { get; }
 
         public BattleTeamLoadout GetTeamLoadout(TeamSide side)
         {

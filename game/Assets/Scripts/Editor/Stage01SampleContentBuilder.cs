@@ -45,6 +45,9 @@ namespace Fight.Editor
         private const string ChefHeroAssetPath = HeroesRootFolder + "/support_005_chef/Chef.asset";
         private const string ChefActiveSkillAssetPath = SkillsRootFolder + "/support_005_chef/Daily Special.asset";
         private const string ChefUltimateSkillAssetPath = SkillsRootFolder + "/support_005_chef/Grand Feast.asset";
+        private const string CommanderHeroAssetPath = HeroesRootFolder + "/support_006_commander/Commander.asset";
+        private const string CommanderActiveSkillAssetPath = SkillsRootFolder + "/support_006_commander/Battle Orders.asset";
+        private const string CommanderUltimateSkillAssetPath = SkillsRootFolder + "/support_006_commander/Focus Fire Command.asset";
         private const string SandemperorHeroAssetPath = HeroesRootFolder + "/mage_003_sandemperor/Sandemperor.asset";
         private const string SandemperorActiveSkillAssetPath = SkillsRootFolder + "/mage_003_sandemperor/Raise Sandguard.asset";
         private const string SandemperorUltimateSkillAssetPath = SkillsRootFolder + "/mage_003_sandemperor/Imperial Encirclement.asset";
@@ -519,6 +522,23 @@ namespace Fight.Editor
             EnsureHeroSkillReferences(chef, chefActive, chefUltimateSkill);
             EnsureHeroBattlePrefabReference(chef, LoadBattlePrefab("support_005_chef", HeroClass.Support));
 
+            var commanderActive = CreateCommanderActiveSkill(overwriteExistingContent);
+            var commanderUltimateSkill = CreateCommanderUltimateSkill(overwriteExistingContent, out var commanderUltimateExisted);
+
+            var commander = CreateHero(
+                "support_006_commander",
+                "Commander",
+                HeroClass.Support,
+                310f, 23f, 11f, 1f / 1.12f, 4.05f, 0.05f, 1.5f, ScaleRangedHeroDistance(5.6666667f),
+                commanderActive,
+                ConfigureCommanderUltimate(commanderUltimateSkill, overwriteExistingContent, commanderUltimateExisted),
+                overwriteExistingContent,
+                out var commanderHeroExisted,
+                HeroTag.Ranged, HeroTag.Buff, HeroTag.Control);
+            ConfigureCommanderBasicAttack(commander, overwriteExistingContent, commanderHeroExisted);
+            EnsureHeroSkillReferences(commander, commanderActive, commanderUltimateSkill);
+            EnsureHeroBattlePrefabReference(commander, LoadBattlePrefab("support_006_commander", HeroClass.Support));
+
             var marksmanActive = CreateLongshotActiveSkill(overwriteExistingContent);
             var marksmanUltimateSkill = CreateLongshotUltimateSkill(overwriteExistingContent, out var marksmanUltimateExisted);
 
@@ -583,7 +603,7 @@ namespace Fight.Editor
             EnsureHeroSkillReferences(boomeranger, boomerangerActive, boomerangerUltimateSkill);
             EnsureHeroBattlePrefabReference(boomeranger, LoadBattlePrefab("marksman_004_boomeranger", HeroClass.Marksman));
 
-            CreateHeroCatalog(warrior, bladesman, berserker, spellblade, trollwarlord, mage, frostmage, sandemperor, lightningmage, assassin, tidefin, butcher, loner, tank, shieldwarden, tidehunter, mundo, support, windchime, monk, shrinemaiden, chef, marksman, rifleman, venomshooter, boomeranger);
+            CreateHeroCatalog(warrior, bladesman, berserker, spellblade, trollwarlord, mage, frostmage, sandemperor, lightningmage, assassin, tidefin, butcher, loner, tank, shieldwarden, tidehunter, mundo, support, windchime, monk, shrinemaiden, chef, commander, marksman, rifleman, venomshooter, boomeranger);
 
             var battleInput = CreateBattleInput(
                 "Stage01DemoBattleInput",
@@ -1184,6 +1204,7 @@ namespace Fight.Editor
                 "marksman_004_boomeranger" => AssetDatabase.LoadAssetAtPath<GameObject>(BoomerangerBasicProjectilePrefabPath),
                 "support_001_sunpriest" => AssetDatabase.LoadAssetAtPath<GameObject>(SunpriestProjectilePrefabPath),
                 "support_002_windchime" => AssetDatabase.LoadAssetAtPath<GameObject>(SunpriestProjectilePrefabPath),
+                "support_006_commander" => AssetDatabase.LoadAssetAtPath<GameObject>(SunpriestProjectilePrefabPath),
                 _ => null,
             };
             hero.visualConfig.projectileAlignToMovement =
@@ -1196,7 +1217,8 @@ namespace Fight.Editor
                 || heroId == "marksman_003_venomshooter"
                 || heroId == "marksman_004_boomeranger"
                 || heroId == "support_001_sunpriest"
-                || heroId == "support_002_windchime";
+                || heroId == "support_002_windchime"
+                || heroId == "support_006_commander";
             hero.visualConfig.projectileEulerAngles = Vector3.zero;
             hero.visualConfig.hitVfxPrefab = null;
             hero.visualConfig.basicAttackVariantVisuals = Array.Empty<BasicAttackVariantVisualConfig>();
@@ -3456,6 +3478,28 @@ namespace Fight.Editor
             EditorUtility.SetDirty(hero);
         }
 
+        private static void ConfigureCommanderBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (hero == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return;
+            }
+
+            hero.basicAttack.damageMultiplier = 0.9f;
+            hero.basicAttack.attackInterval = 1.12f;
+            hero.basicAttack.rangeOverride = ScaleRangedHeroDistance(5.6666667f);
+            hero.basicAttack.usesProjectile = true;
+            hero.basicAttack.projectileSpeed = 14f;
+            hero.basicAttack.effectType = BasicAttackEffectType.Damage;
+            hero.basicAttack.targetType = BasicAttackTargetType.NearestEnemy;
+            hero.basicAttack.targetPrioritySearchRadius = 0f;
+            EnsureBasicAttackStatusList(hero.basicAttack);
+            hero.basicAttack.variants.Clear();
+            hero.basicAttack.onHitStatusEffects.Clear();
+            hero.debugNotes = "Stage-01 demo hero for Support. Commander validates output amplification and team focus-fire target priority without using hard taunt.";
+            EditorUtility.SetDirty(hero);
+        }
+
         private static void ConfigureTidefinBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
         {
             if (hero == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
@@ -3809,6 +3853,112 @@ namespace Fight.Editor
             return skill;
         }
 
+        private static SkillData CreateCommanderActiveSkill(bool overwriteExistingContent)
+        {
+            var skill = CreateSkill(
+                "skill_commander_active_battleorders",
+                "Battle Orders",
+                SkillSlotType.ActiveSkill,
+                SkillType.Buff,
+                SkillTargetType.HighestDamageAllyInRange,
+                ScaleRangedHeroDistance(6.6666667f),
+                0f,
+                0f,
+                7f,
+                1,
+                overwriteExistingContent,
+                out var existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.description = "Stage-01 demo skill: buff the allied unit that has dealt the most damage so far.";
+            skill.targetType = SkillTargetType.HighestDamageAllyInRange;
+            skill.fallbackTargetType = SkillTargetType.LowestHealthAlly;
+            skill.castRange = ScaleRangedHeroDistance(6.6666667f);
+            skill.areaRadius = 0f;
+            skill.cooldownSeconds = 7f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = true;
+            skill.effects.Clear();
+
+            var effect = AddApplyStatusEffectsEffect(skill);
+            effect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.AttackPowerModifier,
+                durationSeconds = 5f,
+                magnitude = 0.25f,
+                maxStacks = 1,
+                stackGroupKey = "commander_battle_orders",
+                refreshDurationOnReapply = true,
+            });
+
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateCommanderUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
+        {
+            var skill = CreateSkill(
+                "skill_commander_ultimate_focusfirecommand",
+                "Focus Fire Command",
+                SkillSlotType.Ultimate,
+                SkillType.FocusFireCommand,
+                SkillTargetType.HighestDamageEnemyInRange,
+                ScaleRangedHeroDistance(7.3333335f),
+                0f,
+                0f,
+                0f,
+                1,
+                overwriteExistingContent,
+                out existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.description = "Stage-01 demo ultimate: mark the enemy high-output unit as the team's focus target and reduce its defense. If it dies before the command expires, retarget to the next high-output enemy.";
+            skill.targetType = SkillTargetType.HighestDamageEnemyInRange;
+            skill.fallbackTargetType = SkillTargetType.NearestEnemy;
+            skill.castRange = ScaleRangedHeroDistance(7.3333335f);
+            skill.areaRadius = 0f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+
+            var commandEffect = new SkillEffectData
+            {
+                effectType = SkillEffectType.CreateFocusFireCommand,
+                targetMode = SkillEffectTargetMode.PrimaryTarget,
+                durationSeconds = 6f,
+            };
+            commandEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.FocusFireMark,
+                durationSeconds = 6f,
+                magnitude = 1f,
+                maxStacks = 1,
+                stackGroupKey = "focus_fire_command",
+                refreshDurationOnReapply = true,
+            });
+            commandEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.DefenseModifier,
+                durationSeconds = 6f,
+                magnitude = -0.35f,
+                maxStacks = 1,
+                stackGroupKey = "focus_fire_command",
+                refreshDurationOnReapply = true,
+            });
+            skill.effects.Add(commandEffect);
+            ResetUltimateDecision(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
         private static void ResetUltimateDecision(SkillData skill)
         {
             if (skill.ultimateDecision == null)
@@ -4013,6 +4163,24 @@ namespace Fight.Editor
         private static bool ShouldPreserveExistingAsset(bool overwriteExistingContent, bool existedBefore)
         {
             return !overwriteExistingContent && existedBefore;
+        }
+
+        private static SkillData ConfigureCommanderUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            ResetUltimateDecision(skill);
+            skill.ultimateDecision.targetingType = UltimateTargetingType.UseSkillTargetType;
+            skill.ultimateDecision.combineMode = UltimateConditionCombineMode.PrimaryOnly;
+            skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;
+            skill.ultimateDecision.primaryCondition.searchRadius = skill.castRange;
+            skill.ultimateDecision.primaryCondition.requiredUnitCount = 1;
+            ApplyCountFallback(skill, 40f, 1, 0f, 0);
+            EditorUtility.SetDirty(skill);
+            return skill;
         }
 
         private static SkillData ConfigureSkybreakerUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
@@ -5714,6 +5882,8 @@ namespace Fight.Editor
                 "skill_monk_ultimate_guardianmantra" => "support_003_monk",
                 "skill_shrinemaiden_active_prayerbloom" => "support_004_shrinemaiden",
                 "skill_shrinemaiden_ultimate_twinritetotem" => "support_004_shrinemaiden",
+                "skill_commander_active_battleorders" => "support_006_commander",
+                "skill_commander_ultimate_focusfirecommand" => "support_006_commander",
                 "skill_rifleman_active_burstfire" => "marksman_002_rifleman",
                 "skill_rifleman_ultimate_fraggrenade" => "marksman_002_rifleman",
                 "skill_venomshooter_active_poisonmist" => "marksman_003_venomshooter",

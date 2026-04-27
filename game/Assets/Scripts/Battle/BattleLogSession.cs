@@ -114,6 +114,9 @@ namespace Fight.Battle
 
                     AddLog(FormatStatusRemovedLog(statusRemoved));
                     break;
+                case FocusFireCommandTargetChangedEvent focusFireChanged:
+                    AddLog(FormatFocusFireCommandTargetChangedLog(focusFireChanged));
+                    break;
                 case ForcedMovementAppliedEvent forcedMovementApplied:
                     AddLog(FormatForcedMovementLog(forcedMovementApplied));
                     break;
@@ -314,6 +317,13 @@ namespace Fight.Battle
                 ? $" (applied by {appliedByName})"
                 : string.Empty;
             return $"{statusRemoved.EffectType} on {FormatHeroLabel(statusRemoved.Target)} expired from {sourceName} via {skillName}{applierSuffix}.";
+        }
+
+        private static string FormatFocusFireCommandTargetChangedLog(FocusFireCommandTargetChangedEvent focusFireChanged)
+        {
+            var sourceName = FormatHeroLabel(focusFireChanged.Source, "Unknown");
+            var skillName = focusFireChanged.Skill != null ? focusFireChanged.Skill.displayName : "Focus Fire Command";
+            return $"{sourceName}'s {skillName} focus target changed from {FormatHeroLabel(focusFireChanged.PreviousTarget)} to {FormatHeroLabel(focusFireChanged.CurrentTarget)} due to {focusFireChanged.Reason}, remaining {focusFireChanged.RemainingDurationSeconds:0.0}s.";
         }
 
         private static string FormatForcedMovementLog(ForcedMovementAppliedEvent forcedMovementApplied)

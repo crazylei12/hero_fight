@@ -2868,6 +2868,9 @@ namespace Fight.Battle
                 case SkillEffectType.ApplyStatusEffects:
                     ApplyStatusEffectsToTargets(context, caster, skill, effect, effectTargets);
                     break;
+                case SkillEffectType.CreateFocusFireCommand:
+                    BattleFocusFireCommandSystem.Register(context, caster, skill, primaryTarget, effect);
+                    break;
                 case SkillEffectType.ApplyForcedMovement:
                     ApplyForcedMovementToTargets(context, caster, skill, effect, effectTargets);
                     break;
@@ -4258,6 +4261,7 @@ namespace Fight.Battle
             return effect.effectType == SkillEffectType.DirectDamage
                 || effect.effectType == SkillEffectType.DirectHeal
                 || effect.effectType == SkillEffectType.ApplyStatusEffects
+                || effect.effectType == SkillEffectType.CreateFocusFireCommand
                 || effect.effectType == SkillEffectType.ApplyForcedMovement;
         }
 

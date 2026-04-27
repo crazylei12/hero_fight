@@ -1,0 +1,71 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 65b49e23d4a4cda45a9a11e1d7bacd97, type: 3}
+  m_Name: TrollWarlord
+  m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
+  heroId: warrior_005_trollwarlord
+  displayName: TrollWarlord
+  heroClass: 0
+  tags: 000000000300000008000000
+  baseStats:
+    maxHealth: 435
+    attackPower: 39
+    defense: 24
+    attackSpeed: 0.833333
+    moveSpeed: 4.25
+    criticalChance: 0.08
+    criticalDamageMultiplier: 1.55
+    attackRange: 2
+  basicAttack:
+    damageMultiplier: 1
+    attackInterval: 1.2
+    rangeOverride: 2
+    usesProjectile: 0
+    projectileSpeed: 0
+    effectType: 0
+    targetType: 0
+    targetPrioritySearchRadius: 0
+    startingVariantIndex: 0
+    bounce:
+      maxAdditionalTargets: 0
+      searchRadius: 0
+      powerMultiplier: 0
+      bounceVariantKey:
+    sameTargetStacking:
+      enabled: 1
+      maxStacks: 6
+      modifierEffectType: 4
+      magnitudePerStack: 0.16
+      targetRetentionRange: 4.8
+      fullStackOverrideStatusEffectType: 21
+    onHitStatusEffects: []
+    variants: []
+  activeSkill: {fileID: 11400000, guid: bf3de815062b20b449193da453e6ad32, type: 2}
+  ultimateSkill: {fileID: 11400000, guid: ad339f3ab1aa8c64a80ee96620a2ae70, type: 2}
+  aiTemplateId: warrior_default
+  usesSpecialLogic: 0
+  specialLogicNotes:
+  visualConfig:
+    portrait: {fileID: 0}
+    battlePrefab: {fileID: 8732650678187164724, guid: c619ed08495878e44bf9e422075decc0, type: 3}
+    animatorController: {fileID: 0}
+    battlePrefabFacesLeftByDefault: 0
+    projectilePrefab: {fileID: 0}
+    projectileAlignToMovement: 0
+    projectileEulerAngles: {x: 0, y: 0, z: 0}
+    castVfxPrefab: {fileID: 0}
+    hitVfxPrefab: {fileID: 0}
+    basicAttackVariantVisuals: []
+    castSfx: {fileID: 0}
+  debugNotes: Stage-01 demo hero for Warrior. TrollWarlord validates same-target
+    basic attack speed stacking, current-target retention, temporary reach, and death-prevent
+    self ultimate.

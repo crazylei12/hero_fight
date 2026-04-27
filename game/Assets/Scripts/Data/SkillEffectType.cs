@@ -11,5 +11,6 @@ namespace Fight.Data
         CreateDeployableProxy = 6,
         CreateRadialSweep = 7,
         CreateReturningPathStrike = 8,
+        CreateFocusFireCommand = 9,
     }
 }

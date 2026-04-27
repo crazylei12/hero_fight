@@ -11,5 +11,6 @@ namespace Fight.Data
         AreaHeal = 6,
         KnockUp = 7,
         Taunt = 8,
+        FocusFireCommand = 9,
     }
 }

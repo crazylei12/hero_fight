@@ -481,6 +481,11 @@ namespace Fight.Battle
                 return true;
             }
 
+            if (TrySelectFocusFireTarget(context, attacker, sourcePosition, resolvedAttack, selectionRange, out target))
+            {
+                return true;
+            }
+
             if (TrySelectSameTargetStackTarget(attacker, sourcePosition, resolvedAttack, selectionRange, out var retainedTarget))
             {
                 target = retainedTarget;
@@ -559,6 +564,11 @@ namespace Fight.Battle
                 return null;
             }
 
+            if (TrySelectFocusFireTarget(context, attacker, sourcePosition, resolvedAttack, selectionRange, out var focusFireTarget))
+            {
+                return focusFireTarget;
+            }
+
             return resolvedAttack.TargetType switch
             {
                 BasicAttackTargetType.LowestHealthAlly => SelectLowestHealthAllyTarget(
@@ -586,6 +596,45 @@ namespace Fight.Battle
                     ?? SelectNearestEnemyTarget(context.Heroes, attacker, sourcePosition, selectionRange),
                 _ => SelectNearestEnemyTarget(context.Heroes, attacker, sourcePosition, selectionRange),
             };
+        }
+
+        private static bool TrySelectFocusFireTarget(
+            BattleContext context,
+            RuntimeHero attacker,
+            Vector3 sourcePosition,
+            ResolvedBasicAttack resolvedAttack,
+            float selectionRange,
+            out RuntimeHero target)
+        {
+            target = null;
+            if (!CanPreferFocusFireTarget(resolvedAttack)
+                || !BattleFocusFireCommandSystem.TryGetMarkedTarget(
+                    context,
+                    attacker,
+                    sourcePosition,
+                    selectionRange,
+                    out var focusFireTarget)
+                || !IsValidTarget(
+                    attacker,
+                    focusFireTarget,
+                    resolvedAttack.EffectType,
+                    resolvedAttack.TargetType,
+                    resolvedAttack.OnHitStatusEffects)
+                || !CanExecuteAgainstTarget(attacker, focusFireTarget, resolvedAttack))
+            {
+                return false;
+            }
+
+            target = focusFireTarget;
+            return true;
+        }
+
+        private static bool CanPreferFocusFireTarget(ResolvedBasicAttack resolvedAttack)
+        {
+            return resolvedAttack != null
+                && resolvedAttack.EffectType == BasicAttackEffectType.Damage
+                && resolvedAttack.TargetType != BasicAttackTargetType.LowestHealthAlly
+                && resolvedAttack.TargetType != BasicAttackTargetType.MissingOnHitStatusOrExpiringAlly;
         }
 
         private static bool CanExecuteAgainstTarget(RuntimeHero attacker, RuntimeHero target, ResolvedBasicAttack resolvedAttack)

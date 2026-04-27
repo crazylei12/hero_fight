@@ -520,6 +520,45 @@ namespace Fight.Battle
         public SkillData SourceSkill { get; }
     }
 
+    public enum FocusFireCommandTargetChangeReason
+    {
+        Started = 0,
+        TargetInvalid = 1,
+        Expired = 2,
+        Replaced = 3,
+    }
+
+    public sealed class FocusFireCommandTargetChangedEvent : IBattleEvent
+    {
+        public FocusFireCommandTargetChangedEvent(
+            RuntimeHero source,
+            SkillData skill,
+            RuntimeHero previousTarget,
+            RuntimeHero currentTarget,
+            float remainingDurationSeconds,
+            FocusFireCommandTargetChangeReason reason)
+        {
+            Source = source;
+            Skill = skill;
+            PreviousTarget = previousTarget;
+            CurrentTarget = currentTarget;
+            RemainingDurationSeconds = Mathf.Max(0f, remainingDurationSeconds);
+            Reason = reason;
+        }
+
+        public RuntimeHero Source { get; }
+
+        public SkillData Skill { get; }
+
+        public RuntimeHero PreviousTarget { get; }
+
+        public RuntimeHero CurrentTarget { get; }
+
+        public float RemainingDurationSeconds { get; }
+
+        public FocusFireCommandTargetChangeReason Reason { get; }
+    }
+
     public sealed class ForcedMovementAppliedEvent : IBattleEvent
     {
         public ForcedMovementAppliedEvent(
