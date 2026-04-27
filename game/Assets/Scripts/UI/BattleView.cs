@@ -52,6 +52,10 @@ namespace Fight.UI
         private const float ReturningPathProjectileHeightOffset = 0.24f;
         private const float ReturningPathProjectileArcHeight = 0.18f;
         private const float ReturningPathProjectileSpinDegreesPerFlight = -720f;
+        private const float SkillCastProjectileHeightOffset = 0.24f;
+        private const float SkillCastProjectileArcHeight = 0.2f;
+        private const float SkillCastProjectileFallbackTravelDistance = 1.45f;
+        private const float SkillCastProjectileSpinDegreesPerFlight = -540f;
         private const float HookChainHeightOffset = 0.28f;
         private const float HookChainOutboundDurationFraction = 0.45f;
         private const float HookChainMinOutboundDurationSeconds = 0.08f;
@@ -63,6 +67,7 @@ namespace Fight.UI
         private const int DashChargeSortOrderOffset = -6;
         private const int SkillTargetIndicatorSortOrderOffset = 214;
         private const int SkillCastImpactVfxSortOrderOffset = 212;
+        private const int SkillCastProjectileSortOrderOffset = 76;
         private const int HookChainSortOrderOffset = 72;
         private const int ReactiveGuardLoopSortOrderOffset = 178;
         private const int ReactiveGuardTriggerSortOrderOffset = 206;
@@ -2292,6 +2297,11 @@ namespace Fight.UI
                 PlayReturningPathStrikeProjectileVfx(returningPathStrikeQueuedEvent);
             }
 
+            if (battleEvent is SkillCastEvent skillCastProjectileEvent)
+            {
+                PlaySkillCastProjectileVfx(skillCastProjectileEvent);
+            }
+
             if (battleEvent is StatusAppliedEvent statusAppliedEvent)
             {
                 if (statusAppliedEvent.EffectType == StatusEffectType.DamageShare
@@ -2562,6 +2572,127 @@ namespace Fight.UI
 
             var variantVisual = visualConfig.FindBasicAttackVariantVisual(attacker.CurrentVisualFormKey, variantKey);
             return variantVisual?.hitVfxPrefab;
+        }
+
+        private static bool ShouldPlaySkillCastProjectileVfx(SkillCastEvent skillCastEvent)
+        {
+            return skillCastEvent?.Skill != null
+                && skillCastEvent.Caster != null
+                && skillCastEvent.Skill.playCastProjectileOnSkillCast
+                && skillCastEvent.Skill.ResolveCastProjectileVfxPrefab(skillCastEvent.VariantKey) != null;
+        }
+
+        private void PlaySkillCastProjectileVfx(SkillCastEvent skillCastEvent)
+        {
+            if (!ShouldPlaySkillCastProjectileVfx(skillCastEvent) || transientWorldVfxRoot == null)
+            {
+                return;
+            }
+
+            StartCoroutine(PlaySkillCastProjectileVfxRoutine(skillCastEvent));
+        }
+
+        private IEnumerator PlaySkillCastProjectileVfxRoutine(SkillCastEvent skillCastEvent)
+        {
+            var skill = skillCastEvent?.Skill;
+            var prefab = skill != null ? skill.ResolveCastProjectileVfxPrefab(skillCastEvent.VariantKey) : null;
+            if (prefab == null || transientWorldVfxRoot == null)
+            {
+                yield break;
+            }
+
+            var instance = Instantiate(prefab, transientWorldVfxRoot, false);
+            instance.name = $"{prefab.name}_{skillCastEvent.Caster.RuntimeId}_{skill.skillId}_Transient";
+            RemovePrefabPhysics(instance);
+            ConfigureTransientParticleSystems(instance, forceOneShotEmission: false);
+            instance.transform.localScale = Vector3.Scale(
+                instance.transform.localScale,
+                skill.ResolveCastProjectileVfxScaleMultiplier(skillCastEvent.VariantKey));
+
+            var sortingGroup = instance.GetComponent<SortingGroup>();
+            if (sortingGroup == null)
+            {
+                sortingGroup = instance.AddComponent<SortingGroup>();
+            }
+
+            var renderers = instance.GetComponentsInChildren<Renderer>(true);
+            var start = ResolveSkillProjectileLaunchPosition(skillCastEvent.Caster);
+            var end = ResolveSkillCastProjectileTargetPosition(skillCastEvent);
+            var duration = Mathf.Max(0.05f, skill.castProjectileVfxFlightDurationSeconds);
+            var elapsed = 0f;
+
+            while (instance != null && elapsed < duration)
+            {
+                var progress = Mathf.Clamp01(elapsed / duration);
+                ApplySkillCastProjectileTransform(instance.transform, sortingGroup, renderers, start, end, progress);
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            if (instance != null)
+            {
+                ApplySkillCastProjectileTransform(instance.transform, sortingGroup, renderers, start, end, 1f);
+                Destroy(instance);
+            }
+        }
+
+        private Vector3 ResolveSkillCastProjectileTargetPosition(SkillCastEvent skillCastEvent)
+        {
+            if (skillCastEvent?.PrimaryTarget != null
+                && skillCastEvent.Caster != null
+                && !string.Equals(
+                    skillCastEvent.PrimaryTarget.RuntimeId,
+                    skillCastEvent.Caster.RuntimeId,
+                    StringComparison.Ordinal))
+            {
+                return Map(skillCastEvent.PrimaryTarget.CurrentPosition) + new Vector3(0f, SkillCastProjectileHeightOffset, 0f);
+            }
+
+            if (skillCastEvent?.PrimaryTarget != null && skillCastEvent.Caster == null)
+            {
+                return Map(skillCastEvent.PrimaryTarget.CurrentPosition) + new Vector3(0f, SkillCastProjectileHeightOffset, 0f);
+            }
+
+            var start = skillCastEvent?.Caster != null
+                ? ResolveSkillProjectileLaunchPosition(skillCastEvent.Caster)
+                : Vector3.zero;
+            var forward = skillCastEvent?.Caster?.Side == TeamSide.Red ? -1f : 1f;
+            return start + new Vector3(forward * SkillCastProjectileFallbackTravelDistance, 0.22f, 0f);
+        }
+
+        private void ApplySkillCastProjectileTransform(
+            Transform projectile,
+            SortingGroup sortingGroup,
+            Renderer[] renderers,
+            Vector3 start,
+            Vector3 end,
+            float progress)
+        {
+            if (projectile == null)
+            {
+                return;
+            }
+
+            var clampedProgress = Mathf.Clamp01(progress);
+            var position = Vector3.Lerp(start, end, clampedProgress);
+            position.y += ParabolicMotionUtility.EvaluateHeightOffset(clampedProgress, SkillCastProjectileArcHeight);
+            projectile.position = position;
+
+            var direction = end - start;
+            var baseAngle = direction.sqrMagnitude > 0.0001f
+                ? Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg
+                : 0f;
+            projectile.rotation = Quaternion.Euler(0f, 0f, baseAngle + (clampedProgress * SkillCastProjectileSpinDegreesPerFlight));
+
+            var sortingOrder = Sort(position.y, SkillCastProjectileSortOrderOffset);
+            if (sortingGroup != null)
+            {
+                sortingGroup.sortingOrder = sortingOrder;
+            }
+            else
+            {
+                SetRendererSorting(renderers, sortingOrder);
+            }
         }
 
         private void PlaySkillTargetIndicatorVfx(SkillCastEvent skillCastEvent)

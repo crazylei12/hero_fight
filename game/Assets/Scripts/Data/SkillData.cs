@@ -17,6 +17,8 @@ namespace Fight.Data
         public SkillTargetType targetType = SkillTargetType.None;
         public SkillTargetType fallbackTargetType = SkillTargetType.None;
         public List<SkillEffectData> effects = new List<SkillEffectData>();
+        public GameObject castProjectileVfxPrefab;
+        public Vector3 castProjectileVfxScaleMultiplier = Vector3.one;
     }
 
     [CreateAssetMenu(fileName = "Skill_", menuName = "Fight/Data/Skill")]
@@ -74,6 +76,9 @@ namespace Fight.Data
         public bool castImpactVfxScaleWithSkillArea;
         [Min(0.1f)] public float castImpactVfxAreaDiameterScaleMultiplier = 1f;
         public GameObject castProjectileVfxPrefab;
+        public bool playCastProjectileOnSkillCast;
+        [Min(0.05f)] public float castProjectileVfxFlightDurationSeconds = 0.36f;
+        public Vector3 castProjectileVfxScaleMultiplier = Vector3.one;
         public GameObject dashTravelVfxPrefab;
         public Vector3 dashTravelVfxLocalOffset = Vector3.zero;
         [Min(0f)] public float dashTravelVfxForwardOffset = 0f;
@@ -87,5 +92,46 @@ namespace Fight.Data
 
         [Header("Ultimate Decision")]
         public UltimateDecisionData ultimateDecision = new UltimateDecisionData();
+
+        public SkillVariantData FindVariant(string variantKey)
+        {
+            if (string.IsNullOrWhiteSpace(variantKey) || variants == null)
+            {
+                return null;
+            }
+
+            for (var i = 0; i < variants.Count; i++)
+            {
+                var variant = variants[i];
+                if (variant != null && string.Equals(variant.variantKey, variantKey, StringComparison.OrdinalIgnoreCase))
+                {
+                    return variant;
+                }
+            }
+
+            return null;
+        }
+
+        public GameObject ResolveCastProjectileVfxPrefab(string variantKey)
+        {
+            var variant = FindVariant(variantKey);
+            return variant != null && variant.castProjectileVfxPrefab != null
+                ? variant.castProjectileVfxPrefab
+                : castProjectileVfxPrefab;
+        }
+
+        public Vector3 ResolveCastProjectileVfxScaleMultiplier(string variantKey)
+        {
+            var scale = ResolveScaleOrOne(castProjectileVfxScaleMultiplier);
+            var variant = FindVariant(variantKey);
+            return variant != null
+                ? Vector3.Scale(scale, ResolveScaleOrOne(variant.castProjectileVfxScaleMultiplier))
+                : scale;
+        }
+
+        private static Vector3 ResolveScaleOrOne(Vector3 scale)
+        {
+            return scale.sqrMagnitude <= Mathf.Epsilon ? Vector3.one : scale;
+        }
     }
 }

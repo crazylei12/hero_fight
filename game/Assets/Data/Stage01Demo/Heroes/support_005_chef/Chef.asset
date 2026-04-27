@@ -40,6 +40,13 @@ MonoBehaviour:
       searchRadius: 0
       powerMultiplier: 0
       bounceVariantKey:
+    sameTargetStacking:
+      enabled: 0
+      maxStacks: 1
+      modifierEffectType: 4
+      magnitudePerStack: 0
+      targetRetentionRange: 0
+      fullStackOverrideStatusEffectType: 0
     onHitStatusEffects:
     - effectType: 6
       durationSeconds: 4
@@ -63,12 +70,13 @@ MonoBehaviour:
     battlePrefab: {fileID: 6176041610525390814, guid: 26085aedba45d8445a9e6c394b203e4f, type: 3}
     animatorController: {fileID: 0}
     battlePrefabFacesLeftByDefault: 0
-    projectilePrefab: {fileID: 7348018767031583934, guid: 9c004cd2ef068d744ab440fe6bdadd6e, type: 3}
+    projectilePrefab: {fileID: 7200366159837854553, guid: 937619c42b4ebf74d80d0183a7eae75f, type: 3}
     projectileAlignToMovement: 1
     projectileEulerAngles: {x: 0, y: 0, z: 0}
     castVfxPrefab: {fileID: 0}
     hitVfxPrefab: {fileID: 0}
     basicAttackVariantVisuals: []
+    formVisuals: []
     castSfx: {fileID: 0}
   debugNotes: Stage-01 support healer. Chef validates ally basic-attack coverage
     healing, random cast-start skill variants, and team-wide feast sustain.

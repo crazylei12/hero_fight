@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_chef_ultimate_grandfeast
   displayName: Grand Feast
-  description: 'Stage-01 demo skill: once per match, burst-heal every living ally and
-    layer team sustain buffs.'
+  description: 'Stage-01 demo skill: once per match, burst-heal every living ally
+    and layer team sustain buffs.'
   slotType: 1
   activationMode: 0
   skillType: 3
@@ -23,6 +23,7 @@ MonoBehaviour:
   preferredEnemyHeroClass: 2
   fallbackTargetType: 0
   targetPrioritySearchRadius: 0
+  minimumTargetDistance: 0
   targetPriorityRequiredUnitCount: 1
   variantSelectionMode: 0
   variants: []
@@ -34,11 +35,39 @@ MonoBehaviour:
     recentDirectHostileSourceWindowSeconds: 0
     recentDirectHostileSourceDefenseBonusPerSource: 0
     maxDefenseBonus: 0
+    periodicSelfHealIntervalSeconds: 0
+    periodicSelfHealMidHealthThreshold: 0
+    periodicSelfHealLowHealthThreshold: 0
+    periodicSelfHealHighHealthPercentMaxHealth: 0
+    periodicSelfHealMidHealthPercentMaxHealth: 0
+    periodicSelfHealLowHealthPercentMaxHealth: 0
     rejectExternalPositiveEffects: 0
     killParticipationAttackPowerBonusPerStack: 0
     killParticipationAttackSpeedBonusPerStack: 0
     killParticipationHealPercentMaxHealth: 0
     killParticipationMaxStacks: 0
+  damageTriggeredStatusCounter:
+    enabled: 0
+    countBasicAttackDamage: 1
+    countSkillDamage: 1
+    countSkillAreaPulseDamage: 1
+    countStatusEffectDamage: 1
+    countCounterTriggerDamage: 0
+    triggerThreshold: 3
+    clearCountedStatusesOnTrigger: 1
+    countedStatus:
+      effectType: 0
+      durationSeconds: 1
+      magnitude: 0
+      sourceAttackPowerMultiplier: 0
+      targetMaxHealthMultiplier: 0
+      activeSkillCooldownCapSeconds: 0
+      tickIntervalSeconds: 1
+      maxStacks: 1
+      stackGroupKey:
+      statusThemeKey:
+      refreshDurationOnReapply: 1
+    triggerStatusEffects: []
   castRange: 0
   areaRadius: 0
   cooldownSeconds: 0
@@ -47,10 +76,138 @@ MonoBehaviour:
   - effectType: 1
     targetMode: 0
     powerMultiplier: 1
+    statusStackQueryEffectType: 0
+    statusStackQueryThemeKey:
+    minimumRequiredStatusStacks: 0
+    bonusPowerMultiplierPerStatusStack: 0
+    consumeQueriedStatusesOnHit: 0
+    radiusOverride: 0
+    durationSeconds: 0
+    tickIntervalSeconds: 1
+    followCaster: 0
+    persistentAreaPulseEffectType: 1
+    persistentAreaTargetType: 0
+    triggerFollowUpAreaOnTargetDeath: 0
+    followUpAreaRadius: 0
+    followUpAreaPowerMultiplier: 0
+    followUpAreaStatusEffects: []
+    followUpAreaCanChain: 1
+    followUpAreaLimitTriggerOncePerUnitPerExecution: 1
+    deployableProxySpawnMode: 0
+    deployableProxyTriggerMode: 0
+    deployableProxyStrikeRadius: 0
+    deployableProxyTriggerRadius: 0
+    deployableProxyEffectRadius: 0
+    deployableProxySpawnOffsetDistance: 0
+    deployableProxySpawnCount: 1
+    deployableProxyPersistUntilTriggered: 0
+    deployableProxyRandomForwardMinDistance: 0
+    deployableProxyRandomForwardMaxDistance: 0
+    deployableProxyRandomForwardWidth: 0
+    deployableProxyRandomForwardMinSpacing: 0
+    deployableProxyMaxCount: 0
+    deployableProxyReplaceOldestWhenLimitReached: 1
+    deployableProxyImmediateStrikeOnSpawn: 0
+    deployableProxyPowerMultiplierScale: 1
+    deployableProxyAttackIntervalSeconds: 0
+    deployableProxyAttackRange: 0
+    deployableProxyProjectileSpeedOverride: 0
+    deployableProxyStartingVariantIndex: 0
+    deployableProxySpawnVfxPrefab: {fileID: 0}
+    deployableProxyLoopVfxPrefab: {fileID: 0}
+    deployableProxyRemovalVfxPrefab: {fileID: 0}
+    deployableProxyVfxLocalOffset: {x: 0, y: 0, z: 0}
+    deployableProxyVfxEulerAngles: {x: 0, y: 0, z: 0}
+    deployableProxyVfxScaleMultiplier: {x: 1, y: 1, z: 1}
+    returningPathStrikePhase: 0
+    returningPathMaxDistance: 0
+    returningPathWidth: 0
+    returningPathDelaySeconds: 0
+    formOverride:
+      formKey:
+      durationSeconds: 0
+      expiresOnDeath: 1
+      overrideUsesProjectile: 0
+      usesProjectile: 0
+      attackRangeOverride: 0
+      projectileSpeedOverride: 0
+      attackPowerModifier: 0
+      attackSpeedModifier: 0
+    forcedMovementDirection: 0
+    forcedMovementDistance: 0
+    forcedMovementDurationSeconds: 0
+    forcedMovementPeakHeight: 0
+    radialSweepDirection: 0
+    radialSweepStartDelaySeconds: 0
+    radialSweepRingWidth: 1
     statusEffects: []
   - effectType: 2
     targetMode: 0
     powerMultiplier: 0
+    statusStackQueryEffectType: 0
+    statusStackQueryThemeKey:
+    minimumRequiredStatusStacks: 0
+    bonusPowerMultiplierPerStatusStack: 0
+    consumeQueriedStatusesOnHit: 0
+    radiusOverride: 0
+    durationSeconds: 0
+    tickIntervalSeconds: 1
+    followCaster: 0
+    persistentAreaPulseEffectType: 1
+    persistentAreaTargetType: 0
+    triggerFollowUpAreaOnTargetDeath: 0
+    followUpAreaRadius: 0
+    followUpAreaPowerMultiplier: 0
+    followUpAreaStatusEffects: []
+    followUpAreaCanChain: 1
+    followUpAreaLimitTriggerOncePerUnitPerExecution: 1
+    deployableProxySpawnMode: 0
+    deployableProxyTriggerMode: 0
+    deployableProxyStrikeRadius: 0
+    deployableProxyTriggerRadius: 0
+    deployableProxyEffectRadius: 0
+    deployableProxySpawnOffsetDistance: 0
+    deployableProxySpawnCount: 1
+    deployableProxyPersistUntilTriggered: 0
+    deployableProxyRandomForwardMinDistance: 0
+    deployableProxyRandomForwardMaxDistance: 0
+    deployableProxyRandomForwardWidth: 0
+    deployableProxyRandomForwardMinSpacing: 0
+    deployableProxyMaxCount: 0
+    deployableProxyReplaceOldestWhenLimitReached: 1
+    deployableProxyImmediateStrikeOnSpawn: 0
+    deployableProxyPowerMultiplierScale: 1
+    deployableProxyAttackIntervalSeconds: 0
+    deployableProxyAttackRange: 0
+    deployableProxyProjectileSpeedOverride: 0
+    deployableProxyStartingVariantIndex: 0
+    deployableProxySpawnVfxPrefab: {fileID: 0}
+    deployableProxyLoopVfxPrefab: {fileID: 0}
+    deployableProxyRemovalVfxPrefab: {fileID: 0}
+    deployableProxyVfxLocalOffset: {x: 0, y: 0, z: 0}
+    deployableProxyVfxEulerAngles: {x: 0, y: 0, z: 0}
+    deployableProxyVfxScaleMultiplier: {x: 1, y: 1, z: 1}
+    returningPathStrikePhase: 0
+    returningPathMaxDistance: 0
+    returningPathWidth: 0
+    returningPathDelaySeconds: 0
+    formOverride:
+      formKey:
+      durationSeconds: 0
+      expiresOnDeath: 1
+      overrideUsesProjectile: 0
+      usesProjectile: 0
+      attackRangeOverride: 0
+      projectileSpeedOverride: 0
+      attackPowerModifier: 0
+      attackSpeedModifier: 0
+    forcedMovementDirection: 0
+    forcedMovementDistance: 0
+    forcedMovementDurationSeconds: 0
+    forcedMovementPeakHeight: 0
+    radialSweepDirection: 0
+    radialSweepStartDelaySeconds: 0
+    radialSweepRingWidth: 1
     statusEffects:
     - effectType: 6
       durationSeconds: 5
@@ -105,6 +262,19 @@ MonoBehaviour:
     triggerVfxLocalOffset: {x: 0, y: 0, z: 0}
     triggerVfxLocalScale: {x: 1, y: 1, z: 1}
     triggerVfxEulerAngles: {x: 0, y: 0, z: 0}
+  reactiveCounter:
+    enabled: 0
+    durationSeconds: 0
+    blocksBasicAttacks: 1
+    blocksSkillCasts: 1
+    triggerOnBasicAttackDamage: 1
+    requireNonProjectileBasicAttack: 1
+    sourceTriggerCooldownSeconds: 0
+    counterDamagePowerMultiplier: 0
+    forcedMovementDistance: 0
+    forcedMovementDurationSeconds: 0
+    forcedMovementPeakHeight: 0
+    onTriggerStatusEffects: []
   actionSequence:
     enabled: 0
     payloadType: 0
@@ -120,6 +290,7 @@ MonoBehaviour:
     interruptFlags: 3
   temporaryOverride:
     durationSeconds: 0
+    lifestealMode: 0
     lifestealRatio: 0
     visualScaleMultiplier: 1
     visualTintColor: {r: 1, g: 1, b: 1, a: 1}
@@ -132,7 +303,10 @@ MonoBehaviour:
   castImpactVfxAlignToTargetDirection: 0
   castImpactVfxScaleWithSkillArea: 0
   castImpactVfxAreaDiameterScaleMultiplier: 1
-  castProjectileVfxPrefab: {fileID: 0}
+  castProjectileVfxPrefab: {fileID: 1541984403233987575, guid: 9eeec21872dc6fe4aab65512238b3b9c, type: 3}
+  playCastProjectileOnSkillCast: 1
+  castProjectileVfxFlightDurationSeconds: 0.44
+  castProjectileVfxScaleMultiplier: {x: 1, y: 1, z: 1}
   dashTravelVfxPrefab: {fileID: 0}
   dashTravelVfxLocalOffset: {x: 0, y: 0, z: 0}
   dashTravelVfxForwardOffset: 0

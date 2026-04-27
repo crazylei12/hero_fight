@@ -97,6 +97,11 @@ namespace Fight.Editor
         private const string RiflemanUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/RiflemanFragGrenadeBurst.prefab";
         private const string RiflemanUltimateProjectileVfxPrefabPath = "Assets/Prefabs/VFX/Projectiles/RiflemanFragGrenadeProjectile.prefab";
         private const string SunpriestProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/SunpriestBasicAttackProjectile.prefab";
+        private const string ChefPizzaProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/ChefPizzaProjectile.prefab";
+        private const string ChefBurgerProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/ChefBurgerProjectile.prefab";
+        private const string ChefHotdogProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/ChefHotdogProjectile.prefab";
+        private const string ChefFriesProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/ChefFriesProjectile.prefab";
+        private const string ChefBigmacProjectilePrefabPath = "Assets/Prefabs/VFX/Projectiles/ChefBigmacProjectile.prefab";
         private const string SunpriestUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/SunpriestSunBlessingField.prefab";
         private const string WindchimeUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/WindchimeStillwindDomainField.prefab";
         private const string PoisonStatusThemeKey = "poison";
@@ -557,6 +562,7 @@ namespace Fight.Editor
             var chefUltimateSkill = AssetDatabase.LoadAssetAtPath<SkillData>(ChefUltimateSkillAssetPath);
             EnsureHeroSkillReferences(chef, chefActive, chefUltimateSkill);
             EnsureHeroBattlePrefabReference(chef, LoadBattlePrefab("support_005_chef", HeroClass.Support));
+            ConfigureChefProjectilePresentation(chef, chefActive, chefUltimateSkill);
 
             var commanderActive = CreateCommanderActiveSkill(overwriteExistingContent);
             var commanderUltimateSkill = CreateCommanderUltimateSkill(overwriteExistingContent, out var commanderUltimateExisted);
@@ -1262,6 +1268,7 @@ namespace Fight.Editor
                 "marksman_005_sniper" => AssetDatabase.LoadAssetAtPath<GameObject>(RiflemanProjectilePrefabPath),
                 "support_001_sunpriest" => AssetDatabase.LoadAssetAtPath<GameObject>(SunpriestProjectilePrefabPath),
                 "support_002_windchime" => AssetDatabase.LoadAssetAtPath<GameObject>(SunpriestProjectilePrefabPath),
+                "support_005_chef" => AssetDatabase.LoadAssetAtPath<GameObject>(ChefPizzaProjectilePrefabPath),
                 "support_006_commander" => AssetDatabase.LoadAssetAtPath<GameObject>(SunpriestProjectilePrefabPath),
                 _ => null,
             };
@@ -1277,6 +1284,7 @@ namespace Fight.Editor
                 || heroId == "marksman_005_sniper"
                 || heroId == "support_001_sunpriest"
                 || heroId == "support_002_windchime"
+                || heroId == "support_005_chef"
                 || heroId == "support_006_commander";
             hero.visualConfig.projectileEulerAngles = Vector3.zero;
             hero.visualConfig.hitVfxPrefab = null;
@@ -3747,6 +3755,54 @@ namespace Fight.Editor
             hero.visualConfig.basicAttackVariantVisuals = Array.Empty<BasicAttackVariantVisualConfig>();
             hero.debugNotes = "Stage-01 demo hero for Support. Shrinemaiden validates alternating damage/heal projectile basic attacks, missing-enemy fallback healing, and periodic deployable proxy attack sequences.";
             EditorUtility.SetDirty(hero);
+        }
+
+        private static void ConfigureChefProjectilePresentation(HeroDefinition hero, SkillData activeSkill, SkillData ultimateSkill)
+        {
+            var pizza = AssetDatabase.LoadAssetAtPath<GameObject>(ChefPizzaProjectilePrefabPath);
+            if (hero != null)
+            {
+                hero.visualConfig ??= new HeroVisualConfig();
+                hero.visualConfig.projectilePrefab = pizza;
+                hero.visualConfig.projectileAlignToMovement = pizza != null;
+                hero.visualConfig.projectileEulerAngles = Vector3.zero;
+                EditorUtility.SetDirty(hero);
+            }
+
+            if (activeSkill != null)
+            {
+                activeSkill.playCastProjectileOnSkillCast = true;
+                activeSkill.castProjectileVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ChefBurgerProjectilePrefabPath);
+                activeSkill.castProjectileVfxFlightDurationSeconds = 0.38f;
+                activeSkill.castProjectileVfxScaleMultiplier = Vector3.one;
+                activeSkill.skillAreaPresentationType = SkillAreaPresentationType.None;
+                ConfigureSkillVariantProjectile(activeSkill, "burger", ChefBurgerProjectilePrefabPath);
+                ConfigureSkillVariantProjectile(activeSkill, "hotdog", ChefHotdogProjectilePrefabPath);
+                ConfigureSkillVariantProjectile(activeSkill, "fries", ChefFriesProjectilePrefabPath);
+                EditorUtility.SetDirty(activeSkill);
+            }
+
+            if (ultimateSkill != null)
+            {
+                ultimateSkill.playCastProjectileOnSkillCast = true;
+                ultimateSkill.castProjectileVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ChefBigmacProjectilePrefabPath);
+                ultimateSkill.castProjectileVfxFlightDurationSeconds = 0.44f;
+                ultimateSkill.castProjectileVfxScaleMultiplier = Vector3.one;
+                ultimateSkill.skillAreaPresentationType = SkillAreaPresentationType.None;
+                EditorUtility.SetDirty(ultimateSkill);
+            }
+        }
+
+        private static void ConfigureSkillVariantProjectile(SkillData skill, string variantKey, string prefabPath)
+        {
+            var variant = skill != null ? skill.FindVariant(variantKey) : null;
+            if (variant == null)
+            {
+                return;
+            }
+
+            variant.castProjectileVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+            variant.castProjectileVfxScaleMultiplier = Vector3.one;
         }
 
         private static void ConfigureCommanderBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
