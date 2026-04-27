@@ -72,6 +72,7 @@ namespace Fight.Editor
         private const string BerserkerPrefabPath = "Assets/Prefabs/Heroes/warrior_003_berserker/Berserker.prefab";
         private const string SpellbladePrefabPath = "Assets/Prefabs/Heroes/warrior_004_spellblade/Spellblade.prefab";
         private const string FireMagePrefabPath = "Assets/Prefabs/Heroes/mage_001_firemage/FIREMAGE.prefab";
+        private const string FireMageSpritePrefabPath = "Assets/Prefabs/Heroes/mage_001_firemage/FireMageSprite.prefab";
         private const string FrostMagePrefabPath = "Assets/Prefabs/Heroes/mage_002_frostmage/Frostmage.prefab";
         private const string LightningmagePrefabPath = "Assets/Prefabs/Heroes/mage_004_lightningmage/Lightningmage.prefab";
         private const string TankPrefabPath = "Assets/Prefabs/Heroes/tank_001_ironwall/Ironwall.prefab";
@@ -1247,6 +1248,7 @@ namespace Fight.Editor
                 || heroId == "warrior_003_berserker"
                 || heroId == "warrior_004_spellblade"
                 || heroId == "warrior_005_trollwarlord"
+                || heroId == "mage_001_firemage"
                 || heroId == "mage_004_lightningmage"
                 || heroId == "marksman_001_longshot"
                 || heroId == "marksman_002_rifleman"
@@ -1314,7 +1316,7 @@ namespace Fight.Editor
                 "assassin_003_butcher" => ButcherPrefabPath,
                 "assassin_004_loner" => LonerPrefabPath,
                 "assassin_005_demon" => AssassinPrefabPath,
-                "mage_001_firemage" => FireMagePrefabPath,
+                "mage_001_firemage" => FireMageSpritePrefabPath,
                 "mage_002_frostmage" => FrostMagePrefabPath,
                 "mage_003_sandemperor" => FireMagePrefabPath,
                 "mage_004_lightningmage" => LightningmagePrefabPath,
