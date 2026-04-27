@@ -1236,6 +1236,7 @@ namespace Fight.Editor
                 || heroId == "marksman_003_venomshooter"
                 || heroId == "marksman_004_boomeranger"
                 || heroId == "marksman_005_sniper"
+                || heroId == "support_002_windchime"
                 || heroId == "support_004_shrinemaiden"
                 || heroId == "support_005_chef"
                 || heroId == "tank_001_ironwall"
