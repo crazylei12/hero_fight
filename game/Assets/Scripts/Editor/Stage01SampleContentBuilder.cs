@@ -65,6 +65,7 @@ namespace Fight.Editor
         private const string WindchimePrefabPath = "Assets/Prefabs/Heroes/support_002_windchime/Windchime.prefab";
         private const string MonkPrefabPath = "Assets/Prefabs/Heroes/support_003_monk/Monk.prefab";
         private const string ShrinemaidenPrefabPath = "Assets/Prefabs/Heroes/support_004_shrinemaiden/ShrinemaidenWunv.prefab";
+        private const string ChefPrefabPath = "Assets/Prefabs/Heroes/support_005_chef/Chef.prefab";
         private const string WarriorPrefabPath = "Assets/Prefabs/Heroes/warrior_001_skybreaker/Skybreaker.prefab";
         private const string BladesmanPrefabPath = "Assets/Prefabs/Heroes/warrior_002_bladesman/Bladesman.prefab";
         private const string BerserkerPrefabPath = "Assets/Prefabs/Heroes/warrior_003_berserker/Berserker.prefab";
@@ -1236,6 +1237,7 @@ namespace Fight.Editor
                 || heroId == "marksman_004_boomeranger"
                 || heroId == "marksman_005_sniper"
                 || heroId == "support_004_shrinemaiden"
+                || heroId == "support_005_chef"
                 || heroId == "tank_001_ironwall"
                 || heroId == "tank_002_shieldwarden"
                 || heroId == "tank_003_tidehunter"
@@ -1304,6 +1306,7 @@ namespace Fight.Editor
                 "support_002_windchime" => WindchimePrefabPath,
                 "support_003_monk" => MonkPrefabPath,
                 "support_004_shrinemaiden" => ShrinemaidenPrefabPath,
+                "support_005_chef" => ChefPrefabPath,
                 "warrior_002_bladesman" => BladesmanPrefabPath,
                 "warrior_003_berserker" => BerserkerPrefabPath,
                 "warrior_004_spellblade" => SpellbladePrefabPath,

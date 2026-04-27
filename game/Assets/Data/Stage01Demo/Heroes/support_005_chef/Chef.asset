@@ -59,9 +59,9 @@ MonoBehaviour:
   usesSpecialLogic: 0
   specialLogicNotes:
   visualConfig:
-    portrait: {fileID: 21300000, guid: da914a8601e453a42859225de8466e27, type: 3}
-    battlePrefab: {fileID: 33178510622993888, guid: 2d8afc1ad51aba04fae4b3303a3a7588, type: 3}
-    animatorController: {fileID: 9100000, guid: c0fbc9a82051e94429aa17cc4b2f48e5, type: 2}
+    portrait: {fileID: 21300000, guid: 8a0fa62c15990a44e9a0e002899ff811, type: 3}
+    battlePrefab: {fileID: 6176041610525390814, guid: 26085aedba45d8445a9e6c394b203e4f, type: 3}
+    animatorController: {fileID: 0}
     battlePrefabFacesLeftByDefault: 0
     projectilePrefab: {fileID: 7348018767031583934, guid: 9c004cd2ef068d744ab440fe6bdadd6e, type: 3}
     projectileAlignToMovement: 1

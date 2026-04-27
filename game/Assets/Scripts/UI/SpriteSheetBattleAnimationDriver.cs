@@ -125,11 +125,7 @@ namespace Fight.UI
                     PlayActionClip(ResolveAttackClipKey(attackEvent.VariantKey), 0.18f);
                     break;
                 case SkillCastEvent skillCastEvent when Matches(skillCastEvent.Caster):
-                    PlayActionClip(
-                        skillCastEvent.Skill != null && skillCastEvent.Skill.slotType == SkillSlotType.Ultimate
-                            ? UltimateClipKey
-                            : SkillClipKey,
-                        0.22f);
+                    PlayActionClip(ResolveSkillClipKey(skillCastEvent.Skill, skillCastEvent.VariantKey), 0.22f);
                     break;
                 case DamageAppliedEvent damageEvent when Matches(damageEvent.Target) && damageEvent.Target.CurrentHealth > 0f && !IsActionLocked():
                     PlayActionClip(HitClipKey, 0.08f);
@@ -426,6 +422,23 @@ namespace Fight.UI
             return string.Equals(variantKey, "attack_heal", StringComparison.Ordinal)
                 ? Attack2ClipKey
                 : Attack1ClipKey;
+        }
+
+        private string ResolveSkillClipKey(SkillData skill, string variantKey)
+        {
+            var baseKey = skill != null && skill.slotType == SkillSlotType.Ultimate
+                ? UltimateClipKey
+                : SkillClipKey;
+            if (!string.IsNullOrWhiteSpace(variantKey))
+            {
+                var variantClipKey = $"{baseKey}_{variantKey.Trim()}";
+                if (clips.ContainsKey(variantClipKey))
+                {
+                    return variantClipKey;
+                }
+            }
+
+            return baseKey;
         }
 
         private bool IsTemporaryOverrideVisualStateActive()
