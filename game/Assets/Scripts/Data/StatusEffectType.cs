@@ -25,6 +25,7 @@ namespace Fight.Data
         Taunt = 17,
         HealTakenModifier = 18,
         Marker = 19,
+        DeathPrevent = 20,
     }
 
     [Flags]
@@ -98,6 +99,7 @@ namespace Fight.Data
         private static readonly StatusEffectDefinition DamageShare = new StatusEffectDefinition(StatusEffectType.DamageShare, StatusBehaviorFlags.None);
         private static readonly StatusEffectDefinition HealTakenModifier = new StatusEffectDefinition(StatusEffectType.HealTakenModifier, StatusBehaviorFlags.StatModifier);
         private static readonly StatusEffectDefinition Marker = new StatusEffectDefinition(StatusEffectType.Marker, StatusBehaviorFlags.None);
+        private static readonly StatusEffectDefinition DeathPrevent = new StatusEffectDefinition(StatusEffectType.DeathPrevent, StatusBehaviorFlags.None);
         private static readonly StatusEffectDefinition Taunt = new StatusEffectDefinition(
             StatusEffectType.Taunt,
             StatusBehaviorFlags.BlocksSkillCasts | StatusBehaviorFlags.ForcesEnemyTarget);
@@ -124,6 +126,7 @@ namespace Fight.Data
                 StatusEffectType.DamageShare => DamageShare,
                 StatusEffectType.HealTakenModifier => HealTakenModifier,
                 StatusEffectType.Marker => Marker,
+                StatusEffectType.DeathPrevent => DeathPrevent,
                 StatusEffectType.Taunt => Taunt,
                 _ => None,
             };

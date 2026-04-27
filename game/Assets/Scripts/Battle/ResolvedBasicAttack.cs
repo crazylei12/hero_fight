@@ -18,6 +18,7 @@ namespace Fight.Battle
             float bounceSearchRadius,
             float bouncePowerMultiplier,
             string bounceVariantKey,
+            BasicAttackSameTargetStackData sameTargetStacking,
             IReadOnlyList<StatusEffectData> onHitStatusEffects,
             Vector3 launchPosition,
             bool advanceSequenceOnUse)
@@ -33,6 +34,7 @@ namespace Fight.Battle
             BounceSearchRadius = Mathf.Max(0f, bounceSearchRadius);
             BouncePowerMultiplier = Mathf.Max(0f, bouncePowerMultiplier);
             BounceVariantKey = bounceVariantKey ?? string.Empty;
+            SameTargetStacking = sameTargetStacking;
             OnHitStatusEffects = onHitStatusEffects ?? System.Array.Empty<StatusEffectData>();
             LaunchPosition = launchPosition;
             AdvanceSequenceOnUse = advanceSequenceOnUse;
@@ -61,6 +63,8 @@ namespace Fight.Battle
         public string BounceVariantKey { get; }
 
         public bool HasBounce => MaxAdditionalBounceTargets > 0 && BounceSearchRadius > Mathf.Epsilon && BouncePowerMultiplier > Mathf.Epsilon;
+
+        public BasicAttackSameTargetStackData SameTargetStacking { get; }
 
         public IReadOnlyList<StatusEffectData> OnHitStatusEffects { get; }
 

@@ -48,6 +48,7 @@ namespace Fight.Battle
                         projectile.ImpactAmount,
                         projectile.EffectType,
                         projectile.TargetType,
+                        projectile.SameTargetStacking,
                         projectile.OnHitStatusEffects,
                         projectile.VariantKey,
                         projectile.BounceChain,
@@ -188,6 +189,7 @@ namespace Fight.Battle
                 impactAmount,
                 resolvedAttack.EffectType,
                 resolvedAttack.TargetType,
+                resolvedAttack.SameTargetStacking,
                 resolvedAttack.OnHitStatusEffects,
                 resolvedAttack.VariantKey,
                 bounceChain,
@@ -278,6 +280,7 @@ namespace Fight.Battle
                 impactAmount,
                 resolvedAttack.EffectType,
                 resolvedAttack.TargetType,
+                resolvedAttack.SameTargetStacking,
                 resolvedAttack.OnHitStatusEffects,
                 resolvedAttack.VariantKey,
                 bounceChain,
@@ -446,6 +449,7 @@ namespace Fight.Battle
                 bounce != null ? bounce.searchRadius : 0f,
                 bounce != null ? bounce.powerMultiplier * Mathf.Max(0f, powerMultiplierScale) : 0f,
                 bounce != null ? bounce.bounceVariantKey : string.Empty,
+                basicAttack.sameTargetStacking,
                 onHitStatusEffects,
                 launchPosition,
                 advanceSequenceOnUse);
@@ -477,6 +481,12 @@ namespace Fight.Battle
                 return true;
             }
 
+            if (TrySelectSameTargetStackTarget(attacker, sourcePosition, resolvedAttack, selectionRange, out var retainedTarget))
+            {
+                target = retainedTarget;
+                return true;
+            }
+
             target = SelectTarget(
                 context,
                 attacker,
@@ -485,6 +495,36 @@ namespace Fight.Battle
                 selectionRange,
                 allowHealthyHealFallback);
             return target != null && CanExecuteAgainstTarget(attacker, target, resolvedAttack);
+        }
+
+        private static bool TrySelectSameTargetStackTarget(
+            RuntimeHero attacker,
+            Vector3 sourcePosition,
+            ResolvedBasicAttack resolvedAttack,
+            float selectionRange,
+            out RuntimeHero target)
+        {
+            target = null;
+            var stacking = resolvedAttack?.SameTargetStacking;
+            if (!IsSameTargetStackingEnabled(stacking)
+                || attacker == null
+                || resolvedAttack.TargetType != BasicAttackTargetType.NearestEnemy
+                || stacking.targetRetentionRange <= Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            var currentTarget = attacker.CurrentTarget;
+            var retentionRange = Mathf.Min(Mathf.Max(0f, selectionRange), stacking.targetRetentionRange);
+            if (!IsValidTarget(attacker, currentTarget, resolvedAttack.EffectType, resolvedAttack.TargetType, resolvedAttack.OnHitStatusEffects)
+                || !IsWithinRange(sourcePosition, currentTarget, retentionRange)
+                || !CanExecuteAgainstTarget(attacker, currentTarget, resolvedAttack))
+            {
+                return false;
+            }
+
+            target = currentTarget;
+            return true;
         }
 
         private static bool HasLegalTargetForAttack(
@@ -937,6 +977,7 @@ namespace Fight.Battle
                 bounceChain.EffectType,
                 variantKey,
                 bounceChain.TargetType,
+                null,
                 bounceChain.OnHitStatusEffects,
                 bounceChain,
                 bounceChain.BounceHitCount + 1);
@@ -984,6 +1025,7 @@ namespace Fight.Battle
                 resolvedAttack.EffectType,
                 resolvedAttack.VariantKey,
                 resolvedAttack.TargetType,
+                resolvedAttack.SameTargetStacking,
                 resolvedAttack.OnHitStatusEffects,
                 bounceChain,
                 bounceHopIndex);
@@ -1000,6 +1042,7 @@ namespace Fight.Battle
             float impactAmount,
             BasicAttackEffectType effectType,
             BasicAttackTargetType targetType,
+            BasicAttackSameTargetStackData sameTargetStacking,
             System.Collections.Generic.IReadOnlyList<StatusEffectData> onHitStatusEffects,
             string variantKey,
             RuntimeBasicAttackBounceChain bounceChain,
@@ -1048,6 +1091,7 @@ namespace Fight.Battle
                 null,
                 variantKey,
                 sourceProxy);
+            TryRecordSameTargetBasicAttackHit(attacker, sourceProxy, target, effectType, sameTargetStacking, bounceHopIndex);
             if (actualDamage <= 0f)
             {
                 ApplyOnHitStatuses(context, attacker, target, onHitStatusEffects, variantKey);
@@ -1057,6 +1101,36 @@ namespace Fight.Battle
 
             ApplyOnHitStatuses(context, attacker, target, onHitStatusEffects, variantKey);
             TryContinueBounceChain(context, attacker, sourceProxy, target, bounceChain);
+        }
+
+        private static void TryRecordSameTargetBasicAttackHit(
+            RuntimeHero attacker,
+            RuntimeDeployableProxy sourceProxy,
+            RuntimeHero target,
+            BasicAttackEffectType effectType,
+            BasicAttackSameTargetStackData sameTargetStacking,
+            int bounceHopIndex)
+        {
+            if (attacker == null
+                || sourceProxy != null
+                || target == null
+                || target.IsDead
+                || effectType != BasicAttackEffectType.Damage
+                || bounceHopIndex != 0
+                || !IsSameTargetStackingEnabled(sameTargetStacking))
+            {
+                return;
+            }
+
+            attacker.RecordSameTargetBasicAttackHit(target, sameTargetStacking);
+        }
+
+        private static bool IsSameTargetStackingEnabled(BasicAttackSameTargetStackData stacking)
+        {
+            return stacking != null
+                && stacking.enabled
+                && stacking.maxStacks > 0
+                && stacking.magnitudePerStack > Mathf.Epsilon;
         }
 
         private static bool CanApplyEffectToTarget(RuntimeHero target, BasicAttackEffectType effectType)

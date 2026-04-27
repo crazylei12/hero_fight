@@ -40,6 +40,18 @@ namespace Fight.Data
     }
 
     [Serializable]
+    public class BasicAttackSameTargetStackData
+    {
+        public bool enabled;
+        [Min(1)] public int maxStacks = 1;
+        public StatusEffectType modifierEffectType = StatusEffectType.AttackSpeedModifier;
+        // Stat modifiers use decimal percentage deltas: +16% = 0.16.
+        public float magnitudePerStack = 0f;
+        [Min(0f)] public float targetRetentionRange = 0f;
+        public StatusEffectType fullStackOverrideStatusEffectType = StatusEffectType.None;
+    }
+
+    [Serializable]
     public class BasicAttackData
     {
         [Min(0.1f)] public float damageMultiplier = 1f;
@@ -53,6 +65,7 @@ namespace Fight.Data
         [Min(0f)] public float targetPrioritySearchRadius = 0f;
         [Min(0)] public int startingVariantIndex = 0;
         public BasicAttackBounceData bounce = new BasicAttackBounceData();
+        public BasicAttackSameTargetStackData sameTargetStacking = new BasicAttackSameTargetStackData();
         public List<StatusEffectData> onHitStatusEffects = new List<StatusEffectData>();
         public List<BasicAttackVariantData> variants = new List<BasicAttackVariantData>();
     }

@@ -231,6 +231,22 @@ namespace Fight.Editor
             EnsureHeroSkillReferences(spellblade, spellbladeActive, spellbladeUltimate);
             EnsureHeroBattlePrefabReference(spellblade, LoadBattlePrefab("warrior_004_spellblade", HeroClass.Warrior));
 
+            var trollwarlordActive = CreateTrollWarlordActiveSkill(overwriteExistingContent);
+            var trollwarlordUltimate = CreateTrollWarlordUltimateSkill(overwriteExistingContent, out var trollwarlordUltimateExisted);
+            var trollwarlord = CreateHero(
+                "warrior_005_trollwarlord",
+                "TrollWarlord",
+                HeroClass.Warrior,
+                435f, 39f, 24f, 0.833333f, 4.25f, 0.08f, 1.55f, 2.0f,
+                trollwarlordActive,
+                ConfigureTrollWarlordUltimate(trollwarlordUltimate, overwriteExistingContent, trollwarlordUltimateExisted),
+                overwriteExistingContent,
+                out var trollwarlordHeroExisted,
+                HeroTag.Melee, HeroTag.SustainedDamage, HeroTag.Buff);
+            ConfigureTrollWarlordBasicAttack(trollwarlord, overwriteExistingContent, trollwarlordHeroExisted);
+            EnsureHeroSkillReferences(trollwarlord, trollwarlordActive, trollwarlordUltimate);
+            EnsureHeroBattlePrefabReference(trollwarlord, LoadBattlePrefab("warrior_005_trollwarlord", HeroClass.Warrior));
+
             var mageUltimateSkill = CreateSkill("skill_mage_ultimate_meteor", "Meteor Fall", SkillSlotType.Ultimate, SkillType.AreaDamage, SkillTargetType.Self, 0f, ScaleRangedHeroDistance(6f), 3.3f, 0f, 3, overwriteExistingContent, out var mageUltimateExisted);
 
             var mage = CreateHero(
@@ -567,7 +583,7 @@ namespace Fight.Editor
             EnsureHeroSkillReferences(boomeranger, boomerangerActive, boomerangerUltimateSkill);
             EnsureHeroBattlePrefabReference(boomeranger, LoadBattlePrefab("marksman_004_boomeranger", HeroClass.Marksman));
 
-            CreateHeroCatalog(warrior, bladesman, berserker, spellblade, mage, frostmage, sandemperor, lightningmage, assassin, tidefin, butcher, loner, tank, shieldwarden, tidehunter, mundo, support, windchime, monk, shrinemaiden, chef, marksman, rifleman, venomshooter, boomeranger);
+            CreateHeroCatalog(warrior, bladesman, berserker, spellblade, trollwarlord, mage, frostmage, sandemperor, lightningmage, assassin, tidefin, butcher, loner, tank, shieldwarden, tidehunter, mundo, support, windchime, monk, shrinemaiden, chef, marksman, rifleman, venomshooter, boomeranger);
 
             var battleInput = CreateBattleInput(
                 "Stage01DemoBattleInput",
@@ -1119,6 +1135,7 @@ namespace Fight.Editor
             hero.basicAttack.targetType = BasicAttackTargetType.NearestEnemy;
             hero.basicAttack.targetPrioritySearchRadius = 0f;
             EnsureBasicAttackStatusList(hero.basicAttack);
+            ResetSameTargetStacking(hero.basicAttack);
             hero.basicAttack.onHitStatusEffects.Clear();
             hero.basicAttack.bounce.maxAdditionalTargets = 0;
             hero.basicAttack.bounce.searchRadius = 0f;
@@ -1139,6 +1156,7 @@ namespace Fight.Editor
                 || heroId == "warrior_002_bladesman"
                 || heroId == "warrior_003_berserker"
                 || heroId == "warrior_004_spellblade"
+                || heroId == "warrior_005_trollwarlord"
                 || heroId == "mage_004_lightningmage"
                 || heroId == "marksman_001_longshot"
                 || heroId == "marksman_002_rifleman"
@@ -2931,6 +2949,141 @@ namespace Fight.Editor
             skill.description = "Stage-01 demo skill: leave a fixed cursed sword at the current fight point that pulses every second and drags nearby enemies inward.";
         }
 
+        private static SkillData CreateTrollWarlordActiveSkill(bool overwriteExistingContent)
+        {
+            var skill = CreateSkill(
+                "skill_trollwarlord_active_warlordreach",
+                "Warlord Reach",
+                SkillSlotType.ActiveSkill,
+                SkillType.Buff,
+                SkillTargetType.CurrentEnemyTarget,
+                2.8f,
+                0f,
+                0f,
+                7.5f,
+                1,
+                overwriteExistingContent,
+                out var existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.activationMode = SkillActivationMode.Active;
+            skill.skillType = SkillType.Buff;
+            skill.targetType = SkillTargetType.CurrentEnemyTarget;
+            skill.fallbackTargetType = SkillTargetType.NearestEnemy;
+            skill.castRange = 2.8f;
+            skill.areaRadius = 0f;
+            skill.cooldownSeconds = 7.5f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+            ResetPassiveSkillData(skill);
+            ResetTemporaryOverride(skill);
+
+            var selfBuffEffect = AddApplyStatusEffectsEffect(skill);
+            selfBuffEffect.targetMode = SkillEffectTargetMode.Caster;
+            selfBuffEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.AttackPowerModifier,
+                durationSeconds = 4f,
+                magnitude = 0.25f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+            selfBuffEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.AttackRangeModifier,
+                durationSeconds = 4f,
+                magnitude = 0.45f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
+            skill.description = "Stage-01 demo skill: temporarily increase attack power and attack range while a current enemy target is close enough.";
+            ResetUltimateDecision(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateTrollWarlordUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
+        {
+            var skill = CreateSkill(
+                "skill_trollwarlord_ultimate_deathlessfrenzy",
+                "Deathless Frenzy",
+                SkillSlotType.Ultimate,
+                SkillType.Buff,
+                SkillTargetType.CurrentEnemyTarget,
+                2.8f,
+                0f,
+                0f,
+                0f,
+                1,
+                overwriteExistingContent,
+                out existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            ApplyTrollWarlordUltimateBaseConfiguration(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData ConfigureTrollWarlordUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            ApplyTrollWarlordUltimateBaseConfiguration(skill);
+
+            ResetUltimateDecision(skill);
+            skill.ultimateDecision.targetingType = UltimateTargetingType.CurrentTargetOnly;
+            skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.SelfLowHealth;
+            skill.ultimateDecision.primaryCondition.healthPercentThreshold = 0.35f;
+            skill.ultimateDecision.secondaryCondition.conditionType = UltimateConditionType.None;
+            skill.ultimateDecision.combineMode = UltimateConditionCombineMode.PrimaryOnly;
+            skill.ultimateDecision.fallback.fallbackType = UltimateFallbackType.LowerPrimaryThreshold;
+            skill.ultimateDecision.fallback.triggerAfterSeconds = 45f;
+            skill.ultimateDecision.fallback.overrideHealthPercentThreshold = 0.5f;
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static void ApplyTrollWarlordUltimateBaseConfiguration(SkillData skill)
+        {
+            skill.activationMode = SkillActivationMode.Active;
+            skill.skillType = SkillType.Buff;
+            skill.targetType = SkillTargetType.CurrentEnemyTarget;
+            skill.fallbackTargetType = SkillTargetType.None;
+            skill.castRange = 2.8f;
+            skill.areaRadius = 0f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+            ResetPassiveSkillData(skill);
+            ResetTemporaryOverride(skill);
+
+            var selfBuffEffect = AddApplyStatusEffectsEffect(skill);
+            selfBuffEffect.targetMode = SkillEffectTargetMode.Caster;
+            selfBuffEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.DeathPrevent,
+                durationSeconds = 4.5f,
+                magnitude = 1f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
+            skill.description = "Stage-01 demo skill: prevent non-execute lethal damage from reducing health below 1 and treat Fervor attack speed as full stacks for a short window.";
+        }
+
         private static void AddDefaultEffectsForSkill(SkillData skill, float powerMultiplier)
         {
             switch (skill.skillType)
@@ -3410,6 +3563,33 @@ namespace Fight.Editor
             EnsureBasicAttackStatusList(hero.basicAttack);
             hero.basicAttack.onHitStatusEffects.Clear();
             hero.debugNotes = "Stage-01 demo hero for Warrior. Spellblade validates current-target line strikes and periodic proxy pulses that compress enemy formation toward a fixed anchor.";
+            EditorUtility.SetDirty(hero);
+        }
+
+        private static void ConfigureTrollWarlordBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (hero == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return;
+            }
+
+            hero.basicAttack.damageMultiplier = 1f;
+            hero.basicAttack.attackInterval = 1.2f;
+            hero.basicAttack.rangeOverride = 2.0f;
+            hero.basicAttack.usesProjectile = false;
+            hero.basicAttack.projectileSpeed = 0f;
+            hero.basicAttack.effectType = BasicAttackEffectType.Damage;
+            hero.basicAttack.targetType = BasicAttackTargetType.NearestEnemy;
+            hero.basicAttack.targetPrioritySearchRadius = 0f;
+            EnsureBasicAttackStatusList(hero.basicAttack);
+            hero.basicAttack.onHitStatusEffects.Clear();
+            hero.basicAttack.sameTargetStacking.enabled = true;
+            hero.basicAttack.sameTargetStacking.maxStacks = 6;
+            hero.basicAttack.sameTargetStacking.modifierEffectType = StatusEffectType.AttackSpeedModifier;
+            hero.basicAttack.sameTargetStacking.magnitudePerStack = 0.16f;
+            hero.basicAttack.sameTargetStacking.targetRetentionRange = 4.8f;
+            hero.basicAttack.sameTargetStacking.fullStackOverrideStatusEffectType = StatusEffectType.DeathPrevent;
+            hero.debugNotes = "Stage-01 demo hero for Warrior. TrollWarlord validates same-target basic attack speed stacking, current-target retention, temporary reach, and death-prevent self ultimate.";
             EditorUtility.SetDirty(hero);
         }
 
@@ -5317,6 +5497,27 @@ namespace Fight.Editor
             {
                 basicAttack.bounce = new BasicAttackBounceData();
             }
+
+            if (basicAttack.sameTargetStacking == null)
+            {
+                basicAttack.sameTargetStacking = new BasicAttackSameTargetStackData();
+            }
+        }
+
+        private static void ResetSameTargetStacking(BasicAttackData basicAttack)
+        {
+            if (basicAttack == null)
+            {
+                return;
+            }
+
+            EnsureBasicAttackStatusList(basicAttack);
+            basicAttack.sameTargetStacking.enabled = false;
+            basicAttack.sameTargetStacking.maxStacks = 1;
+            basicAttack.sameTargetStacking.modifierEffectType = StatusEffectType.AttackSpeedModifier;
+            basicAttack.sameTargetStacking.magnitudePerStack = 0f;
+            basicAttack.sameTargetStacking.targetRetentionRange = 0f;
+            basicAttack.sameTargetStacking.fullStackOverrideStatusEffectType = StatusEffectType.None;
         }
 
         private static BattleInputConfig CreateBattleInput(
@@ -5527,6 +5728,8 @@ namespace Fight.Editor
                 "skill_berserker_ultimate_titanrage" => "warrior_003_berserker",
                 "skill_spellblade_active_riftwave" => "warrior_004_spellblade",
                 "skill_spellblade_ultimate_boundblade" => "warrior_004_spellblade",
+                "skill_trollwarlord_active_warlordreach" => "warrior_005_trollwarlord",
+                "skill_trollwarlord_ultimate_deathlessfrenzy" => "warrior_005_trollwarlord",
                 "skill_tidehunter_active_undertowcarapace" => "tank_003_tidehunter",
                 "skill_tidehunter_ultimate_tidalrebound" => "tank_003_tidehunter",
                 "skill_mundo_active_brutemetabolism" => "tank_004_mundo",

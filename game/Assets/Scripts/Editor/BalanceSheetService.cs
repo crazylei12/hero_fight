@@ -1036,6 +1036,7 @@ namespace Fight.Editor
                     StatusEffectType.Shield => "护盾",
                     StatusEffectType.DamageShare => "分担伤害",
                     StatusEffectType.HealTakenModifier => "受治疗率修正",
+                    StatusEffectType.DeathPrevent => "死亡防止",
                     _ => value.ToString(),
                 },
                 _ => value.ToString(),

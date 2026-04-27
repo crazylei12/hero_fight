@@ -221,6 +221,7 @@ namespace Fight.Battle
                 case StatusEffectType.Invulnerable:
                 case StatusEffectType.Untargetable:
                 case StatusEffectType.DamageShare:
+                case StatusEffectType.DeathPrevent:
                     return true;
                 case StatusEffectType.AttackPowerModifier:
                 case StatusEffectType.DefenseModifier:

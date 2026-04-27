@@ -111,6 +111,29 @@ namespace Fight.Heroes
             return Mathf.Max(0f, 1f + GetTotalMagnitude(hero, StatusEffectType.HealTakenModifier));
         }
 
+        public static float GetDeathPreventHealthFloor(RuntimeHero hero)
+        {
+            if (hero == null)
+            {
+                return 0f;
+            }
+
+            var healthFloor = 0f;
+            var statuses = hero.MutableStatusEffects;
+            for (var i = 0; i < statuses.Count; i++)
+            {
+                var status = statuses[i];
+                if (status == null || status.EffectType != StatusEffectType.DeathPrevent)
+                {
+                    continue;
+                }
+
+                healthFloor = Mathf.Max(healthFloor, Mathf.Max(1f, status.Magnitude));
+            }
+
+            return healthFloor;
+        }
+
         public static bool IsPositiveStatusEffect(StatusEffectData data)
         {
             if (data == null)
@@ -125,6 +148,7 @@ namespace Fight.Heroes
                 case StatusEffectType.Invulnerable:
                 case StatusEffectType.Untargetable:
                 case StatusEffectType.DamageShare:
+                case StatusEffectType.DeathPrevent:
                     return true;
                 case StatusEffectType.AttackPowerModifier:
                 case StatusEffectType.DefenseModifier:

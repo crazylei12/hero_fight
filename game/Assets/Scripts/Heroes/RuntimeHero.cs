@@ -340,7 +340,7 @@ namespace Fight.Heroes
 
                 var speedMultiplier =
                     StatusEffectSystem.GetMultiplier(this, StatusEffectType.AttackSpeedModifier)
-                    * Mathf.Max(0.1f, 1f + PassiveAttackSpeedBonusMultiplier);
+                    * Mathf.Max(0.1f, 1f + PassiveAttackSpeedBonusMultiplier + SameTargetBasicAttackSpeedBonusMultiplier);
                 var baseAttackSpeed = Mathf.Max(0.01f, Definition.baseStats.attackSpeed);
                 return 1f / (baseAttackSpeed * speedMultiplier);
             }
@@ -374,6 +374,8 @@ namespace Fight.Heroes
 
         public float PassiveAttackSpeedBonusMultiplier => GetPassiveAttackSpeedBonusMultiplier();
 
+        public float SameTargetBasicAttackSpeedBonusMultiplier => GetSameTargetBasicAttackSpeedBonusMultiplier();
+
         public float PassiveDefenseBonusMultiplier => GetPassiveDefenseBonusMultiplier();
 
         public float PassiveLifestealRatio => GetPassiveLifestealRatio();
@@ -403,6 +405,9 @@ namespace Fight.Heroes
         private RuntimeForcedMovement activeForcedMovement;
         private RuntimeCombatActionSequence activeCombatActionSequence;
         private PendingCombatAction pendingCombatAction;
+        private RuntimeHero sameTargetBasicAttackStackTarget;
+        private BasicAttackSameTargetStackData activeSameTargetBasicAttackStacking;
+        private int sameTargetBasicAttackStackCount;
         private float pendingActionTriggerRemainingSeconds;
         private float actionLockRemainingSeconds;
         private int forcedMovementInterruptTicksRemaining;
@@ -419,6 +424,7 @@ namespace Fight.Heroes
             ClearCombatActionState();
             ClearCombatActionSequence();
             CurrentTarget = null;
+            ResetSameTargetBasicAttackStacks();
             IsDead = false;
             CombatEngagedSeconds = 0f;
             NextUltimateDecisionCheckTimeSeconds = 0f;
@@ -468,7 +474,11 @@ namespace Fight.Heroes
             }
 
             var previousHealth = CurrentHealth;
-            CurrentHealth = Mathf.Max(0f, CurrentHealth - amount);
+            var deathPreventFloor = StatusEffectSystem.GetDeathPreventHealthFloor(this);
+            var minimumHealth = deathPreventFloor > 0f
+                ? Mathf.Min(previousHealth, MaxHealth, deathPreventFloor)
+                : 0f;
+            CurrentHealth = Mathf.Max(minimumHealth, CurrentHealth - amount);
             return previousHealth - CurrentHealth;
         }
 
@@ -544,7 +554,31 @@ namespace Fight.Heroes
 
         public void SetTarget(RuntimeHero target)
         {
+            if (CurrentTarget != target)
+            {
+                ResetSameTargetBasicAttackStacks();
+            }
+
             CurrentTarget = target;
+        }
+
+        public void RecordSameTargetBasicAttackHit(RuntimeHero target, BasicAttackSameTargetStackData stacking)
+        {
+            if (target == null || target.IsDead || !CanUseSameTargetBasicAttackStacking(stacking))
+            {
+                return;
+            }
+
+            if (sameTargetBasicAttackStackTarget != target)
+            {
+                sameTargetBasicAttackStackTarget = target;
+                sameTargetBasicAttackStackCount = 0;
+            }
+
+            activeSameTargetBasicAttackStacking = stacking;
+            sameTargetBasicAttackStackCount = Mathf.Min(
+                Mathf.Max(1, stacking.maxStacks),
+                sameTargetBasicAttackStackCount + 1);
         }
 
         public void SetBattleTimeSeconds(float battleTimeSeconds)
@@ -875,6 +909,7 @@ namespace Fight.Heroes
         {
             IsDead = true;
             CurrentTarget = null;
+            ResetSameTargetBasicAttackStacks();
             RespawnRemainingSeconds = Mathf.Max(0f, respawnDelaySeconds);
             CurrentHealth = 0f;
             Deaths++;
@@ -1388,6 +1423,46 @@ namespace Fight.Heroes
                 totalBonus += state.KillParticipationStacks * Mathf.Max(0f, passiveData.killParticipationAttackSpeedBonusPerStack);
             });
             return totalBonus;
+        }
+
+        private float GetSameTargetBasicAttackSpeedBonusMultiplier()
+        {
+            if (IsDead)
+            {
+                return 0f;
+            }
+
+            var stacking = activeSameTargetBasicAttackStacking ?? Definition?.basicAttack?.sameTargetStacking;
+            if (!CanUseSameTargetBasicAttackStacking(stacking)
+                || stacking.modifierEffectType != StatusEffectType.AttackSpeedModifier)
+            {
+                return 0f;
+            }
+
+            var maxStacks = Mathf.Max(1, stacking.maxStacks);
+            if (stacking.fullStackOverrideStatusEffectType != StatusEffectType.None
+                && StatusEffectSystem.HasStatus(this, stacking.fullStackOverrideStatusEffectType))
+            {
+                return maxStacks * Mathf.Max(0f, stacking.magnitudePerStack);
+            }
+
+            return Mathf.Clamp(sameTargetBasicAttackStackCount, 0, maxStacks)
+                * Mathf.Max(0f, stacking.magnitudePerStack);
+        }
+
+        private void ResetSameTargetBasicAttackStacks()
+        {
+            sameTargetBasicAttackStackTarget = null;
+            activeSameTargetBasicAttackStacking = null;
+            sameTargetBasicAttackStackCount = 0;
+        }
+
+        private static bool CanUseSameTargetBasicAttackStacking(BasicAttackSameTargetStackData stacking)
+        {
+            return stacking != null
+                && stacking.enabled
+                && stacking.maxStacks > 0
+                && stacking.magnitudePerStack > Mathf.Epsilon;
         }
 
         private bool GetRejectsExternalPositiveEffects()
