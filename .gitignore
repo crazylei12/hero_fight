@@ -150,3 +150,8 @@ Thumbs.db
 !/game/Packages/**
 !/game/ProjectSettings/
 !/game/ProjectSettings/**
+
+# Keep bitmap art assets local-only. This must stay after the Unity asset
+# whitelist rules above, because those rules re-include files under Assets.
+*.png
+*.png.meta
