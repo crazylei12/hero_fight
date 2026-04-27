@@ -6,6 +6,8 @@ namespace Fight.Battle
 {
     public sealed class RuntimeDeployableProxy
     {
+        private bool isExpired;
+
         public RuntimeDeployableProxy(
             RuntimeHero owner,
             SkillData sourceSkill,
@@ -46,9 +48,27 @@ namespace Fight.Battle
 
         public int CurrentBasicAttackVariantIndex { get; private set; }
 
-        public bool IsExpired => RemainingDurationSeconds <= 0f;
+        public bool PersistsUntilTriggered => SourceEffect != null && SourceEffect.deployableProxyPersistUntilTriggered;
+
+        public bool HasFiniteDuration => !PersistsUntilTriggered;
+
+        public bool IsExpired => isExpired || (HasFiniteDuration && RemainingDurationSeconds <= 0f);
 
         public float StrikeRadius => Mathf.Max(0f, SourceEffect != null ? SourceEffect.deployableProxyStrikeRadius : 0f);
+
+        public float TriggerRadius => Mathf.Max(
+            0f,
+            SourceEffect != null && SourceEffect.deployableProxyTriggerRadius > Mathf.Epsilon
+                ? SourceEffect.deployableProxyTriggerRadius
+                : StrikeRadius);
+
+        public float EffectRadius => Mathf.Max(
+            0f,
+            SourceEffect != null && SourceEffect.deployableProxyEffectRadius > Mathf.Epsilon
+                ? SourceEffect.deployableProxyEffectRadius
+                : SourceEffect != null && SourceEffect.radiusOverride > Mathf.Epsilon
+                    ? SourceEffect.radiusOverride
+                    : StrikeRadius);
 
         public float StrikePowerMultiplier => Mathf.Max(0f, SourceEffect != null ? SourceEffect.powerMultiplier : 0f);
 
@@ -82,8 +102,19 @@ namespace Fight.Battle
 
         public void Tick(float deltaTime)
         {
-            RemainingDurationSeconds = Mathf.Max(0f, RemainingDurationSeconds - Mathf.Max(0f, deltaTime));
+            if (HasFiniteDuration)
+            {
+                RemainingDurationSeconds = Mathf.Max(0f, RemainingDurationSeconds - Mathf.Max(0f, deltaTime));
+            }
+
             RemainingAttackCooldownSeconds = Mathf.Max(0f, RemainingAttackCooldownSeconds - Mathf.Max(0f, deltaTime));
+        }
+
+        public void ExpireImmediately()
+        {
+            isExpired = true;
+            RemainingDurationSeconds = 0f;
+            RemainingAttackCooldownSeconds = 0f;
         }
 
         public bool TryConsumeReadyAttack()

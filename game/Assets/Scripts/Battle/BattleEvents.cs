@@ -849,6 +849,25 @@ namespace Fight.Battle
         public int AffectedTargetCount { get; }
     }
 
+    public sealed class ReactiveCounterTriggeredEvent : IBattleEvent
+    {
+        public ReactiveCounterTriggeredEvent(RuntimeHero defender, RuntimeHero attacker, SkillData sourceSkill, float counterDamage)
+        {
+            Defender = defender;
+            Attacker = attacker;
+            SourceSkill = sourceSkill;
+            CounterDamage = Mathf.Max(0f, counterDamage);
+        }
+
+        public RuntimeHero Defender { get; }
+
+        public RuntimeHero Attacker { get; }
+
+        public SkillData SourceSkill { get; }
+
+        public float CounterDamage { get; }
+    }
+
     public sealed class UnitDiedEvent : IBattleEvent
     {
         public UnitDiedEvent(RuntimeHero victim, RuntimeHero killer)
@@ -880,6 +899,7 @@ namespace Fight.Battle
     {
         Expired = 0,
         Replaced = 1,
+        Triggered = 2,
     }
 
     public sealed class DeployableProxySpawnedEvent : IBattleEvent

@@ -171,6 +171,63 @@ namespace Fight.Heroes
             public bool IsExpired => HasFiniteDuration && RemainingDurationSeconds <= Mathf.Epsilon;
         }
 
+        private sealed class RuntimeReactiveCounterStance
+        {
+            private readonly Dictionary<string, float> lastTriggerTimeBySourceId = new Dictionary<string, float>();
+
+            public RuntimeReactiveCounterStance(SkillData sourceSkill, ReactiveCounterData definition)
+            {
+                SourceSkill = sourceSkill;
+                Refresh(definition);
+            }
+
+            public SkillData SourceSkill { get; }
+
+            public ReactiveCounterData Definition { get; private set; }
+
+            public float RemainingDurationSeconds { get; private set; }
+
+            public bool BlocksBasicAttacks => Definition != null && Definition.blocksBasicAttacks;
+
+            public bool BlocksSkillCasts => Definition != null && Definition.blocksSkillCasts;
+
+            public void Refresh(ReactiveCounterData definition)
+            {
+                Definition = definition;
+                RemainingDurationSeconds = definition != null ? Mathf.Max(0f, definition.durationSeconds) : 0f;
+                lastTriggerTimeBySourceId.Clear();
+            }
+
+            public void Tick(float deltaTime)
+            {
+                RemainingDurationSeconds = Mathf.Max(0f, RemainingDurationSeconds - Mathf.Max(0f, deltaTime));
+            }
+
+            public bool TryConsumeTrigger(RuntimeHero source, float currentTimeSeconds)
+            {
+                if (source == null || Definition == null)
+                {
+                    return false;
+                }
+
+                var sourceKey = !string.IsNullOrWhiteSpace(source.RuntimeId)
+                    ? source.RuntimeId
+                    : source.GetHashCode().ToString();
+                var cooldownSeconds = Mathf.Max(0f, Definition.sourceTriggerCooldownSeconds);
+                if (cooldownSeconds > Mathf.Epsilon
+                    && lastTriggerTimeBySourceId.TryGetValue(sourceKey, out var lastTriggerTime)
+                    && currentTimeSeconds - lastTriggerTime < cooldownSeconds)
+                {
+                    return false;
+                }
+
+                lastTriggerTimeBySourceId[sourceKey] = Mathf.Max(0f, currentTimeSeconds);
+                return true;
+            }
+
+            public bool IsExpired => RemainingDurationSeconds <= Mathf.Epsilon;
+        }
+
         private sealed class RuntimeContributionRecord
         {
             public RuntimeContributionRecord(RuntimeHero contributor, float timeSeconds)
@@ -296,9 +353,9 @@ namespace Fight.Heroes
 
         public bool CanMove => !IsActionLocked && !StatusEffectSystem.HasBehaviorFlag(this, StatusBehaviorFlags.BlocksMovement) && !IsUnderForcedMovement;
 
-        public bool CanAttack => !IsActionLocked && !StatusEffectSystem.HasBehaviorFlag(this, StatusBehaviorFlags.BlocksBasicAttacks) && !IsUnderForcedMovement;
+        public bool CanAttack => !IsActionLocked && !IsReactiveCounterBlockingBasicAttacks && !StatusEffectSystem.HasBehaviorFlag(this, StatusBehaviorFlags.BlocksBasicAttacks) && !IsUnderForcedMovement;
 
-        public bool CanCastSkills => !IsActionLocked && !StatusEffectSystem.HasBehaviorFlag(this, StatusBehaviorFlags.BlocksSkillCasts) && !IsUnderForcedMovement;
+        public bool CanCastSkills => !IsActionLocked && !IsReactiveCounterBlockingSkillCasts && !StatusEffectSystem.HasBehaviorFlag(this, StatusBehaviorFlags.BlocksSkillCasts) && !IsUnderForcedMovement;
 
         public bool CanBeDirectTargeted => !StatusEffectSystem.HasBehaviorFlag(this, StatusBehaviorFlags.BlocksDirectTargeting);
 
@@ -471,6 +528,16 @@ namespace Fight.Heroes
 
         public SkillData CurrentLifestealSourceSkill => GetCurrentLifestealSourceSkill();
 
+        public bool HasActiveReactiveCounter => activeReactiveCounter != null && !activeReactiveCounter.IsExpired;
+
+        public SkillData ActiveReactiveCounterSourceSkill => activeReactiveCounter?.SourceSkill;
+
+        public ReactiveCounterData ActiveReactiveCounterData => activeReactiveCounter?.Definition;
+
+        public bool IsReactiveCounterBlockingBasicAttacks => HasActiveReactiveCounter && activeReactiveCounter.BlocksBasicAttacks;
+
+        public bool IsReactiveCounterBlockingSkillCasts => HasActiveReactiveCounter && activeReactiveCounter.BlocksSkillCasts;
+
         private readonly List<RuntimeStatusEffect> activeStatusEffects = new List<RuntimeStatusEffect>();
         private readonly List<RuntimeSkillTemporaryOverride> activeTemporarySkillOverrides = new List<RuntimeSkillTemporaryOverride>();
         private readonly List<RuntimeContributionRecord> recentHostileContributors = new List<RuntimeContributionRecord>();
@@ -480,6 +547,7 @@ namespace Fight.Heroes
         private RuntimeForcedMovement activeForcedMovement;
         private RuntimeCombatActionSequence activeCombatActionSequence;
         private RuntimeCombatFormOverride activeCombatFormOverride;
+        private RuntimeReactiveCounterStance activeReactiveCounter;
         private PendingCombatAction pendingCombatAction;
         private RuntimeHero sameTargetBasicAttackStackTarget;
         private BasicAttackSameTargetStackData activeSameTargetBasicAttackStacking;
@@ -510,6 +578,7 @@ namespace Fight.Heroes
             forcedMovementInterruptTicksRemaining = 0;
             activeTemporarySkillOverrides.Clear();
             activeCombatFormOverride = null;
+            activeReactiveCounter = null;
             ResetPassiveSkillStatesForSpawn();
             ClearThreatTracking();
             ClearContributionHistory();
@@ -578,6 +647,7 @@ namespace Fight.Heroes
             ClampActiveSkillCooldownToStatusCap();
             TickTemporarySkillOverrides(deltaTime);
             TickCombatFormOverride(deltaTime);
+            TickReactiveCounter(deltaTime);
             if (HasHardControl)
             {
                 ClearCombatActionState();
@@ -1005,6 +1075,8 @@ namespace Fight.Heroes
             {
                 activeCombatFormOverride = null;
             }
+
+            activeReactiveCounter = null;
         }
 
         public bool ReadyToRevive()
@@ -1151,6 +1223,31 @@ namespace Fight.Heroes
 
             activeCombatFormOverride = new RuntimeCombatFormOverride(sourceSkill, definition);
             return true;
+        }
+
+        public bool ApplyReactiveCounter(SkillData sourceSkill, ReactiveCounterData definition)
+        {
+            if (sourceSkill == null || definition == null || !definition.HasAnyRuntimeEffect)
+            {
+                return false;
+            }
+
+            ClearCombatActionState();
+            if (activeReactiveCounter != null && activeReactiveCounter.SourceSkill == sourceSkill)
+            {
+                activeReactiveCounter.Refresh(definition);
+                return true;
+            }
+
+            activeReactiveCounter = new RuntimeReactiveCounterStance(sourceSkill, definition);
+            return true;
+        }
+
+        public bool TryConsumeReactiveCounterTrigger(RuntimeHero source, float currentTimeSeconds)
+        {
+            return activeReactiveCounter != null
+                && !activeReactiveCounter.IsExpired
+                && activeReactiveCounter.TryConsumeTrigger(source, currentTimeSeconds);
         }
 
         public void InitializeUltimateDecisionSchedule(float firstCheckTimeSeconds)
@@ -1415,6 +1512,20 @@ namespace Fight.Heroes
             if (activeCombatFormOverride.IsExpired)
             {
                 activeCombatFormOverride = null;
+            }
+        }
+
+        private void TickReactiveCounter(float deltaTime)
+        {
+            if (activeReactiveCounter == null)
+            {
+                return;
+            }
+
+            activeReactiveCounter.Tick(deltaTime);
+            if (activeReactiveCounter.IsExpired)
+            {
+                activeReactiveCounter = null;
             }
         }
 

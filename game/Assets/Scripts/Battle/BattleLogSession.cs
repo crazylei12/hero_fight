@@ -144,6 +144,9 @@ namespace Fight.Battle
                 case ReactiveGuardTriggeredEvent reactiveGuardTriggered:
                     AddLog(FormatReactiveGuardLog(reactiveGuardTriggered));
                     break;
+                case ReactiveCounterTriggeredEvent reactiveCounterTriggered:
+                    AddLog(FormatReactiveCounterLog(reactiveCounterTriggered));
+                    break;
                 case DeployableProxySpawnedEvent deployableProxySpawned:
                     AddLog(FormatDeployableProxySpawnedLog(deployableProxySpawned));
                     break;
@@ -272,7 +275,10 @@ namespace Fight.Battle
                 return "Deployable proxy spawned.";
             }
 
-            return $"{FormatHeroLabel(proxy.Owner)} spawned deployable proxy {proxy.ProxyId} at ({proxy.CurrentPosition.x:0.0}, {proxy.CurrentPosition.z:0.0}) for {proxy.TotalDurationSeconds:0.0}s.";
+            var durationLabel = proxy.PersistsUntilTriggered
+                ? "until triggered"
+                : $"for {proxy.TotalDurationSeconds:0.0}s";
+            return $"{FormatHeroLabel(proxy.Owner)} spawned deployable proxy {proxy.ProxyId} at ({proxy.CurrentPosition.x:0.0}, {proxy.CurrentPosition.z:0.0}) {durationLabel}.";
         }
 
         private static string FormatDeployableProxyRemovedLog(DeployableProxyRemovedEvent deployableProxyRemoved)
@@ -436,6 +442,14 @@ namespace Fight.Battle
             var protectedName = FormatHeroLabel(reactiveGuardTriggered.ProtectedHero, "none");
             var skillName = reactiveGuardTriggered.SourceSkill != null ? reactiveGuardTriggered.SourceSkill.displayName : "Reactive Guard";
             return $"{casterName}'s {skillName} triggered around {protectedName}, affecting {reactiveGuardTriggered.AffectedTargetCount} enemy target(s).";
+        }
+
+        private static string FormatReactiveCounterLog(ReactiveCounterTriggeredEvent reactiveCounterTriggered)
+        {
+            var defenderName = FormatHeroLabel(reactiveCounterTriggered.Defender, "Unknown");
+            var attackerName = FormatHeroLabel(reactiveCounterTriggered.Attacker, "none");
+            var skillName = reactiveCounterTriggered.SourceSkill != null ? reactiveCounterTriggered.SourceSkill.displayName : "Reactive Counter";
+            return $"{defenderName}'s {skillName} countered {attackerName} for {reactiveCounterTriggered.CounterDamage:0.#} damage.";
         }
 
         private static string FormatUltimateDecisionLog(UltimateDecisionEvaluatedEvent ultimateDecision)

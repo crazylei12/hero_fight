@@ -56,6 +56,7 @@ namespace Fight.Data
         public List<SkillEffectData> effects = new List<SkillEffectData>();
         public bool allowsSelfCast;
         public ReactiveGuardData reactiveGuard = new ReactiveGuardData();
+        public ReactiveCounterData reactiveCounter = new ReactiveCounterData();
 
         [Header("Action Sequence")]
         public CombatActionSequenceData actionSequence = new CombatActionSequenceData();

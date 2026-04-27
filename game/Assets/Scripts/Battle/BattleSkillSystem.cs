@@ -2607,6 +2607,7 @@ namespace Fight.Battle
             }
 
             TryRegisterReactiveGuard(context, caster, skill, primaryTarget);
+            TryApplyReactiveCounter(caster, skill);
 
             if (allowActionSequenceTrigger)
             {
@@ -4709,6 +4710,18 @@ namespace Fight.Battle
             }
 
             BattleReactiveGuardSystem.RegisterReactiveGuard(context, caster, primaryTarget, skill, skill.reactiveGuard);
+        }
+
+        private static void TryApplyReactiveCounter(RuntimeHero caster, SkillData skill)
+        {
+            if (caster == null
+                || skill?.reactiveCounter == null
+                || !skill.reactiveCounter.enabled)
+            {
+                return;
+            }
+
+            BattleReactiveCounterSystem.ApplyReactiveCounter(caster, skill);
         }
 
         private static RuntimeHero FindDensestEnemyAnchor(IReadOnlyList<RuntimeHero> heroes, RuntimeHero caster, float maxRange, float radius)

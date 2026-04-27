@@ -27,6 +27,13 @@ namespace Fight.Battle
                 }
 
                 proxy.Tick(deltaTime);
+                if (TryFireProximityExplosion(context, proxy, battleCallbacks))
+                {
+                    context.EventBus?.Publish(new DeployableProxyRemovedEvent(proxy, DeployableProxyRemovalReason.Triggered));
+                    context.DeployableProxies.RemoveAt(i);
+                    continue;
+                }
+
                 TryFirePeriodicProxyAttack(context, proxy, battleCallbacks);
                 TryFirePeriodicProxyEffectPulse(context, proxy);
                 if (proxy.IsExpired)
@@ -59,6 +66,12 @@ namespace Fight.Battle
             var maxProxyCount = Mathf.Max(0, effect.deployableProxyMaxCount);
             if (maxProxyCount <= 0)
             {
+                return;
+            }
+
+            if (effect.deployableProxySpawnMode == DeployableProxySpawnMode.RandomForwardArea)
+            {
+                CreateRandomForwardDeployableProxies(context, owner, sourceSkill, effect, anchorTargets[0]);
                 return;
             }
 
@@ -211,6 +224,49 @@ namespace Fight.Battle
             return true;
         }
 
+        private static void CreateRandomForwardDeployableProxies(
+            BattleContext context,
+            RuntimeHero owner,
+            SkillData sourceSkill,
+            SkillEffectData effect,
+            RuntimeHero anchorTarget)
+        {
+            var maxProxyCount = Mathf.Max(0, effect.deployableProxyMaxCount);
+            var spawnCount = Mathf.Max(1, effect.deployableProxySpawnCount);
+            var reservedPositions = new List<Vector3>();
+            CollectOwnerProxyPositions(context, owner, reservedPositions);
+            for (var i = 0; i < spawnCount; i++)
+            {
+                if (!TryMakeRoomForProxy(context, owner, maxProxyCount, effect.deployableProxyReplaceOldestWhenLimitReached))
+                {
+                    break;
+                }
+
+                var spawnPosition = ResolveRandomForwardSpawnPosition(context, owner, anchorTarget, effect, reservedPositions);
+                reservedPositions.Add(spawnPosition);
+                var proxy = new RuntimeDeployableProxy(owner, sourceSkill, effect, spawnPosition, deployableProxySequence++);
+                context.DeployableProxies.Add(proxy);
+                context.EventBus?.Publish(new DeployableProxySpawnedEvent(proxy));
+            }
+        }
+
+        private static void CollectOwnerProxyPositions(BattleContext context, RuntimeHero owner, ICollection<Vector3> results)
+        {
+            if (context?.DeployableProxies == null || owner == null || results == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < context.DeployableProxies.Count; i++)
+            {
+                var proxy = context.DeployableProxies[i];
+                if (proxy != null && !proxy.IsExpired && proxy.Owner == owner)
+                {
+                    results.Add(proxy.CurrentPosition);
+                }
+            }
+        }
+
         private static Vector3 ResolveSpawnPosition(RuntimeHero owner, RuntimeHero anchorTarget, SkillEffectData effect)
         {
             if (anchorTarget == null)
@@ -235,6 +291,77 @@ namespace Fight.Battle
 
             var spawnPosition = targetPosition - direction.normalized * effect.deployableProxySpawnOffsetDistance;
             return Stage01ArenaSpec.ClampPosition(spawnPosition);
+        }
+
+        private static Vector3 ResolveRandomForwardSpawnPosition(
+            BattleContext context,
+            RuntimeHero owner,
+            RuntimeHero anchorTarget,
+            SkillEffectData effect,
+            IReadOnlyList<Vector3> reservedPositions)
+        {
+            var origin = owner != null ? owner.CurrentPosition : Vector3.zero;
+            origin.y = 0f;
+            var forward = ResolveForwardDirection(owner, anchorTarget);
+            var lateral = new Vector3(-forward.z, 0f, forward.x);
+            var minDistance = Mathf.Max(0f, effect != null ? effect.deployableProxyRandomForwardMinDistance : 0f);
+            var maxDistance = Mathf.Max(minDistance, effect != null ? effect.deployableProxyRandomForwardMaxDistance : minDistance);
+            var halfWidth = Mathf.Max(0f, effect != null ? effect.deployableProxyRandomForwardWidth * 0.5f : 0f);
+            var minSpacing = Mathf.Max(0f, effect != null ? effect.deployableProxyRandomForwardMinSpacing : 0f);
+            var random = context != null ? context.RandomService : null;
+            var bestCandidate = Stage01ArenaSpec.ClampPosition(origin + forward * minDistance);
+
+            const int maxAttempts = 18;
+            for (var attempt = 0; attempt < maxAttempts; attempt++)
+            {
+                var distance = random != null ? random.Range(minDistance, maxDistance) : minDistance;
+                var lateralOffset = halfWidth > Mathf.Epsilon && random != null
+                    ? random.Range(-halfWidth, halfWidth)
+                    : 0f;
+                var candidate = Stage01ArenaSpec.ClampPosition(origin + forward * distance + lateral * lateralOffset);
+                candidate.y = 0f;
+                bestCandidate = candidate;
+                if (!HasNearbyReservedPosition(reservedPositions, candidate, minSpacing))
+                {
+                    return candidate;
+                }
+            }
+
+            return bestCandidate;
+        }
+
+        private static Vector3 ResolveForwardDirection(RuntimeHero owner, RuntimeHero anchorTarget)
+        {
+            var origin = owner != null ? owner.CurrentPosition : Vector3.zero;
+            var targetPosition = anchorTarget != null && anchorTarget != owner
+                ? anchorTarget.CurrentPosition
+                : origin + (owner != null && owner.Side == TeamSide.Blue ? Vector3.right : Vector3.left);
+            var direction = targetPosition - origin;
+            direction.y = 0f;
+            if (direction.sqrMagnitude <= Mathf.Epsilon)
+            {
+                direction = owner != null && owner.Side == TeamSide.Blue ? Vector3.right : Vector3.left;
+            }
+
+            return direction.normalized;
+        }
+
+        private static bool HasNearbyReservedPosition(IReadOnlyList<Vector3> positions, Vector3 candidate, float minSpacing)
+        {
+            if (positions == null || minSpacing <= Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < positions.Count; i++)
+            {
+                if (Vector3.Distance(positions[i], candidate) < minSpacing)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static RuntimeHero SelectStrikeTarget(BattleContext context, RuntimeDeployableProxy proxy, RuntimeHero preferredTarget)
@@ -386,6 +513,153 @@ namespace Fight.Battle
                 proxy.SourceSkill,
                 proxy.SourceEffect,
                 targets);
+        }
+
+        private static bool TryFireProximityExplosion(
+            BattleContext context,
+            RuntimeDeployableProxy proxy,
+            IBattleSimulationCallbacks battleCallbacks)
+        {
+            if (context == null
+                || proxy == null
+                || proxy.IsExpired
+                || proxy.Owner == null
+                || proxy.SourceEffect == null
+                || proxy.TriggerMode != DeployableProxyTriggerMode.ProximityExplosion
+                || battleCallbacks == null
+                || !HasProximityExplosionTriggerTarget(context, proxy))
+            {
+                return false;
+            }
+
+            var targets = CollectProximityExplosionTargets(context, proxy);
+            context.EventBus?.Publish(new DeployableProxyPulseEvent(proxy, targets.Count));
+            ResolveProxyExplosion(context, proxy, targets, battleCallbacks);
+            proxy.ExpireImmediately();
+            return true;
+        }
+
+        private static bool HasProximityExplosionTriggerTarget(BattleContext context, RuntimeDeployableProxy proxy)
+        {
+            if (context?.Heroes == null || proxy?.Owner == null)
+            {
+                return false;
+            }
+
+            var triggerRadius = proxy.TriggerRadius;
+            if (triggerRadius <= Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < context.Heroes.Count; i++)
+            {
+                var candidate = context.Heroes[i];
+                if (!IsValidProximityExplosionTarget(proxy.Owner, candidate))
+                {
+                    continue;
+                }
+
+                if (Vector3.Distance(proxy.CurrentPosition, candidate.CurrentPosition) <= triggerRadius)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static List<RuntimeHero> CollectProximityExplosionTargets(BattleContext context, RuntimeDeployableProxy proxy)
+        {
+            var results = new List<RuntimeHero>();
+            if (context?.Heroes == null || proxy?.Owner == null)
+            {
+                return results;
+            }
+
+            var effectRadius = proxy.EffectRadius;
+            if (effectRadius <= Mathf.Epsilon)
+            {
+                return results;
+            }
+
+            for (var i = 0; i < context.Heroes.Count; i++)
+            {
+                var candidate = context.Heroes[i];
+                if (!IsValidProximityExplosionTarget(proxy.Owner, candidate))
+                {
+                    continue;
+                }
+
+                if (Vector3.Distance(proxy.CurrentPosition, candidate.CurrentPosition) <= effectRadius)
+                {
+                    results.Add(candidate);
+                }
+            }
+
+            return results;
+        }
+
+        private static bool IsValidProximityExplosionTarget(RuntimeHero owner, RuntimeHero target)
+        {
+            return owner != null
+                && target != null
+                && !target.IsDead
+                && target.Side != owner.Side;
+        }
+
+        private static void ResolveProxyExplosion(
+            BattleContext context,
+            RuntimeDeployableProxy proxy,
+            IReadOnlyList<RuntimeHero> targets,
+            IBattleSimulationCallbacks battleCallbacks)
+        {
+            if (context == null
+                || proxy?.Owner == null
+                || targets == null
+                || targets.Count <= 0
+                || battleCallbacks == null)
+            {
+                return;
+            }
+
+            var damageMultiplier = proxy.StrikePowerMultiplier;
+            if (damageMultiplier <= Mathf.Epsilon)
+            {
+                return;
+            }
+
+            for (var i = 0; i < targets.Count; i++)
+            {
+                var target = targets[i];
+                if (!IsValidProximityExplosionTarget(proxy.Owner, target))
+                {
+                    continue;
+                }
+
+                var damage = DamageResolver.ResolveDamage(
+                    proxy.Owner.AttackPower,
+                    proxy.Owner.CriticalChance,
+                    proxy.Owner.CriticalDamageMultiplier,
+                    target.Defense,
+                    context.RandomService,
+                    damageMultiplier);
+                if (damage <= Mathf.Epsilon)
+                {
+                    continue;
+                }
+
+                BattleDamageSystem.ApplyResolvedDamage(
+                    context,
+                    battleCallbacks,
+                    proxy.Owner,
+                    target,
+                    damage,
+                    DamageSourceKind.Skill,
+                    proxy.SourceSkill,
+                    sourceBasicAttackVariantKey: string.Empty,
+                    sourceProxy: proxy);
+            }
         }
 
         private static List<RuntimeHero> CollectPulseTargets(BattleContext context, RuntimeDeployableProxy proxy)

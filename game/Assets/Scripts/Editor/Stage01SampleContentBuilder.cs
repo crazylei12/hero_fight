@@ -451,6 +451,21 @@ namespace Fight.Editor
             EnsureHeroSkillReferences(mundo, mundoActive, mundoUltimateSkill);
             EnsureHeroBattlePrefabReference(mundo, LoadBattlePrefab("tank_004_mundo", HeroClass.Tank));
 
+            var blastshieldActive = CreateBlastshieldActiveSkill(overwriteExistingContent);
+            var blastshieldUltimateSkill = CreateBlastshieldUltimateSkill(overwriteExistingContent, out var blastshieldUltimateExisted);
+
+            var blastshield = CreateHero(
+                "tank_005_blastshield",
+                "Blastshield",
+                HeroClass.Tank,
+                550f, 34f, 38f, 0.9f, 4.0f, 0.05f, 1.5f, 1.8f,
+                blastshieldActive,
+                ConfigureBlastshieldUltimate(blastshieldUltimateSkill, overwriteExistingContent, blastshieldUltimateExisted),
+                overwriteExistingContent,
+                HeroTag.Melee, HeroTag.Control, HeroTag.AreaDamage);
+            EnsureHeroSkillReferences(blastshield, blastshieldActive, blastshieldUltimateSkill);
+            EnsureHeroBattlePrefabReference(blastshield, LoadBattlePrefab("tank_005_blastshield", HeroClass.Tank));
+
             var supportActive = CreateSupportActiveSkill(overwriteExistingContent);
             var supportUltimateSkill = CreateSupportUltimateSkill(overwriteExistingContent, out var supportUltimateExisted);
 
@@ -622,7 +637,7 @@ namespace Fight.Editor
             EnsureHeroSkillReferences(boomeranger, boomerangerActive, boomerangerUltimateSkill);
             EnsureHeroBattlePrefabReference(boomeranger, LoadBattlePrefab("marksman_004_boomeranger", HeroClass.Marksman));
 
-            CreateHeroCatalog(warrior, bladesman, berserker, spellblade, trollwarlord, mage, frostmage, sandemperor, lightningmage, assassin, tidefin, butcher, loner, demon, tank, shieldwarden, tidehunter, mundo, support, windchime, monk, shrinemaiden, chef, commander, marksman, rifleman, venomshooter, boomeranger);
+            CreateHeroCatalog(warrior, bladesman, berserker, spellblade, trollwarlord, mage, frostmage, sandemperor, lightningmage, assassin, tidefin, butcher, loner, demon, tank, shieldwarden, tidehunter, mundo, blastshield, support, windchime, monk, shrinemaiden, chef, commander, marksman, rifleman, venomshooter, boomeranger);
 
             var battleInput = CreateBattleInput(
                 "Stage01DemoBattleInput",
@@ -1206,6 +1221,7 @@ namespace Fight.Editor
                 || heroId == "tank_002_shieldwarden"
                 || heroId == "tank_003_tidehunter"
                 || heroId == "tank_004_mundo"
+                || heroId == "tank_005_blastshield"
                 ? null
                 : battlePrefab != null
                     ? AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(HeroEditorControllerPath)
@@ -1357,6 +1373,7 @@ namespace Fight.Editor
             skill.effects.Clear();
             skill.allowsSelfCast = targetType == SkillTargetType.Self || targetType == SkillTargetType.AllAllies;
             ResetReactiveGuard(skill);
+            ResetReactiveCounter(skill);
             ResetActionSequence(skill);
             ResetPassiveSkillData(skill);
             ResetDamageTriggeredStatusCounter(skill);
@@ -4349,6 +4366,32 @@ namespace Fight.Editor
             skill.reactiveGuard.onTriggerStatusEffects.Clear();
         }
 
+        private static void ResetReactiveCounter(SkillData skill)
+        {
+            if (skill == null)
+            {
+                return;
+            }
+
+            if (skill.reactiveCounter == null)
+            {
+                skill.reactiveCounter = new ReactiveCounterData();
+            }
+
+            skill.reactiveCounter.enabled = false;
+            skill.reactiveCounter.durationSeconds = 0f;
+            skill.reactiveCounter.blocksBasicAttacks = true;
+            skill.reactiveCounter.blocksSkillCasts = true;
+            skill.reactiveCounter.triggerOnBasicAttackDamage = true;
+            skill.reactiveCounter.requireNonProjectileBasicAttack = true;
+            skill.reactiveCounter.sourceTriggerCooldownSeconds = 0f;
+            skill.reactiveCounter.counterDamagePowerMultiplier = 0f;
+            skill.reactiveCounter.forcedMovementDistance = 0f;
+            skill.reactiveCounter.forcedMovementDurationSeconds = 0f;
+            skill.reactiveCounter.forcedMovementPeakHeight = 0f;
+            skill.reactiveCounter.onTriggerStatusEffects.Clear();
+        }
+
         private static void ResetUltimateCondition(UltimateConditionData condition)
         {
             condition.conditionType = UltimateConditionType.None;
@@ -5544,6 +5587,165 @@ namespace Fight.Editor
             });
         }
 
+        private static SkillData CreateBlastshieldActiveSkill(bool overwriteExistingContent)
+        {
+            var skill = CreateSkill(
+                "skill_blastshield_active_shieldbrace",
+                "Shield Brace",
+                SkillSlotType.ActiveSkill,
+                SkillType.Buff,
+                SkillTargetType.NearestEnemy,
+                3.0f,
+                0f,
+                0f,
+                8f,
+                1,
+                overwriteExistingContent,
+                out var existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.description = "Stage-01 demo skill: brace behind the shield, gaining defense and slowing down while countering non-projectile basic attacks from enemy melee heroes.";
+            skill.skillType = SkillType.Buff;
+            skill.targetType = SkillTargetType.NearestEnemy;
+            skill.fallbackTargetType = SkillTargetType.CurrentEnemyTarget;
+            skill.castRange = 3.0f;
+            skill.areaRadius = 0f;
+            skill.cooldownSeconds = 8f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+
+            var braceStatuses = AddApplyStatusEffectsEffect(skill);
+            braceStatuses.targetMode = SkillEffectTargetMode.Caster;
+            braceStatuses.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.DefenseModifier,
+                durationSeconds = 4f,
+                magnitude = 1.8f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+            braceStatuses.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.MoveSpeedModifier,
+                durationSeconds = 4f,
+                magnitude = -0.65f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
+            ResetReactiveCounter(skill);
+            skill.reactiveCounter.enabled = true;
+            skill.reactiveCounter.durationSeconds = 4f;
+            skill.reactiveCounter.blocksBasicAttacks = true;
+            skill.reactiveCounter.blocksSkillCasts = true;
+            skill.reactiveCounter.triggerOnBasicAttackDamage = true;
+            skill.reactiveCounter.requireNonProjectileBasicAttack = true;
+            skill.reactiveCounter.sourceTriggerCooldownSeconds = 0.8f;
+            skill.reactiveCounter.counterDamagePowerMultiplier = 0.75f;
+            skill.reactiveCounter.forcedMovementDistance = 1.8f;
+            skill.reactiveCounter.forcedMovementDurationSeconds = 0.25f;
+            skill.reactiveCounter.forcedMovementPeakHeight = 0f;
+            skill.reactiveCounter.onTriggerStatusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.HealTakenModifier,
+                durationSeconds = 3f,
+                magnitude = -0.5f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateBlastshieldUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
+        {
+            var skill = CreateSkill(
+                "skill_blastshield_ultimate_blastminefield",
+                "Blast Minefield",
+                SkillSlotType.Ultimate,
+                SkillType.Buff,
+                SkillTargetType.NearestEnemy,
+                Stage01ArenaSpec.FullMapTargetingRangeWorldUnits,
+                0f,
+                0f,
+                0f,
+                1,
+                overwriteExistingContent,
+                out existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            ApplyBlastshieldUltimateBaseConfiguration(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData ConfigureBlastshieldUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            ApplyBlastshieldUltimateBaseConfiguration(skill);
+            ResetUltimateDecision(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static void ApplyBlastshieldUltimateBaseConfiguration(SkillData skill)
+        {
+            skill.description = "Stage-01 demo skill: scatter fixed mines into a random forward field; each mine persists until an enemy steps near it, then explodes for area damage.";
+            skill.activationMode = SkillActivationMode.Active;
+            skill.skillType = SkillType.Buff;
+            skill.targetType = SkillTargetType.NearestEnemy;
+            skill.fallbackTargetType = SkillTargetType.CurrentEnemyTarget;
+            skill.castRange = Stage01ArenaSpec.FullMapTargetingRangeWorldUnits;
+            skill.areaRadius = 0f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+            ResetReactiveCounter(skill);
+
+            var minefield = AddDeployableProxyEffect(
+                skill,
+                powerMultiplier: 2.4f,
+                strikeRadius: 2.0f,
+                durationSeconds: 0f,
+                maxCount: 7,
+                spawnMode: DeployableProxySpawnMode.RandomForwardArea,
+                spawnOffsetDistance: 0f,
+                triggerMode: DeployableProxyTriggerMode.ProximityExplosion,
+                replaceOldestWhenLimitReached: true,
+                immediateStrikeOnSpawn: false);
+            minefield.targetMode = SkillEffectTargetMode.PrimaryTarget;
+            minefield.radiusOverride = 2.0f;
+            minefield.persistentAreaTargetType = PersistentAreaTargetType.Enemies;
+            minefield.deployableProxySpawnCount = 7;
+            minefield.deployableProxyPersistUntilTriggered = true;
+            minefield.deployableProxyTriggerRadius = 1.0f;
+            minefield.deployableProxyEffectRadius = 2.0f;
+            minefield.deployableProxyRandomForwardMinDistance = 2.5f;
+            minefield.deployableProxyRandomForwardMaxDistance = 8.0f;
+            minefield.deployableProxyRandomForwardWidth = 5.5f;
+            minefield.deployableProxyRandomForwardMinSpacing = 2.0f;
+            minefield.deployableProxySpawnVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(RiflemanActiveTargetIndicatorVfxPrefabPath);
+            minefield.deployableProxyLoopVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(RiflemanActiveTargetIndicatorVfxPrefabPath);
+            minefield.deployableProxyRemovalVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(RiflemanUltimateAreaVfxPrefabPath);
+            minefield.deployableProxyVfxLocalOffset = new Vector3(0f, 0.08f, 0f);
+            minefield.deployableProxyVfxEulerAngles = Vector3.zero;
+            minefield.deployableProxyVfxScaleMultiplier = new Vector3(0.55f, 0.55f, 1f);
+        }
+
         private static SkillData ConfigureRiflemanUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
         {
             if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
@@ -6110,6 +6312,8 @@ namespace Fight.Editor
                 "skill_tidehunter_ultimate_tidalrebound" => "tank_003_tidehunter",
                 "skill_mundo_active_brutemetabolism" => "tank_004_mundo",
                 "skill_mundo_ultimate_monstrousrecovery" => "tank_004_mundo",
+                "skill_blastshield_active_shieldbrace" => "tank_005_blastshield",
+                "skill_blastshield_ultimate_blastminefield" => "tank_005_blastshield",
                 _ => null,
             };
         }

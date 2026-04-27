@@ -68,6 +68,14 @@ namespace Fight.Battle
             remainingDamage -= absorbedByShield;
             if (remainingDamage <= Mathf.Epsilon)
             {
+                TryProcessReactiveCounter(
+                    context,
+                    battleCallbacks,
+                    attacker,
+                    target,
+                    sourceKind,
+                    sourceProxy,
+                    absorbedByShield);
                 return 0f;
             }
 
@@ -108,6 +116,14 @@ namespace Fight.Battle
                 && !target.IsDead
                 && target.CurrentHealth > 0f)
             {
+                TryProcessReactiveCounter(
+                    context,
+                    battleCallbacks,
+                    attacker,
+                    target,
+                    sourceKind,
+                    sourceProxy,
+                    absorbedByShield + totalActualDamage);
                 BattleDamageTriggeredStatusSystem.TryProcessDamage(
                     context,
                     attacker,
@@ -279,6 +295,25 @@ namespace Fight.Battle
         {
             return sourceKind != DamageSourceKind.StatusEffect
                 && sourceKind != DamageSourceKind.DamageShare;
+        }
+
+        private static void TryProcessReactiveCounter(
+            BattleContext context,
+            IBattleSimulationCallbacks battleCallbacks,
+            RuntimeHero attacker,
+            RuntimeHero target,
+            DamageSourceKind sourceKind,
+            RuntimeDeployableProxy sourceProxy,
+            float effectiveDamageAmount)
+        {
+            BattleReactiveCounterSystem.TryProcessDamage(
+                context,
+                battleCallbacks,
+                attacker,
+                target,
+                sourceKind,
+                sourceProxy,
+                effectiveDamageAmount);
         }
 
         private static void TryApplyLifesteal(BattleContext context, RuntimeHero attacker, float actualDamage)

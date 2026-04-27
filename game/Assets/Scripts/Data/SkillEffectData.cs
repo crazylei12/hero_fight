@@ -35,6 +35,7 @@ namespace Fight.Data
     {
         AtTargetPosition = 0,
         AroundTarget = 1,
+        RandomForwardArea = 2,
     }
 
     public enum DeployableProxyTriggerMode
@@ -43,6 +44,7 @@ namespace Fight.Data
         OnOwnerBasicAttack = 1,
         PeriodicBasicAttackSequence = 2,
         PeriodicEffectPulse = 3,
+        ProximityExplosion = 4,
     }
 
     public enum SkillEffectTargetMode
@@ -114,7 +116,15 @@ namespace Fight.Data
         public DeployableProxySpawnMode deployableProxySpawnMode = DeployableProxySpawnMode.AtTargetPosition;
         public DeployableProxyTriggerMode deployableProxyTriggerMode = DeployableProxyTriggerMode.None;
         [Min(0f)] public float deployableProxyStrikeRadius = 0f;
+        [Min(0f)] public float deployableProxyTriggerRadius = 0f;
+        [Min(0f)] public float deployableProxyEffectRadius = 0f;
         [Min(0f)] public float deployableProxySpawnOffsetDistance = 0f;
+        [Min(1)] public int deployableProxySpawnCount = 1;
+        public bool deployableProxyPersistUntilTriggered;
+        [Min(0f)] public float deployableProxyRandomForwardMinDistance = 0f;
+        [Min(0f)] public float deployableProxyRandomForwardMaxDistance = 0f;
+        [Min(0f)] public float deployableProxyRandomForwardWidth = 0f;
+        [Min(0f)] public float deployableProxyRandomForwardMinSpacing = 0f;
         [Min(0)] public int deployableProxyMaxCount = 0;
         public bool deployableProxyReplaceOldestWhenLimitReached = true;
         public bool deployableProxyImmediateStrikeOnSpawn;
