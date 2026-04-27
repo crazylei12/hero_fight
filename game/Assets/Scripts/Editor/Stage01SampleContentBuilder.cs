@@ -348,6 +348,14 @@ namespace Fight.Editor
                 out var tidefinHeroExisted,
                 HeroTag.Melee, HeroTag.Dive, HeroTag.Control);
             ConfigureTidefinBasicAttack(tidefin, overwriteExistingContent, tidefinHeroExisted);
+            EnsureHeroSkillReferences(tidefin, tidefinActive, tidefinUltimateSkill);
+            EnsureHeroBattlePrefabReference(tidefin, LoadBattlePrefab("assassin_002_tidefin", HeroClass.Assassin));
+            if (tidefin?.visualConfig != null)
+            {
+                tidefin.visualConfig.animatorController = null;
+                tidefin.visualConfig.battlePrefabFacesLeftByDefault = false;
+                EditorUtility.SetDirty(tidefin);
+            }
 
             var butcherActive = CreateButcherActiveSkill(overwriteExistingContent);
             var butcherUltimateSkill = CreateButcherUltimateSkill(overwriteExistingContent, out var butcherUltimateExisted);
@@ -1257,7 +1265,7 @@ namespace Fight.Editor
                 : battlePrefab != null
                     ? AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(HeroEditorControllerPath)
                     : null;
-            hero.visualConfig.battlePrefabFacesLeftByDefault = heroId == "assassin_002_tidefin";
+            hero.visualConfig.battlePrefabFacesLeftByDefault = false;
             hero.visualConfig.projectilePrefab = heroId switch
             {
                 "mage_001_firemage" => AssetDatabase.LoadAssetAtPath<GameObject>(FireMageProjectilePrefabPath),
