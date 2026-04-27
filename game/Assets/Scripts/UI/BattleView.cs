@@ -46,7 +46,7 @@ namespace Fight.UI
         private const int UltimateIconSortOrder = 303;
         private const int UltimateStackTextShadowSortOrder = 304;
         private const int UltimateStackTextSortOrder = 305;
-        private const float UltimateStackTextBaseCharacterSize = 0.0042f;
+        private const float UltimateStackTextBaseCharacterSize = 0.018f;
         private const float ArenaBackgroundHeight = Stage01ArenaSpec.HeightWorldUnits;
         private const float MinAirborneEffectHeight = 0.12f;
         private const float DefaultTransientVfxLifetime = 1f;
@@ -521,7 +521,7 @@ namespace Fight.UI
             view.UltimateStackGlow.gameObject.SetActive(false);
             view.UltimateIcon = MakeSprite("UltimateIcon", view.FootUiRoot, squareSprite, new Color(1f, 0.9f, 0.36f, 0.98f), UltimateIconSortOrder, UltimateIconLocalPosition, UltimateIconNormalScale);
             view.UltimateIcon.transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
-            view.UltimateStackTextShadow = MakeText("UltimateStackTextShadow", view.FootUiRoot, string.Empty, new Color(0.02f, 0.02f, 0.03f, 0.92f), UltimateStackTextShadowSortOrder, UltimateIconLocalPosition + new Vector3(0.012f, -0.012f, 0f), UltimateStackTextBaseCharacterSize);
+            view.UltimateStackTextShadow = MakeText("UltimateStackTextShadow", view.FootUiRoot, string.Empty, new Color(0.02f, 0.02f, 0.03f, 0.92f), UltimateStackTextShadowSortOrder, UltimateIconLocalPosition + new Vector3(0.018f, -0.018f, 0f), UltimateStackTextBaseCharacterSize);
             view.UltimateStackText = MakeText("UltimateStackText", view.FootUiRoot, string.Empty, Color.white, UltimateStackTextSortOrder, UltimateIconLocalPosition + new Vector3(0f, 0.002f, 0f), UltimateStackTextBaseCharacterSize);
             SetUltimateStackTextVisible(view, false);
             return view;
