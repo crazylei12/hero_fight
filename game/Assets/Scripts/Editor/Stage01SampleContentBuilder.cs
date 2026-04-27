@@ -1229,7 +1229,8 @@ namespace Fight.Editor
             hero.debugNotes = $"Stage-01 demo hero for {heroClass}.";
             var battlePrefab = LoadBattlePrefab(heroId, heroClass);
             hero.visualConfig.battlePrefab = battlePrefab;
-            hero.visualConfig.animatorController = heroId == "assassin_002_tidefin"
+            hero.visualConfig.animatorController = heroId == "assassin_001_shadowstep"
+                || heroId == "assassin_002_tidefin"
                 || heroId == "assassin_003_butcher"
                 || heroId == "warrior_001_skybreaker"
                 || heroId == "warrior_002_bladesman"
