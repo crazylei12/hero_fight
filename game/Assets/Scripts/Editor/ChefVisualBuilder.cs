@@ -20,6 +20,10 @@ namespace Fight.Editor
         private const string ChefHeroAssetPath = "Assets/Data/Stage01Demo/Heroes/support_005_chef/Chef.asset";
         private const string BuilderScriptAssetPath = "Assets/Scripts/Editor/ChefVisualBuilder.cs";
         private const float PixelsPerUnit = 64f;
+        private const int DividerScanPixels = 24;
+        private const int DividerClearRadius = 2;
+        private const int LeftEdgeSliverMaxWidthPixels = 12;
+        private const int LeftEdgeSliverMaxPixels = 220;
 
         private static readonly Vector2 FootPivot = new Vector2(0.5f, 0.07f);
 
@@ -147,10 +151,301 @@ namespace Fight.Editor
                 for (var i = 0; i < sourceFiles.Length; i++)
                 {
                     var assetPath = $"{resourcesFolder}/{spec.FilePrefix}_{i:00}.png";
-                    File.Copy(sourceFiles[i], ToAbsolutePath(assetPath), true);
+                    CopyCleanedFrame(sourceFiles[i], ToAbsolutePath(assetPath));
                     ApplyFrameTextureImporter(assetPath);
                 }
             }
+        }
+
+        private static void CopyCleanedFrame(string sourceAbsolutePath, string destinationAbsolutePath)
+        {
+            var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            try
+            {
+                if (!texture.LoadImage(File.ReadAllBytes(sourceAbsolutePath)))
+                {
+                    throw new InvalidDataException($"Could not load Chef frame PNG: {sourceAbsolutePath}");
+                }
+
+                RemoveDividerArtifacts(texture);
+                File.WriteAllBytes(destinationAbsolutePath, texture.EncodeToPNG());
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(texture);
+            }
+        }
+
+        private static void RemoveDividerArtifacts(Texture2D texture)
+        {
+            if (texture == null)
+            {
+                return;
+            }
+
+            var width = texture.width;
+            var height = texture.height;
+            if (width <= 0 || height <= 0)
+            {
+                return;
+            }
+
+            var pixels = texture.GetPixels32();
+            ClearDividerLineBands(pixels, width, height);
+            ClearLeftEdgeSlivers(pixels, width, height);
+            texture.SetPixels32(pixels);
+            texture.Apply(false, false);
+        }
+
+        private static void ClearDividerLineBands(Color32[] pixels, int width, int height)
+        {
+            var scanColumns = Mathf.Min(DividerScanPixels, Mathf.Max(0, width / 2));
+            var clearColumns = new bool[width];
+            for (var x = 0; x < scanColumns; x++)
+            {
+                if (HasLongDividerRunInColumn(pixels, width, height, x))
+                {
+                    MarkColumnForClearing(clearColumns, x);
+                }
+            }
+
+            for (var x = Mathf.Max(scanColumns, width - scanColumns); x < width; x++)
+            {
+                if (HasLongDividerRunInColumn(pixels, width, height, x))
+                {
+                    MarkColumnForClearing(clearColumns, x);
+                }
+            }
+
+            var scanRows = Mathf.Min(DividerScanPixels, Mathf.Max(0, height / 2));
+            var clearRows = new bool[height];
+            for (var y = 0; y < scanRows; y++)
+            {
+                if (HasLongDividerRunInRow(pixels, width, height, y))
+                {
+                    MarkRowForClearing(clearRows, y);
+                }
+            }
+
+            for (var y = Mathf.Max(scanRows, height - scanRows); y < height; y++)
+            {
+                if (HasLongDividerRunInRow(pixels, width, height, y))
+                {
+                    MarkRowForClearing(clearRows, y);
+                }
+            }
+
+            for (var y = 0; y < height; y++)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    if (clearColumns[x] || clearRows[y])
+                    {
+                        ClearPixel(pixels, width, x, y);
+                    }
+                }
+            }
+        }
+
+        private static void ClearLeftEdgeSlivers(Color32[] pixels, int width, int height)
+        {
+            var visited = new bool[pixels.Length];
+            var queueX = new int[pixels.Length];
+            var queueY = new int[pixels.Length];
+
+            for (var y = 0; y < height; y++)
+            {
+                var index = ToIndex(width, 0, y);
+                if (visited[index] || !IsVisible(pixels[index]))
+                {
+                    continue;
+                }
+
+                var head = 0;
+                var tail = 0;
+                var count = 0;
+                var maxX = 0;
+                queueX[tail] = 0;
+                queueY[tail] = y;
+                tail++;
+                visited[index] = true;
+
+                while (head < tail)
+                {
+                    var currentX = queueX[head];
+                    var currentY = queueY[head];
+                    head++;
+                    count++;
+                    maxX = Mathf.Max(maxX, currentX);
+
+                    for (var offsetY = -1; offsetY <= 1; offsetY++)
+                    {
+                        for (var offsetX = -1; offsetX <= 1; offsetX++)
+                        {
+                            if (offsetX == 0 && offsetY == 0)
+                            {
+                                continue;
+                            }
+
+                            var nextX = currentX + offsetX;
+                            var nextY = currentY + offsetY;
+                            if (nextX < 0 || nextY < 0 || nextX >= width || nextY >= height)
+                            {
+                                continue;
+                            }
+
+                            var nextIndex = ToIndex(width, nextX, nextY);
+                            if (visited[nextIndex] || !IsVisible(pixels[nextIndex]))
+                            {
+                                continue;
+                            }
+
+                            visited[nextIndex] = true;
+                            queueX[tail] = nextX;
+                            queueY[tail] = nextY;
+                            tail++;
+                        }
+                    }
+                }
+
+                if (maxX <= LeftEdgeSliverMaxWidthPixels || count <= LeftEdgeSliverMaxPixels)
+                {
+                    for (var i = 0; i < tail; i++)
+                    {
+                        ClearPixel(pixels, width, queueX[i], queueY[i]);
+                    }
+                }
+            }
+        }
+
+        private static bool HasLongDividerRunInColumn(Color32[] pixels, int width, int height, int x)
+        {
+            var count = 0;
+            var run = 0;
+            var longestRun = 0;
+            var visibleCount = 0;
+            var visibleRun = 0;
+            var longestVisibleRun = 0;
+            for (var y = 0; y < height; y++)
+            {
+                var pixel = pixels[ToIndex(width, x, y)];
+                if (IsVisible(pixel))
+                {
+                    visibleCount++;
+                    visibleRun++;
+                    longestVisibleRun = Mathf.Max(longestVisibleRun, visibleRun);
+                }
+                else
+                {
+                    visibleRun = 0;
+                }
+
+                if (IsDividerPixel(pixel))
+                {
+                    count++;
+                    run++;
+                    longestRun = Mathf.Max(longestRun, run);
+                }
+                else
+                {
+                    run = 0;
+                }
+            }
+
+            return count >= height * 0.45f
+                || longestRun >= height * 0.32f
+                || visibleCount >= height * 0.72f
+                || longestVisibleRun >= height * 0.68f;
+        }
+
+        private static bool HasLongDividerRunInRow(Color32[] pixels, int width, int height, int y)
+        {
+            var count = 0;
+            var run = 0;
+            var longestRun = 0;
+            var visibleCount = 0;
+            var visibleRun = 0;
+            var longestVisibleRun = 0;
+            for (var x = 0; x < width; x++)
+            {
+                var pixel = pixels[ToIndex(width, x, y)];
+                if (IsVisible(pixel))
+                {
+                    visibleCount++;
+                    visibleRun++;
+                    longestVisibleRun = Mathf.Max(longestVisibleRun, visibleRun);
+                }
+                else
+                {
+                    visibleRun = 0;
+                }
+
+                if (IsDividerPixel(pixel))
+                {
+                    count++;
+                    run++;
+                    longestRun = Mathf.Max(longestRun, run);
+                }
+                else
+                {
+                    run = 0;
+                }
+            }
+
+            return count >= width * 0.45f
+                || longestRun >= width * 0.32f
+                || visibleCount >= width * 0.72f
+                || longestVisibleRun >= width * 0.68f;
+        }
+
+        private static void MarkColumnForClearing(bool[] clearColumns, int center)
+        {
+            for (var x = Mathf.Max(0, center - DividerClearRadius);
+                 x <= Mathf.Min(clearColumns.Length - 1, center + DividerClearRadius);
+                 x++)
+            {
+                clearColumns[x] = true;
+            }
+        }
+
+        private static void MarkRowForClearing(bool[] clearRows, int center)
+        {
+            for (var y = Mathf.Max(0, center - DividerClearRadius);
+                 y <= Mathf.Min(clearRows.Length - 1, center + DividerClearRadius);
+                 y++)
+            {
+                clearRows[y] = true;
+            }
+        }
+
+        private static bool IsVisible(Color32 color)
+        {
+            return color.a > 16;
+        }
+
+        private static bool IsDividerPixel(Color32 color)
+        {
+            if (!IsVisible(color))
+            {
+                return false;
+            }
+
+            var max = Mathf.Max(color.r, Mathf.Max(color.g, color.b));
+            var min = Mathf.Min(color.r, Mathf.Min(color.g, color.b));
+            return max <= 64 || (min >= 178 && max - min <= 54);
+        }
+
+        private static void ClearPixel(Color32[] pixels, int width, int x, int y)
+        {
+            var index = ToIndex(width, x, y);
+            var color = pixels[index];
+            color.a = 0;
+            pixels[index] = color;
+        }
+
+        private static int ToIndex(int width, int x, int y)
+        {
+            return (y * width) + x;
         }
 
         private static void CreateChefPortrait()
