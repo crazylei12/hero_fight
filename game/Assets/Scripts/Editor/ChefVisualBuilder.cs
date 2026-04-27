@@ -21,7 +21,8 @@ namespace Fight.Editor
         private const string BuilderScriptAssetPath = "Assets/Scripts/Editor/ChefVisualBuilder.cs";
         private const float PixelsPerUnit = 64f;
         private const int DividerScanPixels = 24;
-        private const int DividerClearRadius = 2;
+        private const int DividerClearRadius = 1;
+        private const int DividerEdgeAnchorPixels = 4;
         private const int LeftEdgeSliverMaxWidthPixels = 12;
         private const int LeftEdgeSliverMaxPixels = 220;
 
@@ -320,82 +321,76 @@ namespace Fight.Editor
 
         private static bool HasLongDividerRunInColumn(Color32[] pixels, int width, int height, int x)
         {
-            var count = 0;
-            var run = 0;
-            var longestRun = 0;
-            var visibleCount = 0;
-            var visibleRun = 0;
-            var longestVisibleRun = 0;
-            for (var y = 0; y < height; y++)
-            {
-                var pixel = pixels[ToIndex(width, x, y)];
-                if (IsVisible(pixel))
-                {
-                    visibleCount++;
-                    visibleRun++;
-                    longestVisibleRun = Mathf.Max(longestVisibleRun, visibleRun);
-                }
-                else
-                {
-                    visibleRun = 0;
-                }
-
-                if (IsDividerPixel(pixel))
-                {
-                    count++;
-                    run++;
-                    longestRun = Mathf.Max(longestRun, run);
-                }
-                else
-                {
-                    run = 0;
-                }
-            }
-
-            return count >= height * 0.45f
-                || longestRun >= height * 0.32f
-                || visibleCount >= height * 0.72f
-                || longestVisibleRun >= height * 0.68f;
+            return HasEdgeAnchoredDividerRunInColumn(pixels, width, height, x, height * 0.32f)
+                || HasEdgeAnchoredVisibleRunInColumn(pixels, width, height, x, height * 0.85f);
         }
 
         private static bool HasLongDividerRunInRow(Color32[] pixels, int width, int height, int y)
         {
-            var count = 0;
-            var run = 0;
-            var longestRun = 0;
-            var visibleCount = 0;
-            var visibleRun = 0;
-            var longestVisibleRun = 0;
-            for (var x = 0; x < width; x++)
+            return HasEdgeAnchoredDividerRunInRow(pixels, width, height, y, width * 0.32f)
+                || HasEdgeAnchoredVisibleRunInRow(pixels, width, height, y, width * 0.85f);
+        }
+
+        private static bool HasEdgeAnchoredDividerRunInColumn(Color32[] pixels, int width, int height, int x, float minLength)
+        {
+            return HasEdgeAnchoredRun(height, y => IsDividerPixel(pixels[ToIndex(width, x, y)]), minLength);
+        }
+
+        private static bool HasEdgeAnchoredVisibleRunInColumn(Color32[] pixels, int width, int height, int x, float minLength)
+        {
+            return HasEdgeAnchoredRun(height, y => IsVisible(pixels[ToIndex(width, x, y)]), minLength);
+        }
+
+        private static bool HasEdgeAnchoredDividerRunInRow(Color32[] pixels, int width, int height, int y, float minLength)
+        {
+            return HasEdgeAnchoredRun(width, x => IsDividerPixel(pixels[ToIndex(width, x, y)]), minLength);
+        }
+
+        private static bool HasEdgeAnchoredVisibleRunInRow(Color32[] pixels, int width, int height, int y, float minLength)
+        {
+            return HasEdgeAnchoredRun(width, x => IsVisible(pixels[ToIndex(width, x, y)]), minLength);
+        }
+
+        private static bool HasEdgeAnchoredRun(int length, Func<int, bool> predicate, float minLength)
+        {
+            var runStart = -1;
+            for (var i = 0; i < length; i++)
             {
-                var pixel = pixels[ToIndex(width, x, y)];
-                if (IsVisible(pixel))
+                if (predicate(i))
                 {
-                    visibleCount++;
-                    visibleRun++;
-                    longestVisibleRun = Mathf.Max(longestVisibleRun, visibleRun);
-                }
-                else
-                {
-                    visibleRun = 0;
+                    if (runStart < 0)
+                    {
+                        runStart = i;
+                    }
+
+                    continue;
                 }
 
-                if (IsDividerPixel(pixel))
+                if (IsEdgeAnchoredRun(runStart, i - 1, length, minLength))
                 {
-                    count++;
-                    run++;
-                    longestRun = Mathf.Max(longestRun, run);
+                    return true;
                 }
-                else
-                {
-                    run = 0;
-                }
+
+                runStart = -1;
             }
 
-            return count >= width * 0.45f
-                || longestRun >= width * 0.32f
-                || visibleCount >= width * 0.72f
-                || longestVisibleRun >= width * 0.68f;
+            return IsEdgeAnchoredRun(runStart, length - 1, length, minLength);
+        }
+
+        private static bool IsEdgeAnchoredRun(int start, int end, int length, float minLength)
+        {
+            if (start < 0 || end < start)
+            {
+                return false;
+            }
+
+            var runLength = end - start + 1;
+            if (runLength < minLength)
+            {
+                return false;
+            }
+
+            return start <= DividerEdgeAnchorPixels || end >= length - 1 - DividerEdgeAnchorPixels;
         }
 
         private static void MarkColumnForClearing(bool[] clearColumns, int center)
