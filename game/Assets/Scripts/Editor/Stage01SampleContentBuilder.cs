@@ -63,6 +63,7 @@ namespace Fight.Editor
         private const string VenomshooterPrefabPath = "Assets/Prefabs/Heroes/marksman_003_venomshooter/Venomshooter.prefab";
         private const string BoomerangerPrefabPath = "Assets/Prefabs/Heroes/marksman_004_boomeranger/Boomeranger.prefab";
         private const string SniperPrefabPath = "Assets/Prefabs/Heroes/marksman_002_rifleman/Rifleman.prefab";
+        private const string BloodlancerPrefabPath = BloodlancerVisualBuilder.HeroPrefabPath;
         private const string SupportPrefabPath = "Assets/Prefabs/Heroes/support_001_sunpriest/Sunpriest.prefab";
         private const string WindchimePrefabPath = "Assets/Prefabs/Heroes/support_002_windchime/Windchime.prefab";
         private const string MonkPrefabPath = "Assets/Prefabs/Heroes/support_003_monk/Monk.prefab";
@@ -75,6 +76,7 @@ namespace Fight.Editor
         private const string FireMagePrefabPath = "Assets/Prefabs/Heroes/mage_001_firemage/FIREMAGE.prefab";
         private const string FireMageSpritePrefabPath = "Assets/Prefabs/Heroes/mage_001_firemage/FireMageSprite.prefab";
         private const string FrostMagePrefabPath = "Assets/Prefabs/Heroes/mage_002_frostmage/Frostmage.prefab";
+        private const string SandemperorPrefabPath = "Assets/Prefabs/Heroes/mage_003_sandemperor/Sandemperor.prefab";
         private const string LightningmagePrefabPath = "Assets/Prefabs/Heroes/mage_004_lightningmage/Lightningmage.prefab";
         private const string AstromancerPrefabPath = AstromancerVisualAndVfxBuilder.HeroPrefabPath;
         private const string TankPrefabPath = "Assets/Prefabs/Heroes/tank_001_ironwall/Ironwall.prefab";
@@ -306,6 +308,12 @@ namespace Fight.Editor
             ConfigureSandemperorBasicAttack(sandemperor, overwriteExistingContent, sandemperorHeroExisted);
             EnsureHeroSkillReferences(sandemperor, sandemperorActive, sandemperorUltimateSkill);
             EnsureHeroBattlePrefabReference(sandemperor, LoadBattlePrefab("mage_003_sandemperor", HeroClass.Mage));
+            if (sandemperor?.visualConfig != null)
+            {
+                sandemperor.visualConfig.animatorController = null;
+                sandemperor.visualConfig.battlePrefabFacesLeftByDefault = false;
+                EditorUtility.SetDirty(sandemperor);
+            }
 
             var lightningmageActive = CreateLightningmageActiveSkill(overwriteExistingContent);
             var lightningmageUltimateSkill = CreateLightningmageUltimateSkill(overwriteExistingContent, out var lightningmageUltimateExisted);
@@ -1307,6 +1315,7 @@ namespace Fight.Editor
                 || heroId == "warrior_005_trollwarlord"
                 || heroId == "mage_001_firemage"
                 || heroId == "mage_002_frostmage"
+                || heroId == "mage_003_sandemperor"
                 || heroId == "mage_004_lightningmage"
                 || heroId == "mage_005_astromancer"
                 || heroId == "marksman_001_longshot"
@@ -1542,7 +1551,7 @@ namespace Fight.Editor
                 "assassin_005_demon" => AssassinPrefabPath,
                 "mage_001_firemage" => FireMageSpritePrefabPath,
                 "mage_002_frostmage" => FrostMagePrefabPath,
-                "mage_003_sandemperor" => FireMagePrefabPath,
+                "mage_003_sandemperor" => SandemperorPrefabPath,
                 "mage_004_lightningmage" => LightningmagePrefabPath,
                 "mage_005_astromancer" => AstromancerPrefabPath,
                 "marksman_001_longshot" => MarksmanPrefabPath,
@@ -1550,7 +1559,7 @@ namespace Fight.Editor
                 "marksman_003_venomshooter" => VenomshooterPrefabPath,
                 "marksman_004_boomeranger" => BoomerangerPrefabPath,
                 "marksman_005_sniper" => SniperPrefabPath,
-                "marksman_006_bloodlancer" => MarksmanPrefabPath,
+                "marksman_006_bloodlancer" => BloodlancerPrefabPath,
                 "support_002_windchime" => WindchimePrefabPath,
                 "support_003_monk" => MonkPrefabPath,
                 "support_004_shrinemaiden" => ShrinemaidenPrefabPath,

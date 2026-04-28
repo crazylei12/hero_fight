@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: mage_003_sandemperor
   displayName: Sandemperor
-  description: '部署型法师，通过沙卫配合自身普攻建立持续火力点，越能站住阵地越有价值。适合中后排稳定压制，但需要避免被快速切入；阵线被打乱时，沙卫价值会下降。'
+  description: "\u90E8\u7F72\u578B\u6CD5\u5E08\uFF0C\u901A\u8FC7\u6C99\u536B\u914D\u5408\u81EA\u8EAB\u666E\u653B\u5EFA\u7ACB\u6301\u7EED\u706B\u529B\u70B9\uFF0C\u8D8A\u80FD\u7AD9\u4F4F\u9635\u5730\u8D8A\u6709\u4EF7\u503C\u3002\u9002\u5408\u4E2D\u540E\u6392\u7A33\u5B9A\u538B\u5236\uFF0C\u4F46\u9700\u8981\u907F\u514D\u88AB\u5FEB\u901F\u5207\u5165\uFF1B\u9635\u7EBF\u88AB\u6253\u4E71\u65F6\uFF0C\u6C99\u536B\u4EF7\u503C\u4F1A\u4E0B\u964D\u3002"
   heroClass: 1
   tags: 010000000300000007000000
   baseStats:
@@ -41,6 +41,20 @@ MonoBehaviour:
       searchRadius: 0
       powerMultiplier: 0
       bounceVariantKey: 
+    sameTargetStacking:
+      enabled: 0
+      maxStacks: 1
+      modifierEffectType: 4
+      magnitudePerStack: 0
+      targetRetentionRange: 0
+      fullStackOverrideStatusEffectType: 0
+    onHitEffect:
+      enabled: 0
+      selfCurrentHealthCostRatio: 0
+      minimumSelfHealthAfterCost: 1
+      bonusDamagePowerMultiplier: 0
+      selfHealBasePowerMultiplier: 0
+      selfHealMissingHealthPowerMultiplier: 0
     onHitStatusEffects: []
     variants: []
   activeSkill: {fileID: 11400000, guid: 48d88dc6d09e460091f59ec59a6602e6, type: 2}
@@ -49,9 +63,9 @@ MonoBehaviour:
   usesSpecialLogic: 0
   specialLogicNotes: 
   visualConfig:
-    portrait: {fileID: 21300000, guid: f4904f0159806d44ab7757582982355f, type: 3}
-    battlePrefab: {fileID: 6237993116064068715, guid: 7acaa5000dc1980468f4466e2c192fe9, type: 3}
-    animatorController: {fileID: 9100000, guid: c0fbc9a82051e94429aa17cc4b2f48e5, type: 2}
+    portrait: {fileID: 21300000, guid: 1987f035dffdec944be68d9ecb5b2cd4, type: 3}
+    battlePrefab: {fileID: 4522363119892989717, guid: 8d4351380d136354f9cf7d57984e326c, type: 3}
+    animatorController: {fileID: 0}
     battlePrefabFacesLeftByDefault: 0
     projectilePrefab: {fileID: 4475302993740453698, guid: 4440117f42dc64246807d6d985d5220b, type: 3}
     projectileAlignToMovement: 1
@@ -59,6 +73,7 @@ MonoBehaviour:
     castVfxPrefab: {fileID: 0}
     hitVfxPrefab: {fileID: 0}
     basicAttackVariantVisuals: []
+    formVisuals: []
     castSfx: {fileID: 0}
   debugNotes: Stage-01 demo hero for Mage. Sandemperor validates fixed deployable
     proxies that only strike off the owner's basic-attack cadence.
