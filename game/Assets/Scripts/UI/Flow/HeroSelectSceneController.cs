@@ -205,13 +205,12 @@ namespace Fight.UI.Flow
         private void DrawTeamSlot(Rect rect, int index, HeroDefinition hero, AthleteDefinition athlete, bool isCurrent, bool isSwapSource, bool isTeamReady, Color accentColor)
         {
             var previousColor = GUI.color;
-            var slotAccent = isSwapSource ? new Color(0.26f, 0.78f, 0.42f, 1f) : accentColor;
             var isFocused = isCurrent || isSwapSource;
-            GUI.color = Color.Lerp(Color.white, slotAccent, isFocused ? 0.88f : isTeamReady ? 0.48f : 0.28f);
+            GUI.color = Color.Lerp(Color.white, accentColor, isFocused ? 0.88f : isTeamReady ? 0.48f : 0.28f);
             GUI.Box(rect, string.Empty, isFocused ? focusedSlotStyle : slotStyle);
             if (isFocused || isTeamReady)
             {
-                GUI.color = new Color(slotAccent.r, slotAccent.g, slotAccent.b, isTeamReady && !isFocused ? 0.2f : 0.38f);
+                GUI.color = new Color(accentColor.r, accentColor.g, accentColor.b, isTeamReady && !isFocused ? 0.2f : 0.38f);
                 GUI.DrawTexture(new Rect(rect.x + 2f, rect.y + 2f, rect.width - 4f, rect.height - 4f), Texture2D.whiteTexture);
                 GUI.color = new Color(1f, 1f, 1f, 0.14f);
                 GUI.DrawTexture(new Rect(rect.x + 2f, rect.y + 2f, rect.width - 4f, 3f), Texture2D.whiteTexture);
