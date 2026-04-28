@@ -16,6 +16,7 @@ namespace Fight.Data
         [Range(-50f, 50f)] public float condition;
 
         public List<HeroMasteryEntry> heroMasteries = new List<HeroMasteryEntry>();
+        public List<string> traitIds = new List<string>();
 
         public bool TryGetMastery(HeroDefinition heroDefinition, out float mastery)
         {
@@ -44,6 +45,43 @@ namespace Fight.Data
             }
 
             return false;
+        }
+    }
+
+    public static class AthleteTraitCatalog
+    {
+        public const string LateBloomingTraitId = "late_blooming";
+
+        public static bool HasTrait(AthleteDefinition athlete, string traitId)
+        {
+            if (athlete?.traitIds == null || string.IsNullOrWhiteSpace(traitId))
+            {
+                return false;
+            }
+
+            for (var i = 0; i < athlete.traitIds.Count; i++)
+            {
+                if (string.Equals(athlete.traitIds[i], traitId, System.StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public static string GetDisplayName(string traitId)
+        {
+            return string.Equals(traitId, LateBloomingTraitId, System.StringComparison.OrdinalIgnoreCase)
+                ? "大器晚成"
+                : traitId;
+        }
+
+        public static string GetCombatDescription(string traitId)
+        {
+            return string.Equals(traitId, LateBloomingTraitId, System.StringComparison.OrdinalIgnoreCase)
+                ? "战斗开始时最终攻击力和防御力 -20%，每秒提升 1%。"
+                : string.Empty;
         }
     }
 }

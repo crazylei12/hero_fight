@@ -52,7 +52,7 @@ namespace Fight.UI
         private static readonly Color PortraitInnerFallbackColor = new Color32(53, 65, 84, 255);
         private static readonly Color ToggleButtonFillColor = new Color32(22, 28, 38, 220);
         private static readonly Color ToggleButtonOutlineColor = new Color32(112, 122, 140, 255);
-        private static readonly string[] TraitPlaceholders = { "Reserved 1", "Reserved 2", "Reserved 3" };
+        private const int TraitSlotCount = 3;
 
         private readonly List<RuntimeHero> blueHeroes = new List<RuntimeHero>(TeamSize);
         private readonly List<RuntimeHero> redHeroes = new List<RuntimeHero>(TeamSize);
@@ -85,6 +85,7 @@ namespace Fight.UI
             public string HealingText;
             public string AttackText;
             public string DefenseText;
+            public string[] TraitLabels = new string[TraitSlotCount];
             public Color AttackColor = MainTextColor;
             public Color DefenseColor = MainTextColor;
             public bool IsDead;
@@ -249,12 +250,12 @@ namespace Fight.UI
 
             DrawPortrait(ScaleRect(34f, 28f, 31f, 31f, scale, mirrorLayout), viewData.Portrait, viewData.DisplayName);
 
-            for (var index = 0; index < TraitPlaceholders.Length; index++)
+            for (var index = 0; index < TraitSlotCount; index++)
             {
                 var rowY = 27f + (index * 10.5f);
                 DrawShadowedLabel(
                     ScaleRect(72f, rowY, 65f, 8f, scale, mirrorLayout),
-                    TraitPlaceholders[index],
+                    viewData.TraitLabels != null && viewData.TraitLabels.Length > index ? viewData.TraitLabels[index] : string.Empty,
                     traitStyle,
                     DimTextColor);
             }
@@ -290,6 +291,8 @@ namespace Fight.UI
                 IsDead = hero != null && hero.IsDead,
             };
 
+            FillTraitLabels(hero?.Athlete, viewData.TraitLabels);
+
             if (hero?.Definition?.baseStats != null)
             {
                 viewData.AttackColor = ResolveStatColor(hero.AttackPower, hero.Definition.baseStats.attackPower);
@@ -297,6 +300,29 @@ namespace Fight.UI
             }
 
             return viewData;
+        }
+
+        private static void FillTraitLabels(AthleteDefinition athlete, string[] destination)
+        {
+            if (destination == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < destination.Length; i++)
+            {
+                destination[i] = string.Empty;
+            }
+
+            if (athlete?.traitIds == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < athlete.traitIds.Count && i < destination.Length; i++)
+            {
+                destination[i] = AthleteTraitCatalog.GetDisplayName(athlete.traitIds[i]);
+            }
         }
 
         private void DrawPortrait(Rect rect, Sprite portrait, string displayName)

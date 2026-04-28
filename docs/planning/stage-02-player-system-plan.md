@@ -332,6 +332,7 @@ moveSpeedFromCondition   = 25 * 0.001 = +0.025
 - `AttackSpeedModifier`
 - `MoveSpeedModifier`
 - `BpFitScoreModifier`
+- `FinalAttackDefenseTimedModifier`
 
 特性触发后，不直接改英雄或技能静态资产，而是追加到 `ResolvedAthleteCombatModifier`：
 
@@ -348,6 +349,29 @@ traitMoveSpeedModifier   += sum(activeTrait.MoveSpeedModifier)
 - `快速启动`：`attackSpeedModifier +0.04`
 - `状态稳定`：当 `condition < 0` 时，负面状态带来的攻速和移速惩罚减半
 - `气氛带动`：同队其他选手结算 `condition` 前获得 `+10`，但仍受 `-50 ~ 50` 上限限制
+
+当前已启用的第一条具体特性：
+- `大器晚成 / late_blooming`
+  - 触发范围：`CombatOnly`
+  - 战斗开始时，操控英雄的最终 `AttackPower` 与最终 `Defense` 直接乘以 `0.8`
+  - 之后按战斗总时间每秒提升 `0.01` 倍率，即：
+
+```text
+finalAttackDefenseTimedModifier = -0.20 + elapsedBattleSeconds * 0.01
+finalAttackDefenseMultiplier = max(0.1, 1 + finalAttackDefenseTimedModifier)
+```
+
+  - `0 秒` 时为 `80%`
+  - `20 秒` 时回到 `100%`
+  - `60 秒` 时达到 `140%`
+
+说明：
+- `大器晚成` 不改变选手 `effectiveAttackScore` / `effectiveDefenseScore`。
+- `大器晚成` 不改变 BP 适配分。
+- `大器晚成` 不改变英雄静态资产，也不改变选手静态资产。
+- `大器晚成` 的成长按本局战斗总时间计算，死亡和复活不会重置成长时间。
+- 该特性作用在战斗运行时最终属性上：先完成英雄基础属性、选手基础修正、状态、被动和形态修正，再对最终 `AttackPower` / `Defense` 乘以上述动态倍率。
+- 该特性只影响 `AttackPower` 与 `Defense`，不影响 `MaxHealth`、攻速、移速、暴击、攻击距离、复活时间、技能 CD 或胜负规则。
 
 第一版禁止的特性效果：
 - 直接修改 `HeroDefinition`
@@ -387,6 +411,17 @@ maxHealthModifier   = clamp(maxHealthModifier,   0, +0.50)
 attackSpeedModifier = clamp(attackSpeedModifier, -0.15, +0.20)
 moveSpeedModifier   = clamp(moveSpeedModifier,   -0.08, +0.08)
 ```
+
+如果某个特性声明为 `FinalAttackDefenseTimedModifier`，则它不参与上述静态修正钳制，而是在运行时按战斗时间计算额外最终倍率：
+
+```text
+runtimeAttackPower = resolvedRuntimeAttackPowerBeforeTimedTrait * finalAttackDefenseMultiplier
+runtimeDefense     = resolvedRuntimeDefenseBeforeTimedTrait     * finalAttackDefenseMultiplier
+```
+
+说明：
+- 这类特性仍必须由 `AthleteCombatModifierResolver` 或等价统一入口解析，不允许直接写成某个英雄的私有逻辑。
+- 这类特性只作用于本局运行时属性 getter，不回写 `HeroDefinition`、`HeroStatsData` 或 `AthleteDefinition`。
 
 示例完整计算：
 
@@ -538,6 +573,7 @@ bpFitScore = clamp(round(bpFitScore), 0, 100)
 - 不熟练英雄不吃熟练度加成，但也没有额外负面惩罚
 - 当前状态只影响攻速和移速，不直接影响攻击、防御或生命
 - 最终修正被钳制在本文规定的上限内
+- `大器晚成` 这类计时特性应直接影响战斗内最终攻击力与最终防御力，且死亡复活不重置成长时间
 - 战斗开始日志或调试输出能追踪选手修正来源
 - 未接入培养、成长、经营或存档变化
 

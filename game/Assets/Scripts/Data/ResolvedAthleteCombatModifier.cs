@@ -13,6 +13,9 @@ namespace Fight.Data
             0f,
             0f,
             0f,
+            0f,
+            0f,
+            string.Empty,
             0,
             string.Empty);
 
@@ -25,6 +28,9 @@ namespace Fight.Data
             float maxHealthModifier,
             float attackSpeedModifier,
             float moveSpeedModifier,
+            float finalAttackDefenseInitialModifier,
+            float finalAttackDefenseModifierPerSecond,
+            string traitSummary,
             int bpFitScore,
             string debugBreakdown)
         {
@@ -36,6 +42,9 @@ namespace Fight.Data
             MaxHealthModifier = Mathf.Clamp(maxHealthModifier, 0f, 0.5f);
             AttackSpeedModifier = Mathf.Clamp(attackSpeedModifier, -0.15f, 0.2f);
             MoveSpeedModifier = Mathf.Clamp(moveSpeedModifier, -0.08f, 0.08f);
+            FinalAttackDefenseInitialModifier = finalAttackDefenseInitialModifier;
+            FinalAttackDefenseModifierPerSecond = finalAttackDefenseModifierPerSecond;
+            TraitSummary = traitSummary ?? string.Empty;
             BpFitScore = Mathf.Clamp(bpFitScore, 0, 100);
             DebugBreakdown = debugBreakdown ?? string.Empty;
         }
@@ -56,6 +65,12 @@ namespace Fight.Data
 
         public float MoveSpeedModifier { get; }
 
+        public float FinalAttackDefenseInitialModifier { get; }
+
+        public float FinalAttackDefenseModifierPerSecond { get; }
+
+        public string TraitSummary { get; }
+
         public int BpFitScore { get; }
 
         public string DebugBreakdown { get; }
@@ -69,5 +84,16 @@ namespace Fight.Data
         public float AttackSpeedMultiplier => Mathf.Max(0.1f, 1f + AttackSpeedModifier);
 
         public float MoveSpeedMultiplier => Mathf.Max(0.1f, 1f + MoveSpeedModifier);
+
+        public bool HasDynamicFinalAttackDefenseModifier =>
+            Mathf.Abs(FinalAttackDefenseInitialModifier) > Mathf.Epsilon
+            || Mathf.Abs(FinalAttackDefenseModifierPerSecond) > Mathf.Epsilon;
+
+        public float ResolveFinalAttackDefenseMultiplier(float battleTimeSeconds)
+        {
+            var modifier = FinalAttackDefenseInitialModifier
+                + (Mathf.Max(0f, battleTimeSeconds) * FinalAttackDefenseModifierPerSecond);
+            return Mathf.Max(0.1f, 1f + modifier);
+        }
     }
 }

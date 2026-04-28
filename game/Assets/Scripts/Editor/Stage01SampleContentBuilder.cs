@@ -6631,11 +6631,12 @@ namespace Fight.Editor
                     Mastery("tank_002_shieldwarden", 18f),
                     Mastery("tank_003_tidehunter", 16f),
                     Mastery("warrior_001_skybreaker", 10f)),
-                CreateAthlete("blue_002_mika", "Mika", "Blue", 38f, 27f, -6f,
+                WithTraits(CreateAthlete("blue_002_mika", "Mika", "Blue", 38f, 27f, -6f,
                     Mastery("warrior_001_skybreaker", 28f),
                     Mastery("warrior_003_berserker", 22f),
                     Mastery("assassin_001_shadowstep", 12f),
                     Mastery("tank_005_blastshield", 10f)),
+                    AthleteTraitCatalog.LateBloomingTraitId),
                 CreateAthlete("blue_003_cora", "Cora", "Blue", 45f, 18f, 8f,
                     Mastery("mage_001_firemage", 30f),
                     Mastery("mage_002_frostmage", 22f),
@@ -6666,11 +6667,12 @@ namespace Fight.Editor
                     Mastery("assassin_003_butcher", 22f),
                     Mastery("assassin_004_loner", 20f),
                     Mastery("warrior_002_bladesman", 12f)),
-                CreateAthlete("red_003_luma", "Luma", "Red", 40f, 22f, -12f,
+                WithTraits(CreateAthlete("red_003_luma", "Luma", "Red", 40f, 22f, -12f,
                     Mastery("mage_001_firemage", 18f),
                     Mastery("mage_003_sandemperor", 30f),
                     Mastery("mage_004_lightningmage", 24f),
                     Mastery("support_006_commander", 12f)),
+                    AthleteTraitCatalog.LateBloomingTraitId),
                 CreateAthlete("red_004_iris", "Iris", "Red", 20f, 38f, 10f,
                     Mastery("support_001_sunpriest", 20f),
                     Mastery("support_002_windchime", 30f),
@@ -6705,6 +6707,7 @@ namespace Fight.Editor
                 defense = Mathf.Clamp(defense, 0f, 50f),
                 condition = Mathf.Clamp(condition, -50f, 50f),
                 heroMasteries = new List<HeroMasteryEntry>(),
+                traitIds = new List<string>(),
             };
 
             if (masteries != null)
@@ -6715,6 +6718,34 @@ namespace Fight.Editor
                     {
                         athlete.heroMasteries.Add(masteries[i]);
                     }
+                }
+            }
+
+            return athlete;
+        }
+
+        private static AthleteDefinition WithTraits(AthleteDefinition athlete, params string[] traitIds)
+        {
+            if (athlete == null)
+            {
+                return null;
+            }
+
+            if (athlete.traitIds == null)
+            {
+                athlete.traitIds = new List<string>();
+            }
+
+            if (traitIds == null)
+            {
+                return athlete;
+            }
+
+            for (var i = 0; i < traitIds.Length; i++)
+            {
+                if (!string.IsNullOrWhiteSpace(traitIds[i]))
+                {
+                    athlete.traitIds.Add(traitIds[i]);
                 }
             }
 

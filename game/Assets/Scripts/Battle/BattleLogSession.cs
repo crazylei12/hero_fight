@@ -239,9 +239,12 @@ namespace Fight.Battle
             var athleteName = modifier.Athlete != null && !string.IsNullOrWhiteSpace(modifier.Athlete.displayName)
                 ? modifier.Athlete.displayName
                 : "Unknown Athlete";
+            var traitSuffix = string.IsNullOrWhiteSpace(modifier.TraitSummary)
+                ? string.Empty
+                : $", traits {modifier.TraitSummary}, final ATK/DEF {modifier.FinalAttackDefenseInitialModifier:P0}+{modifier.FinalAttackDefenseModifierPerSecond:P0}/s";
             return $"{FormatHeroLabel(athleteModifier.Hero)} bound athlete {athleteName}: " +
                 $"effective ATK {modifier.EffectiveAttackScore:0.#}, effective DEF {modifier.EffectiveDefenseScore:0.#}, mastery {modifier.MasteryScore:0.#}, " +
-                $"mods ATK {modifier.AttackPowerModifier:P0}, HP {modifier.MaxHealthModifier:P0}, AS {modifier.AttackSpeedModifier:P0}, Move {modifier.MoveSpeedModifier:P0}, fit {modifier.BpFitScore}.";
+                $"mods ATK {modifier.AttackPowerModifier:P0}, HP {modifier.MaxHealthModifier:P0}, AS {modifier.AttackSpeedModifier:P0}, Move {modifier.MoveSpeedModifier:P0}{traitSuffix}, fit {modifier.BpFitScore}.";
         }
 
         private static string FormatHealLog(HealAppliedEvent healApplied)

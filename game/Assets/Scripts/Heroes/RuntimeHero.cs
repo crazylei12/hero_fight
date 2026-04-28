@@ -414,7 +414,10 @@ namespace Fight.Heroes
                 var totalModifierDelta = StatusEffectSystem.GetTotalMagnitude(this, StatusEffectType.AttackPowerModifier)
                     + PassiveAttackPowerBonusMultiplier
                     + CurrentCombatFormAttackPowerModifier;
-                return Definition.baseStats.attackPower * AthleteModifier.AttackPowerMultiplier * Mathf.Max(0.1f, 1f + totalModifierDelta);
+                return Definition.baseStats.attackPower
+                    * AthleteModifier.AttackPowerMultiplier
+                    * Mathf.Max(0.1f, 1f + totalModifierDelta)
+                    * AthleteFinalAttackDefenseMultiplier;
             }
         }
 
@@ -429,7 +432,9 @@ namespace Fight.Heroes
 
                 var totalModifierDelta = StatusEffectSystem.GetTotalMagnitude(this, StatusEffectType.DefenseModifier)
                     + PassiveDefenseBonusMultiplier;
-                return Definition.baseStats.defense * Mathf.Max(0.1f, 1f + totalModifierDelta);
+                return Definition.baseStats.defense
+                    * Mathf.Max(0.1f, 1f + totalModifierDelta)
+                    * AthleteFinalAttackDefenseMultiplier;
             }
         }
 
@@ -535,6 +540,8 @@ namespace Fight.Heroes
 
         public float CurrentCombatFormAttackSpeedModifier => activeCombatFormOverride != null ? activeCombatFormOverride.AttackSpeedModifier : 0f;
 
+        public float AthleteFinalAttackDefenseMultiplier => AthleteModifier.ResolveFinalAttackDefenseMultiplier(CurrentBattleTimeSeconds);
+
         public SkillData CurrentTemporaryOverrideSourceSkill => GetCurrentTemporaryOverrideSourceSkill();
 
         public SkillData CurrentLifestealSourceSkill => GetCurrentLifestealSourceSkill();
@@ -572,7 +579,6 @@ namespace Fight.Heroes
             StatusEffectSystem.ClearStatuses(this);
             CurrentPosition = SpawnPosition;
             CurrentHealth = MaxHealth;
-            CurrentBattleTimeSeconds = 0f;
             RespawnRemainingSeconds = 0f;
             AttackCooldownRemainingSeconds = 0f;
             CurrentBasicAttackVariantIndex = GetClampedStartingBasicAttackVariantIndex();

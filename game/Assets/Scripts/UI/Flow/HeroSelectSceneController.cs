@@ -392,7 +392,7 @@ namespace Fight.UI.Flow
             var traitRect = new Rect(infoX, contentY + heroNameHeight + 2f, infoWidth, topContentHeight - heroNameHeight - 2f);
             if (traitRect.height >= 12f)
             {
-                DrawAthleteTraitRows(traitRect);
+                DrawAthleteTraitRows(traitRect, athlete);
             }
 
             var masteryBonus = GetSelectedHeroMastery(athlete, hero);
@@ -869,7 +869,7 @@ namespace Fight.UI.Flow
             GUI.color = previousColor;
         }
 
-        private void DrawAthleteTraitRows(Rect rect)
+        private void DrawAthleteTraitRows(Rect rect, AthleteDefinition athlete)
         {
             const int traitSlotCount = 3;
             var gap = rect.height < 34f ? 2f : 4f;
@@ -878,6 +878,11 @@ namespace Fight.UI.Flow
             {
                 var rowRect = new Rect(rect.x, rect.y + (i * (rowHeight + gap)), rect.width, rowHeight);
                 GUI.Box(rowRect, string.Empty);
+                var traitLabel = GetAthleteTraitDisplayName(athlete, i);
+                if (!string.IsNullOrWhiteSpace(traitLabel))
+                {
+                    GUI.Label(rowRect, traitLabel, smallBodyStyle);
+                }
             }
         }
 
@@ -996,7 +1001,40 @@ namespace Fight.UI.Flow
             var displayName = !string.IsNullOrWhiteSpace(athlete.displayName)
                 ? athlete.displayName
                 : "Athlete";
-            return $"{displayName}  A{athlete.attack:0} D{athlete.defense:0} C{athlete.condition:+0;-0;0}";
+            var traitSummary = BuildAthleteTraitSummary(athlete);
+            return string.IsNullOrWhiteSpace(traitSummary)
+                ? $"{displayName}  A{athlete.attack:0} D{athlete.defense:0} C{athlete.condition:+0;-0;0}"
+                : $"{displayName}  A{athlete.attack:0} D{athlete.defense:0} C{athlete.condition:+0;-0;0}  {traitSummary}";
+        }
+
+        private static string BuildAthleteTraitSummary(AthleteDefinition athlete)
+        {
+            if (athlete?.traitIds == null || athlete.traitIds.Count == 0)
+            {
+                return string.Empty;
+            }
+
+            var labels = new List<string>();
+            for (var i = 0; i < athlete.traitIds.Count && labels.Count < 2; i++)
+            {
+                var label = AthleteTraitCatalog.GetDisplayName(athlete.traitIds[i]);
+                if (!string.IsNullOrWhiteSpace(label))
+                {
+                    labels.Add(label);
+                }
+            }
+
+            return labels.Count > 0 ? string.Join(" / ", labels) : string.Empty;
+        }
+
+        private static string GetAthleteTraitDisplayName(AthleteDefinition athlete, int index)
+        {
+            if (athlete?.traitIds == null || index < 0 || index >= athlete.traitIds.Count)
+            {
+                return string.Empty;
+            }
+
+            return AthleteTraitCatalog.GetDisplayName(athlete.traitIds[index]);
         }
 
         private static string BuildAthleteFitLine(AthleteDefinition athlete, HeroDefinition hero)
