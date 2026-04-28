@@ -100,6 +100,9 @@ namespace Fight.Battle
                 case HealAppliedEvent healApplied:
                     AddLog(FormatHealLog(healApplied));
                     break;
+                case SelfHealthCostAppliedEvent selfHealthCost:
+                    AddLog(FormatSelfHealthCostLog(selfHealthCost));
+                    break;
                 case StatusAppliedEvent statusApplied:
                     if (!ShouldLogStatusLifecycleEvent(statusApplied.EffectType))
                     {
@@ -265,6 +268,16 @@ namespace Fight.Battle
                 ? $" variant={healApplied.SourceBasicAttackVariantKey}"
                 : string.Empty;
             return $"{casterName} healed {FormatHeroLabel(healApplied.Target)} for {healApplied.HealAmount:0.0} via {skillName}{variantSuffix}{proxySuffix}, target HP {Mathf.Max(0f, healApplied.ResultingHealth):0.0}.";
+        }
+
+        private static string FormatSelfHealthCostLog(SelfHealthCostAppliedEvent selfHealthCost)
+        {
+            var heroName = FormatHeroLabel(selfHealthCost.Hero, "Unknown");
+            var skillName = selfHealthCost.SourceSkill != null ? selfHealthCost.SourceSkill.displayName : "Self Cost";
+            var variantSuffix = !string.IsNullOrWhiteSpace(selfHealthCost.SourceBasicAttackVariantKey)
+                ? $" variant={selfHealthCost.SourceBasicAttackVariantKey}"
+                : string.Empty;
+            return $"{heroName} paid {selfHealthCost.HealthCostAmount:0.0} HP via {skillName}{variantSuffix}, HP {Mathf.Max(0f, selfHealthCost.ResultingHealth):0.0}.";
         }
 
         private static string FormatBasicAttackProjectileLog(RuntimeBasicAttackProjectile projectile)

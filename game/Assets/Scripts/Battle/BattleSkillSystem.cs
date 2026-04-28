@@ -2600,6 +2600,7 @@ namespace Fight.Battle
                 return;
             }
 
+            ApplySkillSelfHealthCost(context, caster, skill);
             ApplyTemporarySkillOverride(caster, skill);
 
             var effects = GetResolvedSkillEffects(resolvedSkill);
@@ -2653,6 +2654,31 @@ namespace Fight.Battle
             caster.ApplyTemporarySkillOverride(skill);
         }
 
+
+        private static void ApplySkillSelfHealthCost(BattleContext context, RuntimeHero caster, SkillData skill)
+        {
+            if (context == null
+                || caster == null
+                || caster.IsDead
+                || skill == null
+                || skill.selfCurrentHealthCostRatio <= Mathf.Epsilon)
+            {
+                return;
+            }
+
+            var healthCost = caster.CurrentHealth * Mathf.Clamp01(skill.selfCurrentHealthCostRatio);
+            var actualCost = caster.ApplyHealthCost(healthCost, Mathf.Max(0f, skill.minimumSelfHealthAfterCost));
+            if (actualCost <= Mathf.Epsilon)
+            {
+                return;
+            }
+
+            context.EventBus?.Publish(new SelfHealthCostAppliedEvent(
+                caster,
+                actualCost,
+                skill,
+                caster.CurrentHealth));
+        }
         private static List<RuntimeHero> CopyAliveTargets(IReadOnlyList<RuntimeHero> targets)
         {
             var results = new List<RuntimeHero>();

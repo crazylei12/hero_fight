@@ -1157,6 +1157,7 @@ namespace Fight.Battle
                 variantKey,
                 sourceProxy);
             TryRecordSameTargetBasicAttackHit(attacker, sourceProxy, target, effectType, sameTargetStacking, bounceHopIndex);
+            TryApplyBasicAttackOnHitEffect(context, battleCallbacks, attacker, sourceProxy, target, effectType, variantKey, bounceHopIndex);
             if (actualDamage <= 0f)
             {
                 ApplyOnHitStatuses(context, attacker, target, onHitStatusEffects, variantKey);
@@ -1188,6 +1189,173 @@ namespace Fight.Battle
             }
 
             attacker.RecordSameTargetBasicAttackHit(target, sameTargetStacking);
+        }
+
+        private static void TryApplyBasicAttackOnHitEffect(
+            BattleContext context,
+            IBattleSimulationCallbacks battleCallbacks,
+            RuntimeHero attacker,
+            RuntimeDeployableProxy sourceProxy,
+            RuntimeHero target,
+            BasicAttackEffectType effectType,
+            string variantKey,
+            int bounceHopIndex)
+        {
+            var onHitEffect = attacker?.Definition?.basicAttack?.onHitEffect;
+            if (context == null
+                || battleCallbacks == null
+                || attacker == null
+                || attacker.IsDead
+                || sourceProxy != null
+                || target == null
+                || target.Side == attacker.Side
+                || !target.CanBeDirectTargeted
+                || effectType != BasicAttackEffectType.Damage
+                || bounceHopIndex != 0
+                || onHitEffect == null
+                || !onHitEffect.HasAnyEffect)
+            {
+                return;
+            }
+
+            var bonusDamageMultiplier = Mathf.Max(0f, onHitEffect.bonusDamagePowerMultiplier);
+            var selfHealBaseMultiplier = Mathf.Max(0f, onHitEffect.selfHealBasePowerMultiplier);
+            var selfHealMissingHealthMultiplier = Mathf.Max(0f, onHitEffect.selfHealMissingHealthPowerMultiplier);
+            if (attacker.TryGetCurrentBasicAttackOnHitOverride(
+                    out var overrideSourceSkill,
+                    out var overrideBonusDamageMultiplier,
+                    out var overrideSelfHealBaseMultiplier,
+                    out var overrideSelfHealMissingHealthMultiplier))
+            {
+                bonusDamageMultiplier = overrideBonusDamageMultiplier;
+                selfHealBaseMultiplier = overrideSelfHealBaseMultiplier;
+                selfHealMissingHealthMultiplier = overrideSelfHealMissingHealthMultiplier;
+            }
+
+            var sourceSkill = ResolveBasicAttackOnHitSourceSkill(attacker, overrideSourceSkill);
+            ApplyBasicAttackSelfHealthCost(context, attacker, onHitEffect, sourceSkill, variantKey);
+            ApplyBasicAttackOnHitBonusDamage(
+                context,
+                battleCallbacks,
+                attacker,
+                target,
+                sourceSkill,
+                variantKey,
+                bonusDamageMultiplier);
+            ApplyBasicAttackOnHitSelfHeal(
+                context,
+                attacker,
+                sourceSkill,
+                variantKey,
+                selfHealBaseMultiplier,
+                selfHealMissingHealthMultiplier);
+        }
+
+        private static SkillData ResolveBasicAttackOnHitSourceSkill(RuntimeHero attacker, SkillData overrideSourceSkill)
+        {
+            var activeSkill = attacker?.Definition?.activeSkill;
+            return activeSkill != null ? activeSkill : overrideSourceSkill;
+        }
+
+        private static void ApplyBasicAttackSelfHealthCost(
+            BattleContext context,
+            RuntimeHero attacker,
+            BasicAttackOnHitEffectData onHitEffect,
+            SkillData sourceSkill,
+            string variantKey)
+        {
+            if (context == null
+                || attacker == null
+                || attacker.IsDead
+                || onHitEffect == null
+                || onHitEffect.selfCurrentHealthCostRatio <= Mathf.Epsilon)
+            {
+                return;
+            }
+
+            var healthCost = attacker.CurrentHealth * Mathf.Clamp01(onHitEffect.selfCurrentHealthCostRatio);
+            var actualCost = attacker.ApplyHealthCost(healthCost, Mathf.Max(0f, onHitEffect.minimumSelfHealthAfterCost));
+            if (actualCost <= Mathf.Epsilon)
+            {
+                return;
+            }
+
+            context.EventBus?.Publish(new SelfHealthCostAppliedEvent(
+                attacker,
+                actualCost,
+                sourceSkill,
+                attacker.CurrentHealth,
+                variantKey));
+        }
+
+        private static void ApplyBasicAttackOnHitBonusDamage(
+            BattleContext context,
+            IBattleSimulationCallbacks battleCallbacks,
+            RuntimeHero attacker,
+            RuntimeHero target,
+            SkillData sourceSkill,
+            string variantKey,
+            float bonusDamageMultiplier)
+        {
+            if (context == null
+                || battleCallbacks == null
+                || attacker == null
+                || attacker.IsDead
+                || target == null
+                || target.IsDead
+                || bonusDamageMultiplier <= Mathf.Epsilon)
+            {
+                return;
+            }
+
+            var bonusDamage = DamageResolver.ResolveRawDamage(attacker.AttackPower * bonusDamageMultiplier, target.Defense);
+            BattleDamageSystem.ApplyResolvedDamage(
+                context,
+                battleCallbacks,
+                attacker,
+                target,
+                bonusDamage,
+                DamageSourceKind.Skill,
+                sourceSkill,
+                variantKey);
+        }
+
+        private static void ApplyBasicAttackOnHitSelfHeal(
+            BattleContext context,
+            RuntimeHero attacker,
+            SkillData sourceSkill,
+            string variantKey,
+            float selfHealBaseMultiplier,
+            float selfHealMissingHealthMultiplier)
+        {
+            if (context == null
+                || attacker == null
+                || attacker.IsDead
+                || (selfHealBaseMultiplier <= Mathf.Epsilon && selfHealMissingHealthMultiplier <= Mathf.Epsilon))
+            {
+                return;
+            }
+
+            var missingHealthRatio = attacker.MaxHealth > Mathf.Epsilon
+                ? Mathf.Clamp01((attacker.MaxHealth - attacker.CurrentHealth) / attacker.MaxHealth)
+                : 0f;
+            var healMultiplier = Mathf.Max(0f, selfHealBaseMultiplier)
+                + missingHealthRatio * Mathf.Max(0f, selfHealMissingHealthMultiplier);
+            var healAmount = attacker.AttackPower * healMultiplier;
+            var actualHeal = attacker.ApplyHealing(healAmount);
+            if (actualHeal <= Mathf.Epsilon)
+            {
+                return;
+            }
+
+            BattleStatsSystem.RecordHealingContribution(context, attacker, attacker, actualHeal);
+            context.EventBus?.Publish(new HealAppliedEvent(
+                attacker,
+                attacker,
+                actualHeal,
+                sourceSkill,
+                attacker.CurrentHealth,
+                variantKey));
         }
 
         private static bool IsSameTargetStackingEnabled(BasicAttackSameTargetStackData stacking)

@@ -471,6 +471,33 @@ namespace Fight.Battle
         public RuntimeDeployableProxy SourceProxy { get; }
     }
 
+    public sealed class SelfHealthCostAppliedEvent : IBattleEvent
+    {
+        public SelfHealthCostAppliedEvent(
+            RuntimeHero hero,
+            float healthCostAmount,
+            SkillData sourceSkill = null,
+            float resultingHealth = 0f,
+            string sourceBasicAttackVariantKey = null)
+        {
+            Hero = hero;
+            HealthCostAmount = Mathf.Max(0f, healthCostAmount);
+            SourceSkill = sourceSkill;
+            ResultingHealth = resultingHealth;
+            SourceBasicAttackVariantKey = sourceBasicAttackVariantKey ?? string.Empty;
+        }
+
+        public RuntimeHero Hero { get; }
+
+        public float HealthCostAmount { get; }
+
+        public SkillData SourceSkill { get; }
+
+        public float ResultingHealth { get; }
+
+        public string SourceBasicAttackVariantKey { get; }
+    }
+
     public sealed class StatusAppliedEvent : IBattleEvent
     {
         public StatusAppliedEvent(

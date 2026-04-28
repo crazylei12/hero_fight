@@ -60,6 +60,10 @@ namespace Fight.Data
         public ReactiveGuardData reactiveGuard = new ReactiveGuardData();
         public ReactiveCounterData reactiveCounter = new ReactiveCounterData();
 
+        [Header("Self Cost")]
+        [Range(0f, 1f)] public float selfCurrentHealthCostRatio = 0f;
+        [Min(0f)] public float minimumSelfHealthAfterCost = 1f;
+
         [Header("Action Sequence")]
         public CombatActionSequenceData actionSequence = new CombatActionSequenceData();
 

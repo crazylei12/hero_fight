@@ -673,6 +673,23 @@ namespace Fight.Editor
             EnsureHeroSkillReferences(sniper, sniperActive, sniperUltimateSkill);
             EnsureHeroBattlePrefabReference(sniper, LoadBattlePrefab("marksman_005_sniper", HeroClass.Marksman));
 
+            var bloodlancerActive = CreateBloodlancerActiveSkill(overwriteExistingContent);
+            var bloodlancerUltimateSkill = CreateBloodlancerUltimateSkill(overwriteExistingContent, out var bloodlancerUltimateExisted);
+
+            var bloodlancer = CreateHero(
+                "marksman_006_bloodlancer",
+                "Bloodlancer",
+                HeroClass.Marksman,
+                340f, 31f, 7f, 1f, 3.6f, 0.10f, 1.6f, ScaleRangedHeroDistance(5.7333333f),
+                bloodlancerActive,
+                ConfigureBloodlancerUltimate(bloodlancerUltimateSkill, overwriteExistingContent, bloodlancerUltimateExisted),
+                overwriteExistingContent,
+                out var bloodlancerHeroExisted,
+                HeroTag.Ranged, HeroTag.SustainedDamage, HeroTag.Heal, HeroTag.Buff);
+            ConfigureBloodlancerBasicAttack(bloodlancer, overwriteExistingContent, bloodlancerHeroExisted);
+            EnsureHeroSkillReferences(bloodlancer, bloodlancerActive, bloodlancerUltimateSkill);
+            EnsureHeroBattlePrefabReference(bloodlancer, LoadBattlePrefab("marksman_006_bloodlancer", HeroClass.Marksman));
+
             var demoHeroes = new[]
             {
                 warrior, bladesman, berserker, spellblade, trollwarlord,
@@ -680,7 +697,7 @@ namespace Fight.Editor
                 assassin, tidefin, butcher, loner, demon,
                 tank, shieldwarden, tidehunter, mundo, blastshield,
                 support, windchime, monk, shrinemaiden, chef, commander,
-                marksman, rifleman, venomshooter, boomeranger, sniper,
+                marksman, rifleman, venomshooter, boomeranger, sniper, bloodlancer,
             };
             ApplyDefaultDisplayDescriptions(demoHeroes);
             CreateHeroCatalog(demoHeroes);
@@ -1242,6 +1259,7 @@ namespace Fight.Editor
             hero.basicAttack.targetPrioritySearchRadius = 0f;
             EnsureBasicAttackStatusList(hero.basicAttack);
             ResetSameTargetStacking(hero.basicAttack);
+            ResetBasicAttackOnHitEffect(hero.basicAttack);
             hero.basicAttack.onHitStatusEffects.Clear();
             hero.basicAttack.bounce.maxAdditionalTargets = 0;
             hero.basicAttack.bounce.searchRadius = 0f;
@@ -1273,6 +1291,7 @@ namespace Fight.Editor
                 || heroId == "marksman_003_venomshooter"
                 || heroId == "marksman_004_boomeranger"
                 || heroId == "marksman_005_sniper"
+                || heroId == "marksman_006_bloodlancer"
                 || heroId == "support_002_windchime"
                 || heroId == "support_004_shrinemaiden"
                 || heroId == "support_005_chef"
@@ -1297,6 +1316,7 @@ namespace Fight.Editor
                 "marksman_003_venomshooter" => AssetDatabase.LoadAssetAtPath<GameObject>(LongshotProjectilePrefabPath),
                 "marksman_004_boomeranger" => AssetDatabase.LoadAssetAtPath<GameObject>(BoomerangerBasicProjectilePrefabPath),
                 "marksman_005_sniper" => AssetDatabase.LoadAssetAtPath<GameObject>(RiflemanProjectilePrefabPath),
+                "marksman_006_bloodlancer" => AssetDatabase.LoadAssetAtPath<GameObject>(LongshotProjectilePrefabPath),
                 "support_001_sunpriest" => AssetDatabase.LoadAssetAtPath<GameObject>(SunpriestProjectilePrefabPath),
                 "support_002_windchime" => AssetDatabase.LoadAssetAtPath<GameObject>(SunpriestProjectilePrefabPath),
                 "support_005_chef" => AssetDatabase.LoadAssetAtPath<GameObject>(ChefPizzaProjectilePrefabPath),
@@ -1313,6 +1333,7 @@ namespace Fight.Editor
                 || heroId == "marksman_003_venomshooter"
                 || heroId == "marksman_004_boomeranger"
                 || heroId == "marksman_005_sniper"
+                || heroId == "marksman_006_bloodlancer"
                 || heroId == "support_001_sunpriest"
                 || heroId == "support_002_windchime"
                 || heroId == "support_005_chef"
@@ -1402,6 +1423,7 @@ namespace Fight.Editor
                 "marksman_003_venomshooter" => "持续伤害射手，给敌人叠加毒性压力并寻找引爆时机，适合拉长战斗制造连锁收益。面对低血目标时威胁会迅速放大。他不是瞬间秒杀型角色，更适合持续压低敌方血线。",
                 "marksman_004_boomeranger" => "中距离弹射射手，用回旋武器在近身范围内持续切割敌人，适合处理密集阵型。需要保持合适距离，太远或被贴脸都会影响表现。在狭窄交战区域里，他的回旋压力最容易兑现。",
                 "marksman_005_sniper" => "超远程点杀射手，优先寻找远端目标并逐个狙击，能迫使敌方后排承受持续压力。适合保护严密的阵容，被突进时很脆弱。阵容需要提前规划保护线，否则容易被刺客针对。",
+                "marksman_006_bloodlancer" => "高风险续战射手，普攻会消耗自身血量换取额外伤害和回复，血线越危险越需要判断输出窗口。适合有前排保护的持续作战阵容，但被集火或被控时很容易把风险放大。",
                 _ => string.IsNullOrWhiteSpace(displayName)
                     ? "用于 BP 展示的英雄特点说明，建议控制在 80 字左右，描述定位、强势场景和主要风险，不填写具体数值。"
                     : $"{displayName} 的 BP 展示说明，建议描述定位、强势场景和主要风险，不填写具体数值。",
@@ -1473,6 +1495,8 @@ namespace Fight.Editor
                 "skill_boomeranger_ultimate_wheelstorm" => "让回旋轮环绕自身，持续切割附近敌人。",
                 "skill_sniper_active_deadeyeshot" => "瞄准远端敌人，打出高威胁单发狙击。",
                 "skill_sniper_ultimate_killzone" => "进入狙击区域，按威胁顺序逐个点名敌人。",
+                "skill_bloodlancer_active_bloodburnspear" => "普攻命中时消耗自身当前血量，追加伤害并按已损生命回复自身。",
+                "skill_bloodlancer_ultimate_bloodoath" => "支付当前血量强化自身，短时间提升攻速并放大燃血普攻的伤害与回复。",
                 _ => string.IsNullOrWhiteSpace(displayName)
                     ? "用于 BP 展示的技能效果说明。"
                     : $"{displayName} 的 BP 技能说明。",
@@ -1497,6 +1521,7 @@ namespace Fight.Editor
                 "marksman_003_venomshooter" => VenomshooterPrefabPath,
                 "marksman_004_boomeranger" => BoomerangerPrefabPath,
                 "marksman_005_sniper" => SniperPrefabPath,
+                "marksman_006_bloodlancer" => MarksmanPrefabPath,
                 "support_002_windchime" => WindchimePrefabPath,
                 "support_003_monk" => MonkPrefabPath,
                 "support_004_shrinemaiden" => ShrinemaidenPrefabPath,
@@ -1601,6 +1626,8 @@ namespace Fight.Editor
             ResetPassiveSkillData(skill);
             ResetDamageTriggeredStatusCounter(skill);
             ResetTemporaryOverride(skill);
+            skill.selfCurrentHealthCostRatio = 0f;
+            skill.minimumSelfHealthAfterCost = 1f;
             skill.castImpactVfxPrefab = null;
             skill.castImpactVfxLocalOffset = Vector3.zero;
             skill.castImpactVfxEulerAngles = Vector3.zero;
@@ -2020,6 +2047,134 @@ namespace Fight.Editor
             return skill;
         }
 
+        private static SkillData CreateBloodlancerActiveSkill(bool overwriteExistingContent)
+        {
+            var skill = CreateSkill(
+                "skill_bloodlancer_active_bloodburnspear",
+                "Bloodburn Spear",
+                SkillSlotType.ActiveSkill,
+                SkillType.Buff,
+                SkillTargetType.Self,
+                0f,
+                0f,
+                0f,
+                0f,
+                1,
+                overwriteExistingContent,
+                out var existedBefore);
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.description = "Stage-01 demo passive skill: basic attack hits spend current HP, then deal bonus damage and heal Bloodlancer based on missing health.";
+            skill.activationMode = SkillActivationMode.Passive;
+            skill.skillType = SkillType.Buff;
+            skill.targetType = SkillTargetType.Self;
+            skill.fallbackTargetType = SkillTargetType.None;
+            skill.castRange = 0f;
+            skill.areaRadius = 0f;
+            skill.cooldownSeconds = 0f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = true;
+            skill.effects.Clear();
+            skill.selfCurrentHealthCostRatio = 0f;
+            skill.minimumSelfHealthAfterCost = 1f;
+            ResetPassiveSkillData(skill);
+            ResetDamageTriggeredStatusCounter(skill);
+            ResetTemporaryOverride(skill);
+            ResetActionSequence(skill);
+            ResetUltimateDecision(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateBloodlancerUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
+        {
+            var skill = CreateSkill(
+                "skill_bloodlancer_ultimate_bloodoath",
+                "Blood Oath",
+                SkillSlotType.Ultimate,
+                SkillType.Buff,
+                SkillTargetType.CurrentEnemyTarget,
+                ScaleRangedHeroDistance(5.7333333f),
+                0f,
+                0f,
+                0f,
+                1,
+                overwriteExistingContent,
+                out existedBefore);
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            ApplyBloodlancerUltimateBaseConfiguration(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData ConfigureBloodlancerUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            ApplyBloodlancerUltimateBaseConfiguration(skill);
+
+            ResetUltimateDecision(skill);
+            skill.ultimateDecision.targetingType = UltimateTargetingType.CurrentTargetOnly;
+            skill.ultimateDecision.minimumSelfHealthPercentToCast = 0.35f;
+            skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.SelfLowHealth;
+            skill.ultimateDecision.primaryCondition.healthPercentThreshold = 0.85f;
+            skill.ultimateDecision.secondaryCondition.conditionType = UltimateConditionType.None;
+            skill.ultimateDecision.combineMode = UltimateConditionCombineMode.PrimaryOnly;
+            skill.ultimateDecision.fallback.fallbackType = UltimateFallbackType.LowerPrimaryThreshold;
+            skill.ultimateDecision.fallback.triggerAfterSeconds = 42f;
+            skill.ultimateDecision.fallback.overrideHealthPercentThreshold = 1f;
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static void ApplyBloodlancerUltimateBaseConfiguration(SkillData skill)
+        {
+            skill.description = "Stage-01 demo skill: spend current HP to enter a short blood oath, gaining attack speed and stronger Bloodburn Spear damage plus missing-health healing.";
+            skill.activationMode = SkillActivationMode.Active;
+            skill.skillType = SkillType.Buff;
+            skill.targetType = SkillTargetType.CurrentEnemyTarget;
+            skill.fallbackTargetType = SkillTargetType.NearestEnemy;
+            skill.castRange = ScaleRangedHeroDistance(5.7333333f);
+            skill.areaRadius = 0f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+            skill.selfCurrentHealthCostRatio = 0.30f;
+            skill.minimumSelfHealthAfterCost = 1f;
+            ResetPassiveSkillData(skill);
+            ResetDamageTriggeredStatusCounter(skill);
+            ResetActionSequence(skill);
+
+            var selfBuffEffect = AddApplyStatusEffectsEffect(skill);
+            selfBuffEffect.targetMode = SkillEffectTargetMode.Caster;
+            selfBuffEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.AttackSpeedModifier,
+                durationSeconds = 6f,
+                magnitude = 0.75f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
+            ResetTemporaryOverride(skill);
+            skill.temporaryOverride.durationSeconds = 6f;
+            skill.temporaryOverride.overrideBasicAttackOnHitEffect = true;
+            skill.temporaryOverride.basicAttackOnHitBonusDamagePowerMultiplier = 0.80f;
+            skill.temporaryOverride.basicAttackOnHitSelfHealBasePowerMultiplier = 0.32f;
+            skill.temporaryOverride.basicAttackOnHitSelfHealMissingHealthPowerMultiplier = 0.65f;
+            skill.temporaryOverride.visualTintColor = new Color(1f, 0.18f, 0.18f, 1f);
+            skill.temporaryOverride.visualTintStrength = 0.55f;
+        }
         private static SkillData CreateVenomshooterActiveSkill(bool overwriteExistingContent)
         {
             var skill = CreateSkill(
@@ -4330,6 +4485,43 @@ namespace Fight.Editor
             EditorUtility.SetDirty(hero);
         }
 
+        private static void ConfigureBloodlancerBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (hero == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return;
+            }
+
+            hero.basicAttack.damageMultiplier = 0.85f;
+            hero.basicAttack.attackInterval = 1f;
+            hero.basicAttack.rangeOverride = ScaleRangedHeroDistance(5.7333333f);
+            hero.basicAttack.usesProjectile = true;
+            hero.basicAttack.projectileSpeed = 15f;
+            hero.basicAttack.effectType = BasicAttackEffectType.Damage;
+            hero.basicAttack.targetType = BasicAttackTargetType.NearestEnemy;
+            hero.basicAttack.targetPrioritySearchRadius = 0f;
+            EnsureBasicAttackStatusList(hero.basicAttack);
+            hero.basicAttack.onHitStatusEffects.Clear();
+            hero.basicAttack.variants.Clear();
+            hero.basicAttack.bounce.maxAdditionalTargets = 0;
+            hero.basicAttack.bounce.searchRadius = 0f;
+            hero.basicAttack.bounce.powerMultiplier = 0f;
+            hero.basicAttack.bounce.bounceVariantKey = string.Empty;
+            ResetSameTargetStacking(hero.basicAttack);
+            hero.basicAttack.onHitEffect.enabled = true;
+            hero.basicAttack.onHitEffect.selfCurrentHealthCostRatio = 0.04f;
+            hero.basicAttack.onHitEffect.minimumSelfHealthAfterCost = 1f;
+            hero.basicAttack.onHitEffect.bonusDamagePowerMultiplier = 0.45f;
+            hero.basicAttack.onHitEffect.selfHealBasePowerMultiplier = 0.18f;
+            hero.basicAttack.onHitEffect.selfHealMissingHealthPowerMultiplier = 0.42f;
+
+            hero.visualConfig ??= new HeroVisualConfig();
+            hero.visualConfig.projectilePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(LongshotProjectilePrefabPath);
+            hero.visualConfig.projectileAlignToMovement = true;
+            hero.visualConfig.projectileEulerAngles = Vector3.zero;
+            hero.debugNotes = "Stage-01 demo hero for Marksman. Bloodlancer validates basic-attack on-hit self HP cost, non-crit bonus damage, missing-health self healing, and a self-cost ultimate that amplifies the same on-hit rule.";
+            EditorUtility.SetDirty(hero);
+        }
         private static void ConfigureSandemperorBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
         {
             if (hero == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
@@ -4712,6 +4904,10 @@ namespace Fight.Editor
             skill.temporaryOverride.durationSeconds = 0f;
             skill.temporaryOverride.lifestealMode = SkillTemporaryOverrideLifestealMode.Additive;
             skill.temporaryOverride.lifestealRatio = 0f;
+            skill.temporaryOverride.overrideBasicAttackOnHitEffect = false;
+            skill.temporaryOverride.basicAttackOnHitBonusDamagePowerMultiplier = 0f;
+            skill.temporaryOverride.basicAttackOnHitSelfHealBasePowerMultiplier = 0f;
+            skill.temporaryOverride.basicAttackOnHitSelfHealMissingHealthPowerMultiplier = 0f;
             skill.temporaryOverride.visualScaleMultiplier = 1f;
             skill.temporaryOverride.visualTintColor = Color.white;
             skill.temporaryOverride.visualTintStrength = 0f;
@@ -6493,6 +6689,11 @@ namespace Fight.Editor
             {
                 basicAttack.sameTargetStacking = new BasicAttackSameTargetStackData();
             }
+
+            if (basicAttack.onHitEffect == null)
+            {
+                basicAttack.onHitEffect = new BasicAttackOnHitEffectData();
+            }
         }
 
         private static void ResetSameTargetStacking(BasicAttackData basicAttack)
@@ -6511,6 +6712,22 @@ namespace Fight.Editor
             basicAttack.sameTargetStacking.fullStackOverrideStatusEffectType = StatusEffectType.None;
         }
 
+
+        private static void ResetBasicAttackOnHitEffect(BasicAttackData basicAttack)
+        {
+            if (basicAttack == null)
+            {
+                return;
+            }
+
+            EnsureBasicAttackStatusList(basicAttack);
+            basicAttack.onHitEffect.enabled = false;
+            basicAttack.onHitEffect.selfCurrentHealthCostRatio = 0f;
+            basicAttack.onHitEffect.minimumSelfHealthAfterCost = 1f;
+            basicAttack.onHitEffect.bonusDamagePowerMultiplier = 0f;
+            basicAttack.onHitEffect.selfHealBasePowerMultiplier = 0f;
+            basicAttack.onHitEffect.selfHealMissingHealthPowerMultiplier = 0f;
+        }
         private static BattleInputConfig CreateBattleInput(
             string assetName,
             bool includeAssassinOnRedTeam,
@@ -6655,7 +6872,7 @@ namespace Fight.Editor
                     Mastery("marksman_001_longshot", 34f),
                     Mastery("marksman_003_venomshooter", 20f),
                     Mastery("marksman_004_boomeranger", 18f),
-                    Mastery("marksman_005_sniper", 16f)),
+                    Mastery("marksman_006_bloodlancer", 16f)),
                     AthleteTraitCatalog.WindStepTraitId),
             });
 
@@ -6692,7 +6909,7 @@ namespace Fight.Editor
                     Mastery("marksman_001_longshot", 20f),
                     Mastery("marksman_002_rifleman", 32f),
                     Mastery("marksman_005_sniper", 24f),
-                    Mastery("marksman_003_venomshooter", 18f)),
+                    Mastery("marksman_006_bloodlancer", 18f)),
                     AthleteTraitCatalog.FastHandsTraitId,
                     AthleteTraitCatalog.LightShieldTraitId),
             });
@@ -6875,6 +7092,8 @@ namespace Fight.Editor
                 "skill_boomeranger_ultimate_wheelstorm" => "marksman_004_boomeranger",
                 "skill_sniper_active_deadeyeshot" => "marksman_005_sniper",
                 "skill_sniper_ultimate_killzone" => "marksman_005_sniper",
+                "skill_bloodlancer_active_bloodburnspear" => "marksman_006_bloodlancer",
+                "skill_bloodlancer_ultimate_bloodoath" => "marksman_006_bloodlancer",
                 "skill_sandemperor_active_raisesandguard" => "mage_003_sandemperor",
                 "skill_sandemperor_ultimate_imperialencirclement" => "mage_003_sandemperor",
                 "skill_lightningmage_active_thunderline" => "mage_004_lightningmage",

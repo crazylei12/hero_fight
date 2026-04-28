@@ -90,6 +90,14 @@ namespace Fight.Heroes
 
             public float LifestealRatio { get; private set; }
 
+            public bool OverrideBasicAttackOnHitEffect { get; private set; }
+
+            public float BasicAttackOnHitBonusDamagePowerMultiplier { get; private set; }
+
+            public float BasicAttackOnHitSelfHealBasePowerMultiplier { get; private set; }
+
+            public float BasicAttackOnHitSelfHealMissingHealthPowerMultiplier { get; private set; }
+
             public float VisualScaleMultiplier { get; private set; }
 
             public Color VisualTintColor { get; private set; }
@@ -101,6 +109,10 @@ namespace Fight.Heroes
                 RemainingDurationSeconds = definition != null ? Mathf.Max(0f, definition.durationSeconds) : 0f;
                 LifestealMode = definition != null ? definition.lifestealMode : SkillTemporaryOverrideLifestealMode.Additive;
                 LifestealRatio = definition != null ? Mathf.Max(0f, definition.lifestealRatio) : 0f;
+                OverrideBasicAttackOnHitEffect = definition != null && definition.HasBasicAttackOnHitOverride;
+                BasicAttackOnHitBonusDamagePowerMultiplier = definition != null ? Mathf.Max(0f, definition.basicAttackOnHitBonusDamagePowerMultiplier) : 0f;
+                BasicAttackOnHitSelfHealBasePowerMultiplier = definition != null ? Mathf.Max(0f, definition.basicAttackOnHitSelfHealBasePowerMultiplier) : 0f;
+                BasicAttackOnHitSelfHealMissingHealthPowerMultiplier = definition != null ? Mathf.Max(0f, definition.basicAttackOnHitSelfHealMissingHealthPowerMultiplier) : 0f;
                 VisualScaleMultiplier = definition != null ? Mathf.Max(1f, definition.visualScaleMultiplier) : 1f;
                 VisualTintColor = definition != null ? definition.visualTintColor : Color.white;
                 VisualTintStrength = definition != null ? Mathf.Clamp01(definition.visualTintStrength) : 0f;
@@ -642,6 +654,19 @@ namespace Fight.Heroes
                 ? Mathf.Min(previousHealth, MaxHealth, deathPreventFloor)
                 : 0f;
             CurrentHealth = Mathf.Max(minimumHealth, CurrentHealth - amount);
+            return previousHealth - CurrentHealth;
+        }
+
+        public float ApplyHealthCost(float amount, float minimumRemainingHealth)
+        {
+            if (amount <= 0f || IsDead)
+            {
+                return 0f;
+            }
+
+            var previousHealth = CurrentHealth;
+            var healthFloor = Mathf.Clamp(minimumRemainingHealth, 0f, Mathf.Max(0f, previousHealth));
+            CurrentHealth = Mathf.Max(healthFloor, CurrentHealth - amount);
             return previousHealth - CurrentHealth;
         }
 
@@ -1229,6 +1254,41 @@ namespace Fight.Heroes
             }
 
             activeTemporarySkillOverrides.Add(new RuntimeSkillTemporaryOverride(sourceSkill, definition));
+        }
+
+        public bool TryGetCurrentBasicAttackOnHitOverride(
+            out SkillData sourceSkill,
+            out float bonusDamagePowerMultiplier,
+            out float selfHealBasePowerMultiplier,
+            out float selfHealMissingHealthPowerMultiplier)
+        {
+            RuntimeSkillTemporaryOverride bestOverride = null;
+            for (var i = 0; i < activeTemporarySkillOverrides.Count; i++)
+            {
+                var runtimeOverride = activeTemporarySkillOverrides[i];
+                if (runtimeOverride == null || !runtimeOverride.OverrideBasicAttackOnHitEffect)
+                {
+                    continue;
+                }
+
+                if (bestOverride == null
+                    || runtimeOverride.RemainingDurationSeconds > bestOverride.RemainingDurationSeconds)
+                {
+                    bestOverride = runtimeOverride;
+                }
+            }
+
+            sourceSkill = bestOverride?.SourceSkill;
+            bonusDamagePowerMultiplier = bestOverride != null
+                ? bestOverride.BasicAttackOnHitBonusDamagePowerMultiplier
+                : 0f;
+            selfHealBasePowerMultiplier = bestOverride != null
+                ? bestOverride.BasicAttackOnHitSelfHealBasePowerMultiplier
+                : 0f;
+            selfHealMissingHealthPowerMultiplier = bestOverride != null
+                ? bestOverride.BasicAttackOnHitSelfHealMissingHealthPowerMultiplier
+                : 0f;
+            return bestOverride != null;
         }
 
         public bool ApplyCombatFormOverride(SkillData sourceSkill, CombatFormOverrideData definition)

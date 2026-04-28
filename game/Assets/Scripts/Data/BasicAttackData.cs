@@ -52,6 +52,24 @@ namespace Fight.Data
     }
 
     [Serializable]
+    public class BasicAttackOnHitEffectData
+    {
+        public bool enabled;
+        [Range(0f, 1f)] public float selfCurrentHealthCostRatio = 0f;
+        [Min(0f)] public float minimumSelfHealthAfterCost = 1f;
+        [Min(0f)] public float bonusDamagePowerMultiplier = 0f;
+        [Min(0f)] public float selfHealBasePowerMultiplier = 0f;
+        [Min(0f)] public float selfHealMissingHealthPowerMultiplier = 0f;
+
+        public bool HasAnyEffect =>
+            enabled
+            && (selfCurrentHealthCostRatio > Mathf.Epsilon
+                || bonusDamagePowerMultiplier > Mathf.Epsilon
+                || selfHealBasePowerMultiplier > Mathf.Epsilon
+                || selfHealMissingHealthPowerMultiplier > Mathf.Epsilon);
+    }
+
+    [Serializable]
     public class BasicAttackData
     {
         [Min(0.1f)] public float damageMultiplier = 1f;
@@ -66,6 +84,7 @@ namespace Fight.Data
         [Min(0)] public int startingVariantIndex = 0;
         public BasicAttackBounceData bounce = new BasicAttackBounceData();
         public BasicAttackSameTargetStackData sameTargetStacking = new BasicAttackSameTargetStackData();
+        public BasicAttackOnHitEffectData onHitEffect = new BasicAttackOnHitEffectData();
         public List<StatusEffectData> onHitStatusEffects = new List<StatusEffectData>();
         public List<BasicAttackVariantData> variants = new List<BasicAttackVariantData>();
     }
