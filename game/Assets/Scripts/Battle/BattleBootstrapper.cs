@@ -20,12 +20,12 @@ namespace Fight.Battle
 
         private struct TeamHeroEntry
         {
-            public TeamHeroEntry(HeroDefinition definition, AthleteDefinition athlete, int slotIndex)
+            public TeamHeroEntry(HeroDefinition definition, AthleteDefinition athlete, int slotIndex, TeamSide side)
             {
                 Definition = definition;
                 Athlete = athlete;
                 SlotIndex = slotIndex;
-                AthleteModifier = AthleteCombatModifierResolver.Resolve(athlete, definition);
+                AthleteModifier = AthleteCombatModifierResolver.Resolve(athlete, definition, side);
             }
 
             public HeroDefinition Definition { get; }
@@ -70,7 +70,7 @@ namespace Fight.Battle
                     continue;
                 }
 
-                entries.Add(new TeamHeroEntry(heroDefinition, ResolveAthlete(loadout, i), i));
+                entries.Add(new TeamHeroEntry(heroDefinition, ResolveAthlete(loadout, i), i, side));
             }
 
             if (entries.Count == 0)

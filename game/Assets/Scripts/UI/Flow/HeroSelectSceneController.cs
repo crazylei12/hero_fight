@@ -525,7 +525,7 @@ namespace Fight.UI.Flow
 
             GUI.enabled = true;
             GUI.Label(new Rect(rect.xMax - 188f, rect.y + 98f, 170f, 42f), GetHeroAvailabilityLabel(hero), smallBodyStyle);
-            GUI.Label(new Rect(rect.xMax - 188f, rect.y + 138f, 170f, 34f), BuildCurrentPickAthleteFitLine(hero), smallBodyStyle);
+            GUI.Label(new Rect(rect.xMax - 188f, rect.y + 142f, 170f, 76f), BuildCurrentPickAthleteFitLine(hero), smallBodyStyle);
 
             var description = !string.IsNullOrWhiteSpace(hero.description)
                 ? hero.description
@@ -1009,22 +1009,12 @@ namespace Fight.UI.Flow
 
         private static string BuildAthleteTraitSummary(AthleteDefinition athlete)
         {
-            if (athlete?.traitIds == null || athlete.traitIds.Count == 0)
-            {
-                return string.Empty;
-            }
+            return AthleteTraitCatalog.BuildDisplayNameSummary(athlete, 2);
+        }
 
-            var labels = new List<string>();
-            for (var i = 0; i < athlete.traitIds.Count && labels.Count < 2; i++)
-            {
-                var label = AthleteTraitCatalog.GetDisplayName(athlete.traitIds[i]);
-                if (!string.IsNullOrWhiteSpace(label))
-                {
-                    labels.Add(label);
-                }
-            }
-
-            return labels.Count > 0 ? string.Join(" / ", labels) : string.Empty;
+        private static string BuildAthleteTraitDescriptionSummary(AthleteDefinition athlete)
+        {
+            return AthleteTraitCatalog.BuildDescriptionSummary(athlete, 2);
         }
 
         private static string GetAthleteTraitDisplayName(AthleteDefinition athlete, int index)
@@ -1037,15 +1027,15 @@ namespace Fight.UI.Flow
             return AthleteTraitCatalog.GetDisplayName(athlete.traitIds[index]);
         }
 
-        private static string BuildAthleteFitLine(AthleteDefinition athlete, HeroDefinition hero)
+        private static string BuildAthleteFitLine(AthleteDefinition athlete, HeroDefinition hero, TeamSide? side = null)
         {
             if (athlete == null || hero == null)
             {
                 return "Fit --";
             }
 
-            var modifier = AthleteCombatModifierResolver.Resolve(athlete, hero);
-            return $"Fit {modifier.BpFitScore}  M{modifier.MasteryScore:0}";
+            var modifier = AthleteCombatModifierResolver.Resolve(athlete, hero, side ?? TeamSide.None);
+            return $"Fit {modifier.BpFitScore}  M{modifier.MasteryScore:0}  A{modifier.EffectiveAttackScore:0} D{modifier.EffectiveDefenseScore:0}";
         }
 
         private static string BuildCurrentPickAthleteFitLine(HeroDefinition hero)
@@ -1063,7 +1053,10 @@ namespace Fight.UI.Flow
                 return "No athlete bound.";
             }
 
-            return $"{BuildAthleteSummary(athlete)}\n{BuildAthleteFitLine(athlete, hero)}";
+            var traitDetails = BuildAthleteTraitDescriptionSummary(athlete);
+            return string.IsNullOrWhiteSpace(traitDetails)
+                ? $"{BuildAthleteSummary(athlete)}\n{BuildAthleteFitLine(athlete, hero, step.Side)}"
+                : $"{BuildAthleteSummary(athlete)}\n{BuildAthleteFitLine(athlete, hero, step.Side)}\n{ClampText(traitDetails, 76)}";
         }
 
         private static void DrawSprite(Rect rect, Sprite sprite)

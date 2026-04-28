@@ -29,7 +29,8 @@ MonoBehaviour:
       mastery: 16
     - heroId: warrior_001_skybreaker
       mastery: 10
-    traitIds: []
+    traitIds:
+    - heavy_shield
   - athleteId: blue_002_mika
     displayName: Mika
     teamName: Blue
@@ -48,6 +49,7 @@ MonoBehaviour:
       mastery: 10
     traitIds:
     - late_blooming
+    - fast_hands
   - athleteId: blue_003_cora
     displayName: Cora
     teamName: Blue
@@ -64,7 +66,8 @@ MonoBehaviour:
       mastery: 18
     - heroId: marksman_002_rifleman
       mastery: 10
-    traitIds: []
+    traitIds:
+    - favorite_blue
   - athleteId: blue_004_sena
     displayName: Sena
     teamName: Blue
@@ -81,7 +84,8 @@ MonoBehaviour:
       mastery: 18
     - heroId: support_004_shrinemaiden
       mastery: 14
-    traitIds: []
+    traitIds:
+    - medium_shield
   - athleteId: blue_005_tao
     displayName: Tao
     teamName: Blue
@@ -98,7 +102,8 @@ MonoBehaviour:
       mastery: 18
     - heroId: marksman_005_sniper
       mastery: 16
-    traitIds: []
+    traitIds:
+    - wind_step
   redTeamAthletes:
   - athleteId: red_001_axel
     displayName: Axel
@@ -116,7 +121,8 @@ MonoBehaviour:
       mastery: 22
     - heroId: warrior_005_trollwarlord
       mastery: 12
-    traitIds: []
+    traitIds:
+    - heavy_shield
   - athleteId: red_002_nox
     displayName: Nox
     teamName: Red
@@ -133,7 +139,9 @@ MonoBehaviour:
       mastery: 20
     - heroId: warrior_002_bladesman
       mastery: 12
-    traitIds: []
+    traitIds:
+    - favorite_red
+    - wind_step
   - athleteId: red_003_luma
     displayName: Luma
     teamName: Red
@@ -152,6 +160,7 @@ MonoBehaviour:
       mastery: 12
     traitIds:
     - late_blooming
+    - favorite_red
   - athleteId: red_004_iris
     displayName: Iris
     teamName: Red
@@ -168,7 +177,8 @@ MonoBehaviour:
       mastery: 24
     - heroId: support_005_chef
       mastery: 14
-    traitIds: []
+    traitIds:
+    - medium_shield
   - athleteId: red_005_vex
     displayName: Vex
     teamName: Red
@@ -185,4 +195,6 @@ MonoBehaviour:
       mastery: 24
     - heroId: marksman_003_venomshooter
       mastery: 18
-    traitIds: []
+    traitIds:
+    - fast_hands
+    - light_shield

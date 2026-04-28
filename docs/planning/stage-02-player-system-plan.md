@@ -66,6 +66,11 @@
 - `heroMasteries`：熟练英雄列表，最多 `4` 条
 - `traitIds` 或 `traits`：选手特性引用列表，第一版先预留统一入口
 
+特性展示约定：
+- 每个已启用特性必须在统一特性目录中提供 `displayName` 和 `description`。
+- `description` 必须写清具体数值，例如 `+20`、`-5`、`+10%`，不能只写泛化描述。
+- BP 展示、战斗日志和调试输出应优先复用同一份特性描述，避免 UI 文案和运行时效果漂移。
+
 熟练英雄条目至少包含：
 - `heroId`
 - `mastery`：熟练度，范围 `0 ~ 50`
@@ -111,10 +116,16 @@
 - `AthleteCombatModifierResolver`：统一解析器
 
 `ResolvedAthleteCombatModifier` 第一版至少包含：
+- `effectiveAttackScore`
+- `effectiveDefenseScore`
+- `traitAttackScoreModifier`
+- `traitDefenseScoreModifier`
 - `attackPowerModifier`
 - `maxHealthModifier`
 - `attackSpeedModifier`
 - `moveSpeedModifier`
+- `traitSummary`
+- `traitDescriptionSummary`
 - `bpFitScore`
 - `debugBreakdown`
 
@@ -160,13 +171,15 @@ runtimeMoveSpeed   = heroBaseMoveSpeed   * (1 + finalMoveSpeedModifier)
 baseAttackScore = clamp(athlete.attack, 0, 50)
 baseDefenseScore = clamp(athlete.defense, 0, 50)
 masteryScore = matched ? clamp(matchedMastery.mastery, 0, 50) : 0
+traitAttackScoreModifier = sum(activeTrait.AttackScoreModifier)
+traitDefenseScoreModifier = sum(activeTrait.DefenseScoreModifier)
 ```
 
 有效攻防：
 
 ```text
-effectiveAttackScore = clamp(baseAttackScore + masteryScore, 0, 100)
-effectiveDefenseScore = clamp(baseDefenseScore + masteryScore, 0, 100)
+effectiveAttackScore = clamp(baseAttackScore + traitAttackScoreModifier + masteryScore, 0, 100)
+effectiveDefenseScore = clamp(baseDefenseScore + traitDefenseScoreModifier + masteryScore, 0, 100)
 ```
 
 示例：
@@ -184,6 +197,7 @@ effectiveDefenseScore = 40 + 25 = 65
 - 熟练度不是额外独立倍率，也不再单独给一份攻击 / 生命修正。
 - 不熟练英雄不会受到额外惩罚，只是 `masteryScore = 0`。
 - 有效攻防可以高于 `50`，因为熟练度代表该选手在当前英雄上的额外发挥。
+- 选手特性如果声明为“选手攻击 / 防御数值”变化，应先进入 `traitAttackScoreModifier` / `traitDefenseScoreModifier`，再参与上述有效攻防换算。
 
 ## 攻击属性算法
 
@@ -313,7 +327,8 @@ moveSpeedFromCondition   = 25 * 0.001 = +0.025
 
 ## 特性预留算法
 
-选手特性是后续扩展点，第一版可以先只建立数据结构和统一解析入口，不强制做大量具体特性。
+选手特性是后续扩展点，第一版采用统一特性目录和统一解析入口承载少量具体特性。
+当前实现可以先用代码侧 `AthleteTraitCatalog` 管理 `traitId`、显示名和带数值描述；后续如果需要外部配置，再升级为独立 `AthleteTraitDefinition` 资产。
 
 特性数据至少需要表达：
 - `traitId`
@@ -327,6 +342,8 @@ moveSpeedFromCondition   = 25 * 0.001 = +0.025
 - 调试说明
 
 第一版允许的战斗影响类型只走以下通道：
+- `AttackScoreModifier`
+- `DefenseScoreModifier`
 - `AttackPowerModifier`
 - `MaxHealthModifier`
 - `AttackSpeedModifier`
@@ -337,20 +354,15 @@ moveSpeedFromCondition   = 25 * 0.001 = +0.025
 特性触发后，不直接改英雄或技能静态资产，而是追加到 `ResolvedAthleteCombatModifier`：
 
 ```text
+traitAttackScoreModifier += sum(activeTrait.AttackScoreModifier)
+traitDefenseScoreModifier += sum(activeTrait.DefenseScoreModifier)
 traitAttackPowerModifier += sum(activeTrait.AttackPowerModifier)
 traitMaxHealthModifier   += sum(activeTrait.MaxHealthModifier)
 traitAttackSpeedModifier += sum(activeTrait.AttackSpeedModifier)
 traitMoveSpeedModifier   += sum(activeTrait.MoveSpeedModifier)
 ```
 
-预留示例：
-- `职业专精`：绑定指定职业英雄时，`attackPowerModifier +0.04`
-- `稳健抗压`：`maxHealthModifier +0.05`
-- `快速启动`：`attackSpeedModifier +0.04`
-- `状态稳定`：当 `condition < 0` 时，负面状态带来的攻速和移速惩罚减半
-- `气氛带动`：同队其他选手结算 `condition` 前获得 `+10`，但仍受 `-50 ~ 50` 上限限制
-
-当前已启用的第一条具体特性：
+当前已启用的具体特性：
 - `大器晚成 / late_blooming`
   - 触发范围：`CombatOnly`
   - 战斗开始时，操控英雄的最终 `AttackPower` 与最终 `Defense` 直接乘以 `0.8`
@@ -372,6 +384,42 @@ finalAttackDefenseMultiplier = max(0.1, 1 + finalAttackDefenseTimedModifier)
 - `大器晚成` 的成长按本局战斗总时间计算，死亡和复活不会重置成长时间。
 - 该特性作用在战斗运行时最终属性上：先完成英雄基础属性、选手基础修正、状态、被动和形态修正，再对最终 `AttackPower` / `Defense` 乘以上述动态倍率。
 - 该特性只影响 `AttackPower` 与 `Defense`，不影响 `MaxHealth`、攻速、移速、暴击、攻击距离、复活时间、技能 CD 或胜负规则。
+
+- `钟爱蓝色 / favorite_blue`
+  - 触发范围：`Both`
+  - 当本局阵营为蓝色方时，`traitAttackScoreModifier +20`、`traitDefenseScoreModifier +20`
+  - 当本局阵营为红色方时，`traitAttackScoreModifier -5`、`traitDefenseScoreModifier -5`
+  - 如果当前只是无阵营预览，则不触发加减值，避免 BP 中立预览误导。
+
+- `钟爱红色 / favorite_red`
+  - 触发范围：`Both`
+  - 与 `钟爱蓝色` 相反：红色方 `+20`，蓝色方 `-5`
+  - 同样只修改选手本局有效攻防数值，不回写选手静态资产。
+
+- `疾风步 / wind_step`
+  - 触发范围：`CombatOnly`
+  - `traitMoveSpeedModifier +0.10`
+  - 表现为操控英雄本局移动速度提升 `10%`。
+
+- `快手 / fast_hands`
+  - 触发范围：`CombatOnly`
+  - `traitAttackSpeedModifier +0.10`
+  - 表现为操控英雄本局攻击速度提升 `10%`。
+
+- `重盾 / heavy_shield`
+  - 触发范围：`CombatOnly`
+  - `traitDefenseScoreModifier +20`
+  - `traitMoveSpeedModifier -0.10`
+  - 防御数值提升会通过有效防御换算为本局最大生命值，不直接修改英雄战斗内 `defense` 减伤属性。
+
+- `中盾 / medium_shield`
+  - 触发范围：`CombatOnly`
+  - `traitDefenseScoreModifier +15`
+  - `traitMoveSpeedModifier -0.05`
+
+- `轻盾 / light_shield`
+  - 触发范围：`CombatOnly`
+  - `traitDefenseScoreModifier +10`
 
 第一版禁止的特性效果：
 - 直接修改 `HeroDefinition`
@@ -409,7 +457,7 @@ moveSpeedModifier =
 attackPowerModifier = clamp(attackPowerModifier, 0, +0.50)
 maxHealthModifier   = clamp(maxHealthModifier,   0, +0.50)
 attackSpeedModifier = clamp(attackSpeedModifier, -0.15, +0.20)
-moveSpeedModifier   = clamp(moveSpeedModifier,   -0.08, +0.08)
+moveSpeedModifier   = clamp(moveSpeedModifier,   -0.20, +0.20)
 ```
 
 如果某个特性声明为 `FinalAttackDefenseTimedModifier`，则它不参与上述静态修正钳制，而是在运行时按战斗时间计算额外最终倍率：
@@ -507,6 +555,8 @@ bpFitScore = clamp(round(bpFitScore), 0, 100)
 - `bpFitScore` 只用于显示“适配好 / 一般 / 风险”。
 - `bpFitScore` 不阻止玩家强行选择非熟练英雄。
 - 若英雄不在熟练列表中，适配分不会吃到熟练度加成，但也不额外扣分。
+- 会改动 `effectiveAttackScore` / `effectiveDefenseScore` 的特性会自然影响 `bpFitScore`。
+- `钟爱蓝色`、`钟爱红色` 这类阵营特性在 BP 当前 pick 步骤和 Battle 创建运行时英雄时必须带入真实 `TeamSide`；如果没有阵营上下文，则按不触发处理。
 - 特性未来可以给适配分加减，但不应直接改写英雄池可选状态。
 
 边界：
@@ -574,6 +624,10 @@ bpFitScore = clamp(round(bpFitScore), 0, 100)
 - 当前状态只影响攻速和移速，不直接影响攻击、防御或生命
 - 最终修正被钳制在本文规定的上限内
 - `大器晚成` 这类计时特性应直接影响战斗内最终攻击力与最终防御力，且死亡复活不重置成长时间
+- `钟爱蓝色` / `钟爱红色` 应在已知蓝红方时按阵营加减选手攻防数值，中立预览不触发
+- `疾风步` / `快手` 应分别进入移速和攻速通道
+- `重盾` / `中盾` / `轻盾` 应提升选手防御数值，其中重盾和中盾还应降低移速
+- 特性描述应包含实际数值，并能被 BP 展示、战斗日志或调试信息追踪到
 - 战斗开始日志或调试输出能追踪选手修正来源
 - 未接入培养、成长、经营或存档变化
 

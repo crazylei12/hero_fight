@@ -15,6 +15,9 @@ namespace Fight.Data
             0f,
             0f,
             0f,
+            0f,
+            0f,
+            string.Empty,
             string.Empty,
             0,
             string.Empty);
@@ -24,6 +27,8 @@ namespace Fight.Data
             float masteryScore,
             float effectiveAttackScore,
             float effectiveDefenseScore,
+            float traitAttackScoreModifier,
+            float traitDefenseScoreModifier,
             float attackPowerModifier,
             float maxHealthModifier,
             float attackSpeedModifier,
@@ -31,6 +36,7 @@ namespace Fight.Data
             float finalAttackDefenseInitialModifier,
             float finalAttackDefenseModifierPerSecond,
             string traitSummary,
+            string traitDescriptionSummary,
             int bpFitScore,
             string debugBreakdown)
         {
@@ -38,13 +44,16 @@ namespace Fight.Data
             MasteryScore = Mathf.Max(0f, masteryScore);
             EffectiveAttackScore = Mathf.Max(0f, effectiveAttackScore);
             EffectiveDefenseScore = Mathf.Max(0f, effectiveDefenseScore);
+            TraitAttackScoreModifier = traitAttackScoreModifier;
+            TraitDefenseScoreModifier = traitDefenseScoreModifier;
             AttackPowerModifier = Mathf.Clamp(attackPowerModifier, 0f, 0.5f);
             MaxHealthModifier = Mathf.Clamp(maxHealthModifier, 0f, 0.5f);
             AttackSpeedModifier = Mathf.Clamp(attackSpeedModifier, -0.15f, 0.2f);
-            MoveSpeedModifier = Mathf.Clamp(moveSpeedModifier, -0.08f, 0.08f);
+            MoveSpeedModifier = Mathf.Clamp(moveSpeedModifier, -0.2f, 0.2f);
             FinalAttackDefenseInitialModifier = finalAttackDefenseInitialModifier;
             FinalAttackDefenseModifierPerSecond = finalAttackDefenseModifierPerSecond;
             TraitSummary = traitSummary ?? string.Empty;
+            TraitDescriptionSummary = traitDescriptionSummary ?? string.Empty;
             BpFitScore = Mathf.Clamp(bpFitScore, 0, 100);
             DebugBreakdown = debugBreakdown ?? string.Empty;
         }
@@ -56,6 +65,10 @@ namespace Fight.Data
         public float EffectiveAttackScore { get; }
 
         public float EffectiveDefenseScore { get; }
+
+        public float TraitAttackScoreModifier { get; }
+
+        public float TraitDefenseScoreModifier { get; }
 
         public float AttackPowerModifier { get; }
 
@@ -70,6 +83,8 @@ namespace Fight.Data
         public float FinalAttackDefenseModifierPerSecond { get; }
 
         public string TraitSummary { get; }
+
+        public string TraitDescriptionSummary { get; }
 
         public int BpFitScore { get; }
 
