@@ -16,12 +16,10 @@ namespace Fight.UI.Flow
         private const string PlayerStatusNormalArrowTexturePath = "UI/PlayerStatusArrows/player_status_normal_right";
         private const string PlayerStatusBadArrowTexturePath = "UI/PlayerStatusArrows/player_status_bad_down";
         private const string TopScoreboardTexturePath = "UI/BattleHud/top_scoreboard_runtime_base";
-        private const string BattleSidebarTexturePath = "UI/BattleHud/side_hero_sidebar_runtime_base";
         private const float TopScoreboardDesignWidth = 1880f;
         private const float TopScoreboardDesignHeight = 184f;
         private const int MaxBanDots = 3;
-        private static readonly Rect AttackIconSourcePixels = new Rect(244f, 344f, 44f, 58f);
-        private static readonly Rect DefenseIconSourcePixels = new Rect(506f, 344f, 54f, 58f);
+        private const int AthleteTraitSlotCount = 3;
 
         private HeroDefinition highlightedHero;
         private TeamSide? swapSourceSide;
@@ -30,7 +28,6 @@ namespace Fight.UI.Flow
         private HeroClass classFilter;
         private Texture2D topScoreboardTexture;
         private Texture2D topScoreboardDotTexture;
-        private Texture2D battleSidebarTexture;
         private Sprite playerStatusGoodArrowSprite;
         private Sprite playerStatusNormalArrowSprite;
         private Sprite playerStatusBadArrowSprite;
@@ -71,7 +68,6 @@ namespace Fight.UI.Flow
             GameFlowState.ResetDraft();
             GameFlowState.ClearBattleResult();
             topScoreboardTexture = Resources.Load<Texture2D>(TopScoreboardTexturePath);
-            battleSidebarTexture = Resources.Load<Texture2D>(BattleSidebarTexturePath);
             topScoreboardDotTexture = CreateCircleTexture(32);
             playerStatusGoodArrowSprite = Resources.Load<Sprite>(PlayerStatusGoodArrowTexturePath);
             playerStatusNormalArrowSprite = Resources.Load<Sprite>(PlayerStatusNormalArrowTexturePath);
@@ -384,7 +380,7 @@ namespace Fight.UI.Flow
             var gap = compact ? 5f : 6f;
             var headerHeight = compact ? 17f : 20f;
             var statusSize = compact ? 17f : 20f;
-            var statHeight = compact ? 16f : 20f;
+            var statHeight = compact ? 18f : 22f;
             var masteryIconSize = compact ? 28f : 42f;
             var masteryY = rect.yMax - padding - masteryIconSize;
             var statY = masteryY - statHeight - 4f;
@@ -409,10 +405,8 @@ namespace Fight.UI.Flow
             GUI.Label(nameRect, $"{index + 1}. {GetAthleteDisplayName(athlete)}", bodyStyle);
             DrawAthleteConditionArrow(new Rect(rect.xMax - padding - statusSize, rect.y + 5f, statusSize, statusSize), athlete);
 
-            var heroNameHeight = Mathf.Min(compact ? 14f : 17f, topContentHeight);
-            GUI.Label(new Rect(infoX, contentY, infoWidth, heroNameHeight), hero != null ? hero.displayName : "Waiting pick", smallBodyStyle);
-            var traitRect = new Rect(infoX, contentY + heroNameHeight + 2f, infoWidth, topContentHeight - heroNameHeight - 2f);
-            if (traitRect.height >= 12f)
+            var traitRect = new Rect(infoX, contentY, infoWidth, topContentHeight);
+            if (traitRect.height >= 18f)
             {
                 DrawAthleteTraitRows(traitRect, athlete);
             }
@@ -908,8 +902,15 @@ namespace Fight.UI.Flow
 
         private void DrawStatChip(Rect rect, bool isAttack, float value, float masteryBonus)
         {
-            GUI.Box(rect, string.Empty);
-            var iconRect = new Rect(rect.x + 2f, rect.y + 2f, rect.height - 4f, rect.height - 4f);
+            DrawTintedRect(rect, new Color(0.018f, 0.021f, 0.027f, 0.96f));
+            DrawOutline(rect, new Color(0f, 0f, 0f, 0.72f), 1f);
+            var accent = isAttack
+                ? new Color(1f, 0.58f, 0.16f, 1f)
+                : new Color(0.34f, 0.64f, 1f, 1f);
+            var iconBadgeRect = new Rect(rect.x + 2f, rect.y + 2f, Mathf.Min(24f, rect.height + 4f), rect.height - 4f);
+            DrawTintedRect(iconBadgeRect, new Color(accent.r, accent.g, accent.b, 0.26f));
+            DrawOutline(iconBadgeRect, new Color(accent.r, accent.g, accent.b, 0.90f), 1f);
+            var iconRect = new Rect(iconBadgeRect.x + 2f, iconBadgeRect.y + 1f, iconBadgeRect.width - 4f, iconBadgeRect.height - 2f);
             if (isAttack)
             {
                 DrawAttackIcon(iconRect);
@@ -922,100 +923,48 @@ namespace Fight.UI.Flow
             var valueText = masteryBonus > 0f
                 ? $"{value:0} (+{masteryBonus:0})"
                 : value.ToString("0");
-            GUI.Label(new Rect(iconRect.xMax + 1f, rect.y, rect.width - iconRect.width - 2f, rect.height), valueText, smallBodyStyle);
+            GUI.Label(new Rect(iconBadgeRect.xMax + 2f, rect.y, rect.xMax - iconBadgeRect.xMax - 3f, rect.height), valueText, smallBodyStyle);
         }
 
-        private void DrawAttackIcon(Rect rect)
-        {
-            if (DrawBattleSidebarIcon(rect, AttackIconSourcePixels))
-            {
-                return;
-            }
-
-            DrawFallbackAttackIcon(rect);
-        }
-
-        private void DrawDefenseIcon(Rect rect)
-        {
-            if (DrawBattleSidebarIcon(rect, DefenseIconSourcePixels))
-            {
-                return;
-            }
-
-            DrawFallbackDefenseIcon(rect);
-        }
-
-        private bool DrawBattleSidebarIcon(Rect rect, Rect sourcePixels)
-        {
-            if (battleSidebarTexture == null)
-            {
-                return false;
-            }
-
-            var previousColor = GUI.color;
-            GUI.color = Color.white;
-            var texCoords = new Rect(
-                sourcePixels.x / battleSidebarTexture.width,
-                1f - ((sourcePixels.y + sourcePixels.height) / battleSidebarTexture.height),
-                sourcePixels.width / battleSidebarTexture.width,
-                sourcePixels.height / battleSidebarTexture.height);
-            GUI.DrawTextureWithTexCoords(rect, battleSidebarTexture, texCoords, true);
-            GUI.color = previousColor;
-            return true;
-        }
-
-        private static void DrawFallbackAttackIcon(Rect rect)
+        private static void DrawAttackIcon(Rect rect)
         {
             var previousColor = GUI.color;
-            var blade = new Color(0.92f, 0.94f, 0.98f, 1f);
-            var edge = new Color(0.56f, 0.65f, 0.82f, 1f);
-            var hilt = new Color(1f, 0.74f, 0.30f, 1f);
-            GUI.color = edge;
-            GUI.DrawTexture(new Rect(rect.x + rect.width * 0.22f, rect.y + rect.height * 0.64f, rect.width * 0.12f, rect.height * 0.20f), Texture2D.whiteTexture);
-            GUI.color = hilt;
-            GUI.DrawTexture(new Rect(rect.x + rect.width * 0.25f, rect.y + rect.height * 0.54f, rect.width * 0.36f, rect.height * 0.10f), Texture2D.whiteTexture);
-            GUI.DrawTexture(new Rect(rect.x + rect.width * 0.33f, rect.y + rect.height * 0.62f, rect.width * 0.10f, rect.height * 0.22f), Texture2D.whiteTexture);
-            GUI.color = blade;
-            GUI.DrawTexture(new Rect(rect.x + rect.width * 0.48f, rect.y + rect.height * 0.16f, rect.width * 0.12f, rect.height * 0.42f), Texture2D.whiteTexture);
-            GUI.DrawTexture(new Rect(rect.x + rect.width * 0.43f, rect.y + rect.height * 0.22f, rect.width * 0.22f, rect.height * 0.10f), Texture2D.whiteTexture);
-            GUI.color = edge;
-            GUI.DrawTexture(new Rect(rect.x + rect.width * 0.57f, rect.y + rect.height * 0.12f, rect.width * 0.08f, rect.height * 0.18f), Texture2D.whiteTexture);
+            GUI.color = new Color(0.08f, 0.06f, 0.03f, 0.86f);
+            GUI.DrawTexture(new Rect(rect.x + rect.width * 0.43f, rect.y + rect.height * 0.06f, rect.width * 0.22f, rect.height * 0.56f), Texture2D.whiteTexture);
+            GUI.color = new Color(1f, 0.96f, 0.78f, 1f);
+            GUI.DrawTexture(new Rect(rect.x + rect.width * 0.37f, rect.y + rect.height * 0.05f, rect.width * 0.26f, rect.height * 0.54f), Texture2D.whiteTexture);
+            GUI.color = new Color(0.70f, 0.80f, 0.96f, 1f);
+            GUI.DrawTexture(new Rect(rect.x + rect.width * 0.48f, rect.y + rect.height * 0.05f, rect.width * 0.10f, rect.height * 0.54f), Texture2D.whiteTexture);
+            GUI.color = new Color(1f, 0.64f, 0.18f, 1f);
+            GUI.DrawTexture(new Rect(rect.x + rect.width * 0.20f, rect.y + rect.height * 0.60f, rect.width * 0.62f, rect.height * 0.16f), Texture2D.whiteTexture);
+            GUI.DrawTexture(new Rect(rect.x + rect.width * 0.41f, rect.y + rect.height * 0.70f, rect.width * 0.20f, rect.height * 0.24f), Texture2D.whiteTexture);
             GUI.color = previousColor;
         }
 
-        private static void DrawFallbackDefenseIcon(Rect rect)
+        private static void DrawDefenseIcon(Rect rect)
         {
             var previousColor = GUI.color;
-            var rim = new Color(0.84f, 0.91f, 1f, 1f);
-            var face = new Color(0.28f, 0.48f, 0.82f, 1f);
-            var shade = new Color(0.14f, 0.25f, 0.48f, 1f);
-            GUI.color = rim;
-            GUI.DrawTexture(new Rect(rect.x + rect.width * 0.18f, rect.y + rect.height * 0.14f, rect.width * 0.64f, rect.height * 0.18f), Texture2D.whiteTexture);
-            GUI.DrawTexture(new Rect(rect.x + rect.width * 0.18f, rect.y + rect.height * 0.24f, rect.width * 0.12f, rect.height * 0.34f), Texture2D.whiteTexture);
-            GUI.DrawTexture(new Rect(rect.x + rect.width * 0.70f, rect.y + rect.height * 0.24f, rect.width * 0.12f, rect.height * 0.34f), Texture2D.whiteTexture);
-            GUI.DrawTexture(new Rect(rect.x + rect.width * 0.34f, rect.y + rect.height * 0.70f, rect.width * 0.32f, rect.height * 0.12f), Texture2D.whiteTexture);
-            GUI.color = face;
-            GUI.DrawTexture(new Rect(rect.x + rect.width * 0.28f, rect.y + rect.height * 0.22f, rect.width * 0.44f, rect.height * 0.46f), Texture2D.whiteTexture);
-            GUI.color = shade;
-            GUI.DrawTexture(new Rect(rect.x + rect.width * 0.46f, rect.y + rect.height * 0.30f, rect.width * 0.18f, rect.height * 0.38f), Texture2D.whiteTexture);
+            GUI.color = new Color(0.07f, 0.10f, 0.18f, 0.88f);
+            GUI.DrawTexture(new Rect(rect.x + rect.width * 0.16f, rect.y + rect.height * 0.08f, rect.width * 0.70f, rect.height * 0.68f), Texture2D.whiteTexture);
+            GUI.DrawTexture(new Rect(rect.x + rect.width * 0.28f, rect.y + rect.height * 0.70f, rect.width * 0.46f, rect.height * 0.20f), Texture2D.whiteTexture);
+            GUI.color = new Color(0.86f, 0.94f, 1f, 1f);
+            GUI.DrawTexture(new Rect(rect.x + rect.width * 0.22f, rect.y + rect.height * 0.10f, rect.width * 0.58f, rect.height * 0.12f), Texture2D.whiteTexture);
+            GUI.DrawTexture(new Rect(rect.x + rect.width * 0.22f, rect.y + rect.height * 0.22f, rect.width * 0.12f, rect.height * 0.46f), Texture2D.whiteTexture);
+            GUI.DrawTexture(new Rect(rect.x + rect.width * 0.68f, rect.y + rect.height * 0.22f, rect.width * 0.12f, rect.height * 0.46f), Texture2D.whiteTexture);
+            GUI.color = new Color(0.34f, 0.68f, 1f, 1f);
+            GUI.DrawTexture(new Rect(rect.x + rect.width * 0.34f, rect.y + rect.height * 0.24f, rect.width * 0.34f, rect.height * 0.48f), Texture2D.whiteTexture);
             GUI.color = previousColor;
         }
 
         private void DrawAthleteTraitRows(Rect rect, AthleteDefinition athlete)
         {
-            var traitCount = athlete?.traitIds != null ? athlete.traitIds.Count : 0;
-            var traitSlotCount = Mathf.Min(2, traitCount);
-            if (traitSlotCount <= 0)
-            {
-                return;
-            }
-
             var gap = rect.height < 34f ? 2f : 4f;
-            var rowHeight = Mathf.Max(5f, (rect.height - (gap * (traitSlotCount - 1))) / traitSlotCount);
-            for (var i = 0; i < traitSlotCount; i++)
+            var rowHeight = Mathf.Max(5f, (rect.height - (gap * (AthleteTraitSlotCount - 1))) / AthleteTraitSlotCount);
+            for (var i = 0; i < AthleteTraitSlotCount; i++)
             {
                 var rowRect = new Rect(rect.x, rect.y + (i * (rowHeight + gap)), rect.width, rowHeight);
-                GUI.Box(rowRect, string.Empty);
+                DrawTintedRect(rowRect, new Color(0.018f, 0.021f, 0.027f, 0.82f));
+                DrawOutline(rowRect, new Color(0f, 0f, 0f, 0.60f), 1f);
                 var traitLabel = GetAthleteTraitDisplayName(athlete, i);
                 if (!string.IsNullOrWhiteSpace(traitLabel))
                 {
