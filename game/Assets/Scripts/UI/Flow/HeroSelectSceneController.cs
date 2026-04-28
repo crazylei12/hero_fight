@@ -186,8 +186,16 @@ namespace Fight.UI.Flow
         private void DrawTeamSlot(Rect rect, int index, HeroDefinition hero, AthleteDefinition athlete, bool isCurrent, Color accentColor)
         {
             var previousColor = GUI.color;
-            GUI.color = Color.Lerp(Color.white, accentColor, isCurrent ? 0.72f : 0.28f);
+            GUI.color = Color.Lerp(Color.white, accentColor, isCurrent ? 0.88f : 0.28f);
             GUI.Box(rect, string.Empty, isCurrent ? focusedSlotStyle : slotStyle);
+            if (isCurrent)
+            {
+                GUI.color = new Color(accentColor.r, accentColor.g, accentColor.b, 0.38f);
+                GUI.DrawTexture(new Rect(rect.x + 2f, rect.y + 2f, rect.width - 4f, rect.height - 4f), Texture2D.whiteTexture);
+                GUI.color = new Color(1f, 1f, 1f, 0.14f);
+                GUI.DrawTexture(new Rect(rect.x + 2f, rect.y + 2f, rect.width - 4f, 3f), Texture2D.whiteTexture);
+            }
+
             GUI.color = previousColor;
 
             var compact = rect.height < 92f;
