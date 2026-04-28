@@ -1,0 +1,79 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 65b49e23d4a4cda45a9a11e1d7bacd97, type: 3}
+  m_Name: Astromancer
+  m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
+  heroId: mage_005_astromancer
+  displayName: Astromancer
+  description: "\u9884\u5224\u8F70\u70B8\u6CD5\u5E08\uFF0C\u6280\u80FD\u4F1A\u5148\u7ED9\u51FA\u843D\u70B9\u9884\u8B66\u518D\u7ED3\u7B97\u4F24\u5BB3\u3002\u9002\u5408\u914D\u5408\u961F\u53CB\u63A7\u5236\u60E9\u7F5A\u62B1\u56E2\u654C\u4EBA\uFF0C\u547D\u4E2D\u540E\u6536\u76CA\u5F88\u9AD8\uFF1B\u9762\u5BF9\u7075\u6D3B\u3001\u5206\u6563\u6216\u80FD\u5FEB\u901F\u79BB\u5F00\u843D\u70B9\u7684\u9635\u5BB9\u65F6\uFF0C\u8F93\u51FA\u4F1A\u660E\u663E\u4E0D\u7A33\u5B9A\u3002"
+  heroClass: 1
+  tags: 010000000700000002000000
+  baseStats:
+    maxHealth: 295
+    attackPower: 44
+    defense: 9
+    attackSpeed: 0.8
+    moveSpeed: 3.7
+    criticalChance: 0.08
+    criticalDamageMultiplier: 1.55
+    attackRange: 8.9
+  basicAttack:
+    damageMultiplier: 1
+    attackInterval: 1.25
+    rangeOverride: 8.9
+    usesProjectile: 1
+    projectileSpeed: 14
+    effectType: 0
+    targetType: 0
+    targetPrioritySearchRadius: 0
+    startingVariantIndex: 0
+    bounce:
+      maxAdditionalTargets: 0
+      searchRadius: 0
+      powerMultiplier: 0
+      bounceVariantKey: 
+    sameTargetStacking:
+      enabled: 0
+      maxStacks: 1
+      modifierEffectType: 4
+      magnitudePerStack: 0
+      targetRetentionRange: 0
+      fullStackOverrideStatusEffectType: 0
+    onHitEffect:
+      enabled: 0
+      selfCurrentHealthCostRatio: 0
+      minimumSelfHealthAfterCost: 1
+      bonusDamagePowerMultiplier: 0
+      selfHealBasePowerMultiplier: 0
+      selfHealMissingHealthPowerMultiplier: 0
+    onHitStatusEffects: []
+    variants: []
+  activeSkill: {fileID: 11400000, guid: c50d260e801fb694681c24364c64eedb, type: 2}
+  ultimateSkill: {fileID: 11400000, guid: b3604f0bc6b96564a9daa7c5fa5bf526, type: 2}
+  aiTemplateId: mage_default
+  usesSpecialLogic: 0
+  specialLogicNotes: 
+  visualConfig:
+    portrait: {fileID: 21300000, guid: df991557309910443a533cb98da7f902, type: 3}
+    battlePrefab: {fileID: 2408836759155730433, guid: f7031a4d517fc8d4c87dfa4d831c16e6, type: 3}
+    animatorController: {fileID: 0}
+    battlePrefabFacesLeftByDefault: 0
+    projectilePrefab: {fileID: 4711167554438472493, guid: be560fe5009d90d498e9006497e84e6f, type: 3}
+    projectileAlignToMovement: 1
+    projectileEulerAngles: {x: 0, y: 0, z: 0}
+    castVfxPrefab: {fileID: 0}
+    hitVfxPrefab: {fileID: 0}
+    basicAttackVariantVisuals: []
+    formVisuals: []
+    castSfx: {fileID: 0}
+  debugNotes: Stage-01 demo hero for Mage. Astromancer validates delayed warning
+    impacts, snapshot targeting, and fixed-field periodic meteor scheduling.

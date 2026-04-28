@@ -2654,7 +2654,6 @@ namespace Fight.Battle
             caster.ApplyTemporarySkillOverride(skill);
         }
 
-
         private static void ApplySkillSelfHealthCost(BattleContext context, RuntimeHero caster, SkillData skill)
         {
             if (context == null
@@ -2679,6 +2678,7 @@ namespace Fight.Battle
                 skill,
                 caster.CurrentHealth));
         }
+
         private static List<RuntimeHero> CopyAliveTargets(IReadOnlyList<RuntimeHero> targets)
         {
             var results = new List<RuntimeHero>();
@@ -3023,6 +3023,13 @@ namespace Fight.Battle
         {
             if (context == null || area == null || area.Skill == null || area.Caster == null)
             {
+                return;
+            }
+
+            if (area.Effect != null && area.Effect.pulseCreatesDelayedAreaImpact)
+            {
+                var queuedTargetCount = QueueDelayedAreaImpactFromPulse(context, area);
+                context.EventBus.Publish(new SkillAreaPulseEvent(area.Caster, area.Skill, area, queuedTargetCount));
                 return;
             }
 
@@ -3432,6 +3439,186 @@ namespace Fight.Battle
             var area = new RuntimeSkillArea(caster, skill, effect, initialCenter);
             context.SkillAreas.Add(area);
             context.EventBus.Publish(new SkillAreaCreatedEvent(caster, skill, area));
+        }
+
+        private static int QueueDelayedAreaImpactFromPulse(BattleContext context, RuntimeSkillArea sourceArea)
+        {
+            if (context?.SkillAreas == null
+                || sourceArea?.Caster == null
+                || sourceArea.Skill == null
+                || sourceArea.Effect == null)
+            {
+                return 0;
+            }
+
+            if (!TryResolveDelayedAreaImpactCenter(context, sourceArea, out var impactCenter, out var queuedTargetCount))
+            {
+                return 0;
+            }
+
+            var impactEffect = CreateDelayedAreaImpactEffect(sourceArea.Skill, sourceArea.Effect);
+            var impactArea = new RuntimeSkillArea(sourceArea.Caster, sourceArea.Skill, impactEffect, impactCenter);
+            context.SkillAreas.Add(impactArea);
+            context.EventBus.Publish(new SkillAreaCreatedEvent(sourceArea.Caster, sourceArea.Skill, impactArea));
+            return queuedTargetCount;
+        }
+
+        private static bool TryResolveDelayedAreaImpactCenter(
+            BattleContext context,
+            RuntimeSkillArea sourceArea,
+            out Vector3 impactCenter,
+            out int queuedTargetCount)
+        {
+            impactCenter = sourceArea != null ? sourceArea.CurrentCenter : Vector3.zero;
+            queuedTargetCount = 0;
+            if (context?.Heroes == null
+                || sourceArea?.Caster == null
+                || sourceArea.Effect == null)
+            {
+                return false;
+            }
+
+            var sourceCenter = sourceArea.CurrentCenter;
+            var sourceRadius = Mathf.Max(0f, sourceArea.Radius);
+            var impactRadius = GetDelayedAreaImpactRadius(sourceArea.Skill, sourceArea.Effect);
+            var bestDistanceToSourceCenter = float.PositiveInfinity;
+
+            for (var i = 0; i < context.Heroes.Count; i++)
+            {
+                var candidate = context.Heroes[i];
+                if (!IsValidDelayedAreaImpactCandidate(sourceArea.Caster, candidate, sourceArea.Effect))
+                {
+                    continue;
+                }
+
+                var candidateDistanceToSourceCenter = Vector3.Distance(candidate.CurrentPosition, sourceCenter);
+                if (candidateDistanceToSourceCenter > sourceRadius)
+                {
+                    continue;
+                }
+
+                var candidateCount = CountDelayedAreaImpactTargets(
+                    context,
+                    sourceArea.Caster,
+                    sourceArea.Effect,
+                    candidate.CurrentPosition,
+                    impactRadius,
+                    sourceCenter,
+                    sourceRadius);
+                if (candidateCount <= 0)
+                {
+                    continue;
+                }
+
+                if (candidateCount < queuedTargetCount)
+                {
+                    continue;
+                }
+
+                if (candidateCount == queuedTargetCount
+                    && candidateDistanceToSourceCenter >= bestDistanceToSourceCenter)
+                {
+                    continue;
+                }
+
+                queuedTargetCount = candidateCount;
+                bestDistanceToSourceCenter = candidateDistanceToSourceCenter;
+                impactCenter = candidate.CurrentPosition;
+                impactCenter.y = 0f;
+            }
+
+            if (queuedTargetCount <= 0)
+            {
+                return false;
+            }
+
+            impactCenter = Stage01ArenaSpec.ClampPosition(impactCenter);
+            impactCenter.y = 0f;
+            return true;
+        }
+
+        private static int CountDelayedAreaImpactTargets(
+            BattleContext context,
+            RuntimeHero caster,
+            SkillEffectData effect,
+            Vector3 impactCenter,
+            float impactRadius,
+            Vector3 sourceCenter,
+            float sourceRadius)
+        {
+            var count = 0;
+            for (var i = 0; i < context.Heroes.Count; i++)
+            {
+                var candidate = context.Heroes[i];
+                if (!IsValidDelayedAreaImpactCandidate(caster, candidate, effect))
+                {
+                    continue;
+                }
+
+                if (Vector3.Distance(candidate.CurrentPosition, sourceCenter) > sourceRadius)
+                {
+                    continue;
+                }
+
+                if (Vector3.Distance(candidate.CurrentPosition, impactCenter) <= impactRadius)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        private static bool IsValidDelayedAreaImpactCandidate(RuntimeHero caster, RuntimeHero candidate, SkillEffectData effect)
+        {
+            return candidate != null
+                && !candidate.IsDead
+                && IsValidPersistentAreaTarget(caster, candidate, effect)
+                && !ShouldRejectPositiveSkillEffectTarget(effect, caster, candidate);
+        }
+
+        private static SkillEffectData CreateDelayedAreaImpactEffect(SkillData skill, SkillEffectData sourceEffect)
+        {
+            var delaySeconds = Mathf.Max(0.05f, sourceEffect.delayedAreaImpactDelaySeconds);
+            var impactEffect = new SkillEffectData
+            {
+                effectType = SkillEffectType.CreatePersistentArea,
+                powerMultiplier = sourceEffect.delayedAreaImpactPowerMultiplier > Mathf.Epsilon
+                    ? sourceEffect.delayedAreaImpactPowerMultiplier
+                    : sourceEffect.powerMultiplier,
+                radiusOverride = GetDelayedAreaImpactRadius(skill, sourceEffect),
+                durationSeconds = delaySeconds,
+                tickIntervalSeconds = delaySeconds,
+                followCaster = false,
+                persistentAreaPulseEffectType = sourceEffect.persistentAreaPulseEffectType,
+                persistentAreaTargetType = sourceEffect.persistentAreaTargetType,
+                areaVfxPrefabOverride = sourceEffect.delayedAreaImpactVfxPrefab != null
+                    ? sourceEffect.delayedAreaImpactVfxPrefab
+                    : sourceEffect.areaVfxPrefabOverride,
+                areaVfxScaleMultiplierOverride = sourceEffect.delayedAreaImpactVfxScaleMultiplierOverride > Mathf.Epsilon
+                    ? sourceEffect.delayedAreaImpactVfxScaleMultiplierOverride
+                    : sourceEffect.areaVfxScaleMultiplierOverride,
+                areaVfxEulerAnglesOverride = sourceEffect.delayedAreaImpactVfxPrefab != null
+                    ? sourceEffect.delayedAreaImpactVfxEulerAnglesOverride
+                    : sourceEffect.areaVfxEulerAnglesOverride,
+            };
+
+            if (sourceEffect.statusEffects != null && sourceEffect.statusEffects.Count > 0)
+            {
+                impactEffect.statusEffects.AddRange(sourceEffect.statusEffects);
+            }
+
+            return impactEffect;
+        }
+
+        private static float GetDelayedAreaImpactRadius(SkillData skill, SkillEffectData sourceEffect)
+        {
+            if (sourceEffect != null && sourceEffect.delayedAreaImpactRadiusOverride > Mathf.Epsilon)
+            {
+                return sourceEffect.delayedAreaImpactRadiusOverride;
+            }
+
+            return GetEffectRadius(skill, sourceEffect);
         }
 
         private static void QueueReturningPathStrike(

@@ -113,6 +113,16 @@ namespace Fight.Data
         public List<StatusEffectData> followUpAreaStatusEffects = new List<StatusEffectData>();
         public bool followUpAreaCanChain = true;
         public bool followUpAreaLimitTriggerOncePerUnitPerExecution = true;
+        public GameObject areaVfxPrefabOverride;
+        [Min(0f)] public float areaVfxScaleMultiplierOverride = 0f;
+        public Vector3 areaVfxEulerAnglesOverride = Vector3.zero;
+        public bool pulseCreatesDelayedAreaImpact;
+        [Min(0f)] public float delayedAreaImpactDelaySeconds = 0f;
+        [Min(0f)] public float delayedAreaImpactRadiusOverride = 0f;
+        [Min(0f)] public float delayedAreaImpactPowerMultiplier = 0f;
+        public GameObject delayedAreaImpactVfxPrefab;
+        [Min(0f)] public float delayedAreaImpactVfxScaleMultiplierOverride = 0f;
+        public Vector3 delayedAreaImpactVfxEulerAnglesOverride = Vector3.zero;
         public DeployableProxySpawnMode deployableProxySpawnMode = DeployableProxySpawnMode.AtTargetPosition;
         public DeployableProxyTriggerMode deployableProxyTriggerMode = DeployableProxyTriggerMode.None;
         [Min(0f)] public float deployableProxyStrikeRadius = 0f;

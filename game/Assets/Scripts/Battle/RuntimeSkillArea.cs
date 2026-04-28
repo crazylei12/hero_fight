@@ -68,6 +68,45 @@ namespace Fight.Battle
             }
         }
 
+        public GameObject AreaVfxPrefab
+        {
+            get
+            {
+                if (Effect != null && Effect.areaVfxPrefabOverride != null)
+                {
+                    return Effect.areaVfxPrefabOverride;
+                }
+
+                return Skill != null ? Skill.persistentAreaVfxPrefab : null;
+            }
+        }
+
+        public float AreaVfxScaleMultiplier
+        {
+            get
+            {
+                if (Effect != null && Effect.areaVfxScaleMultiplierOverride > Mathf.Epsilon)
+                {
+                    return Mathf.Max(0.1f, Effect.areaVfxScaleMultiplierOverride);
+                }
+
+                return Skill != null ? Mathf.Max(0.1f, Skill.persistentAreaVfxScaleMultiplier) : 1f;
+            }
+        }
+
+        public Vector3 AreaVfxEulerAngles
+        {
+            get
+            {
+                if (Effect != null && Effect.areaVfxPrefabOverride != null)
+                {
+                    return Effect.areaVfxEulerAnglesOverride;
+                }
+
+                return Skill != null ? Skill.persistentAreaVfxEulerAngles : Vector3.zero;
+            }
+        }
+
         public void Tick(float deltaTime)
         {
             if (IsExpired)

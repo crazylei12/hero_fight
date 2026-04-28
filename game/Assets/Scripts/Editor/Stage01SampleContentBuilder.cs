@@ -76,6 +76,7 @@ namespace Fight.Editor
         private const string FireMageSpritePrefabPath = "Assets/Prefabs/Heroes/mage_001_firemage/FireMageSprite.prefab";
         private const string FrostMagePrefabPath = "Assets/Prefabs/Heroes/mage_002_frostmage/Frostmage.prefab";
         private const string LightningmagePrefabPath = "Assets/Prefabs/Heroes/mage_004_lightningmage/Lightningmage.prefab";
+        private const string AstromancerPrefabPath = AstromancerVisualAndVfxBuilder.HeroPrefabPath;
         private const string TankPrefabPath = "Assets/Prefabs/Heroes/tank_001_ironwall/Ironwall.prefab";
         private const string ShieldwardenPrefabPath = "Assets/Prefabs/Heroes/tank_002_shieldwarden/Shieldwarden.prefab";
         private const string TidehunterPrefabPath = "Assets/Prefabs/Heroes/tank_003_tidehunter/Tidehunter.prefab";
@@ -94,6 +95,9 @@ namespace Fight.Editor
         private const string FrostMageActiveAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FrostMageFrostBurst.prefab";
         private const string FrostMageUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FrostMageBlizzardField.prefab";
         private const string MageUltimateAreaVfxPrefabPath = "Assets/Prefabs/VFX/Skills/FireMageMeteorField.prefab";
+        private const string AstromancerProjectilePrefabPath = AstromancerVisualAndVfxBuilder.ProjectilePrefabPath;
+        private const string AstromancerFallingStarVfxPrefabPath = AstromancerVisualAndVfxBuilder.FallingStarWarningPrefabPath;
+        private const string AstromancerMeteorChoirFieldVfxPrefabPath = AstromancerVisualAndVfxBuilder.MeteorChoirFieldPrefabPath;
         private const string BladesmanActiveImpactVfxPrefabPath = "Assets/Prefabs/VFX/Skills/BladesmanRendingSlash.prefab";
         private const string BladesmanUltimateDashVfxPrefabPath = "Assets/Prefabs/VFX/Skills/BladesmanFlyingSwallowWave.prefab";
         private const string RiflemanActiveTargetIndicatorVfxPrefabPath = "Assets/Prefabs/VFX/Skills/RiflemanBurstFireTargetReticle.prefab";
@@ -178,6 +182,7 @@ namespace Fight.Editor
         private static void GenerateDemoContentInternal(bool overwriteExistingContent, bool showCompletionDialog)
         {
             EnsureFolders();
+            AstromancerVisualAndVfxBuilder.BuildAll();
 
             var warriorActive = CreateSkybreakerActiveSkill(overwriteExistingContent);
             var warriorUltimateSkill = CreateSkybreakerUltimateSkill(overwriteExistingContent, out var warriorUltimateExisted);
@@ -318,6 +323,23 @@ namespace Fight.Editor
             ConfigureLightningmageBasicAttack(lightningmage, overwriteExistingContent, lightningmageHeroExisted);
             EnsureHeroSkillReferences(lightningmage, lightningmageActive, lightningmageUltimateSkill);
             EnsureHeroBattlePrefabReference(lightningmage, LoadBattlePrefab("mage_004_lightningmage", HeroClass.Mage));
+
+            var astromancerActive = CreateAstromancerActiveSkill(overwriteExistingContent);
+            var astromancerUltimateSkill = CreateAstromancerUltimateSkill(overwriteExistingContent, out var astromancerUltimateExisted);
+
+            var astromancer = CreateHero(
+                "mage_005_astromancer",
+                "Astromancer",
+                HeroClass.Mage,
+                295f, 44f, 9f, 1f / 1.25f, 3.7f, 0.08f, 1.55f, 8.9f,
+                astromancerActive,
+                ConfigureAstromancerUltimate(astromancerUltimateSkill, overwriteExistingContent, astromancerUltimateExisted),
+                overwriteExistingContent,
+                out var astromancerHeroExisted,
+                HeroTag.Ranged, HeroTag.AreaDamage, HeroTag.Burst);
+            ConfigureAstromancerBasicAttack(astromancer, overwriteExistingContent, astromancerHeroExisted);
+            EnsureHeroSkillReferences(astromancer, astromancerActive, astromancerUltimateSkill);
+            EnsureHeroBattlePrefabReference(astromancer, LoadBattlePrefab("mage_005_astromancer", HeroClass.Mage));
 
             CreateArchivedMageFireboltSkill(overwriteExistingContent);
 
@@ -693,7 +715,7 @@ namespace Fight.Editor
             var demoHeroes = new[]
             {
                 warrior, bladesman, berserker, spellblade, trollwarlord,
-                mage, frostmage, sandemperor, lightningmage,
+                mage, frostmage, sandemperor, lightningmage, astromancer,
                 assassin, tidefin, butcher, loner, demon,
                 tank, shieldwarden, tidehunter, mundo, blastshield,
                 support, windchime, monk, shrinemaiden, chef, commander,
@@ -1286,6 +1308,7 @@ namespace Fight.Editor
                 || heroId == "mage_001_firemage"
                 || heroId == "mage_002_frostmage"
                 || heroId == "mage_004_lightningmage"
+                || heroId == "mage_005_astromancer"
                 || heroId == "marksman_001_longshot"
                 || heroId == "marksman_002_rifleman"
                 || heroId == "marksman_003_venomshooter"
@@ -1311,6 +1334,7 @@ namespace Fight.Editor
                 "mage_002_frostmage" => AssetDatabase.LoadAssetAtPath<GameObject>(FrostMageProjectilePrefabPath),
                 "mage_003_sandemperor" => AssetDatabase.LoadAssetAtPath<GameObject>(FireMageProjectilePrefabPath),
                 "mage_004_lightningmage" => AssetDatabase.LoadAssetAtPath<GameObject>(FrostMageProjectilePrefabPath),
+                "mage_005_astromancer" => AssetDatabase.LoadAssetAtPath<GameObject>(AstromancerProjectilePrefabPath),
                 "marksman_001_longshot" => AssetDatabase.LoadAssetAtPath<GameObject>(LongshotProjectilePrefabPath),
                 "marksman_002_rifleman" => AssetDatabase.LoadAssetAtPath<GameObject>(RiflemanProjectilePrefabPath),
                 "marksman_003_venomshooter" => AssetDatabase.LoadAssetAtPath<GameObject>(LongshotProjectilePrefabPath),
@@ -1328,6 +1352,7 @@ namespace Fight.Editor
                 || heroId == "mage_002_frostmage"
                 || heroId == "mage_003_sandemperor"
                 || heroId == "mage_004_lightningmage"
+                || heroId == "mage_005_astromancer"
                 || heroId == "marksman_001_longshot"
                 || heroId == "marksman_002_rifleman"
                 || heroId == "marksman_003_venomshooter"
@@ -1402,6 +1427,7 @@ namespace Fight.Editor
                 "mage_002_frostmage" => "控场法师，依靠冰霜区域减缓敌人推进，让前排和射手获得更安全的输出窗口。适合防守反打，也能限制突进阵容的节奏，队伍缺少控制时也能补足减速压力。",
                 "mage_003_sandemperor" => "部署型法师，通过沙卫配合自身普攻建立持续火力点，越能站住阵地越有价值。适合中后排稳定压制，但需要避免被快速切入；阵线被打乱时，沙卫价值会下降。",
                 "mage_004_lightningmage" => "连锁控制法师，频繁施加感电标记并用雷击打断敌方节奏。适合处理多目标混战，在敌人分散时也能保持持续干扰。队伍需要拖慢敌方技能循环时很有价值，在拉扯战里能不断制造小规模优势。",
+                "mage_005_astromancer" => "预判轰炸法师，技能会先给出落点预警再结算伤害。适合配合队友控制惩罚抱团敌人，命中后收益很高；面对灵活、分散或能快速离开落点的阵容时，输出会明显不稳定。",
                 "assassin_001_shadowstep" => "切入型刺客，依靠闪现和隐蔽窗口绕过前排，优先威胁敌方后排输出。适合快节奏进攻，但进场时机错误会很快陷入危险，需要队伍在正面牵制敌方注意力，最好搭配能制造正面压力的队友。",
                 "assassin_002_tidefin" => "压制型刺客，通过突进与减益持续削弱关键目标，让敌人难以稳定输出或回复。适合盯防核心英雄，也能在混战中补足单点压力，对单核阵容有较强限制作用。",
                 "assassin_003_butcher" => "拉拽型刺客，擅长把后排或孤立目标拖入近身战，再用压制回复的手段扩大击杀窗口。适合打乱阵型，但需要队友跟进集火；如果拉到错误目标，后续压力会变小。",
@@ -1453,6 +1479,8 @@ namespace Fight.Editor
                 "skill_sandemperor_ultimate_imperialencirclement" => "重建沙卫阵线，围绕敌方制造一轮爆发压制。",
                 "skill_lightningmage_active_thunderline" => "释放直线雷击并叠加感电标记。",
                 "skill_lightningmage_ultimate_stormverdict" => "连续召唤雷击，反复检查敌人并触发感电控制。",
+                "skill_astromancer_active_fallingstar" => "记录目标落点并短暂预警，延迟后在该位置造成范围伤害。",
+                "skill_astromancer_ultimate_meteorchoir" => "建立固定群星轰炸区，持续安排带预警的小范围星陨。",
                 "skill_assassin_active_shadowblink" => "闪现切入关键目标，快速贴近后排。",
                 "skill_assassin_ultimate_smokeveil" => "制造隐蔽窗口，让刺客更安全地切入或脱离。",
                 "skill_tidefin_active_tidalpounce" => "扑向目标并施加压制，削弱其持续作战能力。",
@@ -1516,6 +1544,7 @@ namespace Fight.Editor
                 "mage_002_frostmage" => FrostMagePrefabPath,
                 "mage_003_sandemperor" => FireMagePrefabPath,
                 "mage_004_lightningmage" => LightningmagePrefabPath,
+                "mage_005_astromancer" => AstromancerPrefabPath,
                 "marksman_001_longshot" => MarksmanPrefabPath,
                 "marksman_002_rifleman" => RiflemanPrefabPath,
                 "marksman_003_venomshooter" => VenomshooterPrefabPath,
@@ -2175,6 +2204,7 @@ namespace Fight.Editor
             skill.temporaryOverride.visualTintColor = new Color(1f, 0.18f, 0.18f, 1f);
             skill.temporaryOverride.visualTintStrength = 0.55f;
         }
+
         private static SkillData CreateVenomshooterActiveSkill(bool overwriteExistingContent)
         {
             var skill = CreateSkill(
@@ -3033,6 +3063,87 @@ namespace Fight.Editor
                 CombatActionSequenceInterruptFlags.HardControl | CombatActionSequenceInterruptFlags.ForcedMovement;
 
             ResetUltimateDecision(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateAstromancerActiveSkill(bool overwriteExistingContent)
+        {
+            var skill = CreateSkill(
+                "skill_astromancer_active_fallingstar",
+                "Falling Star",
+                SkillSlotType.ActiveSkill,
+                SkillType.AreaDamage,
+                SkillTargetType.CurrentEnemyTarget,
+                9.5f,
+                3f,
+                1.1f,
+                6.5f,
+                1,
+                overwriteExistingContent,
+                out var existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.description = "Stage-01 demo skill: snapshots the current target position, warns briefly, then lands a single star impact.";
+            skill.skillType = SkillType.AreaDamage;
+            skill.targetType = SkillTargetType.CurrentEnemyTarget;
+            skill.fallbackTargetType = SkillTargetType.DensestEnemyArea;
+            skill.castRange = 9.5f;
+            skill.areaRadius = 3f;
+            skill.cooldownSeconds = 6.5f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+            skill.persistentAreaVfxPrefab = null;
+            skill.persistentAreaVfxScaleMultiplier = 1f;
+            skill.persistentAreaVfxEulerAngles = Vector3.zero;
+            skill.skillAreaPresentationType = SkillAreaPresentationType.None;
+
+            var impact = AddPersistentAreaEffect(
+                skill,
+                PersistentAreaPulseEffectType.DirectDamage,
+                PersistentAreaTargetType.Enemies,
+                1.1f,
+                skill.areaRadius,
+                0.75f,
+                0.75f,
+                false);
+            impact.areaVfxPrefabOverride = AssetDatabase.LoadAssetAtPath<GameObject>(AstromancerFallingStarVfxPrefabPath);
+            impact.areaVfxScaleMultiplierOverride = 1f;
+            impact.areaVfxEulerAnglesOverride = Vector3.zero;
+
+            ResetActionSequence(skill);
+            ResetUltimateDecision(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateAstromancerUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
+        {
+            var skill = CreateSkill(
+                "skill_astromancer_ultimate_meteorchoir",
+                "Meteor Choir",
+                SkillSlotType.Ultimate,
+                SkillType.AreaDamage,
+                SkillTargetType.DensestEnemyArea,
+                10.5f,
+                7.2f,
+                1.25f,
+                0f,
+                3,
+                overwriteExistingContent,
+                out existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            ApplyAstromancerUltimateBaseConfiguration(skill);
             EditorUtility.SetDirty(skill);
             return skill;
         }
@@ -4522,6 +4633,7 @@ namespace Fight.Editor
             hero.debugNotes = "Stage-01 demo hero for Marksman. Bloodlancer validates basic-attack on-hit self HP cost, non-crit bonus damage, missing-health self healing, and a self-cost ultimate that amplifies the same on-hit rule.";
             EditorUtility.SetDirty(hero);
         }
+
         private static void ConfigureSandemperorBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
         {
             if (hero == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
@@ -4561,6 +4673,36 @@ namespace Fight.Editor
             EnsureBasicAttackStatusList(hero.basicAttack);
             hero.basicAttack.onHitStatusEffects.Clear();
             hero.debugNotes = "Stage-01 demo hero for Mage. Lightningmage validates shared damage-triggered shock counters, frequent short stuns, and global action-sequence ult pulses.";
+            EditorUtility.SetDirty(hero);
+        }
+
+        private static void ConfigureAstromancerBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (hero == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return;
+            }
+
+            hero.basicAttack.damageMultiplier = 1f;
+            hero.basicAttack.attackInterval = 1.25f;
+            hero.basicAttack.rangeOverride = 8.9f;
+            hero.basicAttack.usesProjectile = true;
+            hero.basicAttack.projectileSpeed = 14f;
+            hero.basicAttack.effectType = BasicAttackEffectType.Damage;
+            hero.basicAttack.targetType = BasicAttackTargetType.NearestEnemy;
+            hero.basicAttack.targetPrioritySearchRadius = 0f;
+            EnsureBasicAttackStatusList(hero.basicAttack);
+            hero.basicAttack.onHitStatusEffects.Clear();
+            hero.basicAttack.variants.Clear();
+            hero.basicAttack.bounce.maxAdditionalTargets = 0;
+            hero.basicAttack.bounce.searchRadius = 0f;
+            hero.basicAttack.bounce.powerMultiplier = 0f;
+            hero.basicAttack.bounce.bounceVariantKey = string.Empty;
+            hero.visualConfig ??= new HeroVisualConfig();
+            hero.visualConfig.projectilePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(AstromancerProjectilePrefabPath);
+            hero.visualConfig.projectileAlignToMovement = true;
+            hero.visualConfig.projectileEulerAngles = Vector3.zero;
+            hero.debugNotes = "Stage-01 demo hero for Mage. Astromancer validates delayed warning impacts, snapshot targeting, and fixed-field periodic meteor scheduling.";
             EditorUtility.SetDirty(hero);
         }
 
@@ -5127,6 +5269,61 @@ namespace Fight.Editor
             ApplyCountFallback(skill, 40f, 2, 50f, 1);
             EditorUtility.SetDirty(skill);
             return skill;
+        }
+
+        private static SkillData ConfigureAstromancerUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            ApplyAstromancerUltimateBaseConfiguration(skill);
+
+            ResetUltimateDecision(skill);
+            skill.ultimateDecision.targetingType = UltimateTargetingType.EnemyDensestPosition;
+            skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;
+            skill.ultimateDecision.primaryCondition.searchRadius = skill.areaRadius;
+            skill.ultimateDecision.primaryCondition.requiredUnitCount = 3;
+            skill.ultimateDecision.primaryCondition.requireTargetInCastRange = true;
+            skill.ultimateDecision.combineMode = UltimateConditionCombineMode.PrimaryOnly;
+            ApplyCountFallback(skill, 30f, 2, 45f, 1);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static void ApplyAstromancerUltimateBaseConfiguration(SkillData skill)
+        {
+            skill.description = "Stage-01 demo skill: creates a fixed celestial field that repeatedly schedules delayed meteor impacts inside the field.";
+            skill.skillType = SkillType.AreaDamage;
+            skill.targetType = SkillTargetType.DensestEnemyArea;
+            skill.fallbackTargetType = SkillTargetType.NearestEnemy;
+            skill.castRange = 10.5f;
+            skill.areaRadius = 7.2f;
+            skill.minTargetsToCast = 3;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+            skill.persistentAreaVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(AstromancerMeteorChoirFieldVfxPrefabPath);
+            skill.persistentAreaVfxScaleMultiplier = 1f;
+            skill.persistentAreaVfxEulerAngles = Vector3.zero;
+            skill.skillAreaPresentationType = SkillAreaPresentationType.None;
+
+            var meteorScheduler = AddPersistentAreaEffect(
+                skill,
+                PersistentAreaPulseEffectType.DirectDamage,
+                PersistentAreaTargetType.Enemies,
+                1.25f,
+                skill.areaRadius,
+                5f,
+                0.7f,
+                false);
+            meteorScheduler.pulseCreatesDelayedAreaImpact = true;
+            meteorScheduler.delayedAreaImpactDelaySeconds = 0.55f;
+            meteorScheduler.delayedAreaImpactRadiusOverride = 2.4f;
+            meteorScheduler.delayedAreaImpactPowerMultiplier = 1.25f;
+            meteorScheduler.delayedAreaImpactVfxPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(AstromancerFallingStarVfxPrefabPath);
+            meteorScheduler.delayedAreaImpactVfxScaleMultiplierOverride = 1f;
+            meteorScheduler.delayedAreaImpactVfxEulerAnglesOverride = Vector3.zero;
         }
 
         private static SkillData ConfigureShadowstepUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
@@ -6712,7 +6909,6 @@ namespace Fight.Editor
             basicAttack.sameTargetStacking.fullStackOverrideStatusEffectType = StatusEffectType.None;
         }
 
-
         private static void ResetBasicAttackOnHitEffect(BasicAttackData basicAttack)
         {
             if (basicAttack == null)
@@ -6728,6 +6924,7 @@ namespace Fight.Editor
             basicAttack.onHitEffect.selfHealBasePowerMultiplier = 0f;
             basicAttack.onHitEffect.selfHealMissingHealthPowerMultiplier = 0f;
         }
+
         private static BattleInputConfig CreateBattleInput(
             string assetName,
             bool includeAssassinOnRedTeam,

@@ -3480,18 +3480,18 @@ namespace Fight.UI
 
         private void SpawnThrownProjectileImpact(RuntimeSkillArea area)
         {
-            if (!IsThrownProjectilePresentation(area) || area?.Skill?.persistentAreaVfxPrefab == null)
+            if (!IsThrownProjectilePresentation(area) || area?.AreaVfxPrefab == null)
             {
                 return;
             }
 
             var areaScale = GetSkillAreaScale(area);
-            var multiplier = Mathf.Max(0.1f, area.Skill.persistentAreaVfxScaleMultiplier);
+            var multiplier = area.AreaVfxScaleMultiplier;
             SpawnTransientWorldVfx(
-                area.Skill.persistentAreaVfxPrefab,
+                area.AreaVfxPrefab,
                 Map(area.CurrentCenter),
                 SkillAreaEffectSortOrder,
-                Quaternion.Euler(area.Skill.persistentAreaVfxEulerAngles),
+                Quaternion.Euler(area.AreaVfxEulerAngles),
                 new Vector3(areaScale.x * multiplier, areaScale.y * multiplier, 1f));
         }
 
@@ -3870,9 +3870,9 @@ namespace Fight.UI
                 return;
             }
 
-            var instance = Instantiate(area.Skill.persistentAreaVfxPrefab, skillAreaRoot);
+            var instance = Instantiate(area.AreaVfxPrefab, skillAreaRoot);
             instance.name = $"{area.Skill.displayName}_{area.AreaId}_Vfx";
-            instance.transform.localRotation = Quaternion.Euler(area.Skill.persistentAreaVfxEulerAngles) * instance.transform.localRotation;
+            instance.transform.localRotation = Quaternion.Euler(area.AreaVfxEulerAngles) * instance.transform.localRotation;
             RemovePrefabPhysics(instance);
             viewState.EffectInstance = instance;
             viewState.EffectSortingGroup = instance.GetComponent<SortingGroup>();
@@ -3932,7 +3932,7 @@ namespace Fight.UI
             }
 
             var baseScale = viewState != null ? viewState.BaseEffectScale : Vector3.one;
-            var multiplier = area?.Skill != null ? Mathf.Max(0.1f, area.Skill.persistentAreaVfxScaleMultiplier) : 1f;
+            var multiplier = area != null ? area.AreaVfxScaleMultiplier : 1f;
             var areaScale = GetSkillAreaScale(area);
             return new Vector3(
                 baseScale.x * areaScale.x * multiplier,
@@ -3943,8 +3943,7 @@ namespace Fight.UI
         private static bool HasSkillAreaEffectPrefab(RuntimeSkillArea area)
         {
             return area != null
-                && area.Skill != null
-                && area.Skill.persistentAreaVfxPrefab != null;
+                && area.AreaVfxPrefab != null;
         }
 
         private static void RestartSkillAreaEffect(SkillAreaViewState viewState)
