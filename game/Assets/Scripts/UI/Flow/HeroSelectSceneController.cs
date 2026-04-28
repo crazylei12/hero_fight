@@ -34,7 +34,6 @@ namespace Fight.UI.Flow
         private Camera fallbackUiCamera;
         private GUIStyle topTeamStyle;
         private GUIStyle topScoreStyle;
-        private GUIStyle topCenterStyle;
         private GUIStyle topPhaseStyle;
         private GUIStyle topLogoStyle;
         private GUIStyle topButtonStyle;
@@ -168,18 +167,12 @@ namespace Fight.UI.Flow
             DrawShadowedLabel(ScaleTopRect(rect, 216f, 43f, 420f, 78f), "Blue Team", topTeamStyle, MainTextColor);
             DrawShadowedLabel(ScaleTopRect(rect, 1244f, 43f, 420f, 78f), "Red Team", topTeamStyle, MainTextColor);
 
-            DrawShadowedLabel(ScaleTopRect(rect, 780f, 2f, 320f, 28f), GetTopStageLabel(), topPhaseStyle, PhaseTextColor);
-            DrawShadowedLabel(
-                ScaleTopRect(rect, 770f, 28f, 340f, 58f),
-                $"{GameFlowState.DraftStepNumber:00}/{GameFlowState.DraftTotalSteps:00}",
-                topCenterStyle,
-                MainTextColor);
             DrawShadowedLabel(ScaleTopRect(rect, 901f, 115f, 78f, 34f), "BP", topPhaseStyle, PhaseTextColor);
 
             DrawShadowedLabel(ScaleTopRect(rect, 754f, 32f, 84f, 80f), CountPicked(GameFlowState.BlueSelection).ToString(), topScoreStyle, BlueAccent);
             DrawShadowedLabel(ScaleTopRect(rect, 1022f, 32f, 84f, 80f), CountPicked(GameFlowState.RedSelection).ToString(), topScoreStyle, RedAccent);
-            DrawBanDots(rect, 796f, 139f, CountPicked(GameFlowState.BlueBans), BlueAccent);
-            DrawBanDots(rect, 1064f, 139f, CountPicked(GameFlowState.RedBans), RedAccent);
+            DrawBanDots(rect, 796f, 124f, CountPicked(GameFlowState.BlueBans), BlueAccent);
+            DrawBanDots(rect, 1064f, 124f, CountPicked(GameFlowState.RedBans), RedAccent);
 
             DrawShadowedLabel(ScaleTopRect(rect, 36f, 52f, 102f, 72f), "蓝", topLogoStyle, MainTextColor);
             DrawShadowedLabel(ScaleTopRect(rect, 1742f, 52f, 102f, 72f), "红", topLogoStyle, MainTextColor);
@@ -189,11 +182,6 @@ namespace Fight.UI.Flow
         private static float ResolveTopScoreboardHeight(float width)
         {
             return Mathf.Clamp(width * (TopScoreboardDesignHeight / TopScoreboardDesignWidth), 96f, 148f);
-        }
-
-        private string GetTopStageLabel()
-        {
-            return GameFlowState.IsDraftComplete ? "队内交换" : "真实 BP";
         }
 
         private void DrawTopScoreboardFallbackBase(Rect rect)
@@ -1001,12 +989,12 @@ namespace Fight.UI.Flow
                     GUI.color = new Color(0.2f, 0.66f, 0.34f, 0.95f);
                     GUI.DrawTexture(iconRect, Texture2D.whiteTexture);
                     GUI.color = Color.white;
-                    DrawHeroPortrait(new Rect(iconRect.x + 3f, iconRect.y + 3f, iconRect.width - 6f, iconRect.height - 6f), masteryHero);
+                    DrawHeroPortraitTopHalf(new Rect(iconRect.x + 3f, iconRect.y + 3f, iconRect.width - 6f, iconRect.height - 6f), masteryHero);
                 }
                 else
                 {
                     GUI.color = Color.white;
-                    DrawHeroPortrait(iconRect, masteryHero);
+                    DrawHeroPortraitTopHalf(iconRect, masteryHero);
                 }
 
                 GUI.color = previousColor;
@@ -1201,6 +1189,36 @@ namespace Fight.UI.Flow
                 textureRect.width / texture.width,
                 textureRect.height / texture.height);
             GUI.DrawTextureWithTexCoords(rect, texture, texCoords, true);
+        }
+
+        private void DrawHeroPortraitTopHalf(Rect rect, HeroDefinition hero)
+        {
+            var portrait = Fight.UI.HeroPortraitResolver.ResolvePortrait(hero);
+            if (portrait == null)
+            {
+                DrawHeroPortraitPlaceholder(rect, hero);
+                return;
+            }
+
+            var texture = portrait.texture;
+            if (texture == null)
+            {
+                DrawHeroPortraitPlaceholder(rect, hero);
+                return;
+            }
+
+            var textureRect = portrait.textureRect;
+            var topHalfRect = new Rect(
+                textureRect.x,
+                textureRect.y + (textureRect.height * 0.5f),
+                textureRect.width,
+                textureRect.height * 0.5f);
+            var texCoords = new Rect(
+                topHalfRect.x / texture.width,
+                topHalfRect.y / texture.height,
+                topHalfRect.width / texture.width,
+                topHalfRect.height / texture.height);
+            GUI.DrawTextureWithTexCoords(PixelSnap(rect), texture, texCoords, true);
         }
 
         private void DrawHeroPortraitPlaceholder(Rect rect, HeroDefinition hero)
@@ -1432,7 +1450,6 @@ namespace Fight.UI.Flow
             lastTopStyleScale = scale;
             topTeamStyle = BuildTopStyle(38, scale, TextAnchor.MiddleCenter, FontStyle.Bold);
             topScoreStyle = BuildTopStyle(86, scale, TextAnchor.MiddleCenter, FontStyle.Bold);
-            topCenterStyle = BuildTopStyle(48, scale, TextAnchor.MiddleCenter, FontStyle.Bold);
             topPhaseStyle = BuildTopStyle(22, scale, TextAnchor.MiddleCenter, FontStyle.Bold);
             topLogoStyle = BuildTopStyle(36, scale, TextAnchor.MiddleCenter, FontStyle.Bold);
             topButtonStyle = new GUIStyle(GUI.skin.button)
