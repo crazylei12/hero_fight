@@ -41,6 +41,8 @@ namespace Fight.UI.Flow
         private GUIStyle sectionStyle;
         private GUIStyle bodyStyle;
         private GUIStyle smallBodyStyle;
+        private GUIStyle banSlotBodyStyle;
+        private GUIStyle banSlotSmallBodyStyle;
         private GUIStyle slotStyle;
         private GUIStyle focusedSlotStyle;
         private GUIStyle heroCardButtonStyle;
@@ -638,8 +640,12 @@ namespace Fight.UI.Flow
                 var portraitSize = Mathf.Clamp(slotRect.height - 22f, 48f, 66f);
                 var portraitRect = new Rect(slotRect.x + 9f, slotRect.y + (slotRect.height - portraitSize) * 0.5f, portraitSize, portraitSize);
                 DrawHeroPortrait(portraitRect, hero);
-                DrawLabel(new Rect(portraitRect.xMax + 8f, slotRect.y + 14f, slotRect.width - portraitSize - 25f, 22f), hero != null ? hero.displayName : $"{side} Ban {i + 1}", bodyStyle);
-                DrawLabel(new Rect(portraitRect.xMax + 8f, slotRect.y + 40f, slotRect.width - portraitSize - 25f, 18f), hero != null ? GetHeroClassLabel(hero.heroClass) : "Waiting", smallBodyStyle);
+                var textX = portraitRect.xMax + 8f;
+                var textWidth = Mathf.Max(32f, slotRect.xMax - textX - 8f);
+                var nameText = hero != null ? hero.displayName : $"Ban {i + 1}";
+                var detailText = hero != null ? GetHeroClassLabel(hero.heroClass) : "Waiting";
+                DrawLabel(new Rect(textX, slotRect.y + 18f, textWidth, 20f), nameText, banSlotBodyStyle);
+                DrawLabel(new Rect(textX, slotRect.y + 46f, textWidth, 18f), detailText, banSlotSmallBodyStyle);
             }
         }
 
@@ -1513,6 +1519,20 @@ namespace Fight.UI.Flow
                 fontSize = 12,
                 wordWrap = true,
                 normal = { textColor = new Color(0.78f, 0.82f, 0.9f) }
+            };
+
+            banSlotBodyStyle = new GUIStyle(bodyStyle)
+            {
+                fontSize = 13,
+                wordWrap = false,
+                clipping = TextClipping.Clip
+            };
+
+            banSlotSmallBodyStyle = new GUIStyle(smallBodyStyle)
+            {
+                fontSize = 11,
+                wordWrap = false,
+                clipping = TextClipping.Clip
             };
 
             slotStyle = new GUIStyle(GUI.skin.box)
