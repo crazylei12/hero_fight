@@ -30,6 +30,7 @@ namespace Fight.UI.Flow
         private Sprite playerStatusGoodArrowSprite;
         private Sprite playerStatusNormalArrowSprite;
         private Sprite playerStatusBadArrowSprite;
+        private Camera fallbackUiCamera;
         private GUIStyle topTeamStyle;
         private GUIStyle topScoreStyle;
         private GUIStyle topCenterStyle;
@@ -71,15 +72,40 @@ namespace Fight.UI.Flow
             playerStatusNormalArrowSprite = Resources.Load<Sprite>(PlayerStatusNormalArrowTexturePath);
             playerStatusBadArrowSprite = Resources.Load<Sprite>(PlayerStatusBadArrowTexturePath);
             highlightedHero = FindFirstCatalogHero();
+            EnsureFallbackUiCamera();
         }
 
         private void OnDestroy()
         {
+            if (fallbackUiCamera != null)
+            {
+                Destroy(fallbackUiCamera.gameObject);
+                fallbackUiCamera = null;
+            }
+
             if (topScoreboardDotTexture != null)
             {
                 Destroy(topScoreboardDotTexture);
                 topScoreboardDotTexture = null;
             }
+        }
+
+        private void EnsureFallbackUiCamera()
+        {
+            if (FindObjectsByType<Camera>(FindObjectsSortMode.None).Length > 0)
+            {
+                return;
+            }
+
+            var cameraObject = new GameObject("HeroSelect UI Fallback Camera");
+            cameraObject.transform.SetParent(transform, false);
+            fallbackUiCamera = cameraObject.AddComponent<Camera>();
+            fallbackUiCamera.clearFlags = CameraClearFlags.SolidColor;
+            fallbackUiCamera.backgroundColor = new Color(0.055f, 0.06f, 0.068f, 1f);
+            fallbackUiCamera.cullingMask = 0;
+            fallbackUiCamera.orthographic = true;
+            fallbackUiCamera.depth = -100f;
+            fallbackUiCamera.useOcclusionCulling = false;
         }
 
         private void OnGUI()
@@ -157,34 +183,6 @@ namespace Fight.UI.Flow
             DrawShadowedLabel(ScaleTopRect(rect, 36f, 72f, 102f, 72f), "蓝", topLogoStyle, MainTextColor);
             DrawShadowedLabel(ScaleTopRect(rect, 1742f, 72f, 102f, 72f), "红", topLogoStyle, MainTextColor);
 
-            if (GUI.Button(ScaleTopRect(rect, 38f, 142f, 114f, 30f), "Back", topButtonStyle))
-            {
-                SceneManager.LoadScene(mainMenuSceneName);
-            }
-
-            if (GUI.Button(ScaleTopRect(rect, 164f, 142f, 132f, 30f), "Reset BP", topButtonStyle))
-            {
-                GameFlowState.ResetDraft();
-                ClearSwapSelection();
-                highlightedHero = FindFirstCatalogHero();
-                catalogScroll = Vector2.zero;
-                SetDraftNotice("BP has been reset.");
-            }
-
-            var canStart = GameFlowState.IsDraftComplete && GameFlowState.CanPrepareBattleInput();
-            GUI.enabled = canStart;
-            var startButtonLabel = GameFlowState.IsDraftComplete && !GameFlowState.AreBothTeamsExchangeReady
-                ? "Waiting Ready"
-                : "Start Battle";
-            if (GUI.Button(ScaleTopRect(rect, 1588f, 142f, 150f, 30f), startButtonLabel, topButtonStyle))
-            {
-                if (GameFlowState.TryPrepareBattleInput(out _))
-                {
-                    SceneManager.LoadScene(battleSceneName);
-                }
-            }
-
-            GUI.enabled = true;
         }
 
         private static float ResolveTopScoreboardHeight(float width)
@@ -323,9 +321,9 @@ namespace Fight.UI.Flow
 
             var slotGap = 6f;
             var headerBlockHeight = 50f;
-            var strategyBlockHeight = isSwapPhase ? 96f : 66f;
+            var strategyBlockHeight = isSwapPhase ? 92f : 62f;
             var availableSlotHeight = rect.height - headerBlockHeight - strategyBlockHeight - (slotGap * (BattleInputConfig.DefaultTeamSize - 1));
-            var slotHeight = Mathf.Clamp(availableSlotHeight / BattleInputConfig.DefaultTeamSize, 76f, 132f);
+            var slotHeight = Mathf.Clamp(availableSlotHeight / BattleInputConfig.DefaultTeamSize, 84f, 170f);
             for (var i = 0; i < BattleInputConfig.DefaultTeamSize; i++)
             {
                 var slotRect = new Rect(rect.x + 10f, rect.y + headerBlockHeight + (i * (slotHeight + slotGap)), rect.width - 20f, slotHeight);
@@ -433,7 +431,8 @@ namespace Fight.UI.Flow
         {
             DrawTintedRect(rect, new Color(0.058f, 0.064f, 0.073f, 0.98f));
             DrawOutline(rect, new Color(0f, 0f, 0f, 0.74f), 2f);
-            var catalogHeight = Mathf.Max(250f, rect.height * 0.58f);
+            var detailHeight = Mathf.Min(Mathf.Clamp(rect.height * 0.45f, 324f, 380f), rect.height - 262f);
+            var catalogHeight = Mathf.Max(240f, rect.height - detailHeight - 22f);
             DrawCatalogPanel(new Rect(rect.x + 12f, rect.y + 12f, rect.width - 24f, catalogHeight - 12f));
             DrawHeroDetailPanel(new Rect(rect.x + 12f, rect.y + catalogHeight + 10f, rect.width - 24f, rect.height - catalogHeight - 22f));
         }
@@ -586,9 +585,55 @@ namespace Fight.UI.Flow
             DrawTintedRect(new Rect(rect.x, rect.y, rect.width, 2f), new Color(1f, 1f, 1f, 0.08f));
             DrawOutline(rect, new Color(0f, 0f, 0f, 0.82f), 2f);
             GUI.Label(new Rect(rect.x + rect.width * 0.43f, rect.y + 8f, rect.width * 0.14f, 26f), "BANNED", sectionStyle);
+            DrawFooterControls(rect);
 
             DrawBanSlots(new Rect(rect.x + 16f, rect.y + 16f, rect.width * 0.36f, rect.height - 32f), TeamSide.Blue, GameFlowState.BlueBans, new Color(0.12f, 0.34f, 0.86f, 0.9f));
             DrawBanSlots(new Rect(rect.xMax - 16f - (rect.width * 0.36f), rect.y + 16f, rect.width * 0.36f, rect.height - 32f), TeamSide.Red, GameFlowState.RedBans, new Color(0.9f, 0.18f, 0.18f, 0.9f));
+        }
+
+        private void DrawFooterControls(Rect rect)
+        {
+            var controlWidth = Mathf.Clamp(rect.width * 0.22f, 270f, 360f);
+            var controlX = rect.center.x - (controlWidth * 0.5f);
+            var buttonGap = 8f;
+            var halfButtonWidth = (controlWidth - buttonGap) * 0.5f;
+            var smallButtonHeight = 26f;
+            var startButtonHeight = 30f;
+            var firstRowY = rect.y + 38f;
+            var secondRowY = Mathf.Max(firstRowY + smallButtonHeight + 6f, rect.yMax - startButtonHeight - 10f);
+
+            DrawTintedRect(new Rect(controlX - 8f, firstRowY - 8f, controlWidth + 16f, rect.yMax - firstRowY - 2f), new Color(0.035f, 0.038f, 0.044f, 0.76f));
+            DrawOutline(new Rect(controlX - 8f, firstRowY - 8f, controlWidth + 16f, rect.yMax - firstRowY - 2f), new Color(1f, 1f, 1f, 0.08f), 1f);
+
+            if (GUI.Button(new Rect(controlX, firstRowY, halfButtonWidth, smallButtonHeight), "Back", topButtonStyle))
+            {
+                SceneManager.LoadScene(mainMenuSceneName);
+            }
+
+            if (GUI.Button(new Rect(controlX + halfButtonWidth + buttonGap, firstRowY, halfButtonWidth, smallButtonHeight), "Reset BP", topButtonStyle))
+            {
+                GameFlowState.ResetDraft();
+                ClearSwapSelection();
+                highlightedHero = FindFirstCatalogHero();
+                catalogScroll = Vector2.zero;
+                SetDraftNotice("BP has been reset.");
+            }
+
+            var previousEnabled = GUI.enabled;
+            var canStart = GameFlowState.IsDraftComplete && GameFlowState.CanPrepareBattleInput();
+            GUI.enabled = canStart;
+            var startButtonLabel = GameFlowState.IsDraftComplete && !GameFlowState.AreBothTeamsExchangeReady
+                ? "Waiting Ready"
+                : "Start Battle";
+            if (GUI.Button(new Rect(controlX, secondRowY, controlWidth, startButtonHeight), startButtonLabel, topButtonStyle))
+            {
+                if (GameFlowState.TryPrepareBattleInput(out _))
+                {
+                    SceneManager.LoadScene(battleSceneName);
+                }
+            }
+
+            GUI.enabled = previousEnabled;
         }
 
         private void DrawBanSlots(Rect rect, TeamSide side, IReadOnlyList<HeroDefinition> bans, Color accentColor)
