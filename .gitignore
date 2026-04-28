@@ -157,6 +157,6 @@ Thumbs.db
 *.png.meta
 
 # Repository-owned generated UI sprites.
-!/game/Assets/Art/UI/PlayerStatusArrows.meta
-!/game/Assets/Art/UI/PlayerStatusArrows/
-!/game/Assets/Art/UI/PlayerStatusArrows/**
+!/game/Assets/Resources/UI/PlayerStatusArrows.meta
+!/game/Assets/Resources/UI/PlayerStatusArrows/
+!/game/Assets/Resources/UI/PlayerStatusArrows/**

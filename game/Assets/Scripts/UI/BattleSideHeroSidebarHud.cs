@@ -10,6 +10,7 @@ namespace Fight.UI
     public sealed class BattleSideHeroSidebarHud : MonoBehaviour
     {
         private const string RuntimeBaseTexturePath = "UI/BattleHud/side_hero_sidebar_runtime_base";
+        private const string PlayerStatusGoodArrowTexturePath = "UI/PlayerStatusArrows/player_status_good_up";
         private const int TeamSize = BattleInputConfig.DefaultTeamSize;
         private const float DesignCardWidth = 139f;
         private const float DesignCardHeight = 88f;
@@ -40,10 +41,9 @@ namespace Fight.UI
         private static readonly Color InfoTabDividerColor = new Color32(17, 19, 24, 255);
         private static readonly Color BlueHeaderTint = new Color32(57, 113, 198, 255);
         private static readonly Color RedHeaderTint = new Color32(198, 47, 49, 255);
-        private static readonly Color StatusBadgeFill = new Color32(214, 161, 46, 255);
-        private static readonly Color StatusBadgeOutline = new Color32(120, 63, 18, 255);
-        private static readonly Color StatusBadgeHighlight = new Color32(255, 220, 112, 170);
-        private static readonly Color StatusBadgeIconColor = new Color32(77, 42, 14, 255);
+        private static readonly Color StatusBadgeFallbackFill = new Color32(20, 25, 34, 242);
+        private static readonly Color StatusBadgeFallbackOutline = new Color32(2, 4, 8, 255);
+        private static readonly Color StatusBadgeFallbackArrow = new Color32(88, 225, 118, 255);
         private static readonly Color PositiveStatColor = new Color32(129, 226, 170, 255);
         private static readonly Color NegativeStatColor = new Color32(255, 153, 147, 255);
         private static readonly Color ShadowColor = new Color32(0, 0, 0, 196);
@@ -59,9 +59,9 @@ namespace Fight.UI
 
         private BattleManager battleManager;
         private Texture2D runtimeBaseTexture;
+        private Texture2D playerStatusGoodArrowTexture;
         private GUIStyle tabStyle;
         private GUIStyle titleStyle;
-        private GUIStyle badgeStyle;
         private GUIStyle kdaHeaderStyle;
         private GUIStyle kdaValueStyle;
         private GUIStyle statValueStyle;
@@ -76,7 +76,6 @@ namespace Fight.UI
         private sealed class HeroSidebarViewData
         {
             public string DisplayName;
-            public string StateText;
             public Sprite Portrait;
             public int Kills;
             public int Deaths;
@@ -133,6 +132,10 @@ namespace Fight.UI
         {
             battleManager = GetComponent<BattleManager>();
             runtimeBaseTexture = Resources.Load<Texture2D>(RuntimeBaseTexturePath);
+            var playerStatusGoodArrowSprite = Resources.Load<Sprite>(PlayerStatusGoodArrowTexturePath);
+            playerStatusGoodArrowTexture = playerStatusGoodArrowSprite != null
+                ? playerStatusGoodArrowSprite.texture
+                : Resources.Load<Texture2D>(PlayerStatusGoodArrowTexturePath);
         }
 
         private void OnGUI()
@@ -231,10 +234,7 @@ namespace Fight.UI
         {
             DrawShadowedLabel(ScaleRect(1f, 0f, 27f, 23f, scale, mirrorLayout), "INFO", tabStyle, MainTextColor);
             DrawShadowedLabel(ScaleRect(28f, 0f, 93f, 23f, scale, mirrorLayout), viewData.DisplayName, titleStyle, MainTextColor);
-            DrawStateBadge(
-                ScaleRect(121f, 0f, 18f, 23f, scale, mirrorLayout),
-                viewData.StateText,
-                hero != null && hero.IsDead ? RedAccent : (side == TeamSide.Red ? RedAccent : BlueAccent));
+            DrawStateBadge(ScaleRect(119f, 2f, 18f, 18f, scale, mirrorLayout));
 
             DrawShadowedLabel(ScaleRect(0f, 24f, 9.33f, 8.5f, scale, mirrorLayout), "K", kdaHeaderStyle, MainTextColor);
             DrawShadowedLabel(ScaleRect(9.33f, 24f, 9.33f, 8.5f, scale, mirrorLayout), "D", kdaHeaderStyle, MainTextColor);
@@ -278,7 +278,6 @@ namespace Fight.UI
                 DisplayName = hero?.Definition != null && !string.IsNullOrWhiteSpace(hero.Definition.displayName)
                     ? hero.Definition.displayName
                     : "Unknown",
-                StateText = GetStateText(hero),
                 Portrait = hero?.Definition?.visualConfig != null ? hero.Definition.visualConfig.portrait : null,
                 Kills = hero != null ? hero.Kills : 0,
                 Deaths = hero != null ? hero.Deaths : 0,
@@ -426,7 +425,6 @@ namespace Fight.UI
             lastStyleScale = scale;
             tabStyle = BuildStyle(4.2f, scale, TextAnchor.MiddleCenter, FontStyle.Bold);
             titleStyle = BuildStyle(4.6f, scale, TextAnchor.MiddleCenter, FontStyle.Bold, allowShrink: true);
-            badgeStyle = BuildStyle(2.8f, scale, TextAnchor.MiddleCenter, FontStyle.Bold);
             kdaHeaderStyle = BuildStyle(3.4f, scale, TextAnchor.MiddleCenter, FontStyle.Bold);
             kdaValueStyle = BuildStyle(4.1f, scale, TextAnchor.MiddleCenter, FontStyle.Bold);
             statValueStyle = BuildStyle(3.7f, scale, TextAnchor.MiddleRight, FontStyle.Bold);
@@ -569,21 +567,6 @@ namespace Fight.UI
                 layout.ToggleButtonHeight);
         }
 
-        private static string GetStateText(RuntimeHero hero)
-        {
-            if (hero == null)
-            {
-                return string.Empty;
-            }
-
-            if (!hero.IsDead)
-            {
-                return "UP";
-            }
-
-            return Mathf.Max(0, Mathf.CeilToInt(hero.RespawnRemainingSeconds)).ToString();
-        }
-
         private static string GetPortraitFallbackText(string displayName)
         {
             if (string.IsNullOrWhiteSpace(displayName))
@@ -639,46 +622,78 @@ namespace Fight.UI
             DrawTintedRect(dividerRect, InfoTabDividerColor);
         }
 
-        private void DrawStateBadge(Rect rect, string stateText, Color textColor)
+        private void DrawStateBadge(Rect rect)
         {
-            DrawTintedRect(rect, StatusBadgeFill);
-            DrawOutline(rect, StatusBadgeOutline);
-            DrawTintedRect(new Rect(rect.x + 1f, rect.y + 1f, rect.width - 2f, 1.5f), StatusBadgeHighlight);
-
-            var arrowWidth = Mathf.Max(4f, rect.width * 0.34f);
-            var arrowInset = Mathf.Max(2f, rect.width * 0.18f);
-            var arrowTop = rect.y + Mathf.Max(3f, rect.height * 0.18f);
-            var arrowBottom = rect.y + rect.height - Mathf.Max(4f, rect.height * 0.18f);
-            var arrowRight = rect.x + rect.width - arrowInset;
-            var arrowLeft = arrowRight - arrowWidth;
-
-            DrawLine(new Vector2(arrowLeft, arrowBottom), new Vector2(arrowRight, arrowTop), StatusBadgeIconColor, 1.4f);
-            DrawLine(new Vector2(arrowRight - arrowWidth * 0.55f, arrowTop), new Vector2(arrowRight, arrowTop), StatusBadgeIconColor, 1.4f);
-            DrawLine(new Vector2(arrowRight, arrowTop + arrowWidth * 0.55f), new Vector2(arrowRight, arrowTop), StatusBadgeIconColor, 1.4f);
-
-            var textRect = new Rect(
-                rect.x + arrowInset,
-                rect.y + (rect.height * 0.36f),
-                rect.width - arrowWidth - (arrowInset * 2f) - 1f,
-                rect.height * 0.44f);
-            DrawShadowedLabel(textRect, stateText, badgeStyle, textColor);
-        }
-
-        private static void DrawLine(Vector2 from, Vector2 to, Color color, float width)
-        {
-            var matrix = GUI.matrix;
-            var previousColor = GUI.color;
-            var angle = Vector3.Angle(to - from, Vector2.right);
-            if (from.y > to.y)
+            if (playerStatusGoodArrowTexture != null)
             {
-                angle = -angle;
+                var previousColor = GUI.color;
+                GUI.color = Color.white;
+                GUI.DrawTexture(rect, playerStatusGoodArrowTexture, ScaleMode.ScaleToFit, true);
+                GUI.color = previousColor;
+                return;
             }
 
-            var length = Vector2.Distance(from, to);
+            DrawTintedRect(rect, StatusBadgeFallbackFill);
+            DrawOutline(rect, StatusBadgeFallbackOutline);
+
+            var arrowRect = new Rect(
+                rect.x + rect.width * 0.22f,
+                rect.y + rect.height * 0.18f,
+                rect.width * 0.56f,
+                rect.height * 0.64f);
+            var points = new[]
+            {
+                new Vector2(arrowRect.center.x, arrowRect.yMin),
+                new Vector2(arrowRect.xMin, arrowRect.y + arrowRect.height * 0.42f),
+                new Vector2(arrowRect.x + arrowRect.width * 0.38f, arrowRect.y + arrowRect.height * 0.42f),
+                new Vector2(arrowRect.x + arrowRect.width * 0.38f, arrowRect.yMax),
+                new Vector2(arrowRect.x + arrowRect.width * 0.62f, arrowRect.yMax),
+                new Vector2(arrowRect.x + arrowRect.width * 0.62f, arrowRect.y + arrowRect.height * 0.42f),
+                new Vector2(arrowRect.xMax, arrowRect.y + arrowRect.height * 0.42f),
+            };
+            DrawFilledPolygon(points, StatusBadgeFallbackArrow);
+        }
+
+        private static void DrawFilledPolygon(Vector2[] points, Color color)
+        {
+            if (points == null || points.Length < 3)
+            {
+                return;
+            }
+
+            var minY = float.MaxValue;
+            var maxY = float.MinValue;
+            for (var i = 0; i < points.Length; i++)
+            {
+                minY = Mathf.Min(minY, points[i].y);
+                maxY = Mathf.Max(maxY, points[i].y);
+            }
+
+            var previousColor = GUI.color;
             GUI.color = color;
-            GUIUtility.RotateAroundPivot(angle, from);
-            GUI.DrawTexture(new Rect(from.x, from.y - (width * 0.5f), length, width), Texture2D.whiteTexture);
-            GUI.matrix = matrix;
+            for (var y = Mathf.FloorToInt(minY); y <= Mathf.CeilToInt(maxY); y++)
+            {
+                var intersections = new List<float>();
+                for (var i = 0; i < points.Length; i++)
+                {
+                    var a = points[i];
+                    var b = points[(i + 1) % points.Length];
+                    if ((a.y <= y && b.y > y) || (b.y <= y && a.y > y))
+                    {
+                        var t = (y - a.y) / (b.y - a.y);
+                        intersections.Add(Mathf.Lerp(a.x, b.x, t));
+                    }
+                }
+
+                intersections.Sort();
+                for (var i = 0; i + 1 < intersections.Count; i += 2)
+                {
+                    var xMin = intersections[i];
+                    var xMax = intersections[i + 1];
+                    GUI.DrawTexture(new Rect(xMin, y, Mathf.Max(1f, xMax - xMin), 1f), Texture2D.whiteTexture);
+                }
+            }
+
             GUI.color = previousColor;
         }
 
