@@ -91,32 +91,37 @@ namespace Fight.UI.Flow
                 highlightedHero = FindFirstCatalogHero();
             }
 
-            var margin = 14f;
-            var headerWidth = Screen.width - (margin * 2f) - 16f;
+            var margin = 12f;
+            var headerWidth = Screen.width - (margin * 2f) - 12f;
             var headerHeight = ResolveTopScoreboardHeight(headerWidth);
-            var phaseHeight = 54f;
-            var bottomHeight = Mathf.Clamp(Screen.height * 0.115f, 96f, 124f);
-            var gap = 12f;
-            var sideWidth = Mathf.Clamp(Screen.width * 0.19f, 270f, 332f);
+            var phaseHeight = Mathf.Clamp(Screen.height * 0.05f, 46f, 54f);
+            var bottomHeight = Mathf.Clamp(Screen.height * 0.13f, 110f, 140f);
+            var gap = 10f;
+            var sideWidth = Mathf.Clamp(Screen.width * 0.145f, 228f, 286f);
             var contentY = margin + headerHeight + gap;
-            var contentHeight = Mathf.Max(420f, Screen.height - contentY - bottomHeight - margin - gap);
+            var contentBottom = Screen.height - margin;
+            var bottomY = contentBottom - bottomHeight;
+            var sideHeight = Mathf.Max(460f, contentBottom - contentY);
 
-            GUI.Box(new Rect(margin, margin, Screen.width - (margin * 2f), Screen.height - (margin * 2f)), string.Empty);
-
-            var leftRect = new Rect(margin + 12f, contentY, sideWidth, contentHeight);
-            var rightRect = new Rect(Screen.width - margin - 12f - sideWidth, contentY, sideWidth, contentHeight);
+            var leftRect = new Rect(margin + 10f, contentY, sideWidth, sideHeight);
+            var rightRect = new Rect(Screen.width - margin - 10f - sideWidth, contentY, sideWidth, sideHeight);
             var centerX = leftRect.xMax + gap;
             var centerWidth = rightRect.xMin - centerX - gap;
-            var centerContentHeight = Mathf.Max(360f, contentHeight - phaseHeight - gap);
-            var centerRect = new Rect(centerX, contentY + phaseHeight + gap, centerWidth, centerContentHeight);
+            var centerY = contentY + phaseHeight + gap;
+            var centerContentHeight = Mathf.Max(360f, bottomY - gap - centerY);
+            var centerRect = new Rect(centerX, centerY, centerWidth, centerContentHeight);
+            var bottomRect = new Rect(centerX, bottomY, centerWidth, bottomHeight);
+            var outerRect = new Rect(margin, margin, Screen.width - (margin * 2f), Screen.height - (margin * 2f));
 
-            DrawHeader(new Rect(margin + 8f, margin + 4f, headerWidth, headerHeight));
+            DrawScreenBackdrop(outerRect, leftRect, rightRect, centerRect, bottomRect);
+
+            DrawHeader(new Rect(margin + 6f, margin + 4f, headerWidth, headerHeight));
             DrawPhaseBanner(new Rect(centerX, contentY, centerWidth, phaseHeight));
 
             DrawTeamPanel(leftRect, TeamSide.Blue, new Color(0.12f, 0.34f, 0.86f, 0.92f));
             DrawTeamPanel(rightRect, TeamSide.Red, new Color(0.88f, 0.16f, 0.18f, 0.92f));
             DrawCenterPanel(centerRect);
-            DrawBanPanel(new Rect(centerX, centerRect.yMax + gap, centerWidth, bottomHeight - 20f));
+            DrawBanPanel(bottomRect);
         }
 
         private void DrawHeader(Rect rect)
@@ -184,7 +189,7 @@ namespace Fight.UI.Flow
 
         private static float ResolveTopScoreboardHeight(float width)
         {
-            return Mathf.Clamp(width * (TopScoreboardDesignHeight / TopScoreboardDesignWidth), 108f, 184f);
+            return Mathf.Clamp(width * (TopScoreboardDesignHeight / TopScoreboardDesignWidth), 96f, 148f);
         }
 
         private string GetTopStageLabel()
@@ -254,11 +259,29 @@ namespace Fight.UI.Flow
 
         private void DrawTeamPanelBackground(Rect rect, Color accentColor)
         {
-            DrawTintedRect(rect, new Color(0.07f, 0.08f, 0.11f, 0.98f));
-            DrawTintedRect(new Rect(rect.x, rect.y, rect.width, 48f), Color.Lerp(new Color(0.10f, 0.11f, 0.15f, 0.96f), accentColor, 0.55f));
+            DrawTintedRect(rect, new Color(0.075f, 0.083f, 0.095f, 0.98f));
+            DrawTintedRect(new Rect(rect.x, rect.y, rect.width, 46f), Color.Lerp(new Color(0.12f, 0.13f, 0.16f, 0.96f), accentColor, 0.52f));
             DrawTintedRect(new Rect(rect.x, rect.y, 4f, rect.height), accentColor);
-            DrawTintedRect(new Rect(rect.x, rect.y + 48f, rect.width, 1f), new Color(1f, 1f, 1f, 0.13f));
+            DrawTintedRect(new Rect(rect.x, rect.y + 46f, rect.width, 1f), new Color(1f, 1f, 1f, 0.13f));
             DrawOutline(rect, new Color(0f, 0f, 0f, 0.86f), 2f);
+        }
+
+        private void DrawScreenBackdrop(Rect outerRect, Rect leftRect, Rect rightRect, Rect centerRect, Rect bottomRect)
+        {
+            DrawTintedRect(new Rect(0f, 0f, Screen.width, Screen.height), new Color(0.14f, 0.14f, 0.14f, 1f));
+            DrawTintedRect(outerRect, new Color(0.046f, 0.049f, 0.055f, 1f));
+            DrawTintedRect(new Rect(outerRect.x + 4f, outerRect.y + 4f, outerRect.width - 8f, outerRect.height - 8f), new Color(0.072f, 0.078f, 0.086f, 1f));
+
+            var centerBand = new Rect(
+                centerRect.x - 8f,
+                centerRect.y - 8f,
+                centerRect.width + 16f,
+                bottomRect.yMax - centerRect.y + 8f);
+            DrawTintedRect(centerBand, new Color(0.052f, 0.057f, 0.065f, 1f));
+            DrawTintedRect(new Rect(leftRect.x - 5f, leftRect.y, 3f, leftRect.height), new Color(0.10f, 0.34f, 0.86f, 0.62f));
+            DrawTintedRect(new Rect(rightRect.xMax + 2f, rightRect.y, 3f, rightRect.height), new Color(0.86f, 0.16f, 0.18f, 0.62f));
+            DrawOutline(outerRect, new Color(0f, 0f, 0f, 0.82f), 2f);
+            DrawOutline(new Rect(outerRect.x + 4f, outerRect.y + 4f, outerRect.width - 8f, outerRect.height - 8f), new Color(1f, 1f, 1f, 0.08f), 1f);
         }
 
         private void DrawPhaseBanner(Rect rect)
@@ -292,19 +315,20 @@ namespace Fight.UI.Flow
             var isTeamReady = GameFlowState.IsTeamExchangeReady(side);
             var title = side == TeamSide.Blue ? "BLUE ROSTER" : "RED ROSTER";
             DrawTeamPanelBackground(rect, accentColor);
-            GUI.Label(new Rect(rect.x + 12f, rect.y + 8f, rect.width - 24f, 22f), title, sectionStyle);
+            GUI.Label(new Rect(rect.x + 10f, rect.y + 7f, rect.width - 20f, 22f), title, sectionStyle);
             GUI.Label(
-                new Rect(rect.x + 12f, rect.y + 30f, rect.width - 24f, 16f),
+                new Rect(rect.x + 10f, rect.y + 29f, rect.width - 20f, 16f),
                 isTeamReady ? "Ready Locked" : "5 Athlete Slots",
                 smallBodyStyle);
 
-            var slotGap = 8f;
-            var strategyBlockHeight = isSwapPhase ? 106f : 74f;
-            var availableSlotHeight = rect.height - 54f - strategyBlockHeight - (slotGap * (BattleInputConfig.DefaultTeamSize - 1));
-            var slotHeight = Mathf.Clamp(availableSlotHeight / BattleInputConfig.DefaultTeamSize, 68f, 112f);
+            var slotGap = 6f;
+            var headerBlockHeight = 50f;
+            var strategyBlockHeight = isSwapPhase ? 96f : 66f;
+            var availableSlotHeight = rect.height - headerBlockHeight - strategyBlockHeight - (slotGap * (BattleInputConfig.DefaultTeamSize - 1));
+            var slotHeight = Mathf.Clamp(availableSlotHeight / BattleInputConfig.DefaultTeamSize, 76f, 132f);
             for (var i = 0; i < BattleInputConfig.DefaultTeamSize; i++)
             {
-                var slotRect = new Rect(rect.x + 14f, rect.y + 54f + (i * (slotHeight + slotGap)), rect.width - 28f, slotHeight);
+                var slotRect = new Rect(rect.x + 10f, rect.y + headerBlockHeight + (i * (slotHeight + slotGap)), rect.width - 20f, slotHeight);
                 var hero = selection.Count > i ? selection[i] : null;
                 var athlete = athletes.Count > i ? athletes[i] : null;
                 var isCurrent = currentStep != null
@@ -322,19 +346,19 @@ namespace Fight.UI.Flow
             var strategyY = rect.yMax - strategyBlockHeight;
             if (isSwapPhase)
             {
-                DrawExchangeReadyControls(new Rect(rect.x + 14f, strategyY, rect.width - 28f, 26f), side);
+                DrawExchangeReadyControls(new Rect(rect.x + 10f, strategyY, rect.width - 20f, 26f), side);
                 strategyY += 32f;
             }
 
             DrawStrategySelector(
-                new Rect(rect.x + 14f, strategyY, rect.width - 28f, 24f),
+                new Rect(rect.x + 10f, strategyY, rect.width - 20f, 24f),
                 "Ult Timing",
                 GetUltimateTimingLabel(GameFlowState.GetUltimateTimingStrategy(side)),
                 () => CycleUltimateTimingStrategy(side, -1),
                 () => CycleUltimateTimingStrategy(side, 1));
 
             DrawStrategySelector(
-                new Rect(rect.x + 14f, strategyY + 30f, rect.width - 28f, 24f),
+                new Rect(rect.x + 10f, strategyY + 30f, rect.width - 20f, 24f),
                 "Ult Combo",
                 GetUltimateComboLabel(GameFlowState.GetUltimateComboStrategy(side)),
                 () => CycleUltimateComboStrategy(side, -1),
@@ -346,6 +370,7 @@ namespace Fight.UI.Flow
             var previousColor = GUI.color;
             var slotAccent = isSwapSource ? new Color(0.26f, 0.78f, 0.42f, 1f) : accentColor;
             var isFocused = isCurrent || isSwapSource;
+            DrawTintedRect(rect, new Color(0.055f, 0.06f, 0.07f, 0.96f));
             GUI.color = Color.Lerp(Color.white, slotAccent, isFocused ? 0.88f : isTeamReady ? 0.48f : 0.28f);
             GUI.Box(rect, string.Empty, isFocused ? focusedSlotStyle : slotStyle);
             if (isFocused || isTeamReady)
@@ -358,18 +383,19 @@ namespace Fight.UI.Flow
 
             GUI.color = previousColor;
 
-            var compact = rect.height < 92f;
+            var compact = rect.height < 110f;
             var padding = compact ? 5f : 7f;
-            var gap = compact ? 5f : 7f;
+            var gap = compact ? 5f : 6f;
             var headerHeight = compact ? 17f : 20f;
             var statusSize = compact ? 17f : 20f;
-            var statHeight = compact ? 15f : 18f;
-            var masteryIconSize = compact ? 20f : 25f;
+            var statHeight = compact ? 16f : 20f;
+            var masteryIconSize = compact ? 28f : 36f;
             var masteryY = rect.yMax - padding - masteryIconSize;
             var statY = masteryY - statHeight - 4f;
             var contentY = rect.y + headerHeight + padding;
             var topContentHeight = Mathf.Max(18f, statY - contentY - 4f);
-            var heroPortraitSize = Mathf.Clamp(topContentHeight, 34f, rect.width * 0.30f);
+            var maxPortraitSize = compact ? 40f : 46f;
+            var heroPortraitSize = Mathf.Max(26f, Mathf.Min(Mathf.Min(topContentHeight, rect.width * 0.23f), maxPortraitSize));
 
             var heroRect = new Rect(rect.x + padding, contentY, heroPortraitSize, heroPortraitSize);
             if (hero != null)
@@ -405,7 +431,8 @@ namespace Fight.UI.Flow
 
         private void DrawCenterPanel(Rect rect)
         {
-            GUI.Box(rect, string.Empty);
+            DrawTintedRect(rect, new Color(0.058f, 0.064f, 0.073f, 0.98f));
+            DrawOutline(rect, new Color(0f, 0f, 0f, 0.74f), 2f);
             var catalogHeight = Mathf.Max(250f, rect.height * 0.58f);
             DrawCatalogPanel(new Rect(rect.x + 12f, rect.y + 12f, rect.width - 24f, catalogHeight - 12f));
             DrawHeroDetailPanel(new Rect(rect.x + 12f, rect.y + catalogHeight + 10f, rect.width - 24f, rect.height - catalogHeight - 22f));
@@ -413,7 +440,8 @@ namespace Fight.UI.Flow
 
         private void DrawCatalogPanel(Rect rect)
         {
-            GUI.Box(rect, string.Empty);
+            DrawTintedRect(rect, new Color(0.075f, 0.082f, 0.092f, 0.98f));
+            DrawOutline(rect, new Color(0f, 0f, 0f, 0.70f), 1f);
             GUI.Label(new Rect(rect.x + 12f, rect.y + 10f, rect.width - 24f, 26f), "Hero Pool", sectionStyle);
             DrawClassFilters(new Rect(rect.x + 12f, rect.y + 42f, rect.width - 24f, 30f));
 
@@ -470,8 +498,9 @@ namespace Fight.UI.Flow
             var isHighlighted = hero == highlightedHero;
             var baseColor = GetClassColor(hero.heroClass);
             var previousColor = GUI.color;
-            GUI.color = isHighlighted ? Color.Lerp(Color.white, baseColor, 0.85f) : Color.Lerp(Color.white, baseColor, 0.45f);
-            GUI.Box(rect, string.Empty);
+            DrawTintedRect(rect, new Color(0.09f, 0.10f, 0.115f, 0.98f));
+            DrawTintedRect(new Rect(rect.x, rect.y, rect.width, 4f), new Color(baseColor.r, baseColor.g, baseColor.b, isHighlighted ? 0.95f : 0.56f));
+            DrawOutline(rect, new Color(baseColor.r, baseColor.g, baseColor.b, isHighlighted ? 0.90f : 0.36f), isHighlighted ? 2f : 1f);
             GUI.color = previousColor;
 
             var portraitRect = new Rect(rect.x + 14f, rect.y + 10f, rect.width - 28f, 68f);
@@ -496,7 +525,8 @@ namespace Fight.UI.Flow
 
         private void DrawHeroDetailPanel(Rect rect)
         {
-            GUI.Box(rect, string.Empty);
+            DrawTintedRect(rect, new Color(0.07f, 0.077f, 0.087f, 0.98f));
+            DrawOutline(rect, new Color(0f, 0f, 0f, 0.70f), 1f);
             GUI.Label(new Rect(rect.x + 12f, rect.y + 8f, rect.width - 24f, 26f), "Hero Detail", sectionStyle);
 
             if (highlightedHero == null)
@@ -552,11 +582,13 @@ namespace Fight.UI.Flow
 
         private void DrawBanPanel(Rect rect)
         {
-            GUI.Box(rect, string.Empty);
-            GUI.Label(new Rect(rect.x + rect.width * 0.42f, rect.y + 12f, rect.width * 0.16f, 34f), "BANNED", titleStyle);
+            DrawTintedRect(rect, new Color(0.062f, 0.067f, 0.076f, 0.99f));
+            DrawTintedRect(new Rect(rect.x, rect.y, rect.width, 2f), new Color(1f, 1f, 1f, 0.08f));
+            DrawOutline(rect, new Color(0f, 0f, 0f, 0.82f), 2f);
+            GUI.Label(new Rect(rect.x + rect.width * 0.43f, rect.y + 8f, rect.width * 0.14f, 26f), "BANNED", sectionStyle);
 
-            DrawBanSlots(new Rect(rect.x + 16f, rect.y + 16f, rect.width * 0.34f, rect.height - 28f), TeamSide.Blue, GameFlowState.BlueBans, new Color(0.12f, 0.34f, 0.86f, 0.9f));
-            DrawBanSlots(new Rect(rect.xMax - 16f - (rect.width * 0.34f), rect.y + 16f, rect.width * 0.34f, rect.height - 28f), TeamSide.Red, GameFlowState.RedBans, new Color(0.9f, 0.18f, 0.18f, 0.9f));
+            DrawBanSlots(new Rect(rect.x + 16f, rect.y + 16f, rect.width * 0.36f, rect.height - 32f), TeamSide.Blue, GameFlowState.BlueBans, new Color(0.12f, 0.34f, 0.86f, 0.9f));
+            DrawBanSlots(new Rect(rect.xMax - 16f - (rect.width * 0.36f), rect.y + 16f, rect.width * 0.36f, rect.height - 32f), TeamSide.Red, GameFlowState.RedBans, new Color(0.9f, 0.18f, 0.18f, 0.9f));
         }
 
         private void DrawBanSlots(Rect rect, TeamSide side, IReadOnlyList<HeroDefinition> bans, Color accentColor)
@@ -575,12 +607,15 @@ namespace Fight.UI.Flow
 
                 var previousColor = GUI.color;
                 GUI.color = Color.Lerp(Color.white, accentColor, isCurrent ? 0.68f : 0.32f);
-                GUI.Box(slotRect, string.Empty);
+                DrawTintedRect(slotRect, new Color(0.09f, 0.10f, 0.12f, 0.96f));
+                DrawOutline(slotRect, new Color(accentColor.r, accentColor.g, accentColor.b, isCurrent ? 0.86f : 0.34f), isCurrent ? 2f : 1f);
                 GUI.color = previousColor;
 
-                DrawHeroPortrait(new Rect(slotRect.x + 8f, slotRect.y + 8f, 54f, 54f), hero);
-                GUI.Label(new Rect(slotRect.x + 70f, slotRect.y + 14f, slotRect.width - 78f, 22f), hero != null ? hero.displayName : $"{side} Ban {i + 1}", bodyStyle);
-                GUI.Label(new Rect(slotRect.x + 70f, slotRect.y + 38f, slotRect.width - 78f, 18f), hero != null ? GetHeroClassLabel(hero.heroClass) : "Waiting", smallBodyStyle);
+                var portraitSize = Mathf.Clamp(slotRect.height - 22f, 48f, 66f);
+                var portraitRect = new Rect(slotRect.x + 9f, slotRect.y + (slotRect.height - portraitSize) * 0.5f, portraitSize, portraitSize);
+                DrawHeroPortrait(portraitRect, hero);
+                GUI.Label(new Rect(portraitRect.xMax + 8f, slotRect.y + 14f, slotRect.width - portraitSize - 25f, 22f), hero != null ? hero.displayName : $"{side} Ban {i + 1}", bodyStyle);
+                GUI.Label(new Rect(portraitRect.xMax + 8f, slotRect.y + 40f, slotRect.width - portraitSize - 25f, 18f), hero != null ? GetHeroClassLabel(hero.heroClass) : "Waiting", smallBodyStyle);
             }
         }
 
@@ -871,7 +906,13 @@ namespace Fight.UI.Flow
 
         private void DrawAthleteTraitRows(Rect rect, AthleteDefinition athlete)
         {
-            const int traitSlotCount = 3;
+            var traitCount = athlete?.traitIds != null ? athlete.traitIds.Count : 0;
+            var traitSlotCount = Mathf.Min(2, traitCount);
+            if (traitSlotCount <= 0)
+            {
+                return;
+            }
+
             var gap = rect.height < 34f ? 2f : 4f;
             var rowHeight = Mathf.Max(5f, (rect.height - (gap * (traitSlotCount - 1))) / traitSlotCount);
             for (var i = 0; i < traitSlotCount; i++)
@@ -934,7 +975,7 @@ namespace Fight.UI.Flow
                     GUI.color = previousColor;
                 }
 
-                var valueRect = new Rect(iconRect.xMax - 18f, iconRect.yMax - 13f, 18f, 13f);
+                var valueRect = new Rect(iconRect.xMax - 24f, iconRect.yMax - 16f, 24f, 16f);
                 GUI.color = new Color(0f, 0f, 0f, 0.68f);
                 GUI.DrawTexture(valueRect, Texture2D.whiteTexture);
                 GUI.color = previousColor;
@@ -1090,11 +1131,11 @@ namespace Fight.UI.Flow
             GUI.Label(rect, GetAthleteInitial(athlete), athleteInitialStyle);
         }
 
-        private static void DrawHeroPortrait(Rect rect, HeroDefinition hero)
+        private void DrawHeroPortrait(Rect rect, HeroDefinition hero)
         {
             if (hero?.visualConfig?.portrait == null)
             {
-                GUI.Box(rect, string.Empty);
+                DrawHeroPortraitPlaceholder(rect, hero);
                 return;
             }
 
@@ -1102,7 +1143,7 @@ namespace Fight.UI.Flow
             var texture = sprite.texture;
             if (texture == null)
             {
-                GUI.Box(rect, string.Empty);
+                DrawHeroPortraitPlaceholder(rect, hero);
                 return;
             }
 
@@ -1113,6 +1154,30 @@ namespace Fight.UI.Flow
                 textureRect.width / texture.width,
                 textureRect.height / texture.height);
             GUI.DrawTextureWithTexCoords(rect, texture, texCoords, true);
+        }
+
+        private void DrawHeroPortraitPlaceholder(Rect rect, HeroDefinition hero)
+        {
+            var baseColor = hero != null ? GetClassColor(hero.heroClass) : new Color(0.42f, 0.44f, 0.48f);
+            DrawTintedRect(rect, Color.Lerp(new Color(0.10f, 0.11f, 0.13f, 1f), baseColor, 0.55f));
+            DrawTintedRect(new Rect(rect.x + 3f, rect.y + 3f, rect.width - 6f, rect.height - 6f), new Color(0.045f, 0.05f, 0.06f, 0.72f));
+            DrawOutline(rect, new Color(baseColor.r, baseColor.g, baseColor.b, 0.9f), 2f);
+
+            var previousSize = athleteInitialStyle.fontSize;
+            athleteInitialStyle.fontSize = Mathf.RoundToInt(Mathf.Clamp(rect.height * 0.42f, 14f, 24f));
+            GUI.Label(rect, GetHeroInitial(hero), athleteInitialStyle);
+            athleteInitialStyle.fontSize = previousSize;
+        }
+
+        private static string GetHeroInitial(HeroDefinition hero)
+        {
+            var displayName = hero != null ? hero.displayName : string.Empty;
+            if (string.IsNullOrWhiteSpace(displayName))
+            {
+                return "?";
+            }
+
+            return displayName.Substring(0, 1).ToUpperInvariant();
         }
 
         private static string GetAthleteInitial(AthleteDefinition athlete)
