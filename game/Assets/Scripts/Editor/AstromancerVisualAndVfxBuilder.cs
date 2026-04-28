@@ -52,12 +52,11 @@ namespace Fight.Editor
             EnsureFolder("Assets/Prefabs/VFX", "Projectiles");
             EnsureFolder("Assets/Prefabs/VFX", "Skills");
 
-            var bodySprite = CreateAstromancerBodySprite();
+            AstromancerSpriteSheetVisualBuilder.BuildHeroVisual();
             var projectileSprite = CreateStarProjectileSprite();
             var warningSprite = CreateWarningRingSprite();
             var fieldSprite = CreateMeteorFieldSprite();
 
-            BuildHeroPrefab(bodySprite);
             BuildProjectilePrefab(projectileSprite);
             BuildAreaPrefab(FallingStarWarningPrefabPath, "AstromancerFallingStarWarning", warningSprite, new Color(0.62f, 0.84f, 1f, 0.58f));
             BuildAreaPrefab(MeteorChoirFieldPrefabPath, "AstromancerMeteorChoirField", fieldSprite, new Color(0.28f, 0.36f, 0.78f, 0.42f));
