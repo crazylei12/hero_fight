@@ -249,11 +249,11 @@ namespace Fight.UI.Flow
         private static Rect ScaleTopRect(Rect parent, float x, float y, float width, float height)
         {
             var scale = parent.width / TopScoreboardDesignWidth;
-            return new Rect(
+            return PixelSnap(new Rect(
                 parent.x + (x * scale),
                 parent.y + (y * scale),
                 width * scale,
-                height * scale);
+                height * scale));
         }
 
         private void DrawTeamPanelBackground(Rect rect, Color accentColor)
@@ -296,11 +296,11 @@ namespace Fight.UI.Flow
             GUI.DrawTexture(rect, Texture2D.whiteTexture);
             GUI.color = previousColor;
 
-            GUI.Label(new Rect(rect.x + 20f, rect.y + 8f, rect.width - 40f, 34f), GetPhaseLabel(), titleStyle);
+            DrawLabel(new Rect(rect.x + 20f, rect.y + 8f, rect.width - 40f, 34f), GetPhaseLabel(), titleStyle);
 
             if (!string.IsNullOrEmpty(draftNotice) && Time.realtimeSinceStartup < draftNoticeUntil)
             {
-                GUI.Label(new Rect(rect.x + 20f, rect.y + 30f, rect.width - 40f, 18f), draftNotice, smallBodyStyle);
+                DrawLabel(new Rect(rect.x + 20f, rect.y + 30f, rect.width - 40f, 18f), draftNotice, smallBodyStyle);
             }
         }
 
@@ -329,7 +329,7 @@ namespace Fight.UI.Flow
                     && currentStep.SlotIndex == i;
                 var isSwapSource = swapSourceSide.HasValue && swapSourceSide.Value == side && swapSourceIndex == i;
                 DrawTeamSlot(slotRect, i, hero, athlete, isCurrent, isSwapSource, isTeamReady, accentColor);
-                if (isSwapPhase && !isTeamReady && hero != null && GUI.Button(slotRect, GUIContent.none, heroCardButtonStyle))
+                if (isSwapPhase && !isTeamReady && hero != null && DrawButton(slotRect, GUIContent.none, heroCardButtonStyle))
                 {
                     HandleSwapSlotClicked(side, i);
                 }
@@ -364,7 +364,7 @@ namespace Fight.UI.Flow
             var isFocused = isCurrent || isSwapSource;
             DrawTintedRect(rect, new Color(0.055f, 0.06f, 0.07f, 0.96f));
             GUI.color = Color.Lerp(Color.white, slotAccent, isFocused ? 0.88f : isTeamReady ? 0.48f : 0.28f);
-            GUI.Box(rect, string.Empty, isFocused ? focusedSlotStyle : slotStyle);
+            DrawBox(rect, string.Empty, isFocused ? focusedSlotStyle : slotStyle);
             if (isFocused || isTeamReady)
             {
                 GUI.color = new Color(slotAccent.r, slotAccent.g, slotAccent.b, isTeamReady && !isFocused ? 0.2f : 0.38f);
@@ -402,7 +402,7 @@ namespace Fight.UI.Flow
             var infoX = heroRect.xMax + gap;
             var infoWidth = rect.xMax - padding - infoX;
             var nameRect = new Rect(rect.x + padding, rect.y + 4f, rect.width - (padding * 2f) - statusSize - 4f, headerHeight);
-            GUI.Label(nameRect, $"{index + 1}. {GetAthleteDisplayName(athlete)}", bodyStyle);
+            DrawLabel(nameRect, $"{index + 1}. {GetAthleteDisplayName(athlete)}", bodyStyle);
             DrawAthleteConditionArrow(new Rect(rect.xMax - padding - statusSize, rect.y + 5f, statusSize, statusSize), athlete);
 
             var traitRect = new Rect(infoX, contentY, infoWidth, topContentHeight);
@@ -468,7 +468,7 @@ namespace Fight.UI.Flow
                 var selected = i == 0 ? !classFilterActive : classFilterActive && (int)classFilter == i - 1;
                 var previousColor = GUI.color;
                 GUI.color = selected ? new Color(0.72f, 0.86f, 1f) : Color.white;
-                if (GUI.Button(buttonRect, labels[i], filterButtonStyle))
+                if (DrawButton(buttonRect, labels[i], filterButtonStyle))
                 {
                     classFilterActive = i != 0;
                     if (classFilterActive)
@@ -496,18 +496,18 @@ namespace Fight.UI.Flow
             var portraitRect = new Rect(rect.x + 14f, rect.y + 10f, rect.width - 28f, 68f);
             DrawHeroPortrait(portraitRect, hero);
 
-            GUI.Label(new Rect(rect.x + 6f, rect.y + 82f, rect.width - 12f, 20f), hero.displayName, smallBodyStyle);
-            GUI.Label(new Rect(rect.x + 6f, rect.y + 102f, rect.width - 12f, 18f), GetHeroClassLabel(hero.heroClass), smallBodyStyle);
+            DrawLabel(new Rect(rect.x + 6f, rect.y + 82f, rect.width - 12f, 20f), hero.displayName, smallBodyStyle);
+            DrawLabel(new Rect(rect.x + 6f, rect.y + 102f, rect.width - 12f, 18f), GetHeroClassLabel(hero.heroClass), smallBodyStyle);
 
             if (isBanned || isPicked)
             {
                 GUI.color = new Color(0f, 0f, 0f, 0.58f);
                 GUI.DrawTexture(rect, Texture2D.whiteTexture);
                 GUI.color = Color.white;
-                GUI.Label(new Rect(rect.x + 4f, rect.y + 48f, rect.width - 8f, 24f), isBanned ? "BANNED" : "PICKED", sectionStyle);
+                DrawLabel(new Rect(rect.x + 4f, rect.y + 48f, rect.width - 8f, 24f), isBanned ? "BANNED" : "PICKED", sectionStyle);
             }
 
-            if (GUI.Button(rect, GUIContent.none, heroCardButtonStyle))
+            if (DrawButton(rect, GUIContent.none, heroCardButtonStyle))
             {
                 highlightedHero = hero;
             }
@@ -517,25 +517,25 @@ namespace Fight.UI.Flow
         {
             DrawTintedRect(rect, new Color(0.07f, 0.077f, 0.087f, 0.98f));
             DrawOutline(rect, new Color(0f, 0f, 0f, 0.70f), 1f);
-            GUI.Label(new Rect(rect.x + 12f, rect.y + 8f, rect.width - 24f, 26f), "Hero Detail", sectionStyle);
+            DrawLabel(new Rect(rect.x + 12f, rect.y + 8f, rect.width - 24f, 26f), "Hero Detail", sectionStyle);
 
             if (highlightedHero == null)
             {
-                GUI.Label(new Rect(rect.x + 20f, rect.y + 48f, rect.width - 40f, 30f), "Select a hero from the pool.", bodyStyle);
+                DrawLabel(new Rect(rect.x + 20f, rect.y + 48f, rect.width - 40f, 30f), "Select a hero from the pool.", bodyStyle);
                 return;
             }
 
             var hero = highlightedHero;
             var portraitRect = new Rect(rect.x + 16f, rect.y + 46f, 96f, 96f);
             DrawHeroPortrait(portraitRect, hero);
-            GUI.Label(new Rect(portraitRect.xMax + 16f, rect.y + 42f, rect.width - portraitRect.width - 220f, 28f), hero.displayName, detailHeaderStyle);
-            GUI.Label(new Rect(portraitRect.xMax + 16f, rect.y + 74f, rect.width - portraitRect.width - 220f, 22f), $"{GetHeroClassLabel(hero.heroClass)} | {BuildHeroTagLine(hero.tags)}", bodyStyle);
-            GUI.Label(new Rect(portraitRect.xMax + 16f, rect.y + 102f, rect.width - portraitRect.width - 220f, 44f), BuildStatsLine(hero), smallBodyStyle);
+            DrawLabel(new Rect(portraitRect.xMax + 16f, rect.y + 42f, rect.width - portraitRect.width - 220f, 28f), hero.displayName, detailHeaderStyle);
+            DrawLabel(new Rect(portraitRect.xMax + 16f, rect.y + 74f, rect.width - portraitRect.width - 220f, 22f), $"{GetHeroClassLabel(hero.heroClass)} | {BuildHeroTagLine(hero.tags)}", bodyStyle);
+            DrawLabel(new Rect(portraitRect.xMax + 16f, rect.y + 102f, rect.width - portraitRect.width - 220f, 44f), BuildStatsLine(hero), smallBodyStyle);
 
             var confirmRect = new Rect(rect.xMax - 170f, rect.y + 56f, 150f, 36f);
             var canConfirm = GameFlowState.CanDraftHero(hero);
             GUI.enabled = canConfirm;
-            if (GUI.Button(confirmRect, GetConfirmButtonLabel()))
+            if (DrawButton(confirmRect, GetConfirmButtonLabel()))
             {
                 if (GameFlowState.TryApplyDraftHero(hero))
                 {
@@ -544,14 +544,14 @@ namespace Fight.UI.Flow
             }
 
             GUI.enabled = true;
-            GUI.Label(new Rect(rect.xMax - 188f, rect.y + 98f, 170f, 42f), GetHeroAvailabilityLabel(hero), smallBodyStyle);
-            GUI.Label(new Rect(rect.xMax - 188f, rect.y + 142f, 170f, 76f), BuildCurrentPickAthleteFitLine(hero), smallBodyStyle);
+            DrawLabel(new Rect(rect.xMax - 188f, rect.y + 98f, 170f, 42f), GetHeroAvailabilityLabel(hero), smallBodyStyle);
+            DrawLabel(new Rect(rect.xMax - 188f, rect.y + 142f, 170f, 76f), BuildCurrentPickAthleteFitLine(hero), smallBodyStyle);
 
             var description = !string.IsNullOrWhiteSpace(hero.description)
                 ? hero.description
                 : "No hero description.";
             var descriptionWidth = Mathf.Max(120f, rect.width - 220f);
-            GUI.Label(new Rect(rect.x + 16f, rect.y + 150f, descriptionWidth, 64f), ClampText(description, 180), smallBodyStyle);
+            DrawLabel(new Rect(rect.x + 16f, rect.y + 150f, descriptionWidth, 64f), ClampText(description, 180), smallBodyStyle);
 
             var skillY = rect.y + 224f;
             var skillHeight = Mathf.Max(42f, (rect.yMax - skillY - 12f) / 2f - 4f);
@@ -561,13 +561,13 @@ namespace Fight.UI.Flow
 
         private void DrawSkillSummary(Rect rect, string label, SkillData skill)
         {
-            GUI.Box(rect, string.Empty);
+            DrawBox(rect, string.Empty);
             var name = skill != null ? skill.displayName : "None";
             var description = skill != null && !string.IsNullOrWhiteSpace(skill.description)
                 ? skill.description
                 : "No description.";
-            GUI.Label(new Rect(rect.x + 10f, rect.y + 6f, 140f, 22f), $"{label}: {name}", bodyStyle);
-            GUI.Label(new Rect(rect.x + 160f, rect.y + 6f, rect.width - 170f, rect.height - 12f), ClampText(description, 160), smallBodyStyle);
+            DrawLabel(new Rect(rect.x + 10f, rect.y + 6f, 140f, 22f), $"{label}: {name}", bodyStyle);
+            DrawLabel(new Rect(rect.x + 160f, rect.y + 6f, rect.width - 170f, rect.height - 12f), ClampText(description, 160), smallBodyStyle);
         }
 
         private void DrawBanPanel(Rect rect)
@@ -575,7 +575,7 @@ namespace Fight.UI.Flow
             DrawTintedRect(rect, new Color(0.062f, 0.067f, 0.076f, 0.99f));
             DrawTintedRect(new Rect(rect.x, rect.y, rect.width, 2f), new Color(1f, 1f, 1f, 0.08f));
             DrawOutline(rect, new Color(0f, 0f, 0f, 0.82f), 2f);
-            GUI.Label(new Rect(rect.x + rect.width * 0.43f, rect.y + 8f, rect.width * 0.14f, 26f), "BANNED", sectionStyle);
+            DrawLabel(new Rect(rect.x + rect.width * 0.43f, rect.y + 8f, rect.width * 0.14f, 26f), "BANNED", sectionStyle);
             DrawFooterControls(rect);
 
             DrawBanSlots(new Rect(rect.x + 16f, rect.y + 16f, rect.width * 0.36f, rect.height - 32f), TeamSide.Blue, GameFlowState.BlueBans, new Color(0.12f, 0.34f, 0.86f, 0.9f));
@@ -596,12 +596,12 @@ namespace Fight.UI.Flow
             DrawTintedRect(new Rect(controlX - 8f, firstRowY - 8f, controlWidth + 16f, rect.yMax - firstRowY - 2f), new Color(0.035f, 0.038f, 0.044f, 0.76f));
             DrawOutline(new Rect(controlX - 8f, firstRowY - 8f, controlWidth + 16f, rect.yMax - firstRowY - 2f), new Color(1f, 1f, 1f, 0.08f), 1f);
 
-            if (GUI.Button(new Rect(controlX, firstRowY, halfButtonWidth, smallButtonHeight), "Back", topButtonStyle))
+            if (DrawButton(new Rect(controlX, firstRowY, halfButtonWidth, smallButtonHeight), "Back", topButtonStyle))
             {
                 SceneManager.LoadScene(mainMenuSceneName);
             }
 
-            if (GUI.Button(new Rect(controlX + halfButtonWidth + buttonGap, firstRowY, halfButtonWidth, smallButtonHeight), "Reset BP", topButtonStyle))
+            if (DrawButton(new Rect(controlX + halfButtonWidth + buttonGap, firstRowY, halfButtonWidth, smallButtonHeight), "Reset BP", topButtonStyle))
             {
                 GameFlowState.ResetDraft();
                 ClearSwapSelection();
@@ -616,7 +616,7 @@ namespace Fight.UI.Flow
             var startButtonLabel = GameFlowState.IsDraftComplete && !GameFlowState.AreBothTeamsExchangeReady
                 ? "Waiting Ready"
                 : "Start Battle";
-            if (GUI.Button(new Rect(controlX, secondRowY, controlWidth, startButtonHeight), startButtonLabel, topButtonStyle))
+            if (DrawButton(new Rect(controlX, secondRowY, controlWidth, startButtonHeight), startButtonLabel, topButtonStyle))
             {
                 if (GameFlowState.TryPrepareBattleInput(out _))
                 {
@@ -650,8 +650,8 @@ namespace Fight.UI.Flow
                 var portraitSize = Mathf.Clamp(slotRect.height - 22f, 48f, 66f);
                 var portraitRect = new Rect(slotRect.x + 9f, slotRect.y + (slotRect.height - portraitSize) * 0.5f, portraitSize, portraitSize);
                 DrawHeroPortrait(portraitRect, hero);
-                GUI.Label(new Rect(portraitRect.xMax + 8f, slotRect.y + 14f, slotRect.width - portraitSize - 25f, 22f), hero != null ? hero.displayName : $"{side} Ban {i + 1}", bodyStyle);
-                GUI.Label(new Rect(portraitRect.xMax + 8f, slotRect.y + 40f, slotRect.width - portraitSize - 25f, 18f), hero != null ? GetHeroClassLabel(hero.heroClass) : "Waiting", smallBodyStyle);
+                DrawLabel(new Rect(portraitRect.xMax + 8f, slotRect.y + 14f, slotRect.width - portraitSize - 25f, 22f), hero != null ? hero.displayName : $"{side} Ban {i + 1}", bodyStyle);
+                DrawLabel(new Rect(portraitRect.xMax + 8f, slotRect.y + 40f, slotRect.width - portraitSize - 25f, 18f), hero != null ? GetHeroClassLabel(hero.heroClass) : "Waiting", smallBodyStyle);
             }
         }
 
@@ -659,12 +659,12 @@ namespace Fight.UI.Flow
         {
             var ready = GameFlowState.IsTeamExchangeReady(side);
             var statusText = ready ? "Ready locked" : "Swap heroes";
-            GUI.Label(new Rect(rect.x, rect.y, 96f, rect.height), statusText, smallBodyStyle);
+            DrawLabel(new Rect(rect.x, rect.y, 96f, rect.height), statusText, smallBodyStyle);
 
             var previousEnabled = GUI.enabled;
             GUI.enabled = GameFlowState.HasValidSelections();
             var buttonLabel = ready ? "Edit" : "Ready";
-            if (GUI.Button(new Rect(rect.xMax - 78f, rect.y, 78f, rect.height), buttonLabel, strategyButtonStyle))
+            if (DrawButton(new Rect(rect.xMax - 78f, rect.y, 78f, rect.height), buttonLabel, strategyButtonStyle))
             {
                 if (GameFlowState.TrySetTeamExchangeReady(side, !ready))
                 {
@@ -680,23 +680,23 @@ namespace Fight.UI.Flow
             var hint = ready
                 ? "Locked until Edit"
                 : "Click two slots";
-            GUI.Box(new Rect(rect.x + 100f, rect.y, rect.width - 184f, rect.height), hint);
+            DrawBox(new Rect(rect.x + 100f, rect.y, rect.width - 184f, rect.height), hint);
         }
 
         private void DrawStrategySelector(Rect rect, string label, string value, System.Action previous, System.Action next)
         {
             var buttonWidth = 26f;
             var labelWidth = 88f;
-            GUI.Label(new Rect(rect.x, rect.y, labelWidth, rect.height), label, smallBodyStyle);
+            DrawLabel(new Rect(rect.x, rect.y, labelWidth, rect.height), label, smallBodyStyle);
 
-            if (GUI.Button(new Rect(rect.x + labelWidth, rect.y, buttonWidth, rect.height), "<", strategyButtonStyle))
+            if (DrawButton(new Rect(rect.x + labelWidth, rect.y, buttonWidth, rect.height), "<", strategyButtonStyle))
             {
                 previous?.Invoke();
             }
 
-            GUI.Box(new Rect(rect.x + labelWidth + buttonWidth + 6f, rect.y, rect.width - labelWidth - (buttonWidth * 2f) - 12f, rect.height), value);
+            DrawBox(new Rect(rect.x + labelWidth + buttonWidth + 6f, rect.y, rect.width - labelWidth - (buttonWidth * 2f) - 12f, rect.height), value);
 
-            if (GUI.Button(new Rect(rect.x + rect.width - buttonWidth, rect.y, buttonWidth, rect.height), ">", strategyButtonStyle))
+            if (DrawButton(new Rect(rect.x + rect.width - buttonWidth, rect.y, buttonWidth, rect.height), ">", strategyButtonStyle))
             {
                 next?.Invoke();
             }
@@ -897,7 +897,7 @@ namespace Fight.UI.Flow
                 return;
             }
 
-            GUI.Box(rect, condition > 20f ? "+" : condition < 0f ? "-" : "=");
+            DrawBox(rect, condition > 20f ? "+" : condition < 0f ? "-" : "=");
         }
 
         private void DrawStatChip(Rect rect, bool isAttack, float value, float masteryBonus)
@@ -923,7 +923,7 @@ namespace Fight.UI.Flow
             var valueText = masteryBonus > 0f
                 ? $"{value:0} (+{masteryBonus:0})"
                 : value.ToString("0");
-            GUI.Label(new Rect(iconBadgeRect.xMax + 2f, rect.y, rect.xMax - iconBadgeRect.xMax - 3f, rect.height), valueText, smallBodyStyle);
+            DrawLabel(new Rect(iconBadgeRect.xMax + 2f, rect.y, rect.xMax - iconBadgeRect.xMax - 3f, rect.height), valueText, smallBodyStyle);
         }
 
         private static void DrawAttackIcon(Rect rect)
@@ -968,7 +968,7 @@ namespace Fight.UI.Flow
                 var traitLabel = GetAthleteTraitDisplayName(athlete, i);
                 if (!string.IsNullOrWhiteSpace(traitLabel))
                 {
-                    GUI.Label(rowRect, traitLabel, smallBodyStyle);
+                    DrawLabel(rowRect, traitLabel, smallBodyStyle);
                 }
             }
         }
@@ -1025,7 +1025,7 @@ namespace Fight.UI.Flow
                 GUI.color = new Color(0f, 0f, 0f, 0.68f);
                 GUI.DrawTexture(valueRect, Texture2D.whiteTexture);
                 GUI.color = previousColor;
-                GUI.Label(valueRect, mastery.mastery.ToString("0"), smallBodyStyle);
+                DrawLabel(valueRect, mastery.mastery.ToString("0"), smallBodyStyle);
             }
         }
 
@@ -1150,7 +1150,7 @@ namespace Fight.UI.Flow
         {
             if (sprite == null || sprite.texture == null)
             {
-                GUI.Box(rect, string.Empty);
+                DrawBox(rect, string.Empty);
                 return;
             }
 
@@ -1174,7 +1174,7 @@ namespace Fight.UI.Flow
             DrawTintedRect(rect, Color.Lerp(new Color(0.12f, 0.14f, 0.18f, 0.96f), accentColor, 0.30f));
             DrawTintedRect(new Rect(rect.x + 3f, rect.y + 3f, rect.width - 6f, rect.height - 6f), new Color(0.05f, 0.06f, 0.08f, 0.70f));
             DrawOutline(rect, new Color(accentColor.r, accentColor.g, accentColor.b, 0.76f), 2f);
-            GUI.Label(rect, GetAthleteInitial(athlete), athleteInitialStyle);
+            DrawLabel(rect, GetAthleteInitial(athlete), athleteInitialStyle);
         }
 
         private void DrawHeroPortrait(Rect rect, HeroDefinition hero)
@@ -1212,7 +1212,7 @@ namespace Fight.UI.Flow
 
             var previousSize = athleteInitialStyle.fontSize;
             athleteInitialStyle.fontSize = Mathf.RoundToInt(Mathf.Clamp(rect.height * 0.42f, 14f, 24f));
-            GUI.Label(rect, GetHeroInitial(hero), athleteInitialStyle);
+            DrawLabel(rect, GetHeroInitial(hero), athleteInitialStyle);
             athleteInitialStyle.fontSize = previousSize;
         }
 
@@ -1240,6 +1240,7 @@ namespace Fight.UI.Flow
 
         private static void DrawTintedRect(Rect rect, Color color)
         {
+            rect = PixelSnap(rect);
             var previousColor = GUI.color;
             GUI.color = color;
             GUI.DrawTexture(rect, Texture2D.whiteTexture, ScaleMode.StretchToFill, true);
@@ -1253,6 +1254,7 @@ namespace Fight.UI.Flow
                 return;
             }
 
+            rect = PixelSnap(rect);
             var previousColor = GUI.color;
             GUI.color = color;
             GUI.DrawTexture(rect, texture, ScaleMode.StretchToFill, true);
@@ -1261,11 +1263,56 @@ namespace Fight.UI.Flow
 
         private static void DrawOutline(Rect rect, Color color, float thickness)
         {
+            rect = PixelSnap(rect);
             var resolvedThickness = Mathf.Max(1f, thickness);
             DrawTintedRect(new Rect(rect.x, rect.y, rect.width, resolvedThickness), color);
             DrawTintedRect(new Rect(rect.x, rect.yMax - resolvedThickness, rect.width, resolvedThickness), color);
             DrawTintedRect(new Rect(rect.x, rect.y, resolvedThickness, rect.height), color);
             DrawTintedRect(new Rect(rect.xMax - resolvedThickness, rect.y, resolvedThickness, rect.height), color);
+        }
+
+        private static void DrawLabel(Rect rect, string text, GUIStyle style)
+        {
+            if (string.IsNullOrEmpty(text) || style == null)
+            {
+                return;
+            }
+
+            GUI.Label(PixelSnap(rect), text, style);
+        }
+
+        private static bool DrawButton(Rect rect, string text, GUIStyle style)
+        {
+            return GUI.Button(PixelSnap(rect), text, style);
+        }
+
+        private static bool DrawButton(Rect rect, string text)
+        {
+            return GUI.Button(PixelSnap(rect), text);
+        }
+
+        private static bool DrawButton(Rect rect, GUIContent content, GUIStyle style)
+        {
+            return GUI.Button(PixelSnap(rect), content, style);
+        }
+
+        private static void DrawBox(Rect rect, string text)
+        {
+            GUI.Box(PixelSnap(rect), text);
+        }
+
+        private static void DrawBox(Rect rect, string text, GUIStyle style)
+        {
+            GUI.Box(PixelSnap(rect), text, style);
+        }
+
+        private static Rect PixelSnap(Rect rect)
+        {
+            return new Rect(
+                Mathf.Round(rect.x),
+                Mathf.Round(rect.y),
+                Mathf.Round(rect.width),
+                Mathf.Round(rect.height));
         }
 
         private static void DrawShadowedLabel(Rect rect, string text, GUIStyle style, Color mainColor)
@@ -1275,11 +1322,12 @@ namespace Fight.UI.Flow
                 return;
             }
 
+            rect = PixelSnap(rect);
             var previousColor = style.normal.textColor;
             style.normal.textColor = ShadowColor;
-            GUI.Label(new Rect(rect.x + 2f, rect.y + 2f, rect.width, rect.height), text, style);
+            DrawLabel(PixelSnap(new Rect(rect.x + 1f, rect.y + 1f, rect.width, rect.height)), text, style);
             style.normal.textColor = mainColor;
-            GUI.Label(rect, text, style);
+            DrawLabel(rect, text, style);
             style.normal.textColor = previousColor;
         }
 
@@ -1458,7 +1506,7 @@ namespace Fight.UI.Flow
             sectionStyle = new GUIStyle(GUI.skin.label)
             {
                 alignment = TextAnchor.MiddleCenter,
-                fontSize = 17,
+                fontSize = 18,
                 fontStyle = FontStyle.Bold,
                 wordWrap = true,
                 normal = { textColor = Color.white }
@@ -1467,7 +1515,7 @@ namespace Fight.UI.Flow
             bodyStyle = new GUIStyle(GUI.skin.label)
             {
                 alignment = TextAnchor.MiddleCenter,
-                fontSize = 13,
+                fontSize = 14,
                 wordWrap = true,
                 normal = { textColor = new Color(0.86f, 0.9f, 0.96f) }
             };
@@ -1475,7 +1523,7 @@ namespace Fight.UI.Flow
             smallBodyStyle = new GUIStyle(GUI.skin.label)
             {
                 alignment = TextAnchor.MiddleCenter,
-                fontSize = 11,
+                fontSize = 12,
                 wordWrap = true,
                 normal = { textColor = new Color(0.78f, 0.82f, 0.9f) }
             };
@@ -1504,7 +1552,7 @@ namespace Fight.UI.Flow
             filterButtonStyle = new GUIStyle(GUI.skin.button)
             {
                 alignment = TextAnchor.MiddleCenter,
-                fontSize = 11,
+                fontSize = 12,
                 fontStyle = FontStyle.Bold,
                 wordWrap = true
             };
@@ -1512,7 +1560,7 @@ namespace Fight.UI.Flow
             strategyButtonStyle = new GUIStyle(GUI.skin.button)
             {
                 alignment = TextAnchor.MiddleCenter,
-                fontSize = 11,
+                fontSize = 12,
                 fontStyle = FontStyle.Bold
             };
 
