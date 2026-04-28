@@ -258,9 +258,8 @@ namespace Fight.UI.Flow
         private void DrawTeamPanelBackground(Rect rect, Color accentColor)
         {
             DrawTintedRect(rect, new Color(0.075f, 0.083f, 0.095f, 0.98f));
-            DrawTintedRect(new Rect(rect.x, rect.y, rect.width, 46f), Color.Lerp(new Color(0.12f, 0.13f, 0.16f, 0.96f), accentColor, 0.52f));
+            DrawTintedRect(new Rect(rect.x, rect.y, rect.width, 3f), new Color(accentColor.r, accentColor.g, accentColor.b, 0.84f));
             DrawTintedRect(new Rect(rect.x, rect.y, 4f, rect.height), accentColor);
-            DrawTintedRect(new Rect(rect.x, rect.y + 46f, rect.width, 1f), new Color(1f, 1f, 1f, 0.13f));
             DrawOutline(rect, new Color(0f, 0f, 0f, 0.86f), 2f);
         }
 
@@ -311,19 +310,13 @@ namespace Fight.UI.Flow
             var currentStep = GameFlowState.CurrentDraftStep;
             var isSwapPhase = GameFlowState.IsDraftComplete;
             var isTeamReady = GameFlowState.IsTeamExchangeReady(side);
-            var title = side == TeamSide.Blue ? "BLUE ROSTER" : "RED ROSTER";
             DrawTeamPanelBackground(rect, accentColor);
-            GUI.Label(new Rect(rect.x + 10f, rect.y + 7f, rect.width - 20f, 22f), title, sectionStyle);
-            GUI.Label(
-                new Rect(rect.x + 10f, rect.y + 29f, rect.width - 20f, 16f),
-                isTeamReady ? "Ready Locked" : "5 Athlete Slots",
-                smallBodyStyle);
 
             var slotGap = 6f;
-            var headerBlockHeight = 50f;
+            var headerBlockHeight = 8f;
             var strategyBlockHeight = isSwapPhase ? 92f : 62f;
             var availableSlotHeight = rect.height - headerBlockHeight - strategyBlockHeight - (slotGap * (BattleInputConfig.DefaultTeamSize - 1));
-            var slotHeight = Mathf.Clamp(availableSlotHeight / BattleInputConfig.DefaultTeamSize, 84f, 170f);
+            var slotHeight = Mathf.Clamp(availableSlotHeight / BattleInputConfig.DefaultTeamSize, 92f, 190f);
             for (var i = 0; i < BattleInputConfig.DefaultTeamSize; i++)
             {
                 var slotRect = new Rect(rect.x + 10f, rect.y + headerBlockHeight + (i * (slotHeight + slotGap)), rect.width - 20f, slotHeight);
@@ -387,12 +380,12 @@ namespace Fight.UI.Flow
             var headerHeight = compact ? 17f : 20f;
             var statusSize = compact ? 17f : 20f;
             var statHeight = compact ? 16f : 20f;
-            var masteryIconSize = compact ? 28f : 36f;
+            var masteryIconSize = compact ? 28f : 42f;
             var masteryY = rect.yMax - padding - masteryIconSize;
             var statY = masteryY - statHeight - 4f;
             var contentY = rect.y + headerHeight + padding;
             var topContentHeight = Mathf.Max(18f, statY - contentY - 4f);
-            var maxPortraitSize = compact ? 40f : 46f;
+            var maxPortraitSize = compact ? 40f : 58f;
             var heroPortraitSize = Mathf.Max(26f, Mathf.Min(Mathf.Min(topContentHeight, rect.width * 0.23f), maxPortraitSize));
 
             var heroRect = new Rect(rect.x + padding, contentY, heroPortraitSize, heroPortraitSize);
@@ -1178,13 +1171,14 @@ namespace Fight.UI.Flow
 
         private void DrawHeroPortrait(Rect rect, HeroDefinition hero)
         {
-            if (hero?.visualConfig?.portrait == null)
+            var portrait = Fight.UI.HeroPortraitResolver.ResolvePortrait(hero);
+            if (portrait == null)
             {
                 DrawHeroPortraitPlaceholder(rect, hero);
                 return;
             }
 
-            var sprite = hero.visualConfig.portrait;
+            var sprite = portrait;
             var texture = sprite.texture;
             if (texture == null)
             {
@@ -1491,12 +1485,12 @@ namespace Fight.UI.Flow
                 fontSize = 13
             };
 
-            heroCardButtonStyle = new GUIStyle(GUI.skin.button)
+            heroCardButtonStyle = new GUIStyle(GUIStyle.none)
             {
-                normal = { background = null, textColor = Color.clear },
-                hover = { background = null, textColor = Color.clear },
-                active = { background = null, textColor = Color.clear },
-                focused = { background = null, textColor = Color.clear }
+                normal = { textColor = Color.clear },
+                hover = { textColor = Color.clear },
+                active = { textColor = Color.clear },
+                focused = { textColor = Color.clear }
             };
 
             filterButtonStyle = new GUIStyle(GUI.skin.button)
