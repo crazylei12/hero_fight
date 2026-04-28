@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: warrior_003_berserker
   displayName: Berserker
+  description: '持续作战型战士，血量越危险越凶，适合在前排缠斗。'
   heroClass: 0
   tags: 000000000300000008000000
   baseStats:

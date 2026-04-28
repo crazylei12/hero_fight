@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: tank_004_mundo
   displayName: Mundo
+  description: '自愈型坦克，依靠持续回复长时间占住前排。'
   heroClass: 3
   tags: 0000000004000000
   baseStats:

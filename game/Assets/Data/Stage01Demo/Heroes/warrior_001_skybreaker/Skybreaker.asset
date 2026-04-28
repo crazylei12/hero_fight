@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: warrior_001_skybreaker
   displayName: Skybreaker
+  description: '突进型战士，擅长切入战场并用控制打乱敌方阵型。'
   heroClass: 0
   tags: 000000000500000006000000
   baseStats:

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_monk_active_renewingpulse
   displayName: Renewing Pulse
-  description: 'Stage-01 demo skill: self-centered burst heal for nearby allies.'
+  description: '以自身为中心治疗附近友军。'
   slotType: 0
   activationMode: 0
   skillType: 6

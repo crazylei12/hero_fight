@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_mage_active_firebolt
   displayName: Firebolt Burst
-  description: Stage-01 archived mage single-target skill.
+  description: '发射火焰弹，对单个敌人造成稳定伤害。'
   slotType: 0
   activationMode: 0
   skillType: 0

@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_venomshooter_ultimate_venomdetonation
   displayName: Venom Detonation
-  description: 'Stage-01 demo skill: detonates existing poison on all enemies, then
-    chains corpse explosions that re-spread poison.'
+  description: '引爆敌人身上的毒性，并通过击杀继续扩散。'
   slotType: 1
   activationMode: 0
   skillType: 1

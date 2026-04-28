@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_warrior_ultimate_skyquake
   displayName: Skyquake
-  description: 'Stage-01 demo skill: Skyquake'
+  description: '跃入敌群造成大范围冲击，适合打乱密集阵型。'
   slotType: 1
   activationMode: 0
   skillType: 7

@@ -67,7 +67,7 @@ namespace Fight.Editor
 
             EditorGUILayout.Space();
             EditorGUILayout.HelpBox(
-                "导出只会生成 heroes.csv 和 skills.csv 两张表。heroes 只放英雄基础属性与普攻数值；skills 只放技能主数值，以及现有 effect/status 的数值槽位说明。表格不会创建或删除结构，给不存在的槽位填值会直接报错。",
+                "导出只会生成 heroes.csv 和 skills.csv 两张表。heroes 可调英雄说明、基础属性与普攻数值；skills 可调技能说明、技能主数值，以及现有 effect/status 的数值槽位说明。表格不会创建或删除结构，给不存在的槽位填值会直接报错。",
                 MessageType.None);
 
             using (new EditorGUILayout.HorizontalScope())

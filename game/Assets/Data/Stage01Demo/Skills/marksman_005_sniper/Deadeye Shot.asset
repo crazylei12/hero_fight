@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_sniper_active_deadeyeshot
   displayName: Deadeye Shot
-  description: 'Stage-01 demo skill: Deadeye Shot'
+  description: '瞄准远端敌人，打出高威胁单发狙击。'
   slotType: 0
   activationMode: 0
   skillType: 0

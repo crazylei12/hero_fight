@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: assassin_001_shadowstep
   displayName: Shadowstep
+  description: '切入型刺客，依靠闪现和隐蔽窗口威胁敌方后排。'
   heroClass: 2
   tags: 000000000500000002000000
   baseStats:

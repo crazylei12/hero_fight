@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: warrior_002_bladesman
   displayName: Bladesman
+  description: '爆发型近战，先削弱目标防御，再用直线斩击穿透敌阵。'
   heroClass: 0
   tags: 000000000500000002000000
   baseStats:

@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_boomeranger_ultimate_wheelstorm
   displayName: Wheelstorm
-  description: 'Stage-01 demo skill: creates a short-range rotating wheel storm around
-    the caster that repeatedly cuts nearby enemies.'
+  description: '让回旋轮环绕自身，持续切割附近敌人。'
   slotType: 1
   activationMode: 0
   skillType: 1

@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_sandemperor_active_raisesandguard
   displayName: Raise Sandguard
-  description: 'Stage-01 demo skill: deploys a sandguard near the current basic-attack
-    target. Sandguards only strike when Sandemperor basic-attacks.'
+  description: '在目标附近部署沙卫，配合自身普攻补充打击。'
   slotType: 0
   activationMode: 0
   skillType: 3

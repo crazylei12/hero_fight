@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_spellblade_active_riftwave
   displayName: "\u88C2\u7A7A\u5251\u6C14"
-  description: 'Stage-01 demo skill: fire a straight sword wave along the current
-    target direction and damage every enemy on that line once.'
+  description: '沿当前目标方向释放剑气，打击直线上的敌人。'
   slotType: 0
   activationMode: 0
   skillType: 1

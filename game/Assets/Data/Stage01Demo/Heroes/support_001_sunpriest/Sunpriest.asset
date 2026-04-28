@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: support_001_sunpriest
   displayName: Sunpriest
+  description: '治疗型辅助，持续为队友提供治疗与护盾支援。'
   heroClass: 4
   tags: 010000000400000008000000
   baseStats:

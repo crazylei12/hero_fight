@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: support_005_chef
   displayName: Chef
+  description: '随机增益辅助，用不同料理强化队友并提供团队回复。'
   heroClass: 4
   tags: 010000000400000008000000
   baseStats:

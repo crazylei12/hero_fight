@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_berserker_active_bloodfury
   displayName: Bloodfury
-  description: 'Stage-01 demo passive skill: missing health increases attack power,
-    and falling below 40% HP grants lifesteal.'
+  description: '被动强化自身，生命越危险时输出和续战能力越强。'
   slotType: 0
   activationMode: 1
   skillType: 3

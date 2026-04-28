@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_blastshield_ultimate_blastminefield
   displayName: Blast Minefield
-  description: 'Stage-01 demo skill: scatter fixed mines into a random forward field;
-    each mine persists until an enemy steps near it, then explodes for area damage.'
+  description: '向前方布置雷区，阻止敌人顺利推进。'
   slotType: 1
   activationMode: 0
   skillType: 3

@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: marksman_002_rifleman
   displayName: Rifleman
+  description: '爆发射手，普攻节奏较慢但单发威胁高，并能用爆破处理群体。'
   heroClass: 5
   tags: 010000000300000007000000
   baseStats:

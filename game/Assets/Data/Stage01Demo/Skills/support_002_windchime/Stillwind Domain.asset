@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_windchime_ultimate_stillwinddomain
   displayName: Stillwind Domain
-  description: 'Stage-01 demo skill: anti-engage field that knocks enemies up, shields
-    allies, and pulses attack-power and move-speed debuffs.'
+  description: '展开反突进领域，击飞敌人并削弱其攻势。'
   slotType: 1
   activationMode: 0
   skillType: 3

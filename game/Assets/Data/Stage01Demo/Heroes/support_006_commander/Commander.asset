@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: support_006_commander
   displayName: Commander
+  description: '指挥型辅助，强化己方核心并引导全队集火高价值目标。'
   heroClass: 4
   tags: 010000000800000006000000
   baseStats:

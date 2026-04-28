@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_sniper_ultimate_killzone
   displayName: Kill Zone
-  description: 'Stage-01 demo ultimate: Kill Zone'
+  description: '进入狙击区域，按威胁顺序逐个点名敌人。'
   slotType: 1
   activationMode: 0
   skillType: 0

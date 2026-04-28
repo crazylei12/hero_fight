@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_frostmage_ultimate_blizzard
   displayName: Blizzard
-  description: 'Stage-01 demo skill: Blizzard'
+  description: '制造暴风雪区域，持续伤害并减缓敌人推进。'
   slotType: 1
   activationMode: 0
   skillType: 1

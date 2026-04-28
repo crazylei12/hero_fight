@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: warrior_005_trollwarlord
   displayName: TrollWarlord
+  description: '单挑升温型前排，持续盯住同一目标时会越打越快。'
   heroClass: 0
   tags: 000000000300000008000000
   baseStats:

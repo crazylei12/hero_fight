@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_support_active_heal
   displayName: Radiant Heal
-  description: 'Stage-01 demo skill: single-target heal plus shield.'
+  description: '治疗一名友军并附加护盾，稳定队友血线。'
   slotType: 0
   activationMode: 0
   skillType: 2

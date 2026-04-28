@@ -527,7 +527,13 @@ namespace Fight.UI.Flow
             GUI.Label(new Rect(rect.xMax - 188f, rect.y + 98f, 170f, 42f), GetHeroAvailabilityLabel(hero), smallBodyStyle);
             GUI.Label(new Rect(rect.xMax - 188f, rect.y + 138f, 170f, 34f), BuildCurrentPickAthleteFitLine(hero), smallBodyStyle);
 
-            var skillY = rect.y + 178f;
+            var description = !string.IsNullOrWhiteSpace(hero.description)
+                ? hero.description
+                : "No hero description.";
+            var descriptionWidth = Mathf.Max(120f, rect.width - 220f);
+            GUI.Label(new Rect(rect.x + 16f, rect.y + 150f, descriptionWidth, 38f), ClampText(description, 140), smallBodyStyle);
+
+            var skillY = rect.y + 198f;
             var skillHeight = Mathf.Max(42f, (rect.yMax - skillY - 12f) / 2f - 4f);
             DrawSkillSummary(new Rect(rect.x + 16f, skillY, rect.width - 32f, skillHeight), "Skill", hero.activeSkill);
             DrawSkillSummary(new Rect(rect.x + 16f, skillY + skillHeight + 8f, rect.width - 32f, skillHeight), "Ultimate", hero.ultimateSkill);

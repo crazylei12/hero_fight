@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_warrior_active_breakerrush
   displayName: Breaker Rush
-  description: 'Stage-01 demo skill: Breaker Rush'
+  description: '冲向目标并造成范围控制，帮助战士快速打开接战位置。'
   slotType: 0
   activationMode: 0
   skillType: 4

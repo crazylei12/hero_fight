@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_bladesman_ultimate_flyingswallowsever
   displayName: "\u98DE\u71D5\u65AD\u7A7A"
-  description: 'Stage-01 demo skill: lock a straight dash line and damage every enemy
-    cut through once.'
+  description: '锁定直线路径突进斩击，穿过敌阵造成爆发伤害。'
   slotType: 1
   activationMode: 0
   skillType: 4

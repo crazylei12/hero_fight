@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_boomeranger_active_returningwheel
   displayName: Returning Wheel
-  description: 'Stage-01 demo skill: throws a fixed-direction wheel that damages
-    once on the outbound path and once again on the return path.'
+  description: '掷出回旋轮，外放和回收时都能打击路径敌人。'
   slotType: 0
   activationMode: 0
   skillType: 1

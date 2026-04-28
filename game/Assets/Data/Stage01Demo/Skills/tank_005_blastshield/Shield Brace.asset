@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_blastshield_active_shieldbrace
   displayName: Shield Brace
-  description: 'Stage-01 demo skill: brace behind the shield, gaining defense and
-    slowing down while countering non-projectile basic attacks from enemy melee heroes.'
+  description: '架盾进入防守姿态，反制近身普攻并提高承压能力。'
   slotType: 0
   activationMode: 0
   skillType: 3

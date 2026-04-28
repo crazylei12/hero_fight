@@ -9,6 +9,7 @@ namespace Fight.Data
         [Header("Identity")]
         public string heroId = "warrior_001_template";
         public string displayName = "Template Hero";
+        [TextArea] public string description;
         public HeroClass heroClass = HeroClass.Warrior;
         public List<HeroTag> tags = new List<HeroTag>();
 

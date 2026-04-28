@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_mage_ultimate_meteor
   displayName: Meteor Fall
-  description: 'Stage-01 demo skill: Meteor Fall'
+  description: '召唤持续火焰区域，长时间压制敌方站位。'
   slotType: 1
   activationMode: 0
   skillType: 1

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_frostmage_active_frostburst
   displayName: Frost Burst
-  description: 'Stage-01 demo skill: Frost Burst'
+  description: '在目标区域释放冰霜爆发，造成伤害并干扰走位。'
   slotType: 0
   activationMode: 0
   skillType: 1

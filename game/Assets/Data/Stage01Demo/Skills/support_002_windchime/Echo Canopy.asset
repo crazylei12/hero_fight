@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_windchime_active_echocanopy
   displayName: Echo Canopy
-  description: 'Stage-01 demo skill: single-target anti-dive protection with a one-shot
-    reactive knock-up, knockback, and per-knock-up healing.'
+  description: '保护被突进威胁的友军，并对贴近敌人进行反制。'
   slotType: 0
   activationMode: 0
   skillType: 3

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_shieldwarden_ultimate_lastbastion
   displayName: Last Bastion
-  description: 'Stage-01 demo skill: Last Bastion'
+  description: '展开守护领域，击飞敌人并强化友方防护。'
   slotType: 1
   activationMode: 0
   skillType: 8

@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: assassin_004_loner
   displayName: Loner
+  description: '收割型刺客，拒绝队友正向保护，依靠单兵追击滚起优势。'
   heroClass: 2
   tags: 000000000500000003000000
   baseStats:

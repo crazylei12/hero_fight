@@ -673,7 +673,17 @@ namespace Fight.Editor
             EnsureHeroSkillReferences(sniper, sniperActive, sniperUltimateSkill);
             EnsureHeroBattlePrefabReference(sniper, LoadBattlePrefab("marksman_005_sniper", HeroClass.Marksman));
 
-            CreateHeroCatalog(warrior, bladesman, berserker, spellblade, trollwarlord, mage, frostmage, sandemperor, lightningmage, assassin, tidefin, butcher, loner, demon, tank, shieldwarden, tidehunter, mundo, blastshield, support, windchime, monk, shrinemaiden, chef, commander, marksman, rifleman, venomshooter, boomeranger, sniper);
+            var demoHeroes = new[]
+            {
+                warrior, bladesman, berserker, spellblade, trollwarlord,
+                mage, frostmage, sandemperor, lightningmage,
+                assassin, tidefin, butcher, loner, demon,
+                tank, shieldwarden, tidehunter, mundo, blastshield,
+                support, windchime, monk, shrinemaiden, chef, commander,
+                marksman, rifleman, venomshooter, boomeranger, sniper,
+            };
+            ApplyDefaultDisplayDescriptions(demoHeroes);
+            CreateHeroCatalog(demoHeroes);
             CreateAthleteRoster(overwriteExistingContent);
 
             var battleInput = CreateBattleInput(
@@ -1205,6 +1215,11 @@ namespace Fight.Editor
             var hero = LoadOrCreateAsset<HeroDefinition>(assetPath);
             hero.heroId = heroId;
             hero.displayName = displayName;
+            if (ShouldReplaceDisplayDescription(hero.description))
+            {
+                hero.description = ResolveDefaultHeroDescription(heroId, displayName);
+            }
+
             hero.heroClass = heroClass;
             hero.tags.Clear();
             hero.tags.AddRange(tags);
@@ -1310,6 +1325,160 @@ namespace Fight.Editor
             return hero;
         }
 
+        private static void ApplyDefaultDisplayDescriptions(IEnumerable<HeroDefinition> heroes)
+        {
+            if (heroes == null)
+            {
+                return;
+            }
+
+            foreach (var hero in heroes)
+            {
+                if (hero == null)
+                {
+                    continue;
+                }
+
+                if (ShouldReplaceDisplayDescription(hero.description))
+                {
+                    hero.description = ResolveDefaultHeroDescription(hero.heroId, hero.displayName);
+                    EditorUtility.SetDirty(hero);
+                }
+
+                ApplyDefaultSkillDescription(hero.activeSkill);
+                ApplyDefaultSkillDescription(hero.ultimateSkill);
+            }
+        }
+
+        private static void ApplyDefaultSkillDescription(SkillData skill)
+        {
+            if (skill == null || !ShouldReplaceDisplayDescription(skill.description))
+            {
+                return;
+            }
+
+            skill.description = ResolveDefaultSkillDescription(skill.skillId, skill.displayName);
+            EditorUtility.SetDirty(skill);
+        }
+
+        private static bool ShouldReplaceDisplayDescription(string description)
+        {
+            return string.IsNullOrWhiteSpace(description)
+                || description.StartsWith("Stage-01 demo", StringComparison.OrdinalIgnoreCase)
+                || description.StartsWith("Stage-01 archived", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string ResolveDefaultHeroDescription(string heroId, string displayName)
+        {
+            return heroId switch
+            {
+                "warrior_001_skybreaker" => "突进型战士，擅长切入战场并用控制打乱敌方阵型。",
+                "warrior_002_bladesman" => "爆发型近战，先削弱目标防御，再用直线斩击穿透敌阵。",
+                "warrior_003_berserker" => "持续作战型战士，血量越危险越凶，适合在前排缠斗。",
+                "warrior_004_spellblade" => "范围压制型战士，利用剑气和固定魔剑持续挤压敌方站位。",
+                "warrior_005_trollwarlord" => "单挑升温型前排，持续盯住同一目标时会越打越快。",
+                "mage_001_firemage" => "范围爆发法师，擅长用火焰区域惩罚聚集的敌人。",
+                "mage_002_frostmage" => "控场法师，依靠冰霜区域减缓敌人推进并制造群体伤害。",
+                "mage_003_sandemperor" => "部署型法师，通过沙卫联动普攻，在战场上建立持续火力点。",
+                "mage_004_lightningmage" => "连锁控制法师，频繁施加感电标记并用雷击打断敌方节奏。",
+                "assassin_001_shadowstep" => "切入型刺客，依靠闪现和隐蔽窗口威胁敌方后排。",
+                "assassin_002_tidefin" => "压制型刺客，通过突进与减益持续削弱关键目标。",
+                "assassin_003_butcher" => "拉拽型刺客，擅长把后排拖入近身战并压制回复。",
+                "assassin_004_loner" => "收割型刺客，拒绝队友正向保护，依靠单兵追击滚起优势。",
+                "assassin_005_demon" => "变身型刺客，通过换位制造混乱，并在恶魔形态中持续追击。",
+                "tank_001_ironwall" => "保护型坦克，稳定承伤并为队友提供阵地防护。",
+                "tank_002_shieldwarden" => "反开型坦克，擅长保护后排并用群体护盾顶住爆发。",
+                "tank_003_tidehunter" => "受击成长型坦克，面对多来源攻击时更难被迅速击穿。",
+                "tank_004_mundo" => "自愈型坦克，依靠持续回复长时间占住前排。",
+                "tank_005_blastshield" => "布雷型坦克，通过盾牌姿态和雷区限制敌方推进。",
+                "support_001_sunpriest" => "治疗型辅助，持续为队友提供治疗与护盾支援。",
+                "support_002_windchime" => "反突进辅助，保护受威胁后排并用领域削弱敌方切入。",
+                "support_003_monk" => "近战守护辅助，站在前线用治疗和群体护盾稳住团队。",
+                "support_004_shrinemaiden" => "节奏型辅助，在伤害与治疗之间轮转，并用图腾扩大支援覆盖。",
+                "support_005_chef" => "随机增益辅助，用不同料理强化队友并提供团队回复。",
+                "support_006_commander" => "指挥型辅助，强化己方核心并引导全队集火高价值目标。",
+                "marksman_001_longshot" => "远程持续输出射手，依靠稳定射程和连续射击终结目标。",
+                "marksman_002_rifleman" => "爆发射手，普攻节奏较慢但单发威胁高，并能用爆破处理群体。",
+                "marksman_003_venomshooter" => "持续伤害射手，给敌人叠加毒性压力并引爆连锁伤害。",
+                "marksman_004_boomeranger" => "中距离弹射射手，用回旋武器在近身范围内持续切割敌人。",
+                "marksman_005_sniper" => "超远程点杀射手，优先寻找远端目标并逐个狙击。",
+                _ => string.IsNullOrWhiteSpace(displayName)
+                    ? "用于 BP 展示的英雄特点说明。"
+                    : $"{displayName} 的 BP 展示说明。",
+            };
+        }
+
+        private static string ResolveDefaultSkillDescription(string skillId, string displayName)
+        {
+            return skillId switch
+            {
+                "skill_warrior_active_breakerrush" => "冲向目标并造成范围控制，帮助战士快速打开接战位置。",
+                "skill_warrior_ultimate_skyquake" => "跃入敌群造成大范围冲击，适合打乱密集阵型。",
+                "skill_bladesman_active_rendingslash" => "先削弱目标防御，再打出一次沉重斩击。",
+                "skill_bladesman_ultimate_flyingswallowsever" => "锁定直线路径突进斩击，穿过敌阵造成爆发伤害。",
+                "skill_berserker_active_bloodfury" => "被动强化自身，生命越危险时输出和续战能力越强。",
+                "skill_berserker_ultimate_titanrage" => "进入狂怒状态，短时间强化近战输出和生存压迫。",
+                "skill_spellblade_active_riftwave" => "沿当前目标方向释放剑气，打击直线上的敌人。",
+                "skill_spellblade_ultimate_boundblade" => "在战场留下魔剑领域，持续伤害并牵制附近敌人。",
+                "skill_trollwarlord_active_warlordreach" => "在近身战中临时强化攻击距离和输出能力。",
+                "skill_trollwarlord_ultimate_deathlessfrenzy" => "濒死时进入狂热窗口，短时间避免倒下并保持高压输出。",
+                "skill_mage_active_emberburst" => "在目标区域引爆火焰，处理聚集敌人。",
+                "skill_mage_ultimate_meteor" => "召唤持续火焰区域，长时间压制敌方站位。",
+                "skill_mage_active_firebolt" => "发射火焰弹，对单个敌人造成稳定伤害。",
+                "skill_frostmage_active_frostburst" => "在目标区域释放冰霜爆发，造成伤害并干扰走位。",
+                "skill_frostmage_ultimate_blizzard" => "制造暴风雪区域，持续伤害并减缓敌人推进。",
+                "skill_sandemperor_active_raisesandguard" => "在目标附近部署沙卫，配合自身普攻补充打击。",
+                "skill_sandemperor_ultimate_imperialencirclement" => "重建沙卫阵线，围绕敌方制造一轮爆发压制。",
+                "skill_lightningmage_active_thunderline" => "释放直线雷击并叠加感电标记。",
+                "skill_lightningmage_ultimate_stormverdict" => "连续召唤雷击，反复检查敌人并触发感电控制。",
+                "skill_assassin_active_shadowblink" => "闪现切入关键目标，快速贴近后排。",
+                "skill_assassin_ultimate_smokeveil" => "制造隐蔽窗口，让刺客更安全地切入或脱离。",
+                "skill_tidefin_active_tidalpounce" => "扑向目标并施加压制，削弱其持续作战能力。",
+                "skill_tidefin_ultimate_ruintide" => "释放潮汐冲击，对周围敌人造成压制性打击。",
+                "skill_butcher_active_gorehook" => "钩回后排目标并压制其回复能力。",
+                "skill_butcher_ultimate_carnagereel" => "把敌人强行拉向自己，制造集体近身混战。",
+                "skill_loner_active_lonepursuit" => "短暂规避锁定后扑向残血敌人，完成追击收割。",
+                "skill_loner_ultimate_loneinstinct" => "被动拒绝队友正向效果，并在击杀参与后滚起自身强化。",
+                "skill_demon_active_infernalexchange" => "与远端敌人交换位置，打乱阵型并创造切入点。",
+                "skill_demon_ultimate_greaterdemonform" => "变身为恶魔形态，改变攻击方式并强化持续追击。",
+                "skill_tank_active_shieldbash" => "为附近友军建立分担保护，帮助团队承受爆发。",
+                "skill_tank_ultimate_ironoath" => "为全队提供防御强化，支撑关键团战窗口。",
+                "skill_shieldwarden_active_wardenscall" => "保护受威胁友军，并在敌人贴近时反制击退。",
+                "skill_shieldwarden_ultimate_lastbastion" => "展开守护领域，击飞敌人并强化友方防护。",
+                "skill_tidehunter_active_undertowcarapace" => "被动根据近期承受的敌方压力提高自身防御。",
+                "skill_tidehunter_ultimate_tidalrebound" => "释放回卷潮汐，在身边来回打击并控制敌人。",
+                "skill_mundo_active_brutemetabolism" => "被动持续自我回复，低血时回复压力更明显。",
+                "skill_mundo_ultimate_monstrousrecovery" => "短时间快速自愈，强行延长前排站场时间。",
+                "skill_blastshield_active_shieldbrace" => "架盾进入防守姿态，反制近身普攻并提高承压能力。",
+                "skill_blastshield_ultimate_blastminefield" => "向前方布置雷区，阻止敌人顺利推进。",
+                "skill_support_active_heal" => "治疗一名友军并附加护盾，稳定队友血线。",
+                "skill_support_ultimate_blessing" => "创造治疗领域，为站在范围内的友军持续恢复。",
+                "skill_windchime_active_echocanopy" => "保护被突进威胁的友军，并对贴近敌人进行反制。",
+                "skill_windchime_ultimate_stillwinddomain" => "展开反突进领域，击飞敌人并削弱其攻势。",
+                "skill_monk_active_renewingpulse" => "以自身为中心治疗附近友军。",
+                "skill_monk_ultimate_guardianmantra" => "以自身为中心为友军套上群体护盾。",
+                "skill_shrinemaiden_active_prayerbloom" => "治疗一个友军，并在其周围对敌人造成伤害。",
+                "skill_shrinemaiden_ultimate_twinritetotem" => "部署图腾，扩大自身轮转攻击和治疗的覆盖。",
+                "skill_chef_active_dailyspecial" => "随机准备料理，为合适的友军提供增益。",
+                "skill_chef_ultimate_grandfeast" => "发动团队盛宴，为全队提供大范围回复。",
+                "skill_commander_active_battleorders" => "强化当前表现突出的友军，放大其输出能力。",
+                "skill_commander_ultimate_focusfirecommand" => "标记敌方高威胁目标，引导全队集中攻击。",
+                "skill_marksman_active_focusshot" => "打出一次重击，强化射手的单点压制。",
+                "skill_marksman_ultimate_arrowrain" => "进入连续射击窗口，对目标持续倾泻火力。",
+                "skill_rifleman_active_burstfire" => "锁定目标后进行一轮快速射击。",
+                "skill_rifleman_ultimate_fraggrenade" => "投掷爆破弹，处理聚集在一起的敌人。",
+                "skill_venomshooter_active_poisonmist" => "制造毒雾区域，快速向敌人施加毒性压力。",
+                "skill_venomshooter_ultimate_venomdetonation" => "引爆敌人身上的毒性，并通过击杀继续扩散。",
+                "skill_boomeranger_active_returningwheel" => "掷出回旋轮，外放和回收时都能打击路径敌人。",
+                "skill_boomeranger_ultimate_wheelstorm" => "让回旋轮环绕自身，持续切割附近敌人。",
+                "skill_sniper_active_deadeyeshot" => "瞄准远端敌人，打出高威胁单发狙击。",
+                "skill_sniper_ultimate_killzone" => "进入狙击区域，按威胁顺序逐个点名敌人。",
+                _ => string.IsNullOrWhiteSpace(displayName)
+                    ? "用于 BP 展示的技能效果说明。"
+                    : $"{displayName} 的 BP 技能说明。",
+            };
+        }
+
         private static GameObject LoadBattlePrefab(string heroId, HeroClass heroClass)
         {
             var prefabPath = heroId switch
@@ -1406,7 +1575,11 @@ namespace Fight.Editor
             var skill = LoadOrCreateAsset<SkillData>(assetPath);
             skill.skillId = skillId;
             skill.displayName = displayName;
-            skill.description = $"Stage-01 demo skill: {displayName}";
+            if (ShouldReplaceDisplayDescription(skill.description))
+            {
+                skill.description = ResolveDefaultSkillDescription(skillId, displayName);
+            }
+
             skill.slotType = slotType;
             skill.activationMode = SkillActivationMode.Active;
             skill.skillType = skillType;

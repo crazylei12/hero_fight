@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_berserker_ultimate_titanrage
   displayName: Titan Rage
-  description: 'Stage-01 demo skill: enter a short frenzy with bonus damage, attack
-    speed, move speed, defense, guaranteed lifesteal, and visual growth.'
+  description: '进入狂怒状态，短时间强化近战输出和生存压迫。'
   slotType: 1
   activationMode: 0
   skillType: 3

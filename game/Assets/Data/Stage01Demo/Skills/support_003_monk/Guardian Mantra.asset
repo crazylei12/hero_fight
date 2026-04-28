@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_monk_ultimate_guardianmantra
   displayName: Guardian Mantra
-  description: 'Stage-01 demo skill: self-centered group shield for nearby allies.'
+  description: '以自身为中心为友军套上群体护盾。'
   slotType: 1
   activationMode: 0
   skillType: 3

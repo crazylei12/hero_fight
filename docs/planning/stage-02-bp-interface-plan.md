@@ -132,6 +132,7 @@ BP 需要新增或整理的会话状态包括：
 
 允许做法：
 - BP UI 读取 `HeroDefinition`、`SkillData`、`HeroStatsData` 和头像资源
+- BP UI 使用 `HeroDefinition.description` 作为英雄简短介绍，使用 `SkillData.description` 作为小技能 / 大招简短说明；这两类说明只服务展示，不参与战斗规则
 - BP UI 读取选手基础属性、选手特性和选手头像资源
 - BP 完成后组装 `BattleInputConfig`
 - BP 完成后组装选手-英雄绑定结果，并交给统一战斗输入桥接层
@@ -149,6 +150,7 @@ BP 需要新增或整理的会话状态包括：
 - `Stage01HeroCatalog` 作为英雄池
 - `HeroDefinition.visualConfig.portrait` 作为英雄头像
 - `HeroDefinition.heroClass` 和 `tags` 作为筛选与卡片信息
+- `HeroDefinition.description` 和 `SkillData.description` 作为英雄详情面板的展示说明，并通过 `Fight/Tools/Balance Sheets` 导出的表格快速调整
 - `HeroStatsData` 作为详情面板属性来源，`BasicAttackData` 仅补充射程等基础普攻参数
 - `activeSkill` / `ultimateSkill` 作为详情面板技能来源
 - `GameFlowState.TryPrepareBattleInput` 的“把已选阵容转为战斗输入”职责

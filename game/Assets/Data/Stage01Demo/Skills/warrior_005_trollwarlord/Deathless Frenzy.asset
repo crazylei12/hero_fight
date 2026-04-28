@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_trollwarlord_ultimate_deathlessfrenzy
   displayName: Deathless Frenzy
-  description: 'Stage-01 demo skill: prevent non-execute lethal damage from reducing
-    health below 1 and treat Fervor attack speed as full stacks for a short window.'
+  description: '濒死时进入狂热窗口，短时间避免倒下并保持高压输出。'
   slotType: 1
   activationMode: 0
   skillType: 3

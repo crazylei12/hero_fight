@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_rifleman_active_burstfire
   displayName: Burst Fire
-  description: 'Stage-01 demo skill: Burst Fire'
+  description: '锁定目标后进行一轮快速射击。'
   slotType: 0
   activationMode: 0
   skillType: 0

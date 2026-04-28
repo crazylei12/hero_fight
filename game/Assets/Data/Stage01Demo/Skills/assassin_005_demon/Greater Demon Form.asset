@@ -14,9 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_demon_ultimate_greaterdemonform
   displayName: Greater Demon Form
-  description: 'Stage-01 demo ultimate: transforms into a greater demon until death,
-    switching to ranged projectile basic attacks with higher attack power, attack
-    speed, and attack range.'
+  description: '变身为恶魔形态，改变攻击方式并强化持续追击。'
   slotType: 1
   activationMode: 0
   skillType: 3

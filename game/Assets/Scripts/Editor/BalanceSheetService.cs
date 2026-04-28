@@ -35,6 +35,7 @@ namespace Fight.Editor
         {
             new("heroId", "英雄ID", "唯一且稳定的英雄ID，用来定位资产。"),
             new("displayName", "英雄名", "显示名，主要用于人工识别。"),
+            new("description", "英雄说明", "BP 英雄详情面板使用的简短说明，不建议填写具体数值。"),
             new("heroClass", "职业", "只读说明列，帮助识别英雄职业。"),
             new("maxHealth", "最大生命", "基础最大生命值。"),
             new("attackPower", "攻击力", "基础攻击力。"),
@@ -53,6 +54,7 @@ namespace Fight.Editor
         {
             new("skillId", "技能ID", "唯一且稳定的技能ID，用来定位资产。"),
             new("displayName", "技能名", "显示名，主要用于人工识别。"),
+            new("description", "技能说明", "BP 英雄详情面板使用的简短效果说明，不建议填写具体数值。"),
             new("ownerHeroes", "所属英雄", "只读说明列，显示哪些英雄在使用这个技能。"),
             new("slotType", "技能槽位", "只读说明列，显示这个技能当前配置的小技能/大招槽位。"),
             new("castRange", "施法距离", "技能施法距离。"),
@@ -144,6 +146,7 @@ namespace Fight.Editor
                 {
                     hero.heroId,
                     hero.displayName,
+                    hero.description,
                     FormatEnum(hero.heroClass),
                     FormatFloat(hero.baseStats?.maxHealth),
                     FormatFloat(hero.baseStats?.attackPower),
@@ -161,7 +164,7 @@ namespace Fight.Editor
 
             WriteCsv(
                 Path.Combine(folderPath, HeroesFileName),
-                "只展示英雄基础属性与普攻数值；非数值配置不在这张表里维护，空白单元格导入时会跳过。",
+                "展示英雄 BP 说明、基础属性与普攻数值；空白单元格导入时会跳过，不会清空已有内容。",
                 HeroColumns,
                 rows);
         }
@@ -179,6 +182,7 @@ namespace Fight.Editor
                 {
                     skill.skillId,
                     skill.displayName,
+                    skill.description,
                     assetIndex.GetSkillOwnerSummary(skill.skillId),
                     FormatEnum(skill.slotType),
                     FormatFloat(skill.castRange),
@@ -223,7 +227,7 @@ namespace Fight.Editor
 
             WriteCsv(
                 Path.Combine(folderPath, SkillsFileName),
-                "只展示技能主数值，以及现有 effect/status 的数值槽位；导入不会创建、补齐或删除结构，给不存在的槽位填值会直接报错。",
+                "展示技能 BP 说明、技能主数值，以及现有 effect/status 的数值槽位；导入不会创建、补齐或删除结构，给不存在的槽位填值会直接报错。",
                 columns,
                 rows);
         }
@@ -264,6 +268,7 @@ namespace Fight.Editor
                 var hero = assetIndex.GetHero(heroId, filePath);
                 var changed = false;
 
+                changed |= TryApplyString(row, "description", value => hero.description = value);
                 changed |= TryApplyFloat(row, "maxHealth", value => GetBaseStatsOrThrow(hero, row).maxHealth = value);
                 changed |= TryApplyFloat(row, "attackPower", value => GetBaseStatsOrThrow(hero, row).attackPower = value);
                 changed |= TryApplyFloat(row, "defense", value => GetBaseStatsOrThrow(hero, row).defense = value);
@@ -291,6 +296,7 @@ namespace Fight.Editor
                 var skill = assetIndex.GetSkill(skillId, filePath);
                 var changed = false;
 
+                changed |= TryApplyString(row, "description", value => skill.description = value);
                 changed |= TryApplyFloat(row, "castRange", value => skill.castRange = value);
                 changed |= TryApplyFloat(row, "areaRadius", value => skill.areaRadius = value);
                 changed |= TryApplyFloat(row, "cooldownSeconds", value => skill.cooldownSeconds = value);
@@ -597,6 +603,17 @@ namespace Fight.Editor
             }
 
             apply(ParseIntValue(row, key, raw));
+            return true;
+        }
+
+        private static bool TryApplyString(RowData row, string key, Action<string> apply)
+        {
+            if (!TryGetNonEmptyValue(row, key, out var raw))
+            {
+                return false;
+            }
+
+            apply(raw.Trim());
             return true;
         }
 

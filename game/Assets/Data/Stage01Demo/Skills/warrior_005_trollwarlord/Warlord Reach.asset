@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_trollwarlord_active_warlordreach
   displayName: Warlord Reach
-  description: 'Stage-01 demo skill: temporarily increase attack power and attack
-    range while a current enemy target is close enough.'
+  description: '在近身战中临时强化攻击距离和输出能力。'
   slotType: 0
   activationMode: 0
   skillType: 3

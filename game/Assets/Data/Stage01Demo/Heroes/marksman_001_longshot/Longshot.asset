@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: marksman_001_longshot
   displayName: Longshot
+  description: '远程持续输出射手，依靠稳定射程和连续射击终结目标。'
   heroClass: 5
   tags: 0100000003000000
   baseStats:

@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_lightningmage_ultimate_stormverdict
   displayName: Storm Verdict
-  description: 'Stage-01 demo skill: re-checks all living enemies every second and
-    calls down five global lightning strikes in total.'
+  description: '连续召唤雷击，反复检查敌人并触发感电控制。'
   slotType: 1
   activationMode: 0
   skillType: 1

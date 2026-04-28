@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_shieldwarden_active_wardenscall
   displayName: Warden's Call
-  description: 'Stage-01 demo skill: Warden''s Call'
+  description: '保护受威胁友军，并在敌人贴近时反制击退。'
   slotType: 0
   activationMode: 0
   skillType: 8

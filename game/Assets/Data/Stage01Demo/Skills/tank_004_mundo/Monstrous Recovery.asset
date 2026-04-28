@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_mundo_ultimate_monstrousrecovery
   displayName: Monstrous Recovery
-  description: 'Stage-01 demo skill: rapidly heal self for a short duration based
-    on max health.'
+  description: '短时间快速自愈，强行延长前排站场时间。'
   slotType: 1
   activationMode: 0
   skillType: 3

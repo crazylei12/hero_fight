@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_tidehunter_ultimate_tidalrebound
   displayName: Tidal Rebound
-  description: 'Stage-01 demo skill: Tidal Rebound'
+  description: '释放回卷潮汐，在身边来回打击并控制敌人。'
   slotType: 1
   activationMode: 0
   skillType: 7

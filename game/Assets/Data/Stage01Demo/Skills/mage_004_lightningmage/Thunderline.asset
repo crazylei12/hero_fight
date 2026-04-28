@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_lightningmage_active_thunderline
   displayName: Thunderline
-  description: 'Stage-01 demo skill: fires a narrow lightning lane through the current
-    target direction and seeds a shared shock counter on every damaging hit.'
+  description: '释放直线雷击并叠加感电标记。'
   slotType: 0
   activationMode: 0
   skillType: 1

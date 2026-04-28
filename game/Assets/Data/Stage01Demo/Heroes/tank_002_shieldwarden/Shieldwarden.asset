@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: tank_002_shieldwarden
   displayName: Shieldwarden
+  description: '反开型坦克，擅长保护后排并用群体护盾顶住爆发。'
   heroClass: 3
   tags: 000000000600000008000000
   baseStats:

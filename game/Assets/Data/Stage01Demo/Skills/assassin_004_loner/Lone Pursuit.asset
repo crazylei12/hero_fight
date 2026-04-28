@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_loner_active_lonepursuit
   displayName: Lone Pursuit
-  description: 'Stage-01 demo skill: briefly becomes untargetable, then dives the
-    current lowest-health enemy without extra damage.'
+  description: '短暂规避锁定后扑向残血敌人，完成追击收割。'
   slotType: 0
   activationMode: 0
   skillType: 4

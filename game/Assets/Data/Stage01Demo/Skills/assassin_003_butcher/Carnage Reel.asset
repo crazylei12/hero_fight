@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_butcher_ultimate_carnagereel
   displayName: Carnage Reel
-  description: 'Stage-01 demo skill: yanks every enemy toward the caster and applies
-    team-wide 100% healing reduction.'
+  description: '把敌人强行拉向自己，制造集体近身混战。'
   slotType: 1
   activationMode: 0
   skillType: 3

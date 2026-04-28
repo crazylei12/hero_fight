@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_rifleman_ultimate_fraggrenade
   displayName: Frag Grenade
-  description: 'Stage-01 demo skill: Frag Grenade'
+  description: '投掷爆破弹，处理聚集在一起的敌人。'
   slotType: 1
   activationMode: 0
   skillType: 1

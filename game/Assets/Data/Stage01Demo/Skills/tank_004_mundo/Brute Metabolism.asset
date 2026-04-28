@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_mundo_active_brutemetabolism
   displayName: Brute Metabolism
-  description: 'Stage-01 demo passive skill: periodically heal self based on max
-    health, with stronger recovery at lower health.'
+  description: '被动持续自我回复，低血时回复压力更明显。'
   slotType: 0
   activationMode: 1
   skillType: 3

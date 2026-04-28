@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: mage_001_firemage
   displayName: FIREMAGE
+  description: '范围爆发法师，擅长用火焰区域惩罚聚集的敌人。'
   heroClass: 1
   tags: 010000000200000007000000
   baseStats:

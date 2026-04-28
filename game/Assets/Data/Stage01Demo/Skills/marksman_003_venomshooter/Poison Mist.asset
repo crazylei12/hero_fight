@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_venomshooter_active_poisonmist
   displayName: Poison Mist
-  description: 'Stage-01 demo skill: ranged poison field that rapidly seeds 3 poison
-    stacks across a clustered enemy group.'
+  description: '制造毒雾区域，快速向敌人施加毒性压力。'
   slotType: 0
   activationMode: 0
   skillType: 1

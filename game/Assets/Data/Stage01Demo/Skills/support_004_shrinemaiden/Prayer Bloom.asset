@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_shrinemaiden_active_prayerbloom
   displayName: Prayer Bloom
-  description: 'Stage-01 demo skill: burst-heal one ally, then damage nearby enemies
-    around that anchor.'
+  description: '治疗一个友军，并在其周围对敌人造成伤害。'
   slotType: 0
   activationMode: 0
   skillType: 2

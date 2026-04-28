@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_assassin_active_shadowblink
   displayName: Shadow Blink
-  description: 'Stage-01 demo skill: Shadow Blink'
+  description: '闪现切入关键目标，快速贴近后排。'
   slotType: 0
   activationMode: 0
   skillType: 4

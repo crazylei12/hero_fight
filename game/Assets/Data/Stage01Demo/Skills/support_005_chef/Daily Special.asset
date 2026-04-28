@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_chef_active_dailyspecial
   displayName: Daily Special
-  description: 'Stage-01 demo skill: roll one random snack, then buff the best ally
-    for that food.'
+  description: '随机准备料理，为合适的友军提供增益。'
   slotType: 0
   activationMode: 0
   skillType: 3

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_tidefin_ultimate_ruintide
   displayName: Ruin Tide
-  description: 'Stage-01 demo skill: Ruin Tide'
+  description: '释放潮汐冲击，对周围敌人造成压制性打击。'
   slotType: 1
   activationMode: 0
   skillType: 3

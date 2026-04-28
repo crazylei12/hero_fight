@@ -14,9 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_commander_ultimate_focusfirecommand
   displayName: Focus Fire Command
-  description: 'Stage-01 demo ultimate: mark the enemy high-output unit as the team''s
-    focus target and reduce its defense. If it dies before the command expires, retarget
-    to the next high-output enemy.'
+  description: '标记敌方高威胁目标，引导全队集中攻击。'
   slotType: 1
   activationMode: 0
   skillType: 9

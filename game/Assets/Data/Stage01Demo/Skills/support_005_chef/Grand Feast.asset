@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_chef_ultimate_grandfeast
   displayName: Grand Feast
-  description: 'Stage-01 demo skill: once per match, burst-heal every living ally
-    and layer team sustain buffs.'
+  description: '发动团队盛宴，为全队提供大范围回复。'
   slotType: 1
   activationMode: 0
   skillType: 3

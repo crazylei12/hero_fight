@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: support_002_windchime
   displayName: Windchime
+  description: '反突进辅助，保护受威胁后排并用领域削弱敌方切入。'
   heroClass: 4
   tags: 010000000600000008000000
   baseStats:

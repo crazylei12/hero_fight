@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_loner_ultimate_loneinstinct
   displayName: Lone Instinct
-  description: 'Stage-01 demo passive skill: rejects allied positive effects and
-    snowballs attack power, attack speed, and self-healing on kill participation.'
+  description: '被动拒绝队友正向效果，并在击杀参与后滚起自身强化。'
   slotType: 1
   activationMode: 1
   skillType: 3

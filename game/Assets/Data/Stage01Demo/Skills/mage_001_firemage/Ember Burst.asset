@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_mage_active_emberburst
   displayName: Ember Burst
-  description: 'Stage-01 demo skill: Ember Burst'
+  description: '在目标区域引爆火焰，处理聚集敌人。'
   slotType: 0
   activationMode: 0
   skillType: 1

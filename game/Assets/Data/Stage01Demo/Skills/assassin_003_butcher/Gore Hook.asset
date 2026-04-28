@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_butcher_active_gorehook
   displayName: Gore Hook
-  description: 'Stage-01 demo skill: pulls the backmost enemy into melee range and
-    applies 100% healing reduction.'
+  description: '钩回后排目标并压制其回复能力。'
   slotType: 0
   activationMode: 0
   skillType: 3

@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: support_003_monk
   displayName: Monk
+  description: '近战守护辅助，站在前线用治疗和群体护盾稳住团队。'
   heroClass: 4
   tags: 000000000400000008000000
   baseStats:

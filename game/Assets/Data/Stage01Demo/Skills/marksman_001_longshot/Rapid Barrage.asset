@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_marksman_ultimate_arrowrain
   displayName: Rapid Barrage
-  description: 'Stage-01 demo skill: Rapid Barrage'
+  description: '进入连续射击窗口，对目标持续倾泻火力。'
   slotType: 1
   activationMode: 0
   skillType: 0

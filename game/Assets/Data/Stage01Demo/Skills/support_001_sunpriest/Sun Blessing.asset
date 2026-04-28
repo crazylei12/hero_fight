@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_support_ultimate_blessing
   displayName: Sun Blessing
-  description: 'Stage-01 demo skill: persistent allied healing field.'
+  description: '创造治疗领域，为站在范围内的友军持续恢复。'
   slotType: 1
   activationMode: 0
   skillType: 6

@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: assassin_002_tidefin
   displayName: Tidefin
+  description: '压制型刺客，通过突进与减益持续削弱关键目标。'
   heroClass: 2
   tags: 000000000500000006000000
   baseStats:

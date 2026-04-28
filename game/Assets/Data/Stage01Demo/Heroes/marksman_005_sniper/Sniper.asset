@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: marksman_005_sniper
   displayName: Sniper
+  description: '超远程点杀射手，优先寻找远端目标并逐个狙击。'
   heroClass: 5
   tags: 0100000003000000
   baseStats:

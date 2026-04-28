@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_demon_active_infernalexchange
   displayName: Infernal Exchange
-  description: 'Stage-01 demo skill: swaps positions with the farthest enemy from
-    self without damage or hard control.'
+  description: '与远端敌人交换位置，打乱阵型并创造切入点。'
   slotType: 0
   activationMode: 0
   skillType: 4

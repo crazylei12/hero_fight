@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: marksman_003_venomshooter
   displayName: Venomshooter
+  description: '持续伤害射手，给敌人叠加毒性压力并引爆连锁伤害。'
   heroClass: 5
   tags: 010000000300000007000000
   baseStats:

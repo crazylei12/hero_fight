@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_assassin_ultimate_smokeveil
   displayName: Smoke Veil
-  description: 'Stage-01 demo skill: Smoke Veil'
+  description: '制造隐蔽窗口，让刺客更安全地切入或脱离。'
   slotType: 1
   activationMode: 0
   skillType: 3

@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_sandemperor_ultimate_imperialencirclement
   displayName: Imperial Encirclement
-  description: 'Stage-01 demo skill: instantly rebuilds the sandguard line around
-    every living enemy and triggers one opening strike.'
+  description: '重建沙卫阵线，围绕敌方制造一轮爆发压制。'
   slotType: 1
   activationMode: 0
   skillType: 3

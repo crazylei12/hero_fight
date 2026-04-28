@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_tank_ultimate_ironoath
   displayName: Iron Oath
-  description: 'Stage-01 demo skill: Iron Oath'
+  description: '为全队提供防御强化，支撑关键团战窗口。'
   slotType: 1
   activationMode: 0
   skillType: 3

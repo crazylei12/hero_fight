@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_tank_active_shieldbash
   displayName: Bulwark Bond
-  description: 'Stage-01 demo skill: Bulwark Bond'
+  description: '为附近友军建立分担保护，帮助团队承受爆发。'
   slotType: 0
   activationMode: 0
   skillType: 3

@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_shrinemaiden_ultimate_twinritetotem
   displayName: Twin Rite Totem
-  description: 'Stage-01 demo skill: deploy a short-lived totem beside Shrinemaiden
-    that rapidly repeats her alternating attack sequence across the full map.'
+  description: '部署图腾，扩大自身轮转攻击和治疗的覆盖。'
   slotType: 1
   activationMode: 0
   skillType: 3

@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_spellblade_ultimate_boundblade
   displayName: "\u7F1A\u9635\u9B54\u5251"
-  description: 'Stage-01 demo skill: leave a fixed cursed sword at the current fight
-    point that pulses every second and drags nearby enemies inward.'
+  description: '在战场留下魔剑领域，持续伤害并牵制附近敌人。'
   slotType: 1
   activationMode: 0
   skillType: 3

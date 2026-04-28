@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_tidehunter_active_undertowcarapace
   displayName: Undertow Carapace
-  description: 'Stage-01 demo passive skill: recent direct hostile damage sources
-    increase defense.'
+  description: '被动根据近期承受的敌方压力提高自身防御。'
   slotType: 0
   activationMode: 1
   skillType: 3

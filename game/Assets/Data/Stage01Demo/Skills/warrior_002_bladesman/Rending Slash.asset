@@ -14,8 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_bladesman_active_rendingslash
   displayName: "\u88C2\u7532\u65A9"
-  description: 'Stage-01 demo skill: apply defense down before dealing a heavy single-target
-    strike.'
+  description: '先削弱目标防御，再打出一次沉重斩击。'
   slotType: 0
   activationMode: 0
   skillType: 0
