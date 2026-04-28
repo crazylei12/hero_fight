@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_boomeranger_ultimate_wheelstorm
   displayName: Wheelstorm
-  description: '让回旋轮环绕自身，持续切割附近敌人。'
+  description: "\u8BA9\u56DE\u65CB\u8F6E\u73AF\u7ED5\u81EA\u8EAB\uFF0C\u6301\u7EED\u5207\u5272\u9644\u8FD1\u654C\u4EBA\u3002"
   slotType: 1
   activationMode: 0
   skillType: 1
@@ -63,8 +63,8 @@ MonoBehaviour:
       activeSkillCooldownCapSeconds: 0
       tickIntervalSeconds: 1
       maxStacks: 1
-      stackGroupKey: 
-      statusThemeKey: 
+      stackGroupKey:
+      statusThemeKey:
       refreshDurationOnReapply: 1
     triggerStatusEffects: []
   castRange: 0
@@ -76,7 +76,7 @@ MonoBehaviour:
     targetMode: 0
     powerMultiplier: 1.2
     statusStackQueryEffectType: 0
-    statusStackQueryThemeKey: 
+    statusStackQueryThemeKey:
     minimumRequiredStatusStacks: 0
     bonusPowerMultiplierPerStatusStack: 0
     consumeQueriedStatusesOnHit: 0
@@ -92,6 +92,16 @@ MonoBehaviour:
     followUpAreaStatusEffects: []
     followUpAreaCanChain: 1
     followUpAreaLimitTriggerOncePerUnitPerExecution: 1
+    areaVfxPrefabOverride: {fileID: 0}
+    areaVfxScaleMultiplierOverride: 0
+    areaVfxEulerAnglesOverride: {x: 0, y: 0, z: 0}
+    pulseCreatesDelayedAreaImpact: 0
+    delayedAreaImpactDelaySeconds: 0
+    delayedAreaImpactRadiusOverride: 0
+    delayedAreaImpactPowerMultiplier: 0
+    delayedAreaImpactVfxPrefab: {fileID: 0}
+    delayedAreaImpactVfxScaleMultiplierOverride: 0
+    delayedAreaImpactVfxEulerAnglesOverride: {x: 0, y: 0, z: 0}
     deployableProxySpawnMode: 0
     deployableProxyTriggerMode: 0
     deployableProxyStrikeRadius: 0
@@ -123,7 +133,7 @@ MonoBehaviour:
     returningPathWidth: 0
     returningPathDelaySeconds: 0
     formOverride:
-      formKey: 
+      formKey:
       durationSeconds: 0
       expiresOnDeath: 1
       overrideUsesProjectile: 0
@@ -173,6 +183,8 @@ MonoBehaviour:
     forcedMovementDurationSeconds: 0
     forcedMovementPeakHeight: 0
     onTriggerStatusEffects: []
+  selfCurrentHealthCostRatio: 0
+  minimumSelfHealthAfterCost: 1
   actionSequence:
     enabled: 0
     payloadType: 0
@@ -190,6 +202,10 @@ MonoBehaviour:
     durationSeconds: 0
     lifestealMode: 0
     lifestealRatio: 0
+    overrideBasicAttackOnHitEffect: 0
+    basicAttackOnHitBonusDamagePowerMultiplier: 0
+    basicAttackOnHitSelfHealBasePowerMultiplier: 0
+    basicAttackOnHitSelfHealMissingHealthPowerMultiplier: 0
     visualScaleMultiplier: 1
     visualTintColor: {r: 1, g: 1, b: 1, a: 1}
     visualTintStrength: 0
@@ -227,7 +243,7 @@ MonoBehaviour:
       highValueTargetType: 0
       heroClassFilter: 2
       statusEffectTypeFilter: 0
-      statusThemeKey: 
+      statusThemeKey:
       minimumStatusStacks: 1
       requireTargetInCastRange: 1
     secondaryCondition:
@@ -239,7 +255,7 @@ MonoBehaviour:
       highValueTargetType: 0
       heroClassFilter: 2
       statusEffectTypeFilter: 0
-      statusThemeKey: 
+      statusThemeKey:
       minimumStatusStacks: 1
       requireTargetInCastRange: 1
     fallback:
@@ -259,7 +275,7 @@ MonoBehaviour:
         highValueTargetType: 0
         heroClassFilter: 2
         statusEffectTypeFilter: 0
-        statusThemeKey: 
+        statusThemeKey:
         minimumStatusStacks: 1
         requireTargetInCastRange: 1
       alternateSecondaryCondition:
@@ -271,7 +287,7 @@ MonoBehaviour:
         highValueTargetType: 0
         heroClassFilter: 2
         statusEffectTypeFilter: 0
-        statusThemeKey: 
+        statusThemeKey:
         minimumStatusStacks: 1
         requireTargetInCastRange: 1
     combineMode: 0

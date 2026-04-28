@@ -40,7 +40,7 @@ MonoBehaviour:
       maxAdditionalTargets: 0
       searchRadius: 0
       powerMultiplier: 0
-      bounceVariantKey: 
+      bounceVariantKey:
     sameTargetStacking:
       enabled: 0
       maxStacks: 1
@@ -61,9 +61,9 @@ MonoBehaviour:
   ultimateSkill: {fileID: 11400000, guid: 72569ada70cd47a4bba8357c8c0826c8, type: 2}
   aiTemplateId: mage_default
   usesSpecialLogic: 0
-  specialLogicNotes: 
+  specialLogicNotes:
   visualConfig:
-    portrait: {fileID: 21300000, guid: 1987f035dffdec944be68d9ecb5b2cd4, type: 3}
+    portrait: {fileID: 21300000, guid: 3f8bc194265a5784a83382cd9a3d7426, type: 3}
     battlePrefab: {fileID: 4522363119892989717, guid: 8d4351380d136354f9cf7d57984e326c, type: 3}
     animatorController: {fileID: 0}
     battlePrefabFacesLeftByDefault: 0
