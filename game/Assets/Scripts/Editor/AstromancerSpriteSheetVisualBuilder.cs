@@ -453,7 +453,7 @@ namespace Fight.Editor
             var min = Mathf.Min(color.r, Mathf.Min(color.g, color.b));
             var max = Mathf.Max(color.r, Mathf.Max(color.g, color.b));
             var average = (color.r + color.g + color.b) / 3f;
-            return average >= 236f && max - min <= 26;
+            return average >= 208f && max - min <= 58;
         }
 
         private static bool TryLoadTexture(string assetPath, out Texture2D texture)
