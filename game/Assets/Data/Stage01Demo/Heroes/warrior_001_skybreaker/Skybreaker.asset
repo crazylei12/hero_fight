@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: warrior_001_skybreaker
   displayName: Skybreaker
-  description: '突进型战士，擅长切入战场并用控制打乱敌方阵型。'
+  description: '冲阵型战士，开局倾向主动贴近敌方核心，用突进和震地控制打散站位。适合需要先手开团、压缩敌方后排空间的阵容，但需要队友及时跟上输出。如果缺少后续控制，开团收益会明显下降。'
   heroClass: 0
   tags: 000000000500000006000000
   baseStats:

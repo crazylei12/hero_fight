@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: assassin_005_demon
   displayName: Demon
-  description: '变身型刺客，通过换位制造混乱，并在恶魔形态中持续追击。'
+  description: '变身型刺客，通过换位制造混乱并逼迫敌方阵型脱节，恶魔形态下持续追击能力更强。适合扰乱后排，但需要承担较高进场风险；如果换位后无人跟进，自己也容易被包围。'
   heroClass: 2
   tags: 000000000500000003000000
   baseStats:

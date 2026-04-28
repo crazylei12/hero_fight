@@ -132,7 +132,7 @@ BP 需要新增或整理的会话状态包括：
 
 允许做法：
 - BP UI 读取 `HeroDefinition`、`SkillData`、`HeroStatsData` 和头像资源
-- BP UI 使用 `HeroDefinition.description` 作为英雄简短介绍，使用 `SkillData.description` 作为小技能 / 大招简短说明；这两类说明只服务展示，不参与战斗规则
+- BP UI 使用 `HeroDefinition.description` 作为英雄介绍，建议约 80 字；使用 `SkillData.description` 作为小技能 / 大招简短说明；这两类说明只服务展示，不参与战斗规则
 - BP UI 读取选手基础属性、选手特性和选手头像资源
 - BP 完成后组装 `BattleInputConfig`
 - BP 完成后组装选手-英雄绑定结果，并交给统一战斗输入桥接层

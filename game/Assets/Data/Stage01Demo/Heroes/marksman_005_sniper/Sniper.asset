@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: marksman_005_sniper
   displayName: Sniper
-  description: '超远程点杀射手，优先寻找远端目标并逐个狙击。'
+  description: '超远程点杀射手，优先寻找远端目标并逐个狙击，能迫使敌方后排承受持续压力。适合保护严密的阵容，被突进时很脆弱。阵容需要提前规划保护线，否则容易被刺客针对。'
   heroClass: 5
   tags: 0100000003000000
   baseStats:

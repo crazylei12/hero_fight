@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: support_005_chef
   displayName: Chef
-  description: '随机增益辅助，用不同料理强化队友并提供团队回复。'
+  description: '随机增益辅助，用不同料理强化合适的队友，并在关键时刻提供团队回复。适合灵活阵容，效果不完全稳定但上限很高。在 BP 中适合作为万金油支援，但不能完全替代稳定治疗。'
   heroClass: 4
   tags: 010000000400000008000000
   baseStats:

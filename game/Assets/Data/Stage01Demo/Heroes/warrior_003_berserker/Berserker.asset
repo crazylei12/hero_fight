@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: warrior_003_berserker
   displayName: Berserker
-  description: '持续作战型战士，血量越危险越凶，适合在前排缠斗。'
+  description: '持续作战型战士，血线越低越能打出威胁，适合在前排长时间缠斗并吸引火力。队友提供保护时，他能把危险局面拖成反打机会，但不适合被远程阵容长期拉扯。'
   heroClass: 0
   tags: 000000000300000008000000
   baseStats:

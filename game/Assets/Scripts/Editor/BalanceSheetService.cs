@@ -35,7 +35,7 @@ namespace Fight.Editor
         {
             new("heroId", "英雄ID", "唯一且稳定的英雄ID，用来定位资产。"),
             new("displayName", "英雄名", "显示名，主要用于人工识别。"),
-            new("description", "英雄说明", "BP 英雄详情面板使用的简短说明，不建议填写具体数值。"),
+            new("description", "英雄说明", "BP 英雄详情面板使用的英雄介绍，建议约 80 字，不建议填写具体数值。"),
             new("heroClass", "职业", "只读说明列，帮助识别英雄职业。"),
             new("maxHealth", "最大生命", "基础最大生命值。"),
             new("attackPower", "攻击力", "基础攻击力。"),

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: support_006_commander
   displayName: Commander
-  description: '指挥型辅助，强化己方核心并引导全队集火高价值目标。'
+  description: '指挥型辅助，强化己方表现突出的核心，并引导全队集火高价值目标。适合围绕单点输出展开战术，让团队伤害更集中。如果队伍已经有明确主输出，他能进一步放大战术重心。'
   heroClass: 4
   tags: 010000000800000006000000
   baseStats:

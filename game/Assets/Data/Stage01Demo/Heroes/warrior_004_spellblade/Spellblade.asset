@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: warrior_004_spellblade
   displayName: Spellblade
-  description: '范围压制型战士，利用剑气和固定魔剑持续挤压敌方站位。'
+  description: '范围压制型战士，依靠剑气和固定魔剑切割战场，让敌人难以舒服站位。适合慢慢挤压阵型，也能在混战中补充稳定范围伤害。队友把敌人留在范围内时收益最高。'
   heroClass: 0
   tags: 000000000700000003000000
   baseStats:

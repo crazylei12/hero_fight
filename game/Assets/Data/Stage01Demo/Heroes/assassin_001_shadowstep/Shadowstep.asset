@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: assassin_001_shadowstep
   displayName: Shadowstep
-  description: '切入型刺客，依靠闪现和隐蔽窗口威胁敌方后排。'
+  description: '切入型刺客，依靠闪现和隐蔽窗口绕过前排，优先威胁敌方后排输出。适合快节奏进攻，但进场时机错误会很快陷入危险，需要队伍在正面牵制敌方注意力，最好搭配能制造正面压力的队友。'
   heroClass: 2
   tags: 000000000500000002000000
   baseStats:

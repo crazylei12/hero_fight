@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: tank_005_blastshield
   displayName: Blastshield
-  description: '布雷型坦克，通过盾牌姿态和雷区限制敌方推进。'
+  description: '布雷型坦克，通过盾牌姿态和雷区限制敌方推进，把战场变成不容易穿越的防线。适合防守阵地，也能惩罚贸然突进。敌人越想从正面突破，越容易被区域限制牵制。'
   heroClass: 3
   tags: 000000000600000007000000
   baseStats:

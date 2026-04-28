@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: assassin_002_tidefin
   displayName: Tidefin
-  description: '压制型刺客，通过突进与减益持续削弱关键目标。'
+  description: '压制型刺客，通过突进与减益持续削弱关键目标，让敌人难以稳定输出或回复。适合盯防核心英雄，也能在混战中补足单点压力，对单核阵容有较强限制作用。'
   heroClass: 2
   tags: 000000000500000006000000
   baseStats:

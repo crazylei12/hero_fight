@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: marksman_004_boomeranger
   displayName: Boomeranger
-  description: '中距离弹射射手，用回旋武器在近身范围内持续切割敌人。'
+  description: '中距离弹射射手，用回旋武器在近身范围内持续切割敌人，适合处理密集阵型。需要保持合适距离，太远或被贴脸都会影响表现。在狭窄交战区域里，他的回旋压力最容易兑现。'
   heroClass: 5
   tags: 010000000300000007000000
   baseStats:

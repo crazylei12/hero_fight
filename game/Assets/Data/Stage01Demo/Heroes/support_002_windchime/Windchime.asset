@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: support_002_windchime
   displayName: Windchime
-  description: '反突进辅助，保护受威胁后排并用领域削弱敌方切入。'
+  description: '反突进辅助，专门保护被威胁的后排，并用领域削弱敌方切入节奏。适合搭配远程核心，在对手强开时提供关键缓冲。她的价值主要体现在阻止敌方第一波切入成功。'
   heroClass: 4
   tags: 010000000600000008000000
   baseStats:

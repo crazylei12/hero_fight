@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: mage_003_sandemperor
   displayName: Sandemperor
-  description: '部署型法师，通过沙卫联动普攻，在战场上建立持续火力点。'
+  description: '部署型法师，通过沙卫配合自身普攻建立持续火力点，越能站住阵地越有价值。适合中后排稳定压制，但需要避免被快速切入；阵线被打乱时，沙卫价值会下降。'
   heroClass: 1
   tags: 010000000300000007000000
   baseStats:

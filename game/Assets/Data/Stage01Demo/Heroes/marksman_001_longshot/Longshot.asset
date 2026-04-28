@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: marksman_001_longshot
   displayName: Longshot
-  description: '远程持续输出射手，依靠稳定射程和连续射击终结目标。'
+  description: '远程持续输出射手，依靠稳定射程和连续射击终结目标，越安全输出越能体现价值。适合前排保护充足的阵容，被贴近时需要队友解围。他不负责开团，更依赖队友创造安全射击环境。'
   heroClass: 5
   tags: 0100000003000000
   baseStats:

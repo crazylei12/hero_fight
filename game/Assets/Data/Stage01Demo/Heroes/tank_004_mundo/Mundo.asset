@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: tank_004_mundo
   displayName: Mundo
-  description: '自愈型坦克，依靠持续回复长时间占住前排。'
+  description: '自愈型坦克，依靠持续回复长时间占住前排，在拉锯战中不断消耗敌方输出资源。适合缺少爆发的对局，但害怕被快速集火压倒；拖到后段时会持续逼迫敌方分配火力。'
   heroClass: 3
   tags: 0000000004000000
   baseStats:

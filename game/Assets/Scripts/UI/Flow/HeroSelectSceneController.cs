@@ -531,9 +531,9 @@ namespace Fight.UI.Flow
                 ? hero.description
                 : "No hero description.";
             var descriptionWidth = Mathf.Max(120f, rect.width - 220f);
-            GUI.Label(new Rect(rect.x + 16f, rect.y + 150f, descriptionWidth, 38f), ClampText(description, 140), smallBodyStyle);
+            GUI.Label(new Rect(rect.x + 16f, rect.y + 150f, descriptionWidth, 64f), ClampText(description, 180), smallBodyStyle);
 
-            var skillY = rect.y + 198f;
+            var skillY = rect.y + 224f;
             var skillHeight = Mathf.Max(42f, (rect.yMax - skillY - 12f) / 2f - 4f);
             DrawSkillSummary(new Rect(rect.x + 16f, skillY, rect.width - 32f, skillHeight), "Skill", hero.activeSkill);
             DrawSkillSummary(new Rect(rect.x + 16f, skillY + skillHeight + 8f, rect.width - 32f, skillHeight), "Ultimate", hero.ultimateSkill);

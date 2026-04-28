@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: tank_003_tidehunter
   displayName: Tidehunter
-  description: '受击成长型坦克，面对多来源攻击时更难被迅速击穿。'
+  description: '受击成长型坦克，面对多来源攻击时会逐渐变得更难击穿，适合站在最前面吸收火力。敌方越想集火，他越能拖住节奏，并为后排争取稳定输出时间，很适合作为团队承接第一波火力的支点。'
   heroClass: 3
   tags: 000000000600000008000000
   baseStats:

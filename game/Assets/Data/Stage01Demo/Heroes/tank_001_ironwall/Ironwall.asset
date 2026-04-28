@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: tank_001_ironwall
   displayName: Ironwall
-  description: '保护型坦克，稳定承伤并为队友提供阵地防护。'
+  description: '保护型坦克，稳定承伤并为队友建立阵地防护，能把敌方爆发分摊成更可控的压力。适合保护核心输出，节奏偏稳。当团队需要稳住阵地而不是强行开团时，他更可靠。'
   heroClass: 3
   tags: 000000000600000008000000
   baseStats:

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: support_003_monk
   displayName: Monk
-  description: '近战守护辅助，站在前线用治疗和群体护盾稳住团队。'
+  description: '近战守护辅助，站在前线用治疗和群体护盾稳住团队，能和坦克一起承接压力。适合抱团推进，也能让前排阵容更难被突破。当队伍愿意抱团作战时，他能稳定抬高容错。'
   heroClass: 4
   tags: 000000000400000008000000
   baseStats:

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: mage_004_lightningmage
   displayName: Lightningmage
-  description: '连锁控制法师，频繁施加感电标记并用雷击打断敌方节奏。'
+  description: '连锁控制法师，频繁施加感电标记并用雷击打断敌方节奏。适合处理多目标混战，在敌人分散时也能保持持续干扰。队伍需要拖慢敌方技能循环时很有价值，在拉扯战里能不断制造小规模优势。'
   heroClass: 1
   tags: 010000000600000003000000
   baseStats:

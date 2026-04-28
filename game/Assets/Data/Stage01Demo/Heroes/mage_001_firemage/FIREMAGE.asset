@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: mage_001_firemage
   displayName: FIREMAGE
-  description: '范围爆发法师，擅长用火焰区域惩罚聚集的敌人。'
+  description: '范围爆发法师，擅长惩罚扎堆敌人，用火焰区域制造高压站位选择。适合配合控制或拉拽打出团战爆点，但自身需要保护。敌方越密集，他的威慑力越明显，也需要队友帮他争取施法空间。'
   heroClass: 1
   tags: 010000000200000007000000
   baseStats:

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: mage_002_frostmage
   displayName: Frostmage
-  description: '控场法师，依靠冰霜区域减缓敌人推进并制造群体伤害。'
+  description: '控场法师，依靠冰霜区域减缓敌人推进，让前排和射手获得更安全的输出窗口。适合防守反打，也能限制突进阵容的节奏，队伍缺少控制时也能补足减速压力。'
   heroClass: 1
   tags: 010000000600000007000000
   baseStats:

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: support_001_sunpriest
   displayName: Sunpriest
-  description: '治疗型辅助，持续为队友提供治疗与护盾支援。'
+  description: '治疗型辅助，持续为队友提供治疗与护盾，让前排和核心输出拥有更长的作战时间。适合稳健阵容，但需要避免被刺客优先处理；一旦站位被切散，保护效率会明显下降。'
   heroClass: 4
   tags: 010000000400000008000000
   baseStats:

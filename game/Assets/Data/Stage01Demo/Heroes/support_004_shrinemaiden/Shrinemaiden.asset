@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: support_004_shrinemaiden
   displayName: Shrinemaiden
-  description: '节奏型辅助，在伤害与治疗之间轮转，并用图腾扩大支援覆盖。'
+  description: '节奏型辅助，在伤害与治疗之间轮转，并用图腾扩大支援覆盖。适合需要持续拉扯的阵容，能同时补足消耗和续航。她不擅长单点爆发，更适合慢慢扩大团队优势。'
   heroClass: 4
   tags: 010000000400000007000000
   baseStats:

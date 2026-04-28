@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: assassin_004_loner
   displayName: Loner
-  description: '收割型刺客，拒绝队友正向保护，依靠单兵追击滚起优势。'
+  description: '收割型刺客，拒绝正向保护换取更强的单兵追击能力，适合在战场边缘寻找残血目标。阵容要给他制造混乱和收割空间，他不依赖队友保护，但很吃目标选择和入场路径。'
   heroClass: 2
   tags: 000000000500000003000000
   baseStats:
