@@ -32,7 +32,7 @@ namespace Fight.UI.Flow
             GUI.Box(panel, string.Empty);
 
             GUI.Label(new Rect(panel.x, panel.y + 36f, panel.width, 54f), "Fight Stage 02", titleStyle);
-            GUI.Label(new Rect(panel.x + 48f, panel.y + 106f, panel.width - 96f, 60f), "当前主通路进入真实 BP：先完成禁用与选择，再进入自动战斗，然后直接看结果页。", subtitleStyle);
+            GUI.Label(new Rect(panel.x + 48f, panel.y + 106f, panel.width - 96f, 60f), "当前主通路进入真实 BP：先完成禁用、选择、队内英雄交换和双方准备，再进入自动战斗，然后直接看结果页。", subtitleStyle);
 
             if (!GameFlowState.HasBattleTemplate)
             {

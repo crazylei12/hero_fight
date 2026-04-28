@@ -17,6 +17,8 @@ namespace Fight.UI.Flow
         private const string PlayerStatusBadArrowTexturePath = "UI/PlayerStatusArrows/player_status_bad_down";
 
         private HeroDefinition highlightedHero;
+        private TeamSide? swapSourceSide;
+        private int swapSourceIndex = -1;
         private bool classFilterActive;
         private HeroClass classFilter;
         private Sprite playerStatusGoodArrowSprite;
@@ -102,14 +104,18 @@ namespace Fight.UI.Flow
             if (GUI.Button(new Rect(rect.x + 140f, rect.y + rect.height - 34f, 112f, 26f), "Reset BP"))
             {
                 GameFlowState.ResetDraft();
+                ClearSwapSelection();
                 highlightedHero = FindFirstCatalogHero();
                 catalogScroll = Vector2.zero;
                 SetDraftNotice("BP has been reset.");
             }
 
-            var canStart = GameFlowState.IsDraftComplete && GameFlowState.HasValidSelections();
+            var canStart = GameFlowState.IsDraftComplete && GameFlowState.CanPrepareBattleInput();
             GUI.enabled = canStart;
-            if (GUI.Button(new Rect(rect.xMax - 148f, rect.y + rect.height - 34f, 132f, 26f), "Start Battle"))
+            var startButtonLabel = GameFlowState.IsDraftComplete && !GameFlowState.AreBothTeamsExchangeReady
+                ? "Waiting Ready"
+                : "Start Battle";
+            if (GUI.Button(new Rect(rect.xMax - 148f, rect.y + rect.height - 34f, 132f, 26f), startButtonLabel))
             {
                 if (GameFlowState.TryPrepareBattleInput(out _))
                 {
@@ -151,8 +157,10 @@ namespace Fight.UI.Flow
             var selection = side == TeamSide.Red ? GameFlowState.RedSelection : GameFlowState.BlueSelection;
             var athletes = side == TeamSide.Red ? GameFlowState.RedAthletes : GameFlowState.BlueAthletes;
             var currentStep = GameFlowState.CurrentDraftStep;
+            var isSwapPhase = GameFlowState.IsDraftComplete;
+            var isTeamReady = GameFlowState.IsTeamExchangeReady(side);
             var slotGap = 8f;
-            var strategyBlockHeight = 74f;
+            var strategyBlockHeight = isSwapPhase ? 106f : 74f;
             var availableSlotHeight = rect.height - 48f - strategyBlockHeight - (slotGap * (BattleInputConfig.DefaultTeamSize - 1));
             var slotHeight = Mathf.Clamp(availableSlotHeight / BattleInputConfig.DefaultTeamSize, 68f, 112f);
             for (var i = 0; i < BattleInputConfig.DefaultTeamSize; i++)
@@ -164,10 +172,21 @@ namespace Fight.UI.Flow
                     && currentStep.ActionType == BattleDraftActionType.Pick
                     && currentStep.Side == side
                     && currentStep.SlotIndex == i;
-                DrawTeamSlot(slotRect, i, hero, athlete, isCurrent, accentColor);
+                var isSwapSource = swapSourceSide.HasValue && swapSourceSide.Value == side && swapSourceIndex == i;
+                DrawTeamSlot(slotRect, i, hero, athlete, isCurrent, isSwapSource, isTeamReady, accentColor);
+                if (isSwapPhase && !isTeamReady && hero != null && GUI.Button(slotRect, GUIContent.none, heroCardButtonStyle))
+                {
+                    HandleSwapSlotClicked(side, i);
+                }
             }
 
             var strategyY = rect.yMax - strategyBlockHeight;
+            if (isSwapPhase)
+            {
+                DrawExchangeReadyControls(new Rect(rect.x + 14f, strategyY, rect.width - 28f, 26f), side);
+                strategyY += 32f;
+            }
+
             DrawStrategySelector(
                 new Rect(rect.x + 14f, strategyY, rect.width - 28f, 24f),
                 "Ult Timing",
@@ -183,14 +202,16 @@ namespace Fight.UI.Flow
                 () => CycleUltimateComboStrategy(side, 1));
         }
 
-        private void DrawTeamSlot(Rect rect, int index, HeroDefinition hero, AthleteDefinition athlete, bool isCurrent, Color accentColor)
+        private void DrawTeamSlot(Rect rect, int index, HeroDefinition hero, AthleteDefinition athlete, bool isCurrent, bool isSwapSource, bool isTeamReady, Color accentColor)
         {
             var previousColor = GUI.color;
-            GUI.color = Color.Lerp(Color.white, accentColor, isCurrent ? 0.88f : 0.28f);
-            GUI.Box(rect, string.Empty, isCurrent ? focusedSlotStyle : slotStyle);
-            if (isCurrent)
+            var slotAccent = isSwapSource ? new Color(0.26f, 0.78f, 0.42f, 1f) : accentColor;
+            var isFocused = isCurrent || isSwapSource;
+            GUI.color = Color.Lerp(Color.white, slotAccent, isFocused ? 0.88f : isTeamReady ? 0.48f : 0.28f);
+            GUI.Box(rect, string.Empty, isFocused ? focusedSlotStyle : slotStyle);
+            if (isFocused || isTeamReady)
             {
-                GUI.color = new Color(accentColor.r, accentColor.g, accentColor.b, 0.38f);
+                GUI.color = new Color(slotAccent.r, slotAccent.g, slotAccent.b, isTeamReady && !isFocused ? 0.2f : 0.38f);
                 GUI.DrawTexture(new Rect(rect.x + 2f, rect.y + 2f, rect.width - 4f, rect.height - 4f), Texture2D.whiteTexture);
                 GUI.color = new Color(1f, 1f, 1f, 0.14f);
                 GUI.DrawTexture(new Rect(rect.x + 2f, rect.y + 2f, rect.width - 4f, 3f), Texture2D.whiteTexture);
@@ -220,7 +241,13 @@ namespace Fight.UI.Flow
             GUI.Label(nameRect, GetAthleteDisplayName(athlete), bodyStyle);
             DrawAthleteConditionArrow(new Rect(rect.xMax - padding - statusSize, rect.y + 5f, statusSize, statusSize), athlete);
 
-            DrawAthleteTraitRows(new Rect(infoX, contentY, infoWidth, topContentHeight));
+            var heroNameHeight = Mathf.Min(compact ? 14f : 17f, topContentHeight);
+            GUI.Label(new Rect(infoX, contentY, infoWidth, heroNameHeight), hero != null ? hero.displayName : "Waiting pick", smallBodyStyle);
+            var traitRect = new Rect(infoX, contentY + heroNameHeight + 2f, infoWidth, topContentHeight - heroNameHeight - 2f);
+            if (traitRect.height >= 12f)
+            {
+                DrawAthleteTraitRows(traitRect);
+            }
 
             var masteryBonus = GetSelectedHeroMastery(athlete, hero);
             var statWidth = (rect.width - (padding * 2f) - 6f) * 0.5f;
@@ -405,6 +432,34 @@ namespace Fight.UI.Flow
             }
         }
 
+        private void DrawExchangeReadyControls(Rect rect, TeamSide side)
+        {
+            var ready = GameFlowState.IsTeamExchangeReady(side);
+            var statusText = ready ? "Ready locked" : "Swap heroes";
+            GUI.Label(new Rect(rect.x, rect.y, 96f, rect.height), statusText, smallBodyStyle);
+
+            var previousEnabled = GUI.enabled;
+            GUI.enabled = GameFlowState.HasValidSelections();
+            var buttonLabel = ready ? "Edit" : "Ready";
+            if (GUI.Button(new Rect(rect.xMax - 78f, rect.y, 78f, rect.height), buttonLabel, strategyButtonStyle))
+            {
+                if (GameFlowState.TrySetTeamExchangeReady(side, !ready))
+                {
+                    ClearSwapSelection(side);
+                    SetDraftNotice(ready
+                        ? $"{GetTeamLabel(side)} can swap heroes again."
+                        : $"{GetTeamLabel(side)} is ready.");
+                }
+            }
+
+            GUI.enabled = previousEnabled;
+
+            var hint = ready
+                ? "Locked until Edit"
+                : "Click two slots";
+            GUI.Box(new Rect(rect.x + 100f, rect.y, rect.width - 184f, rect.height), hint);
+        }
+
         private void DrawStrategySelector(Rect rect, string label, string value, System.Action previous, System.Action next)
         {
             var buttonWidth = 26f;
@@ -461,12 +516,66 @@ namespace Fight.UI.Flow
             return null;
         }
 
+        private void HandleSwapSlotClicked(TeamSide side, int slotIndex)
+        {
+            if (!GameFlowState.IsDraftComplete || GameFlowState.IsTeamExchangeReady(side))
+            {
+                return;
+            }
+
+            if (!swapSourceSide.HasValue || swapSourceSide.Value != side)
+            {
+                swapSourceSide = side;
+                swapSourceIndex = slotIndex;
+                SetDraftNotice($"{GetTeamLabel(side)} selected slot {slotIndex + 1}. Pick another slot to swap.");
+                return;
+            }
+
+            if (swapSourceIndex == slotIndex)
+            {
+                ClearSwapSelection();
+                SetDraftNotice("Swap selection cleared.");
+                return;
+            }
+
+            var firstIndex = swapSourceIndex;
+            if (GameFlowState.TrySwapDraftHeroes(side, firstIndex, slotIndex))
+            {
+                ClearSwapSelection();
+                SetDraftNotice($"{GetTeamLabel(side)} swapped slots {firstIndex + 1} and {slotIndex + 1}.");
+                return;
+            }
+
+            SetDraftNotice("Cannot swap these slots.");
+        }
+
+        private void ClearSwapSelection()
+        {
+            swapSourceSide = null;
+            swapSourceIndex = -1;
+        }
+
+        private void ClearSwapSelection(TeamSide side)
+        {
+            if (swapSourceSide.HasValue && swapSourceSide.Value == side)
+            {
+                ClearSwapSelection();
+            }
+        }
+
         private string GetPhaseLabel()
         {
             var step = GameFlowState.CurrentDraftStep;
             if (step == null)
             {
-                return "BP Complete - Ready To Battle";
+                if (GameFlowState.AreBothTeamsExchangeReady)
+                {
+                    return "Both Teams Ready - Start Battle";
+                }
+
+                var blueState = GameFlowState.IsTeamExchangeReady(TeamSide.Blue) ? "Blue Ready" : "Blue Swapping";
+                var redState = GameFlowState.IsTeamExchangeReady(TeamSide.Red) ? "Red Ready" : "Red Swapping";
+                return $"Hero Swap Phase - {blueState} / {redState}";
             }
 
             var side = step.Side == TeamSide.Blue ? "Blue" : "Red";
@@ -475,12 +584,17 @@ namespace Fight.UI.Flow
             return $"{side} {action} {step.SlotIndex + 1}/{total}";
         }
 
+        private static string GetTeamLabel(TeamSide side)
+        {
+            return side == TeamSide.Red ? "Red" : "Blue";
+        }
+
         private string GetConfirmButtonLabel()
         {
             var step = GameFlowState.CurrentDraftStep;
             if (step == null)
             {
-                return "BP Complete";
+                return "Swap Phase";
             }
 
             return step.ActionType == BattleDraftActionType.Ban ? "Confirm Ban" : "Confirm Pick";
@@ -505,7 +619,7 @@ namespace Fight.UI.Flow
                 return $"Already picked by {pickedSide.Value}.";
             }
 
-            return GameFlowState.IsDraftComplete ? "Draft complete." : "Available.";
+            return GameFlowState.IsDraftComplete ? "Swap phase: use team slots." : "Available.";
         }
 
         private static string BuildHeroTagLine(IReadOnlyList<HeroTag> tags)

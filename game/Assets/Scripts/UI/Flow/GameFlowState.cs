@@ -63,6 +63,8 @@ namespace Fight.UI.Flow
         private static List<AthleteDefinition> redAthletes;
         private static List<HeroDefinition> blueBans;
         private static List<HeroDefinition> redBans;
+        private static bool blueExchangeReady;
+        private static bool redExchangeReady;
         private static int draftStepIndex;
         private static bool draftInitialized;
         private static BattleUltimateTimingStrategy blueUltimateTimingStrategy = BattleUltimateTimingStrategy.Standard;
@@ -161,6 +163,8 @@ namespace Fight.UI.Flow
             }
         }
 
+        public static bool AreBothTeamsExchangeReady => blueExchangeReady && redExchangeReady;
+
         public static BattleResultData LastBattleResult { get; private set; }
 
         public static string LastBattleLogSessionId => lastBattleLogSessionId;
@@ -219,6 +223,8 @@ namespace Fight.UI.Flow
             EnsureAthleteRostersInitialized();
             blueBans = CreateEmptyBanList();
             redBans = CreateEmptyBanList();
+            blueExchangeReady = false;
+            redExchangeReady = false;
             draftStepIndex = 0;
             draftInitialized = true;
             pendingBattleInput = null;
@@ -245,6 +251,8 @@ namespace Fight.UI.Flow
             EnsureAthleteRostersInitialized();
             blueBans = CreateEmptyBanList();
             redBans = CreateEmptyBanList();
+            blueExchangeReady = true;
+            redExchangeReady = true;
             draftStepIndex = DraftSteps.Length;
             draftInitialized = false;
             pendingBattleInput = null;
@@ -293,6 +301,7 @@ namespace Fight.UI.Flow
             }
 
             draftStepIndex++;
+            pendingBattleInput = null;
             return true;
         }
 
@@ -303,6 +312,63 @@ namespace Fight.UI.Flow
                 && !IsDraftComplete
                 && !IsHeroBanned(hero)
                 && !IsHeroPicked(hero);
+        }
+
+        public static bool IsTeamExchangeReady(TeamSide side)
+        {
+            return side == TeamSide.Red ? redExchangeReady : blueExchangeReady;
+        }
+
+        public static bool TrySetTeamExchangeReady(TeamSide side, bool isReady)
+        {
+            EnsureDraftInitialized();
+            if (isReady && (!IsDraftComplete || !HasValidSelections()))
+            {
+                return false;
+            }
+
+            if (side == TeamSide.Red)
+            {
+                redExchangeReady = isReady;
+            }
+            else
+            {
+                blueExchangeReady = isReady;
+            }
+
+            pendingBattleInput = null;
+            return true;
+        }
+
+        public static bool CanSwapDraftHeroes(TeamSide side, int firstSlotIndex, int secondSlotIndex)
+        {
+            EnsureDraftInitialized();
+            if (!IsDraftComplete || IsTeamExchangeReady(side) || firstSlotIndex == secondSlotIndex)
+            {
+                return false;
+            }
+
+            var team = side == TeamSide.Red ? redSelection : blueSelection;
+            return HasSelectionSlots(team)
+                && IsValidTeamSlot(firstSlotIndex)
+                && IsValidTeamSlot(secondSlotIndex)
+                && team[firstSlotIndex] != null
+                && team[secondSlotIndex] != null;
+        }
+
+        public static bool TrySwapDraftHeroes(TeamSide side, int firstSlotIndex, int secondSlotIndex)
+        {
+            if (!CanSwapDraftHeroes(side, firstSlotIndex, secondSlotIndex))
+            {
+                return false;
+            }
+
+            var team = side == TeamSide.Red ? redSelection : blueSelection;
+            var firstHero = team[firstSlotIndex];
+            team[firstSlotIndex] = team[secondSlotIndex];
+            team[secondSlotIndex] = firstHero;
+            pendingBattleInput = null;
+            return true;
         }
 
         public static bool IsHeroBanned(HeroDefinition hero)
@@ -359,6 +425,10 @@ namespace Fight.UI.Flow
             }
 
             team[slotIndex] = hero;
+            if (draftInitialized)
+            {
+                TrySetTeamExchangeReady(side, false);
+            }
         }
 
         public static void ClearSelectedHero(TeamSide side, int slotIndex)
@@ -412,10 +482,21 @@ namespace Fight.UI.Flow
                 && IsAthleteTeamReady(redAthletes);
         }
 
+        public static bool CanPrepareBattleInput()
+        {
+            if (!HasValidSelections())
+            {
+                return false;
+            }
+
+            return !draftInitialized
+                || (draftStepIndex >= DraftSteps.Length && AreBothTeamsExchangeReady);
+        }
+
         public static bool TryPrepareBattleInput(out BattleInputConfig input)
         {
             input = null;
-            if (!HasValidSelections())
+            if (!CanPrepareBattleInput())
             {
                 return false;
             }
@@ -679,6 +760,11 @@ namespace Fight.UI.Flow
         private static bool HasBanSlots(IList<HeroDefinition> source)
         {
             return source != null && source.Count == DraftBansPerSide;
+        }
+
+        private static bool IsValidTeamSlot(int slotIndex)
+        {
+            return slotIndex >= 0 && slotIndex < BattleInputConfig.DefaultTeamSize;
         }
 
         private static bool IsSelectionReady(IList<HeroDefinition> source)
