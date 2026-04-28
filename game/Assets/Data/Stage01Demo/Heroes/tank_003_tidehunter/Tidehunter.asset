@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: tank_003_tidehunter
   displayName: Tidehunter
-  description: '受击成长型坦克，面对多来源攻击时会逐渐变得更难击穿，适合站在最前面吸收火力。敌方越想集火，他越能拖住节奏，并为后排争取稳定输出时间，很适合作为团队承接第一波火力的支点。'
+  description: "\u53D7\u51FB\u6210\u957F\u578B\u5766\u514B\uFF0C\u9762\u5BF9\u591A\u6765\u6E90\u653B\u51FB\u65F6\u4F1A\u9010\u6E10\u53D8\u5F97\u66F4\u96BE\u51FB\u7A7F\uFF0C\u9002\u5408\u7AD9\u5728\u6700\u524D\u9762\u5438\u6536\u706B\u529B\u3002\u654C\u65B9\u8D8A\u60F3\u96C6\u706B\uFF0C\u4ED6\u8D8A\u80FD\u62D6\u4F4F\u8282\u594F\uFF0C\u5E76\u4E3A\u540E\u6392\u4E89\u53D6\u7A33\u5B9A\u8F93\u51FA\u65F6\u95F4\uFF0C\u5F88\u9002\u5408\u4F5C\u4E3A\u56E2\u961F\u627F\u63A5\u7B2C\u4E00\u6CE2\u706B\u529B\u7684\u652F\u70B9\u3002"
   heroClass: 3
   tags: 000000000600000008000000
   baseStats:
@@ -41,6 +41,20 @@ MonoBehaviour:
       searchRadius: 0
       powerMultiplier: 0
       bounceVariantKey: 
+    sameTargetStacking:
+      enabled: 0
+      maxStacks: 1
+      modifierEffectType: 4
+      magnitudePerStack: 0
+      targetRetentionRange: 0
+      fullStackOverrideStatusEffectType: 0
+    onHitEffect:
+      enabled: 0
+      selfCurrentHealthCostRatio: 0
+      minimumSelfHealthAfterCost: 1
+      bonusDamagePowerMultiplier: 0
+      selfHealBasePowerMultiplier: 0
+      selfHealMissingHealthPowerMultiplier: 0
     onHitStatusEffects: []
     variants: []
   activeSkill: {fileID: 11400000, guid: 051adc9a61f71be4485cb6d996122df1, type: 2}
@@ -49,7 +63,7 @@ MonoBehaviour:
   usesSpecialLogic: 0
   specialLogicNotes: 
   visualConfig:
-    portrait: {fileID: 21300000, guid: ff9fef380ad249d418c478d7c896c267, type: 3}
+    portrait: {fileID: 21300000, guid: 112cf5307af51804aa2105a5259d0844, type: 3}
     battlePrefab: {fileID: 136434259736639523, guid: a731de0f98c7f8d4aa89f10f854d1f23, type: 3}
     animatorController: {fileID: 0}
     battlePrefabFacesLeftByDefault: 0
@@ -59,5 +73,6 @@ MonoBehaviour:
     castVfxPrefab: {fileID: 0}
     hitVfxPrefab: {fileID: 0}
     basicAttackVariantVisuals: []
+    formVisuals: []
     castSfx: {fileID: 0}
   debugNotes: Stage-01 demo hero for Tank.

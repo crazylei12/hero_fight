@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: marksman_004_boomeranger
   displayName: Boomeranger
-  description: '中距离弹射射手，用回旋武器在近身范围内持续切割敌人，适合处理密集阵型。需要保持合适距离，太远或被贴脸都会影响表现。在狭窄交战区域里，他的回旋压力最容易兑现。'
+  description: "\u4E2D\u8DDD\u79BB\u5F39\u5C04\u5C04\u624B\uFF0C\u7528\u56DE\u65CB\u6B66\u5668\u5728\u8FD1\u8EAB\u8303\u56F4\u5185\u6301\u7EED\u5207\u5272\u654C\u4EBA\uFF0C\u9002\u5408\u5904\u7406\u5BC6\u96C6\u9635\u578B\u3002\u9700\u8981\u4FDD\u6301\u5408\u9002\u8DDD\u79BB\uFF0C\u592A\u8FDC\u6216\u88AB\u8D34\u8138\u90FD\u4F1A\u5F71\u54CD\u8868\u73B0\u3002\u5728\u72ED\u7A84\u4EA4\u6218\u533A\u57DF\u91CC\uFF0C\u4ED6\u7684\u56DE\u65CB\u538B\u529B\u6700\u5BB9\u6613\u5151\u73B0\u3002"
   heroClass: 5
   tags: 010000000300000007000000
   baseStats:
@@ -48,6 +48,13 @@ MonoBehaviour:
       magnitudePerStack: 0
       targetRetentionRange: 0
       fullStackOverrideStatusEffectType: 0
+    onHitEffect:
+      enabled: 0
+      selfCurrentHealthCostRatio: 0
+      minimumSelfHealthAfterCost: 1
+      bonusDamagePowerMultiplier: 0
+      selfHealBasePowerMultiplier: 0
+      selfHealMissingHealthPowerMultiplier: 0
     onHitStatusEffects: []
     variants: []
   activeSkill: {fileID: 11400000, guid: 664f4872f51d5bc4587755b4d695fa4a, type: 2}
@@ -56,7 +63,7 @@ MonoBehaviour:
   usesSpecialLogic: 0
   specialLogicNotes: 
   visualConfig:
-    portrait: {fileID: 21300000, guid: aee8de27123073644b194276d1dc85e2, type: 3}
+    portrait: {fileID: 21300000, guid: 2593a697ff6f4d2e9f7477aef2d7ba72, type: 3}
     battlePrefab: {fileID: 618000000000000001, guid: 3867f32fdb6ce6a4ba4f298e8c5ee860, type: 3}
     animatorController: {fileID: 0}
     battlePrefabFacesLeftByDefault: 0

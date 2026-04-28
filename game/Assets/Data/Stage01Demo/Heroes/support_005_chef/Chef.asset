@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: support_005_chef
   displayName: Chef
-  description: '随机增益辅助，用不同料理强化合适的队友，并在关键时刻提供团队回复。适合灵活阵容，效果不完全稳定但上限很高。在 BP 中适合作为万金油支援，但不能完全替代稳定治疗。'
+  description: "\u968F\u673A\u589E\u76CA\u8F85\u52A9\uFF0C\u7528\u4E0D\u540C\u6599\u7406\u5F3A\u5316\u5408\u9002\u7684\u961F\u53CB\uFF0C\u5E76\u5728\u5173\u952E\u65F6\u523B\u63D0\u4F9B\u56E2\u961F\u56DE\u590D\u3002\u9002\u5408\u7075\u6D3B\u9635\u5BB9\uFF0C\u6548\u679C\u4E0D\u5B8C\u5168\u7A33\u5B9A\u4F46\u4E0A\u9650\u5F88\u9AD8\u3002\u5728
+    BP \u4E2D\u9002\u5408\u4F5C\u4E3A\u4E07\u91D1\u6CB9\u652F\u63F4\uFF0C\u4F46\u4E0D\u80FD\u5B8C\u5168\u66FF\u4EE3\u7A33\u5B9A\u6CBB\u7597\u3002"
   heroClass: 4
   tags: 010000000400000008000000
   baseStats:
@@ -48,6 +49,13 @@ MonoBehaviour:
       magnitudePerStack: 0
       targetRetentionRange: 0
       fullStackOverrideStatusEffectType: 0
+    onHitEffect:
+      enabled: 0
+      selfCurrentHealthCostRatio: 0
+      minimumSelfHealthAfterCost: 1
+      bonusDamagePowerMultiplier: 0
+      selfHealBasePowerMultiplier: 0
+      selfHealMissingHealthPowerMultiplier: 0
     onHitStatusEffects:
     - effectType: 6
       durationSeconds: 4
@@ -67,7 +75,7 @@ MonoBehaviour:
   usesSpecialLogic: 0
   specialLogicNotes: 
   visualConfig:
-    portrait: {fileID: 21300000, guid: 8a0fa62c15990a44e9a0e002899ff811, type: 3}
+    portrait: {fileID: 21300000, guid: 188bd9ac365ba3f4793b022efcda8507, type: 3}
     battlePrefab: {fileID: 6176041610525390814, guid: 26085aedba45d8445a9e6c394b203e4f, type: 3}
     animatorController: {fileID: 0}
     battlePrefabFacesLeftByDefault: 0

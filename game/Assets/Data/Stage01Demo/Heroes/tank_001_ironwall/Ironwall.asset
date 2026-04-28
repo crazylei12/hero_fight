@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: tank_001_ironwall
   displayName: Ironwall
-  description: '保护型坦克，稳定承伤并为队友建立阵地防护，能把敌方爆发分摊成更可控的压力。适合保护核心输出，节奏偏稳。当团队需要稳住阵地而不是强行开团时，他更可靠。'
+  description: "\u4FDD\u62A4\u578B\u5766\u514B\uFF0C\u7A33\u5B9A\u627F\u4F24\u5E76\u4E3A\u961F\u53CB\u5EFA\u7ACB\u9635\u5730\u9632\u62A4\uFF0C\u80FD\u628A\u654C\u65B9\u7206\u53D1\u5206\u644A\u6210\u66F4\u53EF\u63A7\u7684\u538B\u529B\u3002\u9002\u5408\u4FDD\u62A4\u6838\u5FC3\u8F93\u51FA\uFF0C\u8282\u594F\u504F\u7A33\u3002\u5F53\u56E2\u961F\u9700\u8981\u7A33\u4F4F\u9635\u5730\u800C\u4E0D\u662F\u5F3A\u884C\u5F00\u56E2\u65F6\uFF0C\u4ED6\u66F4\u53EF\u9760\u3002"
   heroClass: 3
   tags: 000000000600000008000000
   baseStats:
@@ -40,16 +40,30 @@ MonoBehaviour:
       maxAdditionalTargets: 0
       searchRadius: 0
       powerMultiplier: 0
-      bounceVariantKey:
+      bounceVariantKey: 
+    sameTargetStacking:
+      enabled: 0
+      maxStacks: 1
+      modifierEffectType: 4
+      magnitudePerStack: 0
+      targetRetentionRange: 0
+      fullStackOverrideStatusEffectType: 0
+    onHitEffect:
+      enabled: 0
+      selfCurrentHealthCostRatio: 0
+      minimumSelfHealthAfterCost: 1
+      bonusDamagePowerMultiplier: 0
+      selfHealBasePowerMultiplier: 0
+      selfHealMissingHealthPowerMultiplier: 0
     onHitStatusEffects: []
     variants: []
   activeSkill: {fileID: 11400000, guid: edd3f6c38f6acf741858fadfb8076162, type: 2}
   ultimateSkill: {fileID: 11400000, guid: f19b0854986a2c7458cf415e40884521, type: 2}
   aiTemplateId: tank_default
   usesSpecialLogic: 0
-  specialLogicNotes:
+  specialLogicNotes: 
   visualConfig:
-    portrait: {fileID: 21300000, guid: e51a4ac3ab19a864a974db7715b791f0, type: 3}
+    portrait: {fileID: 21300000, guid: cd119fa617ade0845bd2e81235ef823e, type: 3}
     battlePrefab: {fileID: 8201802764806222458, guid: def196cdcafa40847b8ac793bb99dc63, type: 3}
     animatorController: {fileID: 0}
     battlePrefabFacesLeftByDefault: 0
@@ -59,5 +73,6 @@ MonoBehaviour:
     castVfxPrefab: {fileID: 0}
     hitVfxPrefab: {fileID: 0}
     basicAttackVariantVisuals: []
+    formVisuals: []
     castSfx: {fileID: 0}
   debugNotes: Stage-01 demo hero for Tank.

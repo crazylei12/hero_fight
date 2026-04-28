@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: support_002_windchime
   displayName: Windchime
-  description: '反突进辅助，专门保护被威胁的后排，并用领域削弱敌方切入节奏。适合搭配远程核心，在对手强开时提供关键缓冲。她的价值主要体现在阻止敌方第一波切入成功。'
+  description: "\u53CD\u7A81\u8FDB\u8F85\u52A9\uFF0C\u4E13\u95E8\u4FDD\u62A4\u88AB\u5A01\u80C1\u7684\u540E\u6392\uFF0C\u5E76\u7528\u9886\u57DF\u524A\u5F31\u654C\u65B9\u5207\u5165\u8282\u594F\u3002\u9002\u5408\u642D\u914D\u8FDC\u7A0B\u6838\u5FC3\uFF0C\u5728\u5BF9\u624B\u5F3A\u5F00\u65F6\u63D0\u4F9B\u5173\u952E\u7F13\u51B2\u3002\u5979\u7684\u4EF7\u503C\u4E3B\u8981\u4F53\u73B0\u5728\u963B\u6B62\u654C\u65B9\u7B2C\u4E00\u6CE2\u5207\u5165\u6210\u529F\u3002"
   heroClass: 4
   tags: 010000000600000008000000
   baseStats:
@@ -48,6 +48,13 @@ MonoBehaviour:
       magnitudePerStack: 0
       targetRetentionRange: 0
       fullStackOverrideStatusEffectType: 0
+    onHitEffect:
+      enabled: 0
+      selfCurrentHealthCostRatio: 0
+      minimumSelfHealthAfterCost: 1
+      bonusDamagePowerMultiplier: 0
+      selfHealBasePowerMultiplier: 0
+      selfHealMissingHealthPowerMultiplier: 0
     onHitStatusEffects:
     - effectType: 2
       durationSeconds: 3
@@ -67,7 +74,7 @@ MonoBehaviour:
   usesSpecialLogic: 0
   specialLogicNotes: 
   visualConfig:
-    portrait: {fileID: 21300000, guid: 264b852ccea74d44a9e3bf86a22a4844, type: 3}
+    portrait: {fileID: 21300000, guid: 784268a6cad2443f9c09c466cbd47bc2, type: 3}
     battlePrefab: {fileID: 4704310067148659675, guid: 5baa246449d341344b998e5b21529d4e, type: 3}
     animatorController: {fileID: 0}
     battlePrefabFacesLeftByDefault: 0

@@ -10,7 +10,10 @@ namespace Fight.Editor
 {
     public static class HeroPortraitSyncUtility
     {
-        private const string SyncMenuPath = "Fight/Dev/Sync Hero Portraits From Prefab PNGs";
+        private const string SyncMenuPath = "Fight/Dev/Sync Hero Portraits From Idle First Frames";
+        private const string HeroPreviewRoot = "Assets/Resources/HeroPreview";
+        private const string IdleClipFolderName = "Idle";
+        private const string IdleFirstFrameFileName = "idle_00.png";
         private const string PrefabHeroesRoot = "Assets/Prefabs/Heroes";
         private const string FrontPortraitSuffix = "_idle_front";
         private const string MonsterPortraitSuffix = "_idle_monster";
@@ -53,6 +56,11 @@ namespace Fight.Editor
             }
 
             var normalizedAssetPath = assetPath.Replace("\\", "/");
+            if (normalizedAssetPath.StartsWith(HeroPreviewRoot, StringComparison.OrdinalIgnoreCase))
+            {
+                return normalizedAssetPath.EndsWith(".png", StringComparison.OrdinalIgnoreCase);
+            }
+
             if (normalizedAssetPath.StartsWith(PrefabHeroesRoot, StringComparison.OrdinalIgnoreCase))
             {
                 return normalizedAssetPath.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
@@ -177,6 +185,12 @@ namespace Fight.Editor
 
         private static string ResolvePortraitAssetPath(HeroDefinition hero)
         {
+            var idleFirstFramePath = ResolveIdleFirstFrameAssetPath(hero);
+            if (!string.IsNullOrWhiteSpace(idleFirstFramePath))
+            {
+                return idleFirstFramePath;
+            }
+
             foreach (var folderPath in EnumerateCandidatePortraitFolders(hero))
             {
                 if (string.IsNullOrWhiteSpace(folderPath) || !AssetDatabase.IsValidFolder(folderPath))
@@ -192,6 +206,35 @@ namespace Fight.Editor
             }
 
             return null;
+        }
+
+        private static string ResolveIdleFirstFrameAssetPath(HeroDefinition hero)
+        {
+            if (hero == null || string.IsNullOrWhiteSpace(hero.heroId))
+            {
+                return null;
+            }
+
+            var idleFolderPath = $"{HeroPreviewRoot}/{hero.heroId}/{IdleClipFolderName}";
+            var exactFirstFramePath = $"{idleFolderPath}/{IdleFirstFrameFileName}";
+            if (AssetDatabase.LoadAssetAtPath<Texture2D>(exactFirstFramePath) != null)
+            {
+                return exactFirstFramePath;
+            }
+
+            if (!AssetDatabase.IsValidFolder(idleFolderPath))
+            {
+                return null;
+            }
+
+            var idleFramePaths = AssetDatabase.FindAssets("t:Texture2D", new[] { idleFolderPath })
+                .Select(AssetDatabase.GUIDToAssetPath)
+                .Where(path => path.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+                .OrderBy(GetIdleFrameSortKey)
+                .ThenBy(path => path, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            return idleFramePaths.Count > 0 ? idleFramePaths[0] : null;
         }
 
         private static IEnumerable<string> EnumerateCandidatePortraitFolders(HeroDefinition hero)
@@ -291,6 +334,25 @@ namespace Fight.Editor
             }
 
             return null;
+        }
+
+        private static int GetIdleFrameSortKey(string assetPath)
+        {
+            var fileName = Path.GetFileNameWithoutExtension(assetPath);
+            if (string.IsNullOrWhiteSpace(fileName))
+            {
+                return int.MaxValue;
+            }
+
+            var lastSeparatorIndex = fileName.LastIndexOf('_');
+            if (lastSeparatorIndex < 0 || lastSeparatorIndex >= fileName.Length - 1)
+            {
+                return int.MaxValue - 1;
+            }
+
+            return int.TryParse(fileName.Substring(lastSeparatorIndex + 1), out var frameIndex)
+                ? frameIndex
+                : int.MaxValue - 1;
         }
 
         private static string ExtractHeroNameFromId(string heroId)

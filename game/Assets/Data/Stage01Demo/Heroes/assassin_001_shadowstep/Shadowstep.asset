@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: assassin_001_shadowstep
   displayName: Shadowstep
-  description: '切入型刺客，依靠闪现和隐蔽窗口绕过前排，优先威胁敌方后排输出。适合快节奏进攻，但进场时机错误会很快陷入危险，需要队伍在正面牵制敌方注意力，最好搭配能制造正面压力的队友。'
+  description: "\u5207\u5165\u578B\u523A\u5BA2\uFF0C\u4F9D\u9760\u95EA\u73B0\u548C\u9690\u853D\u7A97\u53E3\u7ED5\u8FC7\u524D\u6392\uFF0C\u4F18\u5148\u5A01\u80C1\u654C\u65B9\u540E\u6392\u8F93\u51FA\u3002\u9002\u5408\u5FEB\u8282\u594F\u8FDB\u653B\uFF0C\u4F46\u8FDB\u573A\u65F6\u673A\u9519\u8BEF\u4F1A\u5F88\u5FEB\u9677\u5165\u5371\u9669\uFF0C\u9700\u8981\u961F\u4F0D\u5728\u6B63\u9762\u7275\u5236\u654C\u65B9\u6CE8\u610F\u529B\uFF0C\u6700\u597D\u642D\u914D\u80FD\u5236\u9020\u6B63\u9762\u538B\u529B\u7684\u961F\u53CB\u3002"
   heroClass: 2
   tags: 000000000500000002000000
   baseStats:
@@ -48,6 +48,13 @@ MonoBehaviour:
       magnitudePerStack: 0
       targetRetentionRange: 0
       fullStackOverrideStatusEffectType: 0
+    onHitEffect:
+      enabled: 0
+      selfCurrentHealthCostRatio: 0
+      minimumSelfHealthAfterCost: 1
+      bonusDamagePowerMultiplier: 0
+      selfHealBasePowerMultiplier: 0
+      selfHealMissingHealthPowerMultiplier: 0
     onHitStatusEffects: []
     variants: []
   activeSkill: {fileID: 11400000, guid: 022eddc3b89a3fe4cb4b4bdcf101c47a, type: 2}
@@ -56,7 +63,7 @@ MonoBehaviour:
   usesSpecialLogic: 0
   specialLogicNotes: 
   visualConfig:
-    portrait: {fileID: 21300000, guid: 359efe92f7da4f44b8901c243d752682, type: 3}
+    portrait: {fileID: 21300000, guid: 390b36dcb500493f8b24e54e08e81017, type: 3}
     battlePrefab: {fileID: 6942281271074320862, guid: 56818cfb00350d64b80b18f0e2d27211, type: 3}
     animatorController: {fileID: 0}
     battlePrefabFacesLeftByDefault: 0

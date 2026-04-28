@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: marksman_003_venomshooter
   displayName: Venomshooter
-  description: '持续伤害射手，给敌人叠加毒性压力并寻找引爆时机，适合拉长战斗制造连锁收益。面对低血目标时威胁会迅速放大。他不是瞬间秒杀型角色，更适合持续压低敌方血线。'
+  description: "\u6301\u7EED\u4F24\u5BB3\u5C04\u624B\uFF0C\u7ED9\u654C\u4EBA\u53E0\u52A0\u6BD2\u6027\u538B\u529B\u5E76\u5BFB\u627E\u5F15\u7206\u65F6\u673A\uFF0C\u9002\u5408\u62C9\u957F\u6218\u6597\u5236\u9020\u8FDE\u9501\u6536\u76CA\u3002\u9762\u5BF9\u4F4E\u8840\u76EE\u6807\u65F6\u5A01\u80C1\u4F1A\u8FC5\u901F\u653E\u5927\u3002\u4ED6\u4E0D\u662F\u77AC\u95F4\u79D2\u6740\u578B\u89D2\u8272\uFF0C\u66F4\u9002\u5408\u6301\u7EED\u538B\u4F4E\u654C\u65B9\u8840\u7EBF\u3002"
   heroClass: 5
   tags: 010000000300000007000000
   baseStats:
@@ -48,6 +48,13 @@ MonoBehaviour:
       magnitudePerStack: 0
       targetRetentionRange: 0
       fullStackOverrideStatusEffectType: 0
+    onHitEffect:
+      enabled: 0
+      selfCurrentHealthCostRatio: 0
+      minimumSelfHealthAfterCost: 1
+      bonusDamagePowerMultiplier: 0
+      selfHealBasePowerMultiplier: 0
+      selfHealMissingHealthPowerMultiplier: 0
     onHitStatusEffects:
     - effectType: 14
       durationSeconds: 4
@@ -67,7 +74,7 @@ MonoBehaviour:
   usesSpecialLogic: 0
   specialLogicNotes: 
   visualConfig:
-    portrait: {fileID: 21300000, guid: 04f57e048ad35b643958399670c99034, type: 3}
+    portrait: {fileID: 21300000, guid: d51f4726ab6dcc64ba42741bc69ed68a, type: 3}
     battlePrefab: {fileID: 5383393724801981111, guid: c9f34632d3f3872468846b994227845f, type: 3}
     animatorController: {fileID: 0}
     battlePrefabFacesLeftByDefault: 0

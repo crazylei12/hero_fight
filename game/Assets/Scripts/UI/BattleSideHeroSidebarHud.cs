@@ -14,10 +14,6 @@ namespace Fight.UI
         private const int TeamSize = BattleInputConfig.DefaultTeamSize;
         private const float DesignCardWidth = 139f;
         private const float DesignCardHeight = 88f;
-        private const string MonsterPortraitSuffix = "_idle_monster";
-        private const float PortraitCropTopInsetRatio = 0.18f;
-        private const float PortraitVisibleHeightRatio = 0.50f;
-        private const float PortraitVerticalPlacementBias = 0.15f;
 
         [SerializeField] private float sideMargin = 12f;
         [SerializeField] private float bottomMargin = 12f;
@@ -279,7 +275,7 @@ namespace Fight.UI
                 DisplayName = hero?.Definition != null && !string.IsNullOrWhiteSpace(hero.Definition.displayName)
                     ? hero.Definition.displayName
                     : "Unknown",
-                Portrait = hero?.Definition?.visualConfig != null ? hero.Definition.visualConfig.portrait : null,
+                Portrait = HeroPortraitResolver.ResolvePortrait(hero?.Definition),
                 Kills = hero != null ? hero.Kills : 0,
                 Deaths = hero != null ? hero.Deaths : 0,
                 AssistsText = hero != null ? hero.Assists.ToString() : "0",
@@ -345,52 +341,7 @@ namespace Fight.UI
                 return;
             }
 
-            if (UsesFullFramePortrait(sprite))
-            {
-                DrawContainedSprite(rect, sprite);
-                return;
-            }
-
-            var previousColor = GUI.color;
-            GUI.color = Color.white;
-            var texture = sprite.texture;
-            var textureRect = sprite.textureRect;
-            var visibleHeight = textureRect.height * PortraitVisibleHeightRatio;
-            if (visibleHeight <= Mathf.Epsilon)
-            {
-                visibleHeight = textureRect.height;
-            }
-
-            var topInset = textureRect.height * PortraitCropTopInsetRatio;
-            var maxTopInset = Mathf.Max(0f, textureRect.height - visibleHeight);
-            topInset = Mathf.Clamp(topInset, 0f, maxTopInset);
-
-            var texCoords = new Rect(
-                textureRect.x / texture.width,
-                (textureRect.y + textureRect.height - topInset - visibleHeight) / texture.height,
-                textureRect.width / texture.width,
-                visibleHeight / texture.height);
-
-            var croppedAspect = textureRect.width / visibleHeight;
-            var drawWidth = rect.height * croppedAspect;
-            var drawHeight = rect.height;
-            if (drawWidth < rect.width)
-            {
-                drawWidth = rect.width;
-                drawHeight = rect.width / croppedAspect;
-            }
-
-            var drawX = rect.x + ((rect.width - drawWidth) * 0.5f);
-            var drawY = rect.y + ((rect.height - drawHeight) * PortraitVerticalPlacementBias);
-
-            GUI.BeginGroup(rect);
-            GUI.DrawTextureWithTexCoords(
-                new Rect(drawX - rect.x, drawY - rect.y, drawWidth, drawHeight),
-                texture,
-                texCoords,
-                true);
-            GUI.EndGroup();
-            GUI.color = previousColor;
+            DrawContainedSprite(rect, sprite);
         }
 
         private void DrawContainedSprite(Rect rect, Sprite sprite)
@@ -417,13 +368,6 @@ namespace Fight.UI
 
             GUI.DrawTextureWithTexCoords(drawRect, texture, texCoords, true);
             GUI.color = previousColor;
-        }
-
-        private static bool UsesFullFramePortrait(Sprite sprite)
-        {
-            return sprite != null
-                && !string.IsNullOrWhiteSpace(sprite.name)
-                && sprite.name.EndsWith(MonsterPortraitSuffix, System.StringComparison.OrdinalIgnoreCase);
         }
 
         private void DrawShadowedLabel(Rect rect, string text, GUIStyle style, Color mainColor)

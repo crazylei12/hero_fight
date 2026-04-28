@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: mage_001_firemage
   displayName: FIREMAGE
-  description: '范围爆发法师，擅长惩罚扎堆敌人，用火焰区域制造高压站位选择。适合配合控制或拉拽打出团战爆点，但自身需要保护。敌方越密集，他的威慑力越明显，也需要队友帮他争取施法空间。'
+  description: "\u8303\u56F4\u7206\u53D1\u6CD5\u5E08\uFF0C\u64C5\u957F\u60E9\u7F5A\u624E\u5806\u654C\u4EBA\uFF0C\u7528\u706B\u7130\u533A\u57DF\u5236\u9020\u9AD8\u538B\u7AD9\u4F4D\u9009\u62E9\u3002\u9002\u5408\u914D\u5408\u63A7\u5236\u6216\u62C9\u62FD\u6253\u51FA\u56E2\u6218\u7206\u70B9\uFF0C\u4F46\u81EA\u8EAB\u9700\u8981\u4FDD\u62A4\u3002\u654C\u65B9\u8D8A\u5BC6\u96C6\uFF0C\u4ED6\u7684\u5A01\u6151\u529B\u8D8A\u660E\u663E\uFF0C\u4E5F\u9700\u8981\u961F\u53CB\u5E2E\u4ED6\u4E89\u53D6\u65BD\u6CD5\u7A7A\u95F4\u3002"
   heroClass: 1
   tags: 010000000200000007000000
   baseStats:
@@ -48,6 +48,13 @@ MonoBehaviour:
       magnitudePerStack: 0
       targetRetentionRange: 0
       fullStackOverrideStatusEffectType: 0
+    onHitEffect:
+      enabled: 0
+      selfCurrentHealthCostRatio: 0
+      minimumSelfHealthAfterCost: 1
+      bonusDamagePowerMultiplier: 0
+      selfHealBasePowerMultiplier: 0
+      selfHealMissingHealthPowerMultiplier: 0
     onHitStatusEffects: []
     variants: []
   activeSkill: {fileID: 11400000, guid: 9c31a80c4f67405a878ee99b68729d8f, type: 2}
@@ -56,7 +63,7 @@ MonoBehaviour:
   usesSpecialLogic: 0
   specialLogicNotes: 
   visualConfig:
-    portrait: {fileID: 21300000, guid: f4904f0159806d44ab7757582982355f, type: 3}
+    portrait: {fileID: 21300000, guid: 96917b8711ccabe0b1c8b545310adb4e, type: 3}
     battlePrefab: {fileID: 4522363119892989717, guid: ae4544b969794557e8a440f58cbc4196, type: 3}
     animatorController: {fileID: 0}
     battlePrefabFacesLeftByDefault: 0

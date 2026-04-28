@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: mage_004_lightningmage
   displayName: Lightningmage
-  description: '连锁控制法师，频繁施加感电标记并用雷击打断敌方节奏。适合处理多目标混战，在敌人分散时也能保持持续干扰。队伍需要拖慢敌方技能循环时很有价值，在拉扯战里能不断制造小规模优势。'
+  description: "\u8FDE\u9501\u63A7\u5236\u6CD5\u5E08\uFF0C\u9891\u7E41\u65BD\u52A0\u611F\u7535\u6807\u8BB0\u5E76\u7528\u96F7\u51FB\u6253\u65AD\u654C\u65B9\u8282\u594F\u3002\u9002\u5408\u5904\u7406\u591A\u76EE\u6807\u6DF7\u6218\uFF0C\u5728\u654C\u4EBA\u5206\u6563\u65F6\u4E5F\u80FD\u4FDD\u6301\u6301\u7EED\u5E72\u6270\u3002\u961F\u4F0D\u9700\u8981\u62D6\u6162\u654C\u65B9\u6280\u80FD\u5FAA\u73AF\u65F6\u5F88\u6709\u4EF7\u503C\uFF0C\u5728\u62C9\u626F\u6218\u91CC\u80FD\u4E0D\u65AD\u5236\u9020\u5C0F\u89C4\u6A21\u4F18\u52BF\u3002"
   heroClass: 1
   tags: 010000000600000003000000
   baseStats:
@@ -48,6 +48,13 @@ MonoBehaviour:
       magnitudePerStack: 0
       targetRetentionRange: 0
       fullStackOverrideStatusEffectType: 0
+    onHitEffect:
+      enabled: 0
+      selfCurrentHealthCostRatio: 0
+      minimumSelfHealthAfterCost: 1
+      bonusDamagePowerMultiplier: 0
+      selfHealBasePowerMultiplier: 0
+      selfHealMissingHealthPowerMultiplier: 0
     onHitStatusEffects: []
     variants: []
   activeSkill: {fileID: 11400000, guid: cff2024b405b8a04e9b2101bbe7b9013, type: 2}
@@ -56,7 +63,7 @@ MonoBehaviour:
   usesSpecialLogic: 0
   specialLogicNotes: 
   visualConfig:
-    portrait: {fileID: 21300000, guid: 168c1d8571f342318a44fa4641dfec4f, type: 3}
+    portrait: {fileID: 21300000, guid: 76e51e6fe43e473ba2ba78d90b3ad045, type: 3}
     battlePrefab: {fileID: 192298359185670210, guid: aef095680ce74dd1b5c306d399d4e67d, type: 3}
     animatorController: {fileID: 0}
     battlePrefabFacesLeftByDefault: 0

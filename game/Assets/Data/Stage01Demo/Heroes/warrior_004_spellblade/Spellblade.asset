@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: warrior_004_spellblade
   displayName: Spellblade
-  description: '范围压制型战士，依靠剑气和固定魔剑切割战场，让敌人难以舒服站位。适合慢慢挤压阵型，也能在混战中补充稳定范围伤害。队友把敌人留在范围内时收益最高。'
+  description: "\u8303\u56F4\u538B\u5236\u578B\u6218\u58EB\uFF0C\u4F9D\u9760\u5251\u6C14\u548C\u56FA\u5B9A\u9B54\u5251\u5207\u5272\u6218\u573A\uFF0C\u8BA9\u654C\u4EBA\u96BE\u4EE5\u8212\u670D\u7AD9\u4F4D\u3002\u9002\u5408\u6162\u6162\u6324\u538B\u9635\u578B\uFF0C\u4E5F\u80FD\u5728\u6DF7\u6218\u4E2D\u8865\u5145\u7A33\u5B9A\u8303\u56F4\u4F24\u5BB3\u3002\u961F\u53CB\u628A\u654C\u4EBA\u7559\u5728\u8303\u56F4\u5185\u65F6\u6536\u76CA\u6700\u9AD8\u3002"
   heroClass: 0
   tags: 000000000700000003000000
   baseStats:
@@ -41,6 +41,20 @@ MonoBehaviour:
       searchRadius: 0
       powerMultiplier: 0
       bounceVariantKey: 
+    sameTargetStacking:
+      enabled: 0
+      maxStacks: 1
+      modifierEffectType: 4
+      magnitudePerStack: 0
+      targetRetentionRange: 0
+      fullStackOverrideStatusEffectType: 0
+    onHitEffect:
+      enabled: 0
+      selfCurrentHealthCostRatio: 0
+      minimumSelfHealthAfterCost: 1
+      bonusDamagePowerMultiplier: 0
+      selfHealBasePowerMultiplier: 0
+      selfHealMissingHealthPowerMultiplier: 0
     onHitStatusEffects: []
     variants: []
   activeSkill: {fileID: 11400000, guid: e377819991be420469ac9407cd238b5b, type: 2}
@@ -49,7 +63,7 @@ MonoBehaviour:
   usesSpecialLogic: 0
   specialLogicNotes: 
   visualConfig:
-    portrait: {fileID: 21300000, guid: 001d0e72f489cf4489653065c7842d42, type: 3}
+    portrait: {fileID: 21300000, guid: 09ff0823c6be5594a88a3f48571abb44, type: 3}
     battlePrefab: {fileID: 6830088189284982370, guid: 99969172ed9d3a64aa41fed63c4dbb6b, type: 3}
     animatorController: {fileID: 0}
     battlePrefabFacesLeftByDefault: 0
@@ -59,6 +73,7 @@ MonoBehaviour:
     castVfxPrefab: {fileID: 0}
     hitVfxPrefab: {fileID: 0}
     basicAttackVariantVisuals: []
+    formVisuals: []
     castSfx: {fileID: 0}
   debugNotes: Stage-01 demo hero for Warrior. Spellblade validates current-target
     line strikes and periodic proxy pulses that compress enemy formation toward a

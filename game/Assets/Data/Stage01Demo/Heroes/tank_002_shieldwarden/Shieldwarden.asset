@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: tank_002_shieldwarden
   displayName: Shieldwarden
-  description: '反开型坦克，擅长守住后排并用群体护盾顶住爆发，敌人贴近时还能制造反制空间。适合对抗刺客或强突进阵容。他不追求主动击杀，更适合等敌人先交突进。'
+  description: "\u53CD\u5F00\u578B\u5766\u514B\uFF0C\u64C5\u957F\u5B88\u4F4F\u540E\u6392\u5E76\u7528\u7FA4\u4F53\u62A4\u76FE\u9876\u4F4F\u7206\u53D1\uFF0C\u654C\u4EBA\u8D34\u8FD1\u65F6\u8FD8\u80FD\u5236\u9020\u53CD\u5236\u7A7A\u95F4\u3002\u9002\u5408\u5BF9\u6297\u523A\u5BA2\u6216\u5F3A\u7A81\u8FDB\u9635\u5BB9\u3002\u4ED6\u4E0D\u8FFD\u6C42\u4E3B\u52A8\u51FB\u6740\uFF0C\u66F4\u9002\u5408\u7B49\u654C\u4EBA\u5148\u4EA4\u7A81\u8FDB\u3002"
   heroClass: 3
   tags: 000000000600000008000000
   baseStats:
@@ -36,6 +36,25 @@ MonoBehaviour:
     targetType: 0
     targetPrioritySearchRadius: 0
     startingVariantIndex: 0
+    bounce:
+      maxAdditionalTargets: 0
+      searchRadius: 0
+      powerMultiplier: 0
+      bounceVariantKey: 
+    sameTargetStacking:
+      enabled: 0
+      maxStacks: 1
+      modifierEffectType: 4
+      magnitudePerStack: 0
+      targetRetentionRange: 0
+      fullStackOverrideStatusEffectType: 0
+    onHitEffect:
+      enabled: 0
+      selfCurrentHealthCostRatio: 0
+      minimumSelfHealthAfterCost: 1
+      bonusDamagePowerMultiplier: 0
+      selfHealBasePowerMultiplier: 0
+      selfHealMissingHealthPowerMultiplier: 0
     onHitStatusEffects: []
     variants: []
   activeSkill: {fileID: 11400000, guid: bd122f1945584e24b5808b92f78381b8, type: 2}
@@ -44,7 +63,7 @@ MonoBehaviour:
   usesSpecialLogic: 0
   specialLogicNotes: 
   visualConfig:
-    portrait: {fileID: 21300000, guid: 3756107077ed1d04bb57a3fc4996d52c, type: 3}
+    portrait: {fileID: 21300000, guid: 2549b28b3b14454cb1e2fa50d39b9614, type: 3}
     battlePrefab: {fileID: 392277954102595269, guid: 36202056fd953e847b0a501d889fecaf, type: 3}
     animatorController: {fileID: 0}
     battlePrefabFacesLeftByDefault: 0
@@ -54,5 +73,6 @@ MonoBehaviour:
     castVfxPrefab: {fileID: 0}
     hitVfxPrefab: {fileID: 0}
     basicAttackVariantVisuals: []
+    formVisuals: []
     castSfx: {fileID: 0}
   debugNotes: Stage-01 demo hero for Tank.

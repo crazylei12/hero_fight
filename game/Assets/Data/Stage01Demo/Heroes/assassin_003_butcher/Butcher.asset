@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: assassin_003_butcher
   displayName: Butcher
-  description: '拉拽型刺客，擅长把后排或孤立目标拖入近身战，再用压制回复的手段扩大击杀窗口。适合打乱阵型，但需要队友跟进集火；如果拉到错误目标，后续压力会变小。'
+  description: "\u62C9\u62FD\u578B\u523A\u5BA2\uFF0C\u64C5\u957F\u628A\u540E\u6392\u6216\u5B64\u7ACB\u76EE\u6807\u62D6\u5165\u8FD1\u8EAB\u6218\uFF0C\u518D\u7528\u538B\u5236\u56DE\u590D\u7684\u624B\u6BB5\u6269\u5927\u51FB\u6740\u7A97\u53E3\u3002\u9002\u5408\u6253\u4E71\u9635\u578B\uFF0C\u4F46\u9700\u8981\u961F\u53CB\u8DDF\u8FDB\u96C6\u706B\uFF1B\u5982\u679C\u62C9\u5230\u9519\u8BEF\u76EE\u6807\uFF0C\u540E\u7EED\u538B\u529B\u4F1A\u53D8\u5C0F\u3002"
   heroClass: 2
   tags: 000000000600000005000000
   baseStats:
@@ -48,6 +48,13 @@ MonoBehaviour:
       magnitudePerStack: 0
       targetRetentionRange: 0
       fullStackOverrideStatusEffectType: 0
+    onHitEffect:
+      enabled: 0
+      selfCurrentHealthCostRatio: 0
+      minimumSelfHealthAfterCost: 1
+      bonusDamagePowerMultiplier: 0
+      selfHealBasePowerMultiplier: 0
+      selfHealMissingHealthPowerMultiplier: 0
     onHitStatusEffects: []
     variants: []
   activeSkill: {fileID: 11400000, guid: 09647fa8414deb64cac11f74370feca1, type: 2}
@@ -56,7 +63,7 @@ MonoBehaviour:
   usesSpecialLogic: 0
   specialLogicNotes: 
   visualConfig:
-    portrait: {fileID: 21300000, guid: 271aea3f24a8b4a48a7439df4ea06f5f, type: 3}
+    portrait: {fileID: 21300000, guid: 8484e97d657048d42a7d4b1d4c96ffb3, type: 3}
     battlePrefab: {fileID: 4704310067148659675, guid: 26a45d7bb2b1dc5468597b30e1eaf343, type: 3}
     animatorController: {fileID: 0}
     battlePrefabFacesLeftByDefault: 0

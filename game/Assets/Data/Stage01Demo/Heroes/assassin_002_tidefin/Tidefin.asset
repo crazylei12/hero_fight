@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: assassin_002_tidefin
   displayName: Tidefin
-  description: '压制型刺客，通过突进与减益持续削弱关键目标，让敌人难以稳定输出或回复。适合盯防核心英雄，也能在混战中补足单点压力，对单核阵容有较强限制作用。'
+  description: "\u538B\u5236\u578B\u523A\u5BA2\uFF0C\u901A\u8FC7\u7A81\u8FDB\u4E0E\u51CF\u76CA\u6301\u7EED\u524A\u5F31\u5173\u952E\u76EE\u6807\uFF0C\u8BA9\u654C\u4EBA\u96BE\u4EE5\u7A33\u5B9A\u8F93\u51FA\u6216\u56DE\u590D\u3002\u9002\u5408\u76EF\u9632\u6838\u5FC3\u82F1\u96C4\uFF0C\u4E5F\u80FD\u5728\u6DF7\u6218\u4E2D\u8865\u8DB3\u5355\u70B9\u538B\u529B\uFF0C\u5BF9\u5355\u6838\u9635\u5BB9\u6709\u8F83\u5F3A\u9650\u5236\u4F5C\u7528\u3002"
   heroClass: 2
   tags: 000000000500000006000000
   baseStats:
@@ -48,6 +48,13 @@ MonoBehaviour:
       magnitudePerStack: 0
       targetRetentionRange: 0
       fullStackOverrideStatusEffectType: 0
+    onHitEffect:
+      enabled: 0
+      selfCurrentHealthCostRatio: 0
+      minimumSelfHealthAfterCost: 1
+      bonusDamagePowerMultiplier: 0
+      selfHealBasePowerMultiplier: 0
+      selfHealMissingHealthPowerMultiplier: 0
     onHitStatusEffects:
     - effectType: 2
       durationSeconds: 3
@@ -67,7 +74,7 @@ MonoBehaviour:
   usesSpecialLogic: 0
   specialLogicNotes: 
   visualConfig:
-    portrait: {fileID: 21300000, guid: 789ad08347254d2791023f607dcbfe2a, type: 3}
+    portrait: {fileID: 21300000, guid: 68344ce3c2c043418ba098466646accc, type: 3}
     battlePrefab: {fileID: 4704310067148659675, guid: ac2e4c7f5e3d2b043b8d022b8bc6cc5a, type: 3}
     animatorController: {fileID: 0}
     battlePrefabFacesLeftByDefault: 0

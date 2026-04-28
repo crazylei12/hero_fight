@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: assassin_004_loner
   displayName: Loner
-  description: '收割型刺客，拒绝正向保护换取更强的单兵追击能力，适合在战场边缘寻找残血目标。阵容要给他制造混乱和收割空间，他不依赖队友保护，但很吃目标选择和入场路径。'
+  description: "\u6536\u5272\u578B\u523A\u5BA2\uFF0C\u62D2\u7EDD\u6B63\u5411\u4FDD\u62A4\u6362\u53D6\u66F4\u5F3A\u7684\u5355\u5175\u8FFD\u51FB\u80FD\u529B\uFF0C\u9002\u5408\u5728\u6218\u573A\u8FB9\u7F18\u5BFB\u627E\u6B8B\u8840\u76EE\u6807\u3002\u9635\u5BB9\u8981\u7ED9\u4ED6\u5236\u9020\u6DF7\u4E71\u548C\u6536\u5272\u7A7A\u95F4\uFF0C\u4ED6\u4E0D\u4F9D\u8D56\u961F\u53CB\u4FDD\u62A4\uFF0C\u4F46\u5F88\u5403\u76EE\u6807\u9009\u62E9\u548C\u5165\u573A\u8DEF\u5F84\u3002"
   heroClass: 2
   tags: 000000000500000003000000
   baseStats:
@@ -48,6 +48,13 @@ MonoBehaviour:
       magnitudePerStack: 0
       targetRetentionRange: 0
       fullStackOverrideStatusEffectType: 0
+    onHitEffect:
+      enabled: 0
+      selfCurrentHealthCostRatio: 0
+      minimumSelfHealthAfterCost: 1
+      bonusDamagePowerMultiplier: 0
+      selfHealBasePowerMultiplier: 0
+      selfHealMissingHealthPowerMultiplier: 0
     onHitStatusEffects: []
     variants: []
   activeSkill: {fileID: 11400000, guid: 1c4bc3c665707a84c886409782570bfe, type: 2}
@@ -56,7 +63,7 @@ MonoBehaviour:
   usesSpecialLogic: 0
   specialLogicNotes: 
   visualConfig:
-    portrait: {fileID: 21300000, guid: 7442f7d2e4069c547892d8717b3e557f, type: 3}
+    portrait: {fileID: 21300000, guid: c4898693c18c4824baf4d0ecc1caa963, type: 3}
     battlePrefab: {fileID: 1323718150329148468, guid: 24a970e18ca6e414eac83785b3384229, type: 3}
     animatorController: {fileID: 0}
     battlePrefabFacesLeftByDefault: 0

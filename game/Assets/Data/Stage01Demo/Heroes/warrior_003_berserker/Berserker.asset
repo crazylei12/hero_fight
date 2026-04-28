@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
   heroId: warrior_003_berserker
   displayName: Berserker
-  description: '持续作战型战士，血线越低越能打出威胁，适合在前排长时间缠斗并吸引火力。队友提供保护时，他能把危险局面拖成反打机会，但不适合被远程阵容长期拉扯。'
+  description: "\u6301\u7EED\u4F5C\u6218\u578B\u6218\u58EB\uFF0C\u8840\u7EBF\u8D8A\u4F4E\u8D8A\u80FD\u6253\u51FA\u5A01\u80C1\uFF0C\u9002\u5408\u5728\u524D\u6392\u957F\u65F6\u95F4\u7F20\u6597\u5E76\u5438\u5F15\u706B\u529B\u3002\u961F\u53CB\u63D0\u4F9B\u4FDD\u62A4\u65F6\uFF0C\u4ED6\u80FD\u628A\u5371\u9669\u5C40\u9762\u62D6\u6210\u53CD\u6253\u673A\u4F1A\uFF0C\u4F46\u4E0D\u9002\u5408\u88AB\u8FDC\u7A0B\u9635\u5BB9\u957F\u671F\u62C9\u626F\u3002"
   heroClass: 0
   tags: 000000000300000008000000
   baseStats:
@@ -48,6 +48,13 @@ MonoBehaviour:
       magnitudePerStack: 0
       targetRetentionRange: 0
       fullStackOverrideStatusEffectType: 0
+    onHitEffect:
+      enabled: 0
+      selfCurrentHealthCostRatio: 0
+      minimumSelfHealthAfterCost: 1
+      bonusDamagePowerMultiplier: 0
+      selfHealBasePowerMultiplier: 0
+      selfHealMissingHealthPowerMultiplier: 0
     onHitStatusEffects: []
     variants: []
   activeSkill: {fileID: 11400000, guid: d769703fadf9d2642b9692bb5268ae81, type: 2}
@@ -56,7 +63,7 @@ MonoBehaviour:
   usesSpecialLogic: 0
   specialLogicNotes: 
   visualConfig:
-    portrait: {fileID: 21300000, guid: e45b24c0dae4f2549af5eae45f7eba14, type: 3}
+    portrait: {fileID: 21300000, guid: 6d2740dd086b4031a25a068605c0d8ed, type: 3}
     battlePrefab: {fileID: 192298359185670210, guid: 5ff49e768d360f748a5c7c1f21bc1029, type: 3}
     animatorController: {fileID: 0}
     battlePrefabFacesLeftByDefault: 0
