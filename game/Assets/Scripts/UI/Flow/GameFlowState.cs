@@ -4,16 +4,63 @@ using UnityEngine;
 
 namespace Fight.UI.Flow
 {
+    public enum BattleDraftActionType
+    {
+        Ban = 0,
+        Pick = 1,
+    }
+
+    public sealed class BattleDraftStep
+    {
+        public BattleDraftStep(TeamSide side, BattleDraftActionType actionType, int slotIndex)
+        {
+            Side = side;
+            ActionType = actionType;
+            SlotIndex = slotIndex;
+        }
+
+        public TeamSide Side { get; }
+
+        public BattleDraftActionType ActionType { get; }
+
+        public int SlotIndex { get; }
+    }
+
     public static class GameFlowState
     {
         public const string DefaultInputResourcesPath = "Stage01Demo/Stage01DemoBattleInput";
         public const string DefaultHeroCatalogResourcesPath = "Stage01Demo/Stage01HeroCatalog";
+        public const int DraftBansPerSide = 3;
+
+        private static readonly BattleDraftStep[] DraftSteps =
+        {
+            new BattleDraftStep(TeamSide.Blue, BattleDraftActionType.Ban, 0),
+            new BattleDraftStep(TeamSide.Red, BattleDraftActionType.Ban, 0),
+            new BattleDraftStep(TeamSide.Blue, BattleDraftActionType.Ban, 1),
+            new BattleDraftStep(TeamSide.Red, BattleDraftActionType.Ban, 1),
+            new BattleDraftStep(TeamSide.Blue, BattleDraftActionType.Pick, 0),
+            new BattleDraftStep(TeamSide.Red, BattleDraftActionType.Pick, 0),
+            new BattleDraftStep(TeamSide.Red, BattleDraftActionType.Pick, 1),
+            new BattleDraftStep(TeamSide.Blue, BattleDraftActionType.Pick, 1),
+            new BattleDraftStep(TeamSide.Blue, BattleDraftActionType.Pick, 2),
+            new BattleDraftStep(TeamSide.Red, BattleDraftActionType.Pick, 2),
+            new BattleDraftStep(TeamSide.Red, BattleDraftActionType.Ban, 2),
+            new BattleDraftStep(TeamSide.Blue, BattleDraftActionType.Ban, 2),
+            new BattleDraftStep(TeamSide.Red, BattleDraftActionType.Pick, 3),
+            new BattleDraftStep(TeamSide.Blue, BattleDraftActionType.Pick, 3),
+            new BattleDraftStep(TeamSide.Blue, BattleDraftActionType.Pick, 4),
+            new BattleDraftStep(TeamSide.Red, BattleDraftActionType.Pick, 4),
+        };
 
         private static BattleInputConfig defaultBattleTemplate;
         private static HeroCatalogData defaultHeroCatalog;
         private static List<HeroDefinition> heroCatalog;
         private static List<HeroDefinition> blueSelection;
         private static List<HeroDefinition> redSelection;
+        private static List<HeroDefinition> blueBans;
+        private static List<HeroDefinition> redBans;
+        private static int draftStepIndex;
+        private static bool draftInitialized;
         private static BattleUltimateTimingStrategy blueUltimateTimingStrategy = BattleUltimateTimingStrategy.Standard;
         private static BattleUltimateTimingStrategy redUltimateTimingStrategy = BattleUltimateTimingStrategy.Standard;
         private static BattleUltimateComboStrategy blueUltimateComboStrategy = BattleUltimateComboStrategy.Standard;
@@ -43,6 +90,55 @@ namespace Fight.UI.Flow
             }
         }
 
+        public static IReadOnlyList<HeroDefinition> BlueBans
+        {
+            get
+            {
+                EnsureDraftInitialized();
+                return blueBans;
+            }
+        }
+
+        public static IReadOnlyList<HeroDefinition> RedBans
+        {
+            get
+            {
+                EnsureDraftInitialized();
+                return redBans;
+            }
+        }
+
+        public static BattleDraftStep CurrentDraftStep
+        {
+            get
+            {
+                EnsureDraftInitialized();
+                return draftStepIndex >= 0 && draftStepIndex < DraftSteps.Length
+                    ? DraftSteps[draftStepIndex]
+                    : null;
+            }
+        }
+
+        public static int DraftStepNumber
+        {
+            get
+            {
+                EnsureDraftInitialized();
+                return Mathf.Min(draftStepIndex + 1, DraftSteps.Length);
+            }
+        }
+
+        public static int DraftTotalSteps => DraftSteps.Length;
+
+        public static bool IsDraftComplete
+        {
+            get
+            {
+                EnsureDraftInitialized();
+                return draftStepIndex >= DraftSteps.Length;
+            }
+        }
+
         public static BattleResultData LastBattleResult { get; private set; }
 
         public static string LastBattleLogSessionId => lastBattleLogSessionId;
@@ -61,7 +157,7 @@ namespace Fight.UI.Flow
 
         public static void EnsureSelectionsInitialized()
         {
-            if (IsSelectionReady(blueSelection) && IsSelectionReady(redSelection))
+            if (HasSelectionSlots(blueSelection) && HasSelectionSlots(redSelection))
             {
                 return;
             }
@@ -69,11 +165,31 @@ namespace Fight.UI.Flow
             ResetSelectionsToDefault();
         }
 
-        public static void ResetSelectionsToDefault()
+        public static void EnsureDraftInitialized()
+        {
+            if (draftInitialized
+                && HasSelectionSlots(blueSelection)
+                && HasSelectionSlots(redSelection)
+                && HasBanSlots(blueBans)
+                && HasBanSlots(redBans))
+            {
+                return;
+            }
+
+            ResetDraft();
+        }
+
+        public static void ResetDraft()
         {
             var template = GetDefaultBattleTemplate();
-            blueSelection = CloneTeam(template?.blueTeam?.heroes);
-            redSelection = CloneTeam(template?.redTeam?.heroes);
+            blueSelection = CreateEmptyTeam();
+            redSelection = CreateEmptyTeam();
+            blueBans = CreateEmptyBanList();
+            redBans = CreateEmptyBanList();
+            draftStepIndex = 0;
+            draftInitialized = true;
+            pendingBattleInput = null;
+
             blueUltimateTimingStrategy = template?.blueTeam != null
                 ? template.blueTeam.ultimateTimingStrategy
                 : BattleUltimateTimingStrategy.Standard;
@@ -86,6 +202,117 @@ namespace Fight.UI.Flow
             redUltimateComboStrategy = template?.redTeam != null
                 ? template.redTeam.ultimateComboStrategy
                 : BattleUltimateComboStrategy.Standard;
+        }
+
+        public static void ResetSelectionsToDefault()
+        {
+            var template = GetDefaultBattleTemplate();
+            blueSelection = CloneTeam(template?.blueTeam?.heroes);
+            redSelection = CloneTeam(template?.redTeam?.heroes);
+            blueBans = CreateEmptyBanList();
+            redBans = CreateEmptyBanList();
+            draftStepIndex = DraftSteps.Length;
+            draftInitialized = false;
+            pendingBattleInput = null;
+            blueUltimateTimingStrategy = template?.blueTeam != null
+                ? template.blueTeam.ultimateTimingStrategy
+                : BattleUltimateTimingStrategy.Standard;
+            redUltimateTimingStrategy = template?.redTeam != null
+                ? template.redTeam.ultimateTimingStrategy
+                : BattleUltimateTimingStrategy.Standard;
+            blueUltimateComboStrategy = template?.blueTeam != null
+                ? template.blueTeam.ultimateComboStrategy
+                : BattleUltimateComboStrategy.Standard;
+            redUltimateComboStrategy = template?.redTeam != null
+                ? template.redTeam.ultimateComboStrategy
+                : BattleUltimateComboStrategy.Standard;
+        }
+
+        public static bool TryApplyDraftHero(HeroDefinition hero)
+        {
+            EnsureDraftInitialized();
+            var step = CurrentDraftStep;
+            if (step == null || !CanDraftHero(hero))
+            {
+                return false;
+            }
+
+            if (step.ActionType == BattleDraftActionType.Ban)
+            {
+                var bans = step.Side == TeamSide.Red ? redBans : blueBans;
+                if (step.SlotIndex < 0 || step.SlotIndex >= bans.Count)
+                {
+                    return false;
+                }
+
+                bans[step.SlotIndex] = hero;
+            }
+            else
+            {
+                var team = step.Side == TeamSide.Red ? redSelection : blueSelection;
+                if (step.SlotIndex < 0 || step.SlotIndex >= team.Count)
+                {
+                    return false;
+                }
+
+                team[step.SlotIndex] = hero;
+            }
+
+            draftStepIndex++;
+            return true;
+        }
+
+        public static bool CanDraftHero(HeroDefinition hero)
+        {
+            EnsureDraftInitialized();
+            return hero != null
+                && !IsDraftComplete
+                && !IsHeroBanned(hero)
+                && !IsHeroPicked(hero);
+        }
+
+        public static bool IsHeroBanned(HeroDefinition hero)
+        {
+            EnsureDraftInitialized();
+            return ContainsHero(blueBans, hero) || ContainsHero(redBans, hero);
+        }
+
+        public static bool IsHeroPicked(HeroDefinition hero)
+        {
+            EnsureDraftInitialized();
+            return ContainsHero(blueSelection, hero) || ContainsHero(redSelection, hero);
+        }
+
+        public static TeamSide? GetHeroPickedSide(HeroDefinition hero)
+        {
+            EnsureDraftInitialized();
+            if (ContainsHero(blueSelection, hero))
+            {
+                return TeamSide.Blue;
+            }
+
+            if (ContainsHero(redSelection, hero))
+            {
+                return TeamSide.Red;
+            }
+
+            return null;
+        }
+
+        public static TeamSide? GetHeroBannedSide(HeroDefinition hero)
+        {
+            EnsureDraftInitialized();
+            if (ContainsHero(blueBans, hero))
+            {
+                return TeamSide.Blue;
+            }
+
+            if (ContainsHero(redBans, hero))
+            {
+                return TeamSide.Red;
+            }
+
+            return null;
         }
 
         public static void SetSelectedHero(TeamSide side, int slotIndex, HeroDefinition hero)
@@ -274,7 +501,7 @@ namespace Fight.UI.Flow
                     continue;
                 }
 
-                var heroId = string.IsNullOrWhiteSpace(hero.heroId) ? hero.name : hero.heroId;
+                var heroId = GetHeroIdentity(hero);
                 if (!seenHeroIds.Add(heroId))
                 {
                     continue;
@@ -321,9 +548,41 @@ namespace Fight.UI.Flow
             return clone;
         }
 
+        private static List<HeroDefinition> CreateEmptyTeam()
+        {
+            var team = new List<HeroDefinition>(BattleInputConfig.DefaultTeamSize);
+            for (var i = 0; i < BattleInputConfig.DefaultTeamSize; i++)
+            {
+                team.Add(null);
+            }
+
+            return team;
+        }
+
+        private static List<HeroDefinition> CreateEmptyBanList()
+        {
+            var bans = new List<HeroDefinition>(DraftBansPerSide);
+            for (var i = 0; i < DraftBansPerSide; i++)
+            {
+                bans.Add(null);
+            }
+
+            return bans;
+        }
+
+        private static bool HasSelectionSlots(IList<HeroDefinition> source)
+        {
+            return source != null && source.Count == BattleInputConfig.DefaultTeamSize;
+        }
+
+        private static bool HasBanSlots(IList<HeroDefinition> source)
+        {
+            return source != null && source.Count == DraftBansPerSide;
+        }
+
         private static bool IsSelectionReady(IList<HeroDefinition> source)
         {
-            if (source == null || source.Count != BattleInputConfig.DefaultTeamSize)
+            if (!HasSelectionSlots(source))
             {
                 return false;
             }
@@ -337,6 +596,34 @@ namespace Fight.UI.Flow
             }
 
             return true;
+        }
+
+        private static bool ContainsHero(IList<HeroDefinition> source, HeroDefinition hero)
+        {
+            if (source == null || hero == null)
+            {
+                return false;
+            }
+
+            var heroId = GetHeroIdentity(hero);
+            for (var i = 0; i < source.Count; i++)
+            {
+                if (source[i] != null && GetHeroIdentity(source[i]) == heroId)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static string GetHeroIdentity(HeroDefinition hero)
+        {
+            return hero == null
+                ? string.Empty
+                : string.IsNullOrWhiteSpace(hero.heroId)
+                    ? hero.name
+                    : hero.heroId;
         }
     }
 }
