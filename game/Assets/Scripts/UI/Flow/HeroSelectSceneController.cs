@@ -312,9 +312,18 @@ namespace Fight.UI.Flow
             GUI.Label(new Rect(rect.xMax - 188f, rect.y + 98f, 170f, 42f), GetHeroAvailabilityLabel(hero), smallBodyStyle);
 
             var skillY = rect.y + 154f;
-            var skillHeight = Mathf.Max(42f, (rect.yMax - skillY - 12f) / 2f - 4f);
-            DrawSkillSummary(new Rect(rect.x + 16f, skillY, rect.width - 32f, skillHeight), "Skill", hero.activeSkill);
-            DrawSkillSummary(new Rect(rect.x + 16f, skillY + skillHeight + 8f, rect.width - 32f, skillHeight), "Ultimate", hero.ultimateSkill);
+            var summaryGap = 6f;
+            var summaryHeight = Mathf.Max(36f, (rect.yMax - skillY - 12f - (summaryGap * 2f)) / 3f);
+            DrawBasicAttackSummary(new Rect(rect.x + 16f, skillY, rect.width - 32f, summaryHeight), hero);
+            DrawSkillSummary(new Rect(rect.x + 16f, skillY + summaryHeight + summaryGap, rect.width - 32f, summaryHeight), "Skill", hero.activeSkill);
+            DrawSkillSummary(new Rect(rect.x + 16f, skillY + ((summaryHeight + summaryGap) * 2f), rect.width - 32f, summaryHeight), "Ultimate", hero.ultimateSkill);
+        }
+
+        private void DrawBasicAttackSummary(Rect rect, HeroDefinition hero)
+        {
+            GUI.Box(rect, string.Empty);
+            GUI.Label(new Rect(rect.x + 10f, rect.y + 6f, 140f, 22f), "Basic Attack", bodyStyle);
+            GUI.Label(new Rect(rect.x + 160f, rect.y + 6f, rect.width - 170f, rect.height - 12f), BuildBasicAttackSummary(hero), smallBodyStyle);
         }
 
         private void DrawSkillSummary(Rect rect, string label, SkillData skill)
@@ -493,6 +502,28 @@ namespace Fight.UI.Flow
                 ? hero.basicAttack.rangeOverride
                 : stats.attackRange;
             return $"HP {stats.maxHealth:0}   ATK {stats.attackPower:0}   DEF {stats.defense:0}\nAS {stats.attackSpeed:0.00}   Range {range:0.0}   Move {stats.moveSpeed:0.0}";
+        }
+
+        private static string BuildBasicAttackSummary(HeroDefinition hero)
+        {
+            if (hero == null || hero.basicAttack == null || hero.baseStats == null)
+            {
+                return "No basic attack data.";
+            }
+
+            var attack = hero.basicAttack;
+            var range = attack.rangeOverride > 0f ? attack.rangeOverride : hero.baseStats.attackRange;
+            var projectile = attack.usesProjectile
+                ? $"Projectile {attack.projectileSpeed:0.0}"
+                : "Instant hit";
+            var extras = attack.variants != null && attack.variants.Count > 0
+                ? $" | Variants {attack.variants.Count}"
+                : string.Empty;
+            var onHit = attack.onHitStatusEffects != null && attack.onHitStatusEffects.Count > 0
+                ? $" | On-hit {attack.onHitStatusEffects.Count}"
+                : string.Empty;
+
+            return $"{attack.effectType} / {attack.targetType}\nPower {attack.damageMultiplier:0.##}  Range {range:0.0}  {projectile}{extras}{onHit}";
         }
 
         private static void DrawHeroPortrait(Rect rect, HeroDefinition hero)
