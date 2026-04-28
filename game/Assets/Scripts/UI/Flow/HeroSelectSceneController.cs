@@ -171,8 +171,8 @@ namespace Fight.UI.Flow
 
             DrawShadowedLabel(ScaleTopRect(rect, 754f, 32f, 84f, 80f), CountPicked(GameFlowState.BlueSelection).ToString(), topScoreStyle, BlueAccent);
             DrawShadowedLabel(ScaleTopRect(rect, 1022f, 32f, 84f, 80f), CountPicked(GameFlowState.RedSelection).ToString(), topScoreStyle, RedAccent);
-            DrawBanDots(rect, 796f, 124f, CountPicked(GameFlowState.BlueBans), BlueAccent);
-            DrawBanDots(rect, 1064f, 124f, CountPicked(GameFlowState.RedBans), RedAccent);
+            DrawBanDots(rect, 796f, 104f, CountPicked(GameFlowState.BlueBans), BlueAccent);
+            DrawBanDots(rect, 1064f, 104f, CountPicked(GameFlowState.RedBans), RedAccent);
 
             DrawShadowedLabel(ScaleTopRect(rect, 36f, 52f, 102f, 72f), "蓝", topLogoStyle, MainTextColor);
             DrawShadowedLabel(ScaleTopRect(rect, 1742f, 52f, 102f, 72f), "红", topLogoStyle, MainTextColor);
@@ -989,12 +989,12 @@ namespace Fight.UI.Flow
                     GUI.color = new Color(0.2f, 0.66f, 0.34f, 0.95f);
                     GUI.DrawTexture(iconRect, Texture2D.whiteTexture);
                     GUI.color = Color.white;
-                    DrawHeroPortraitTopHalf(new Rect(iconRect.x + 3f, iconRect.y + 3f, iconRect.width - 6f, iconRect.height - 6f), masteryHero);
+                    DrawHeroPortrait(new Rect(iconRect.x + 3f, iconRect.y + 3f, iconRect.width - 6f, iconRect.height - 6f), masteryHero);
                 }
                 else
                 {
                     GUI.color = Color.white;
-                    DrawHeroPortraitTopHalf(iconRect, masteryHero);
+                    DrawHeroPortrait(iconRect, masteryHero);
                 }
 
                 GUI.color = previousColor;
@@ -1189,36 +1189,6 @@ namespace Fight.UI.Flow
                 textureRect.width / texture.width,
                 textureRect.height / texture.height);
             GUI.DrawTextureWithTexCoords(rect, texture, texCoords, true);
-        }
-
-        private void DrawHeroPortraitTopHalf(Rect rect, HeroDefinition hero)
-        {
-            var portrait = Fight.UI.HeroPortraitResolver.ResolvePortrait(hero);
-            if (portrait == null)
-            {
-                DrawHeroPortraitPlaceholder(rect, hero);
-                return;
-            }
-
-            var texture = portrait.texture;
-            if (texture == null)
-            {
-                DrawHeroPortraitPlaceholder(rect, hero);
-                return;
-            }
-
-            var textureRect = portrait.textureRect;
-            var topHalfRect = new Rect(
-                textureRect.x,
-                textureRect.y + (textureRect.height * 0.5f),
-                textureRect.width,
-                textureRect.height * 0.5f);
-            var texCoords = new Rect(
-                topHalfRect.x / texture.width,
-                topHalfRect.y / texture.height,
-                topHalfRect.width / texture.width,
-                topHalfRect.height / texture.height);
-            GUI.DrawTextureWithTexCoords(PixelSnap(rect), texture, texCoords, true);
         }
 
         private void DrawHeroPortraitPlaceholder(Rect rect, HeroDefinition hero)
