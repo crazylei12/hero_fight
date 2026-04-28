@@ -172,6 +172,7 @@ namespace Fight.UI
         private readonly Dictionary<string, ProjectileViewState> projectileViews = new Dictionary<string, ProjectileViewState>();
         private readonly Dictionary<string, SkillAreaViewState> skillAreaViews = new Dictionary<string, SkillAreaViewState>();
         private readonly Dictionary<string, DeployableProxyViewState> deployableProxyViews = new Dictionary<string, DeployableProxyViewState>();
+        private readonly Dictionary<string, Vector3> pendingDeployableProxyAttackDirections = new Dictionary<string, Vector3>();
         private Transform heroRoot;
         private Transform projectileRoot;
         private Transform deployableProxyRoot;
@@ -269,6 +270,7 @@ namespace Fight.UI
             public GameObject Root;
             public SortingGroup SortingGroup;
             public Renderer[] Renderers;
+            public DeployableProxySpriteSheetAnimator SpriteAnimator;
         }
 
         private sealed class StatusEffectViewState
@@ -1945,9 +1947,16 @@ namespace Fight.UI
                 {
                     SetRendererSorting(view.Renderers, sortingOrder);
                 }
+
+                if (pendingDeployableProxyAttackDirections.TryGetValue(proxy.ProxyId, out var pendingAttackDirection))
+                {
+                    view.SpriteAnimator?.PlayAttack(pendingAttackDirection);
+                    pendingDeployableProxyAttackDirections.Remove(proxy.ProxyId);
+                }
             }
 
             CleanupMissingDeployableProxies(liveProxyIds);
+            CleanupMissingDeployableProxyAttackDirections(liveProxyIds);
         }
 
         private DeployableProxyViewState CreateDeployableProxyView(RuntimeDeployableProxy proxy)
@@ -1968,6 +1977,8 @@ namespace Fight.UI
             }
 
             state.Renderers = instance.GetComponentsInChildren<Renderer>(true);
+            state.SpriteAnimator = instance.GetComponentInChildren<DeployableProxySpriteSheetAnimator>(true);
+            state.SpriteAnimator?.SetFacingHorizontal(proxy.Owner != null && proxy.Owner.Side == TeamSide.Red ? -1f : 1f);
             return state;
         }
 
@@ -2004,6 +2015,37 @@ namespace Fight.UI
                 }
 
                 deployableProxyViews.Remove(staleId);
+                pendingDeployableProxyAttackDirections.Remove(staleId);
+            }
+        }
+
+        private void CleanupMissingDeployableProxyAttackDirections(HashSet<string> liveProxyIds)
+        {
+            if (pendingDeployableProxyAttackDirections.Count == 0)
+            {
+                return;
+            }
+
+            List<string> staleIds = null;
+            foreach (var pair in pendingDeployableProxyAttackDirections)
+            {
+                if (liveProxyIds.Contains(pair.Key))
+                {
+                    continue;
+                }
+
+                staleIds ??= new List<string>();
+                staleIds.Add(pair.Key);
+            }
+
+            if (staleIds == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < staleIds.Count; i++)
+            {
+                pendingDeployableProxyAttackDirections.Remove(staleIds[i]);
             }
         }
 
@@ -2496,6 +2538,7 @@ namespace Fight.UI
                 && damageImpactEvent.DamageAmount > 0f)
             {
                 PlayDamageImpactVfx(damageImpactEvent);
+                PlayDeployableProxyAttackAnimation(damageImpactEvent);
             }
 
             if (battleEvent is SkillCastEvent skillCastImpactEvent
@@ -2714,6 +2757,31 @@ namespace Fight.UI
             }
 
             SpawnTransientHeroVfx(targetView, damageImpactPrefab, Vector3.zero, DamageEventVfxSortOrderOffset);
+        }
+
+        private void PlayDeployableProxyAttackAnimation(DamageAppliedEvent damageAppliedEvent)
+        {
+            var proxy = damageAppliedEvent?.SourceProxy;
+            if (proxy == null
+                || proxy.SourceEffect == null
+                || proxy.SourceEffect.deployableProxyLoopVfxPrefab == null
+                || string.IsNullOrWhiteSpace(proxy.ProxyId))
+            {
+                return;
+            }
+
+            var targetPosition = damageAppliedEvent.Target != null
+                ? Map(damageAppliedEvent.Target.CurrentPosition)
+                : Vector3.zero;
+            var proxyPosition = Map(proxy.CurrentPosition) + proxy.SourceEffect.deployableProxyVfxLocalOffset;
+            var attackDirection = targetPosition - proxyPosition;
+            if (deployableProxyViews.TryGetValue(proxy.ProxyId, out var view) && view?.SpriteAnimator != null)
+            {
+                view.SpriteAnimator.PlayAttack(attackDirection);
+                return;
+            }
+
+            pendingDeployableProxyAttackDirections[proxy.ProxyId] = attackDirection;
         }
 
         private static GameObject ResolveBasicAttackProjectilePrefab(RuntimeBasicAttackProjectile projectile)

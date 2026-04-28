@@ -2914,7 +2914,7 @@ namespace Fight.Editor
             skill.minTargetsToCast = 1;
             skill.allowsSelfCast = false;
             skill.effects.Clear();
-            AddDeployableProxyEffect(
+            var deployableEffect = AddDeployableProxyEffect(
                 skill,
                 0.55f,
                 ScaleRangedHeroDistance(1.7333333f),
@@ -2925,6 +2925,7 @@ namespace Fight.Editor
                 DeployableProxyTriggerMode.OnOwnerBasicAttack,
                 true,
                 false);
+            SandemperorSandguardVisualBuilder.ConfigureDeployableEffectVisuals(deployableEffect);
             ResetActionSequence(skill);
             ResetUltimateDecision(skill);
             EditorUtility.SetDirty(skill);
@@ -2961,7 +2962,7 @@ namespace Fight.Editor
             skill.minTargetsToCast = 1;
             skill.allowsSelfCast = false;
             skill.effects.Clear();
-            AddDeployableProxyEffect(
+            var deployableEffect = AddDeployableProxyEffect(
                 skill,
                 0.55f,
                 ScaleRangedHeroDistance(1.7333333f),
@@ -2972,6 +2973,7 @@ namespace Fight.Editor
                 DeployableProxyTriggerMode.OnOwnerBasicAttack,
                 true,
                 true);
+            SandemperorSandguardVisualBuilder.ConfigureDeployableEffectVisuals(deployableEffect);
             ResetActionSequence(skill);
             ResetUltimateDecision(skill);
             EditorUtility.SetDirty(skill);
