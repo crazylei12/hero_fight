@@ -10,5 +10,6 @@ namespace Fight.Data
         public BattleUltimateTimingStrategy ultimateTimingStrategy = BattleUltimateTimingStrategy.Standard;
         public BattleUltimateComboStrategy ultimateComboStrategy = BattleUltimateComboStrategy.Standard;
         public List<HeroDefinition> heroes = new List<HeroDefinition>();
+        public List<BattleParticipantBinding> participantBindings = new List<BattleParticipantBinding>();
     }
 }

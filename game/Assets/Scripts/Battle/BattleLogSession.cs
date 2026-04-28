@@ -53,6 +53,9 @@ namespace Fight.Battle
                 case UnitSpawnedEvent spawned:
                     AddLog($"{FormatHeroLabel(spawned.Hero)} spawned for {spawned.Hero.Side}.");
                     break;
+                case AthleteModifierResolvedEvent athleteModifier:
+                    AddLog(FormatAthleteModifierLog(athleteModifier));
+                    break;
                 case TargetChangedEvent targetChanged:
                     AddLog($"{FormatHeroLabel(targetChanged.Hero)} targets {FormatHeroLabel(targetChanged.Target)}.");
                     break;
@@ -228,6 +231,17 @@ namespace Fight.Battle
                 ? $" variant={damageApplied.SourceBasicAttackVariantKey}"
                 : string.Empty;
             return $"{attackerName} dealt {damageApplied.DamageAmount:0.0} to {FormatHeroLabel(damageApplied.Target)} via {skillName} [{sourceKindLabel}{variantSuffix}]{proxySuffix}, target HP {Mathf.Max(0f, damageApplied.RemainingHealth):0.0}.";
+        }
+
+        private static string FormatAthleteModifierLog(AthleteModifierResolvedEvent athleteModifier)
+        {
+            var modifier = athleteModifier.Modifier;
+            var athleteName = modifier.Athlete != null && !string.IsNullOrWhiteSpace(modifier.Athlete.displayName)
+                ? modifier.Athlete.displayName
+                : "Unknown Athlete";
+            return $"{FormatHeroLabel(athleteModifier.Hero)} bound athlete {athleteName}: " +
+                $"effective ATK {modifier.EffectiveAttackScore:0.#}, effective DEF {modifier.EffectiveDefenseScore:0.#}, mastery {modifier.MasteryScore:0.#}, " +
+                $"mods ATK {modifier.AttackPowerModifier:P0}, HP {modifier.MaxHealthModifier:P0}, AS {modifier.AttackSpeedModifier:P0}, Move {modifier.MoveSpeedModifier:P0}, fit {modifier.BpFitScore}.";
         }
 
         private static string FormatHealLog(HealAppliedEvent healApplied)

@@ -278,12 +278,18 @@ namespace Fight.Heroes
         }
 
         public RuntimeHero(HeroDefinition definition, TeamSide side, Vector3 spawnPosition, int slotIndex)
+            : this(definition, side, spawnPosition, slotIndex, ResolvedAthleteCombatModifier.None)
+        {
+        }
+
+        public RuntimeHero(HeroDefinition definition, TeamSide side, Vector3 spawnPosition, int slotIndex, ResolvedAthleteCombatModifier athleteModifier)
         {
             Definition = definition;
             Side = side;
             SpawnPosition = spawnPosition;
             SlotIndex = slotIndex;
             CurrentPosition = spawnPosition;
+            AthleteModifier = athleteModifier;
             ResetToSpawn();
         }
 
@@ -296,6 +302,10 @@ namespace Fight.Heroes
         public int SlotIndex { get; }
 
         public string RuntimeId => $"{Side}_{SlotIndex}_{Definition?.heroId}";
+
+        public ResolvedAthleteCombatModifier AthleteModifier { get; }
+
+        public AthleteDefinition Athlete => AthleteModifier.Athlete;
 
         public Vector3 CurrentPosition { get; set; }
 
@@ -361,7 +371,7 @@ namespace Fight.Heroes
 
         public bool CanReceiveDamage => !StatusEffectSystem.HasBehaviorFlag(this, StatusBehaviorFlags.PreventsDamage);
 
-        public float MaxHealth => Definition != null ? StatusEffectSystem.GetModifiedStat(this, Definition.baseStats.maxHealth, StatusEffectType.MaxHealthModifier) : 0f;
+        public float MaxHealth => Definition != null ? StatusEffectSystem.GetModifiedStat(this, Definition.baseStats.maxHealth * AthleteModifier.MaxHealthMultiplier, StatusEffectType.MaxHealthModifier) : 0f;
 
         public float AttackRange
         {
@@ -390,7 +400,7 @@ namespace Fight.Heroes
             }
         }
 
-        public float MoveSpeed => Definition != null ? StatusEffectSystem.GetModifiedStat(this, Definition.baseStats.moveSpeed, StatusEffectType.MoveSpeedModifier) : 0f;
+        public float MoveSpeed => Definition != null ? StatusEffectSystem.GetModifiedStat(this, Definition.baseStats.moveSpeed * AthleteModifier.MoveSpeedMultiplier, StatusEffectType.MoveSpeedModifier) : 0f;
 
         public float AttackPower
         {
@@ -404,7 +414,7 @@ namespace Fight.Heroes
                 var totalModifierDelta = StatusEffectSystem.GetTotalMagnitude(this, StatusEffectType.AttackPowerModifier)
                     + PassiveAttackPowerBonusMultiplier
                     + CurrentCombatFormAttackPowerModifier;
-                return Definition.baseStats.attackPower * Mathf.Max(0.1f, 1f + totalModifierDelta);
+                return Definition.baseStats.attackPower * AthleteModifier.AttackPowerMultiplier * Mathf.Max(0.1f, 1f + totalModifierDelta);
             }
         }
 
@@ -460,6 +470,7 @@ namespace Fight.Heroes
 
                 var speedMultiplier =
                     StatusEffectSystem.GetMultiplier(this, StatusEffectType.AttackSpeedModifier)
+                    * AthleteModifier.AttackSpeedMultiplier
                     * Mathf.Max(0.1f, 1f + PassiveAttackSpeedBonusMultiplier + SameTargetBasicAttackSpeedBonusMultiplier + CurrentCombatFormAttackSpeedModifier);
                 var baseAttackSpeed = Mathf.Max(0.01f, Definition.baseStats.attackSpeed);
                 return 1f / (baseAttackSpeed * speedMultiplier);

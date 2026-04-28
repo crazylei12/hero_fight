@@ -30,6 +30,7 @@ namespace Fight.UI.Flow
     {
         public const string DefaultInputResourcesPath = "Stage01Demo/Stage01DemoBattleInput";
         public const string DefaultHeroCatalogResourcesPath = "Stage01Demo/Stage01HeroCatalog";
+        public const string DefaultAthleteRosterResourcesPath = AthleteRosterData.DefaultResourcesPath;
         public const int DraftBansPerSide = 3;
 
         private static readonly BattleDraftStep[] DraftSteps =
@@ -54,9 +55,12 @@ namespace Fight.UI.Flow
 
         private static BattleInputConfig defaultBattleTemplate;
         private static HeroCatalogData defaultHeroCatalog;
+        private static AthleteRosterData defaultAthleteRoster;
         private static List<HeroDefinition> heroCatalog;
         private static List<HeroDefinition> blueSelection;
         private static List<HeroDefinition> redSelection;
+        private static List<AthleteDefinition> blueAthletes;
+        private static List<AthleteDefinition> redAthletes;
         private static List<HeroDefinition> blueBans;
         private static List<HeroDefinition> redBans;
         private static int draftStepIndex;
@@ -71,6 +75,24 @@ namespace Fight.UI.Flow
         private static string lastBattleLogExportText;
 
         public static IReadOnlyList<HeroDefinition> HeroCatalog => heroCatalog ??= BuildHeroCatalog();
+
+        public static IReadOnlyList<AthleteDefinition> BlueAthletes
+        {
+            get
+            {
+                EnsureAthleteRostersInitialized();
+                return blueAthletes;
+            }
+        }
+
+        public static IReadOnlyList<AthleteDefinition> RedAthletes
+        {
+            get
+            {
+                EnsureAthleteRostersInitialized();
+                return redAthletes;
+            }
+        }
 
         public static IReadOnlyList<HeroDefinition> BlueSelection
         {
@@ -153,6 +175,14 @@ namespace Fight.UI.Flow
         {
             defaultHeroCatalog = null;
             heroCatalog = BuildHeroCatalog();
+            RefreshAthleteRoster();
+        }
+
+        public static void RefreshAthleteRoster()
+        {
+            defaultAthleteRoster = null;
+            blueAthletes = CloneAthleteTeam(GetDefaultAthleteRoster()?.blueTeamAthletes);
+            redAthletes = CloneAthleteTeam(GetDefaultAthleteRoster()?.redTeamAthletes);
         }
 
         public static void EnsureSelectionsInitialized()
@@ -170,6 +200,8 @@ namespace Fight.UI.Flow
             if (draftInitialized
                 && HasSelectionSlots(blueSelection)
                 && HasSelectionSlots(redSelection)
+                && HasAthleteSlots(blueAthletes)
+                && HasAthleteSlots(redAthletes)
                 && HasBanSlots(blueBans)
                 && HasBanSlots(redBans))
             {
@@ -184,6 +216,7 @@ namespace Fight.UI.Flow
             var template = GetDefaultBattleTemplate();
             blueSelection = CreateEmptyTeam();
             redSelection = CreateEmptyTeam();
+            EnsureAthleteRostersInitialized();
             blueBans = CreateEmptyBanList();
             redBans = CreateEmptyBanList();
             draftStepIndex = 0;
@@ -209,6 +242,7 @@ namespace Fight.UI.Flow
             var template = GetDefaultBattleTemplate();
             blueSelection = CloneTeam(template?.blueTeam?.heroes);
             redSelection = CloneTeam(template?.redTeam?.heroes);
+            EnsureAthleteRostersInitialized();
             blueBans = CreateEmptyBanList();
             redBans = CreateEmptyBanList();
             draftStepIndex = DraftSteps.Length;
@@ -371,7 +405,11 @@ namespace Fight.UI.Flow
         public static bool HasValidSelections()
         {
             EnsureSelectionsInitialized();
-            return IsSelectionReady(blueSelection) && IsSelectionReady(redSelection);
+            EnsureAthleteRostersInitialized();
+            return IsSelectionReady(blueSelection)
+                && IsSelectionReady(redSelection)
+                && IsAthleteTeamReady(blueAthletes)
+                && IsAthleteTeamReady(redAthletes);
         }
 
         public static bool TryPrepareBattleInput(out BattleInputConfig input)
@@ -403,6 +441,7 @@ namespace Fight.UI.Flow
                 ultimateComboStrategy = blueUltimateComboStrategy,
             };
             runtimeInput.blueTeam.heroes.AddRange(blueSelection);
+            AddParticipantBindings(runtimeInput.blueTeam, blueSelection, blueAthletes);
 
             runtimeInput.redTeam = new BattleTeamLoadout
             {
@@ -411,6 +450,7 @@ namespace Fight.UI.Flow
                 ultimateComboStrategy = redUltimateComboStrategy,
             };
             runtimeInput.redTeam.heroes.AddRange(redSelection);
+            AddParticipantBindings(runtimeInput.redTeam, redSelection, redAthletes);
 
             pendingBattleInput = runtimeInput;
             input = runtimeInput;
@@ -470,6 +510,16 @@ namespace Fight.UI.Flow
             }
 
             return defaultHeroCatalog;
+        }
+
+        private static AthleteRosterData GetDefaultAthleteRoster()
+        {
+            if (defaultAthleteRoster == null)
+            {
+                defaultAthleteRoster = Resources.Load<AthleteRosterData>(DefaultAthleteRosterResourcesPath);
+            }
+
+            return defaultAthleteRoster;
         }
 
         private static List<HeroDefinition> BuildHeroCatalog()
@@ -548,6 +598,52 @@ namespace Fight.UI.Flow
             return clone;
         }
 
+        private static List<AthleteDefinition> CloneAthleteTeam(IList<AthleteDefinition> source)
+        {
+            var clone = new List<AthleteDefinition>(BattleInputConfig.DefaultTeamSize);
+            for (var i = 0; i < BattleInputConfig.DefaultTeamSize; i++)
+            {
+                clone.Add(source != null && i < source.Count ? source[i] : null);
+            }
+
+            return clone;
+        }
+
+        private static void EnsureAthleteRostersInitialized()
+        {
+            if (HasAthleteSlots(blueAthletes) && HasAthleteSlots(redAthletes))
+            {
+                return;
+            }
+
+            var roster = GetDefaultAthleteRoster();
+            blueAthletes = CloneAthleteTeam(roster?.blueTeamAthletes);
+            redAthletes = CloneAthleteTeam(roster?.redTeamAthletes);
+        }
+
+        private static void AddParticipantBindings(BattleTeamLoadout loadout, IList<HeroDefinition> heroes, IList<AthleteDefinition> athletes)
+        {
+            if (loadout == null)
+            {
+                return;
+            }
+
+            if (loadout.participantBindings == null)
+            {
+                loadout.participantBindings = new List<BattleParticipantBinding>();
+            }
+
+            loadout.participantBindings.Clear();
+            for (var i = 0; i < BattleInputConfig.DefaultTeamSize; i++)
+            {
+                loadout.participantBindings.Add(new BattleParticipantBinding
+                {
+                    athlete = athletes != null && i < athletes.Count ? athletes[i] : null,
+                    hero = heroes != null && i < heroes.Count ? heroes[i] : null,
+                });
+            }
+        }
+
         private static List<HeroDefinition> CreateEmptyTeam()
         {
             var team = new List<HeroDefinition>(BattleInputConfig.DefaultTeamSize);
@@ -575,6 +671,11 @@ namespace Fight.UI.Flow
             return source != null && source.Count == BattleInputConfig.DefaultTeamSize;
         }
 
+        private static bool HasAthleteSlots(IList<AthleteDefinition> source)
+        {
+            return source != null && source.Count == BattleInputConfig.DefaultTeamSize;
+        }
+
         private static bool HasBanSlots(IList<HeroDefinition> source)
         {
             return source != null && source.Count == DraftBansPerSide;
@@ -583,6 +684,24 @@ namespace Fight.UI.Flow
         private static bool IsSelectionReady(IList<HeroDefinition> source)
         {
             if (!HasSelectionSlots(source))
+            {
+                return false;
+            }
+
+            for (var i = 0; i < source.Count; i++)
+            {
+                if (source[i] == null)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static bool IsAthleteTeamReady(IList<AthleteDefinition> source)
+        {
+            if (!HasAthleteSlots(source))
             {
                 return false;
             }

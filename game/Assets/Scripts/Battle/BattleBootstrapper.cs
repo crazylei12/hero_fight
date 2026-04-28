@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Fight.Core;
 using Fight.Data;
 using Fight.Heroes;
 using UnityEngine;
@@ -8,6 +9,7 @@ namespace Fight.Battle
     public static class BattleBootstrapper
     {
         private const float FrontlineAttackRangeThreshold = 2.5f;
+        private static AthleteRosterData defaultAthleteRoster;
 
         private enum SpawnDepthBand
         {
@@ -18,15 +20,21 @@ namespace Fight.Battle
 
         private struct TeamHeroEntry
         {
-            public TeamHeroEntry(HeroDefinition definition, int slotIndex)
+            public TeamHeroEntry(HeroDefinition definition, AthleteDefinition athlete, int slotIndex)
             {
                 Definition = definition;
+                Athlete = athlete;
                 SlotIndex = slotIndex;
+                AthleteModifier = AthleteCombatModifierResolver.Resolve(athlete, definition);
             }
 
             public HeroDefinition Definition { get; }
 
+            public AthleteDefinition Athlete { get; }
+
             public int SlotIndex { get; }
+
+            public ResolvedAthleteCombatModifier AthleteModifier { get; }
         }
 
         public static List<RuntimeHero> CreateRuntimeHeroes(BattleInputConfig input, BattleRandomService randomService)
@@ -62,7 +70,7 @@ namespace Fight.Battle
                     continue;
                 }
 
-                entries.Add(new TeamHeroEntry(heroDefinition, i));
+                entries.Add(new TeamHeroEntry(heroDefinition, ResolveAthlete(loadout, i), i));
             }
 
             if (entries.Count == 0)
@@ -74,8 +82,33 @@ namespace Fight.Battle
             for (var i = 0; i < entries.Count; i++)
             {
                 var entry = entries[i];
-                destination.Add(new RuntimeHero(entry.Definition, side, spawnPositions[i], entry.SlotIndex));
+                destination.Add(new RuntimeHero(entry.Definition, side, spawnPositions[i], entry.SlotIndex, entry.AthleteModifier));
             }
+        }
+
+        private static AthleteDefinition ResolveAthlete(BattleTeamLoadout loadout, int slotIndex)
+        {
+            if (loadout?.participantBindings == null || slotIndex < 0 || slotIndex >= loadout.participantBindings.Count)
+            {
+                return ResolveRosterAthlete(loadout, slotIndex);
+            }
+
+            return loadout.participantBindings[slotIndex]?.athlete ?? ResolveRosterAthlete(loadout, slotIndex);
+        }
+
+        private static AthleteDefinition ResolveRosterAthlete(BattleTeamLoadout loadout, int slotIndex)
+        {
+            if (defaultAthleteRoster == null)
+            {
+                defaultAthleteRoster = Resources.Load<AthleteRosterData>(AthleteRosterData.DefaultResourcesPath);
+            }
+
+            var athletes = loadout != null && loadout.side == TeamSide.Red
+                ? defaultAthleteRoster?.redTeamAthletes
+                : defaultAthleteRoster?.blueTeamAthletes;
+            return athletes != null && slotIndex >= 0 && slotIndex < athletes.Count
+                ? athletes[slotIndex]
+                : null;
         }
 
         private static Vector3[] CreateSpawnPositions(

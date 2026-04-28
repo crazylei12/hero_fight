@@ -67,6 +67,11 @@ namespace Fight.Battle
 
             for (var i = 0; i < Context.Heroes.Count; i++)
             {
+                if (Context.Heroes[i].AthleteModifier.HasAthlete)
+                {
+                    Context.EventBus.Publish(new AthleteModifierResolvedEvent(Context.Heroes[i], Context.Heroes[i].AthleteModifier));
+                }
+
                 Context.EventBus.Publish(new UnitSpawnedEvent(Context.Heroes[i]));
             }
         }

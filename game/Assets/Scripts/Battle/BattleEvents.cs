@@ -53,6 +53,19 @@ namespace Fight.Battle
         public RuntimeHero Hero { get; }
     }
 
+    public sealed class AthleteModifierResolvedEvent : IBattleEvent
+    {
+        public AthleteModifierResolvedEvent(RuntimeHero hero, ResolvedAthleteCombatModifier modifier)
+        {
+            Hero = hero;
+            Modifier = modifier;
+        }
+
+        public RuntimeHero Hero { get; }
+
+        public ResolvedAthleteCombatModifier Modifier { get; }
+    }
+
     public sealed class TargetChangedEvent : IBattleEvent
     {
         public TargetChangedEvent(RuntimeHero hero, RuntimeHero target)

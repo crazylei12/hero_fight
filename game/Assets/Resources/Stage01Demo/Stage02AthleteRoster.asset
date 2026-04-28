@@ -1,0 +1,176 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e41b74fcce954cf458462e5a43b8e145, type: 3}
+  m_Name: Stage02AthleteRoster
+  m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.AthleteRosterData
+  blueTeamAthletes:
+  - athleteId: blue_001_ren
+    displayName: Ren
+    teamName: Blue
+    portrait: {fileID: 0}
+    attack: 24
+    defense: 43
+    condition: 12
+    heroMasteries:
+    - heroId: tank_001_ironwall
+      mastery: 24
+    - heroId: tank_002_shieldwarden
+      mastery: 18
+    - heroId: tank_003_tidehunter
+      mastery: 16
+    - heroId: warrior_001_skybreaker
+      mastery: 10
+  - athleteId: blue_002_mika
+    displayName: Mika
+    teamName: Blue
+    portrait: {fileID: 0}
+    attack: 38
+    defense: 27
+    condition: -6
+    heroMasteries:
+    - heroId: warrior_001_skybreaker
+      mastery: 28
+    - heroId: warrior_003_berserker
+      mastery: 22
+    - heroId: assassin_001_shadowstep
+      mastery: 12
+    - heroId: tank_005_blastshield
+      mastery: 10
+  - athleteId: blue_003_cora
+    displayName: Cora
+    teamName: Blue
+    portrait: {fileID: 0}
+    attack: 45
+    defense: 18
+    condition: 8
+    heroMasteries:
+    - heroId: mage_001_firemage
+      mastery: 30
+    - heroId: mage_002_frostmage
+      mastery: 22
+    - heroId: mage_004_lightningmage
+      mastery: 18
+    - heroId: marksman_002_rifleman
+      mastery: 10
+  - athleteId: blue_004_sena
+    displayName: Sena
+    teamName: Blue
+    portrait: {fileID: 0}
+    attack: 22
+    defense: 35
+    condition: 18
+    heroMasteries:
+    - heroId: support_001_sunpriest
+      mastery: 32
+    - heroId: support_003_monk
+      mastery: 24
+    - heroId: support_002_windchime
+      mastery: 18
+    - heroId: support_004_shrinemaiden
+      mastery: 14
+  - athleteId: blue_005_tao
+    displayName: Tao
+    teamName: Blue
+    portrait: {fileID: 0}
+    attack: 41
+    defense: 24
+    condition: 5
+    heroMasteries:
+    - heroId: marksman_001_longshot
+      mastery: 34
+    - heroId: marksman_003_venomshooter
+      mastery: 20
+    - heroId: marksman_004_boomeranger
+      mastery: 18
+    - heroId: marksman_005_sniper
+      mastery: 16
+  redTeamAthletes:
+  - athleteId: red_001_axel
+    displayName: Axel
+    teamName: Red
+    portrait: {fileID: 0}
+    attack: 26
+    defense: 45
+    condition: -4
+    heroMasteries:
+    - heroId: tank_001_ironwall
+      mastery: 20
+    - heroId: tank_004_mundo
+      mastery: 28
+    - heroId: tank_003_tidehunter
+      mastery: 22
+    - heroId: warrior_005_trollwarlord
+      mastery: 12
+  - athleteId: red_002_nox
+    displayName: Nox
+    teamName: Red
+    portrait: {fileID: 0}
+    attack: 44
+    defense: 20
+    condition: 16
+    heroMasteries:
+    - heroId: assassin_001_shadowstep
+      mastery: 35
+    - heroId: assassin_003_butcher
+      mastery: 22
+    - heroId: assassin_004_loner
+      mastery: 20
+    - heroId: warrior_002_bladesman
+      mastery: 12
+  - athleteId: red_003_luma
+    displayName: Luma
+    teamName: Red
+    portrait: {fileID: 0}
+    attack: 40
+    defense: 22
+    condition: -12
+    heroMasteries:
+    - heroId: mage_001_firemage
+      mastery: 18
+    - heroId: mage_003_sandemperor
+      mastery: 30
+    - heroId: mage_004_lightningmage
+      mastery: 24
+    - heroId: support_006_commander
+      mastery: 12
+  - athleteId: red_004_iris
+    displayName: Iris
+    teamName: Red
+    portrait: {fileID: 0}
+    attack: 20
+    defense: 38
+    condition: 10
+    heroMasteries:
+    - heroId: support_001_sunpriest
+      mastery: 20
+    - heroId: support_002_windchime
+      mastery: 30
+    - heroId: support_006_commander
+      mastery: 24
+    - heroId: support_005_chef
+      mastery: 14
+  - athleteId: red_005_vex
+    displayName: Vex
+    teamName: Red
+    portrait: {fileID: 0}
+    attack: 46
+    defense: 16
+    condition: 4
+    heroMasteries:
+    - heroId: marksman_001_longshot
+      mastery: 20
+    - heroId: marksman_002_rifleman
+      mastery: 32
+    - heroId: marksman_005_sniper
+      mastery: 24
+    - heroId: marksman_003_venomshooter
+      mastery: 18

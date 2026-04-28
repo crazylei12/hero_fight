@@ -49,6 +49,9 @@ namespace Fight.Battle
                 case UnitSpawnedEvent spawned:
                     Debug.Log($"[Battle] Spawned {FormatHeroLabel(spawned.Hero)}");
                     break;
+                case AthleteModifierResolvedEvent athleteModifier:
+                    Debug.Log($"[Battle] Athlete {FormatAthleteLabel(athleteModifier.Modifier.Athlete)} -> {FormatHeroLabel(athleteModifier.Hero)} ({athleteModifier.Modifier.DebugBreakdown})");
+                    break;
                 case ScoreChangedEvent scoreChanged:
                     Debug.Log($"[Battle] Score Blue {scoreChanged.BlueKills} - {scoreChanged.RedKills} Red");
                     break;
@@ -72,6 +75,18 @@ namespace Fight.Battle
                 ? hero.Definition.displayName
                 : "UnknownHero";
             return $"{displayName}[{hero.Side}|{hero.RuntimeId}]";
+        }
+
+        private static string FormatAthleteLabel(AthleteDefinition athlete)
+        {
+            if (athlete == null)
+            {
+                return "none";
+            }
+
+            return !string.IsNullOrWhiteSpace(athlete.displayName)
+                ? athlete.displayName
+                : "UnknownAthlete";
         }
     }
 }

@@ -30,6 +30,7 @@ namespace Fight.Editor
         private const string ResultScenePath = ScenesFolder + "/Result.unity";
         private const string DefaultBattleInputAssetPath = ResourcesDemoFolder + "/Stage01DemoBattleInput.asset";
         private const string DefaultHeroCatalogAssetPath = ResourcesDemoFolder + "/Stage01HeroCatalog.asset";
+        private const string DefaultAthleteRosterAssetPath = ResourcesDemoFolder + "/Stage02AthleteRoster.asset";
         private const string BladesmanHeroAssetPath = HeroesRootFolder + "/warrior_002_bladesman/Bladesman.asset";
         private const string BladesmanActiveSkillAssetPath = SkillsRootFolder + "/warrior_002_bladesman/Rending Slash.asset";
         private const string BladesmanUltimateSkillAssetPath = SkillsRootFolder + "/warrior_002_bladesman/Flying Swallow Sever.asset";
@@ -673,6 +674,7 @@ namespace Fight.Editor
             EnsureHeroBattlePrefabReference(sniper, LoadBattlePrefab("marksman_005_sniper", HeroClass.Marksman));
 
             CreateHeroCatalog(warrior, bladesman, berserker, spellblade, trollwarlord, mage, frostmage, sandemperor, lightningmage, assassin, tidefin, butcher, loner, demon, tank, shieldwarden, tidehunter, mundo, blastshield, support, windchime, monk, shrinemaiden, chef, commander, marksman, rifleman, venomshooter, boomeranger, sniper);
+            CreateAthleteRoster(overwriteExistingContent);
 
             var battleInput = CreateBattleInput(
                 "Stage01DemoBattleInput",
@@ -6438,6 +6440,121 @@ namespace Fight.Editor
             catalog.heroes.AddRange(desiredHeroes);
             EditorUtility.SetDirty(catalog);
             return catalog;
+        }
+
+        private static AthleteRosterData CreateAthleteRoster(bool overwriteExistingContent)
+        {
+            if (!overwriteExistingContent && TryLoadAsset(DefaultAthleteRosterAssetPath, out AthleteRosterData existingRoster))
+            {
+                return existingRoster;
+            }
+
+            var roster = LoadOrCreateAsset<AthleteRosterData>(DefaultAthleteRosterAssetPath);
+            roster.blueTeamAthletes.Clear();
+            roster.blueTeamAthletes.AddRange(new[]
+            {
+                CreateAthlete("blue_001_ren", "Ren", "Blue", 24f, 43f, 12f,
+                    Mastery("tank_001_ironwall", 24f),
+                    Mastery("tank_002_shieldwarden", 18f),
+                    Mastery("tank_003_tidehunter", 16f),
+                    Mastery("warrior_001_skybreaker", 10f)),
+                CreateAthlete("blue_002_mika", "Mika", "Blue", 38f, 27f, -6f,
+                    Mastery("warrior_001_skybreaker", 28f),
+                    Mastery("warrior_003_berserker", 22f),
+                    Mastery("assassin_001_shadowstep", 12f),
+                    Mastery("tank_005_blastshield", 10f)),
+                CreateAthlete("blue_003_cora", "Cora", "Blue", 45f, 18f, 8f,
+                    Mastery("mage_001_firemage", 30f),
+                    Mastery("mage_002_frostmage", 22f),
+                    Mastery("mage_004_lightningmage", 18f),
+                    Mastery("marksman_002_rifleman", 10f)),
+                CreateAthlete("blue_004_sena", "Sena", "Blue", 22f, 35f, 18f,
+                    Mastery("support_001_sunpriest", 32f),
+                    Mastery("support_003_monk", 24f),
+                    Mastery("support_002_windchime", 18f),
+                    Mastery("support_004_shrinemaiden", 14f)),
+                CreateAthlete("blue_005_tao", "Tao", "Blue", 41f, 24f, 5f,
+                    Mastery("marksman_001_longshot", 34f),
+                    Mastery("marksman_003_venomshooter", 20f),
+                    Mastery("marksman_004_boomeranger", 18f),
+                    Mastery("marksman_005_sniper", 16f)),
+            });
+
+            roster.redTeamAthletes.Clear();
+            roster.redTeamAthletes.AddRange(new[]
+            {
+                CreateAthlete("red_001_axel", "Axel", "Red", 26f, 45f, -4f,
+                    Mastery("tank_001_ironwall", 20f),
+                    Mastery("tank_004_mundo", 28f),
+                    Mastery("tank_003_tidehunter", 22f),
+                    Mastery("warrior_005_trollwarlord", 12f)),
+                CreateAthlete("red_002_nox", "Nox", "Red", 44f, 20f, 16f,
+                    Mastery("assassin_001_shadowstep", 35f),
+                    Mastery("assassin_003_butcher", 22f),
+                    Mastery("assassin_004_loner", 20f),
+                    Mastery("warrior_002_bladesman", 12f)),
+                CreateAthlete("red_003_luma", "Luma", "Red", 40f, 22f, -12f,
+                    Mastery("mage_001_firemage", 18f),
+                    Mastery("mage_003_sandemperor", 30f),
+                    Mastery("mage_004_lightningmage", 24f),
+                    Mastery("support_006_commander", 12f)),
+                CreateAthlete("red_004_iris", "Iris", "Red", 20f, 38f, 10f,
+                    Mastery("support_001_sunpriest", 20f),
+                    Mastery("support_002_windchime", 30f),
+                    Mastery("support_006_commander", 24f),
+                    Mastery("support_005_chef", 14f)),
+                CreateAthlete("red_005_vex", "Vex", "Red", 46f, 16f, 4f,
+                    Mastery("marksman_001_longshot", 20f),
+                    Mastery("marksman_002_rifleman", 32f),
+                    Mastery("marksman_005_sniper", 24f),
+                    Mastery("marksman_003_venomshooter", 18f)),
+            });
+
+            EditorUtility.SetDirty(roster);
+            return roster;
+        }
+
+        private static AthleteDefinition CreateAthlete(
+            string athleteId,
+            string displayName,
+            string teamName,
+            float attack,
+            float defense,
+            float condition,
+            params HeroMasteryEntry[] masteries)
+        {
+            var athlete = new AthleteDefinition
+            {
+                athleteId = athleteId,
+                displayName = displayName,
+                teamName = teamName,
+                attack = Mathf.Clamp(attack, 0f, 50f),
+                defense = Mathf.Clamp(defense, 0f, 50f),
+                condition = Mathf.Clamp(condition, -50f, 50f),
+                heroMasteries = new List<HeroMasteryEntry>(),
+            };
+
+            if (masteries != null)
+            {
+                for (var i = 0; i < masteries.Length && athlete.heroMasteries.Count < 4; i++)
+                {
+                    if (masteries[i] != null)
+                    {
+                        athlete.heroMasteries.Add(masteries[i]);
+                    }
+                }
+            }
+
+            return athlete;
+        }
+
+        private static HeroMasteryEntry Mastery(string heroId, float mastery)
+        {
+            return new HeroMasteryEntry
+            {
+                heroId = heroId,
+                mastery = Mathf.Clamp(mastery, 0f, 50f),
+            };
         }
 
         private static bool HasSameHeroCatalogEntries(IList<HeroDefinition> existingHeroes, IList<HeroDefinition> desiredHeroes)
