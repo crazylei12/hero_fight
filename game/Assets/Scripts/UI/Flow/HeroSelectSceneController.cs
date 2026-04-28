@@ -639,7 +639,7 @@ namespace Fight.UI.Flow
                 }
                 else
                 {
-                    GUI.color = new Color(0.86f, 0.88f, 0.92f, 0.95f);
+                    GUI.color = Color.white;
                     DrawHeroPortrait(iconRect, masteryHero);
                 }
 
