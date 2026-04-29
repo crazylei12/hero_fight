@@ -107,6 +107,7 @@ namespace Fight.Battle
             DelayedSkillEffects = new List<RuntimeDelayedSkillEffect>();
             ReactiveGuards = new List<RuntimeReactiveGuard>();
             FocusFireCommands = new List<RuntimeFocusFireCommand>();
+            KnockUpFollowUpTriggers = new List<RuntimeKnockUpFollowUpTrigger>();
         }
 
         public BattleInputConfig Input { get; }
@@ -136,6 +137,8 @@ namespace Fight.Battle
         public List<RuntimeReactiveGuard> ReactiveGuards { get; }
 
         public List<RuntimeFocusFireCommand> FocusFireCommands { get; }
+
+        public List<RuntimeKnockUpFollowUpTrigger> KnockUpFollowUpTriggers { get; }
 
         public BattleTeamLoadout GetTeamLoadout(TeamSide side)
         {

@@ -284,6 +284,22 @@ namespace Fight.Editor
             EnsureHeroSkillReferences(chainbreaker, chainbreakerActive, chainbreakerUltimate);
             EnsureHeroBattlePrefabReference(chainbreaker, LoadBattlePrefab("warrior_006_chainbreaker", HeroClass.Warrior));
 
+            var yasuoActive = CreateYasuoActiveSkill(overwriteExistingContent);
+            var yasuoUltimate = CreateYasuoUltimateSkill(overwriteExistingContent, out var yasuoUltimateExisted);
+            var yasuo = CreateHero(
+                "warrior_007_yasuo",
+                "Yasuo",
+                HeroClass.Warrior,
+                410f, 44f, 18f, 1f, 4.55f, 0.12f, 1.65f, 1.8f,
+                yasuoActive,
+                ConfigureYasuoUltimate(yasuoUltimate, overwriteExistingContent, yasuoUltimateExisted),
+                overwriteExistingContent,
+                out var yasuoHeroExisted,
+                HeroTag.Melee, HeroTag.Dive, HeroTag.Burst);
+            ConfigureYasuoBasicAttack(yasuo, overwriteExistingContent, yasuoHeroExisted);
+            EnsureHeroSkillReferences(yasuo, yasuoActive, yasuoUltimate);
+            EnsureHeroBattlePrefabReference(yasuo, LoadBattlePrefab("warrior_007_yasuo", HeroClass.Warrior));
+
             var mageUltimateSkill = CreateSkill("skill_mage_ultimate_meteor", "Meteor Fall", SkillSlotType.Ultimate, SkillType.AreaDamage, SkillTargetType.Self, 0f, ScaleRangedHeroDistance(6f), 3.3f, 0f, 3, overwriteExistingContent, out var mageUltimateExisted);
 
             var mage = CreateHero(
@@ -738,7 +754,7 @@ namespace Fight.Editor
 
             var demoHeroes = new[]
             {
-                warrior, bladesman, berserker, spellblade, trollwarlord, chainbreaker,
+                warrior, bladesman, berserker, spellblade, trollwarlord, chainbreaker, yasuo,
                 mage, frostmage, sandemperor, lightningmage, astromancer,
                 assassin, tidefin, butcher, loner, demon,
                 tank, shieldwarden, tidehunter, mundo, blastshield,
@@ -1330,6 +1346,7 @@ namespace Fight.Editor
                 || heroId == "warrior_004_spellblade"
                 || heroId == "warrior_005_trollwarlord"
                 || heroId == "warrior_006_chainbreaker"
+                || heroId == "warrior_007_yasuo"
                 || heroId == "mage_001_firemage"
                 || heroId == "mage_002_frostmage"
                 || heroId == "mage_003_sandemperor"
@@ -1450,6 +1467,7 @@ namespace Fight.Editor
                 "warrior_004_spellblade" => "范围压制型战士，依靠剑气和固定魔剑切割战场，让敌人难以舒服站位。适合慢慢挤压阵型，也能在混战中补充稳定范围伤害。队友把敌人留在范围内时收益最高。",
                 "warrior_005_trollwarlord" => "单挑升温型前排，持续盯住同一目标时威胁会不断抬高，适合拉长战斗节奏。需要阵容给他进入近身战的时间，避免被风筝；一旦追不上目标，节奏会被明显拖慢。",
                 "warrior_006_chainbreaker" => "反控制型战士，被敌方限制时会积累怒链，把控制和减速转化成攻速、攻击力和反击斩击。适合对抗冰法、拉拽和硬控阵容，但面对无控制阵容时只是中等强度近战。",
+                "warrior_007_yasuo" => "击飞联动型战士，自身不提供击飞，依赖队友先把敌人打到空中后触发跟进斩击。适合和开团控制组成强组合，但缺少击飞队友时只剩近战突进与常规输出，强度会明显下降。",
                 "mage_001_firemage" => "范围爆发法师，擅长惩罚扎堆敌人，用火焰区域制造高压站位选择。适合配合控制或拉拽打出团战爆点，但自身需要保护。敌方越密集，他的威慑力越明显，也需要队友帮他争取施法空间。",
                 "mage_002_frostmage" => "控场法师，依靠冰霜区域减缓敌人推进，让前排和射手获得更安全的输出窗口。适合防守反打，也能限制突进阵容的节奏，队伍缺少控制时也能补足减速压力。",
                 "mage_003_sandemperor" => "部署型法师，通过沙卫配合自身普攻建立持续火力点，越能站住阵地越有价值。适合中后排稳定压制，但需要避免被快速切入；阵线被打乱时，沙卫价值会下降。",
@@ -1499,6 +1517,8 @@ namespace Fight.Editor
                 "skill_trollwarlord_ultimate_deathlessfrenzy" => "濒死时进入狂热窗口，短时间避免倒下并保持高压输出。",
                 "skill_chainbreaker_active_breakfree" => "解除自身负面状态并短暂提升攻速，若已有怒链则消耗层数追加重斧斩击。",
                 "skill_chainbreaker_ultimate_unchainedrampage" => "开启时解除自身控制，随后短时间把敌方限制转化为攻击力，并在结束时范围斩击。",
+                "skill_yasuo_active_windstep" => "随机锁定范围内一名敌人突进到近战位置，并获得短时护盾。",
+                "skill_yasuo_ultimate_lastbreath" => "被动监听友方击飞，对同批被击飞敌人追加斩击伤害并随机落到其中一名目标附近。",
                 "skill_mage_active_emberburst" => "在目标区域引爆火焰，处理聚集敌人。",
                 "skill_mage_ultimate_meteor" => "召唤持续火焰区域，长时间压制敌方站位。",
                 "skill_mage_active_firebolt" => "发射火焰弹，对单个敌人造成稳定伤害。",
@@ -1587,6 +1607,7 @@ namespace Fight.Editor
                 "warrior_002_bladesman" => BladesmanPrefabPath,
                 "warrior_003_berserker" => BerserkerPrefabPath,
                 "warrior_004_spellblade" => SpellbladePrefabPath,
+                "warrior_007_yasuo" => WarriorPrefabPath,
                 "tank_002_shieldwarden" => ShieldwardenPrefabPath,
                 "tank_003_tidehunter" => TidehunterPrefabPath,
                 "tank_004_mundo" => MundoPrefabPath,
@@ -1683,6 +1704,7 @@ namespace Fight.Editor
             ResetActionSequence(skill);
             ResetPassiveSkillData(skill);
             ResetDamageTriggeredStatusCounter(skill);
+            ResetKnockUpFollowUp(skill);
             ResetTemporaryOverride(skill);
             skill.selfCurrentHealthCostRatio = 0f;
             skill.minimumSelfHealthAfterCost = 1f;
@@ -4001,6 +4023,129 @@ namespace Fight.Editor
             skill.description = "Stage-01 demo skill: cleanse current control, convert later restrictions into attack power, then finish with an area axe slash.";
         }
 
+        private static SkillData CreateYasuoActiveSkill(bool overwriteExistingContent)
+        {
+            var skill = CreateSkill(
+                "skill_yasuo_active_windstep",
+                "Windstep",
+                SkillSlotType.ActiveSkill,
+                SkillType.Dash,
+                SkillTargetType.RandomEnemyInRange,
+                4.5f,
+                0f,
+                0f,
+                3f,
+                1,
+                overwriteExistingContent,
+                out var existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.activationMode = SkillActivationMode.Active;
+            skill.skillType = SkillType.Dash;
+            skill.targetType = SkillTargetType.RandomEnemyInRange;
+            skill.fallbackTargetType = SkillTargetType.None;
+            skill.castRange = 4.5f;
+            skill.areaRadius = 0f;
+            skill.cooldownSeconds = 3f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+            ResetPassiveSkillData(skill);
+            ResetDamageTriggeredStatusCounter(skill);
+            ResetKnockUpFollowUp(skill);
+            ResetTemporaryOverride(skill);
+
+            var shieldEffect = AddApplyStatusEffectsEffect(skill);
+            shieldEffect.targetMode = SkillEffectTargetMode.Caster;
+            shieldEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.Shield,
+                durationSeconds = 2f,
+                magnitude = 35f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
+            AddRepositionEffect(skill, 0.22f, 0f, 0f, 1.25f);
+
+            skill.description = "Stage-01 demo skill: randomly lock one enemy in range, gain a short shield, then dash to a legal melee position near that target without dealing damage or control.";
+            ResetUltimateDecision(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateYasuoUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
+        {
+            var skill = CreateSkill(
+                "skill_yasuo_ultimate_lastbreath",
+                "Last Breath",
+                SkillSlotType.Ultimate,
+                SkillType.SingleTargetDamage,
+                SkillTargetType.None,
+                0f,
+                0f,
+                0f,
+                0f,
+                1,
+                overwriteExistingContent,
+                out existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            ApplyYasuoUltimateBaseConfiguration(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData ConfigureYasuoUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            ApplyYasuoUltimateBaseConfiguration(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static void ApplyYasuoUltimateBaseConfiguration(SkillData skill)
+        {
+            skill.activationMode = SkillActivationMode.Passive;
+            skill.skillType = SkillType.SingleTargetDamage;
+            skill.targetType = SkillTargetType.None;
+            skill.fallbackTargetType = SkillTargetType.None;
+            skill.castRange = 0f;
+            skill.areaRadius = 0f;
+            skill.cooldownSeconds = 0f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+            ResetPassiveSkillData(skill);
+            ResetDamageTriggeredStatusCounter(skill);
+            ResetTemporaryOverride(skill);
+            ResetUltimateDecision(skill);
+
+            if (skill.knockUpFollowUp == null)
+            {
+                skill.knockUpFollowUp = new KnockUpFollowUpData();
+            }
+
+            skill.knockUpFollowUp.enabled = true;
+            skill.knockUpFollowUp.triggerStatusEffectType = StatusEffectType.KnockUp;
+            skill.knockUpFollowUp.damagePowerMultiplier = 1.45f;
+            skill.knockUpFollowUp.landingDistance = 1.25f;
+            skill.knockUpFollowUp.landingDurationSeconds = 0f;
+            skill.knockUpFollowUp.landingPeakHeight = 0f;
+            skill.description = "Stage-01 demo skill: passive ultimate that listens for allied KnockUp applications, damages every knocked-up enemy in the same batch, then lands near one random knocked-up target.";
+        }
 
         private static void AddDefaultEffectsForSkill(SkillData skill, float powerMultiplier)
         {
@@ -4687,6 +4832,30 @@ namespace Fight.Editor
             EditorUtility.SetDirty(hero);
         }
 
+        private static void ConfigureYasuoBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (hero == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return;
+            }
+
+            hero.basicAttack.damageMultiplier = 1f;
+            hero.basicAttack.attackInterval = 1f;
+            hero.basicAttack.rangeOverride = 1.8f;
+            hero.basicAttack.usesProjectile = false;
+            hero.basicAttack.projectileSpeed = 0f;
+            hero.basicAttack.effectType = BasicAttackEffectType.Damage;
+            hero.basicAttack.targetType = BasicAttackTargetType.NearestEnemy;
+            hero.basicAttack.targetPrioritySearchRadius = 0f;
+            EnsureBasicAttackStatusList(hero.basicAttack);
+            hero.basicAttack.onHitStatusEffects.Clear();
+            ResetSameTargetStacking(hero.basicAttack);
+            ResetBasicAttackOnHitEffect(hero.basicAttack);
+            hero.usesSpecialLogic = true;
+            hero.specialLogicNotes = "Uses shared StatusAppliedEvent KnockUp follow-up handling; Yasuo does not create KnockUp himself.";
+            hero.debugNotes = "Stage-01 demo hero for Warrior. Yasuo validates random enemy dash shielding and passive ultimate follow-up from allied KnockUp events.";
+            EditorUtility.SetDirty(hero);
+        }
 
         private static void ConfigureLongshotBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
         {
@@ -5250,6 +5419,25 @@ namespace Fight.Editor
             skill.damageTriggeredStatusCounter.triggerStatusEffects.Clear();
         }
 
+        private static void ResetKnockUpFollowUp(SkillData skill)
+        {
+            if (skill == null)
+            {
+                return;
+            }
+
+            if (skill.knockUpFollowUp == null)
+            {
+                skill.knockUpFollowUp = new KnockUpFollowUpData();
+            }
+
+            skill.knockUpFollowUp.enabled = false;
+            skill.knockUpFollowUp.triggerStatusEffectType = StatusEffectType.KnockUp;
+            skill.knockUpFollowUp.damagePowerMultiplier = 1f;
+            skill.knockUpFollowUp.landingDistance = 1.25f;
+            skill.knockUpFollowUp.landingDurationSeconds = 0f;
+            skill.knockUpFollowUp.landingPeakHeight = 0f;
+        }
 
         private static void ResetTemporaryOverride(SkillData skill)
         {
@@ -7531,6 +7719,8 @@ namespace Fight.Editor
                 "skill_trollwarlord_ultimate_deathlessfrenzy" => "warrior_005_trollwarlord",
                 "skill_chainbreaker_active_breakfree" => "warrior_006_chainbreaker",
                 "skill_chainbreaker_ultimate_unchainedrampage" => "warrior_006_chainbreaker",
+                "skill_yasuo_active_windstep" => "warrior_007_yasuo",
+                "skill_yasuo_ultimate_lastbreath" => "warrior_007_yasuo",
                 "skill_tidehunter_active_undertowcarapace" => "tank_003_tidehunter",
                 "skill_tidehunter_ultimate_tidalrebound" => "tank_003_tidehunter",
                 "skill_mundo_active_brutemetabolism" => "tank_004_mundo",

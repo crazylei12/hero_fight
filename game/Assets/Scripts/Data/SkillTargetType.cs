@@ -21,5 +21,6 @@ namespace Fight.Data
         HighestDamageAllyInRange = 16,
         HighestDamageTakenAllyInRange = 17,
         FarthestEnemyFromSelf = 18,
+        RandomEnemyInRange = 19,
     }
 }

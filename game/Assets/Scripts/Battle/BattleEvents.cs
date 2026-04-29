@@ -533,6 +533,41 @@ namespace Fight.Battle
         public SkillData SourceSkill { get; }
     }
 
+    public sealed class KnockUpFollowUpTriggeredEvent : IBattleEvent
+    {
+        public KnockUpFollowUpTriggeredEvent(
+            RuntimeHero follower,
+            SkillData followUpSkill,
+            RuntimeHero triggerSource,
+            SkillData triggerSkill,
+            int affectedTargetCount,
+            RuntimeHero landingAnchor,
+            float damagePowerMultiplier)
+        {
+            Follower = follower;
+            FollowUpSkill = followUpSkill;
+            TriggerSource = triggerSource;
+            TriggerSkill = triggerSkill;
+            AffectedTargetCount = Mathf.Max(0, affectedTargetCount);
+            LandingAnchor = landingAnchor;
+            DamagePowerMultiplier = Mathf.Max(0f, damagePowerMultiplier);
+        }
+
+        public RuntimeHero Follower { get; }
+
+        public SkillData FollowUpSkill { get; }
+
+        public RuntimeHero TriggerSource { get; }
+
+        public SkillData TriggerSkill { get; }
+
+        public int AffectedTargetCount { get; }
+
+        public RuntimeHero LandingAnchor { get; }
+
+        public float DamagePowerMultiplier { get; }
+    }
+
     public sealed class StatusRemovedEvent : IBattleEvent
     {
         public StatusRemovedEvent(

@@ -21,6 +21,17 @@ namespace Fight.Data
         public Vector3 castProjectileVfxScaleMultiplier = Vector3.one;
     }
 
+    [Serializable]
+    public class KnockUpFollowUpData
+    {
+        public bool enabled;
+        public StatusEffectType triggerStatusEffectType = StatusEffectType.KnockUp;
+        [Min(0f)] public float damagePowerMultiplier = 1f;
+        [Min(0f)] public float landingDistance = 1.25f;
+        [Min(0f)] public float landingDurationSeconds = 0f;
+        [Min(0f)] public float landingPeakHeight = 0f;
+    }
+
     [CreateAssetMenu(fileName = "Skill_", menuName = "Fight/Data/Skill")]
     public class SkillData : ScriptableObject
     {
@@ -47,6 +58,7 @@ namespace Fight.Data
         [Header("Passive")]
         public PassiveSkillData passiveSkill = new PassiveSkillData();
         public DamageTriggeredStatusCounterData damageTriggeredStatusCounter = new DamageTriggeredStatusCounterData();
+        public KnockUpFollowUpData knockUpFollowUp = new KnockUpFollowUpData();
 
         [Header("Numbers")]
         [Min(0.1f)] public float castRange = 4f;

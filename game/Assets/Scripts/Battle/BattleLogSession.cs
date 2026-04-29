@@ -75,6 +75,9 @@ namespace Fight.Battle
                     AddLog($"{FormatHeroLabel(skillCast.Caster)} started casting {skillCast.Skill.displayName}{skillVariantSuffix} on {FormatHeroLabel(skillCast.PrimaryTarget, "area")} ({skillCast.AffectedTargetCount} target(s)).");
                     TryAddBlueWarriorSkillCast(skillCast);
                     break;
+                case KnockUpFollowUpTriggeredEvent knockUpFollowUp:
+                    AddLog(FormatKnockUpFollowUpLog(knockUpFollowUp));
+                    break;
                 case UltimateDecisionEvaluatedEvent ultimateDecision:
                     var decisionLog = FormatUltimateDecisionLog(ultimateDecision);
                     AddLog(decisionLog);
@@ -351,6 +354,15 @@ namespace Fight.Battle
                 ? $", applied by {appliedByName}"
                 : string.Empty;
             return $"{sourceName} applied {statusApplied.EffectType} to {FormatHeroLabel(statusApplied.Target)} via {skillName}, duration {statusApplied.DurationSeconds:0.0}s, magnitude {FormatStatusMagnitude(statusApplied.EffectType, statusApplied.Magnitude)}{applierSuffix}.";
+        }
+
+        private static string FormatKnockUpFollowUpLog(KnockUpFollowUpTriggeredEvent followUp)
+        {
+            var followerName = FormatHeroLabel(followUp.Follower, "Unknown");
+            var followUpSkillName = followUp.FollowUpSkill != null ? followUp.FollowUpSkill.displayName : "Knock-up follow-up";
+            var triggerSourceName = FormatHeroLabel(followUp.TriggerSource, "ally");
+            var triggerSkillName = followUp.TriggerSkill != null ? followUp.TriggerSkill.displayName : "KnockUp";
+            return $"{followerName}'s {followUpSkillName} followed {triggerSourceName}'s {triggerSkillName}, hitting {followUp.AffectedTargetCount} knocked-up target(s), landing near {FormatHeroLabel(followUp.LandingAnchor)}, damage x{followUp.DamagePowerMultiplier:0.##}.";
         }
 
         private static string FormatStatusRemovedLog(StatusRemovedEvent statusRemoved)

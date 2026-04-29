@@ -41,6 +41,7 @@ namespace Fight.Battle
                 randomService,
                 new BattleEventBus(),
                 runtimeHeroes);
+            Context.EventBus.Published += battleEvent => BattleKnockUpFollowUpSystem.Capture(Context, battleEvent);
         }
 
         public BattleContext Context { get; }
