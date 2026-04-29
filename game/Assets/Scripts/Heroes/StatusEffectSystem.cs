@@ -165,6 +165,76 @@ namespace Fight.Heroes
             }
         }
 
+        public static bool IsNegativeStatusEffect(StatusEffectData data)
+        {
+            return data != null
+                && data.effectType != StatusEffectType.None
+                && !IsPositiveStatusEffect(data);
+        }
+
+        public static bool IsPositiveStatusEffect(RuntimeStatusEffect status)
+        {
+            if (status == null)
+            {
+                return false;
+            }
+
+            switch (status.EffectType)
+            {
+                case StatusEffectType.HealOverTime:
+                case StatusEffectType.Shield:
+                case StatusEffectType.Invulnerable:
+                case StatusEffectType.Untargetable:
+                case StatusEffectType.DamageShare:
+                case StatusEffectType.DeathPrevent:
+                    return true;
+                case StatusEffectType.AttackPowerModifier:
+                case StatusEffectType.DefenseModifier:
+                case StatusEffectType.AttackSpeedModifier:
+                case StatusEffectType.MoveSpeedModifier:
+                case StatusEffectType.MaxHealthModifier:
+                case StatusEffectType.CriticalChanceModifier:
+                case StatusEffectType.CriticalDamageModifier:
+                case StatusEffectType.AttackRangeModifier:
+                case StatusEffectType.HealTakenModifier:
+                    return status.Magnitude > Mathf.Epsilon;
+                default:
+                    return false;
+            }
+        }
+
+        public static bool IsNegativeStatusEffect(RuntimeStatusEffect status)
+        {
+            return status != null
+                && status.EffectType != StatusEffectType.None
+                && !IsPositiveStatusEffect(status);
+        }
+
+        public static bool IsRestrictedStatusEffect(StatusEffectData data)
+        {
+            if (data == null || data.effectType == StatusEffectType.None)
+            {
+                return false;
+            }
+
+            var definition = StatusEffectCatalog.Get(data.effectType);
+            return definition.IsHardControl
+                || definition.ForcesEnemyTarget
+                || data.effectType == StatusEffectType.MoveSpeedModifier && data.magnitude < -Mathf.Epsilon;
+        }
+
+        public static bool IsRestrictedStatusEffect(RuntimeStatusEffect status)
+        {
+            if (status == null || status.EffectType == StatusEffectType.None)
+            {
+                return false;
+            }
+
+            return status.Definition.IsHardControl
+                || status.Definition.ForcesEnemyTarget
+                || status.EffectType == StatusEffectType.MoveSpeedModifier && status.Magnitude < -Mathf.Epsilon;
+        }
+
         public static bool HasPositiveStatusEffect(IReadOnlyList<StatusEffectData> statuses)
         {
             if (statuses == null)
@@ -452,6 +522,34 @@ namespace Fight.Heroes
             {
                 var status = statuses[i];
                 if (!MatchesStatusQuery(status, effectType, statusThemeKey, source, stackGroupKey))
+                {
+                    continue;
+                }
+
+                onRemovedStatus?.Invoke(status);
+                statuses.RemoveAt(i);
+                removedCount++;
+            }
+
+            return removedCount;
+        }
+
+        public static int RemoveStatuses(
+            RuntimeHero hero,
+            Predicate<RuntimeStatusEffect> predicate,
+            Action<RuntimeStatusEffect> onRemovedStatus = null)
+        {
+            if (hero == null || predicate == null)
+            {
+                return 0;
+            }
+
+            var removedCount = 0;
+            var statuses = hero.MutableStatusEffects;
+            for (var i = statuses.Count - 1; i >= 0; i--)
+            {
+                var status = statuses[i];
+                if (status == null || !predicate(status))
                 {
                     continue;
                 }

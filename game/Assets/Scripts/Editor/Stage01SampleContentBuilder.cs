@@ -268,6 +268,22 @@ namespace Fight.Editor
             EnsureHeroSkillReferences(trollwarlord, trollwarlordActive, trollwarlordUltimate);
             EnsureHeroBattlePrefabReference(trollwarlord, LoadBattlePrefab("warrior_005_trollwarlord", HeroClass.Warrior));
 
+            var chainbreakerActive = CreateChainbreakerActiveSkill(overwriteExistingContent);
+            var chainbreakerUltimate = CreateChainbreakerUltimateSkill(overwriteExistingContent, out var chainbreakerUltimateExisted);
+            var chainbreaker = CreateHero(
+                "warrior_006_chainbreaker",
+                "Chainbreaker",
+                HeroClass.Warrior,
+                430f, 41f, 20f, 0.925926f, 4.35f, 0.08f, 1.6f, 1.85f,
+                chainbreakerActive,
+                ConfigureChainbreakerUltimate(chainbreakerUltimate, overwriteExistingContent, chainbreakerUltimateExisted),
+                overwriteExistingContent,
+                out var chainbreakerHeroExisted,
+                HeroTag.Melee, HeroTag.SustainedDamage, HeroTag.Buff);
+            ConfigureChainbreakerBasicAttack(chainbreaker, overwriteExistingContent, chainbreakerHeroExisted);
+            EnsureHeroSkillReferences(chainbreaker, chainbreakerActive, chainbreakerUltimate);
+            EnsureHeroBattlePrefabReference(chainbreaker, LoadBattlePrefab("warrior_006_chainbreaker", HeroClass.Warrior));
+
             var mageUltimateSkill = CreateSkill("skill_mage_ultimate_meteor", "Meteor Fall", SkillSlotType.Ultimate, SkillType.AreaDamage, SkillTargetType.Self, 0f, ScaleRangedHeroDistance(6f), 3.3f, 0f, 3, overwriteExistingContent, out var mageUltimateExisted);
 
             var mage = CreateHero(
@@ -722,7 +738,7 @@ namespace Fight.Editor
 
             var demoHeroes = new[]
             {
-                warrior, bladesman, berserker, spellblade, trollwarlord,
+                warrior, bladesman, berserker, spellblade, trollwarlord, chainbreaker,
                 mage, frostmage, sandemperor, lightningmage, astromancer,
                 assassin, tidefin, butcher, loner, demon,
                 tank, shieldwarden, tidehunter, mundo, blastshield,
@@ -1313,6 +1329,7 @@ namespace Fight.Editor
                 || heroId == "warrior_003_berserker"
                 || heroId == "warrior_004_spellblade"
                 || heroId == "warrior_005_trollwarlord"
+                || heroId == "warrior_006_chainbreaker"
                 || heroId == "mage_001_firemage"
                 || heroId == "mage_002_frostmage"
                 || heroId == "mage_003_sandemperor"
@@ -1432,6 +1449,7 @@ namespace Fight.Editor
                 "warrior_003_berserker" => "持续作战型战士，血线越低越能打出威胁，适合在前排长时间缠斗并吸引火力。队友提供保护时，他能把危险局面拖成反打机会，但不适合被远程阵容长期拉扯。",
                 "warrior_004_spellblade" => "范围压制型战士，依靠剑气和固定魔剑切割战场，让敌人难以舒服站位。适合慢慢挤压阵型，也能在混战中补充稳定范围伤害。队友把敌人留在范围内时收益最高。",
                 "warrior_005_trollwarlord" => "单挑升温型前排，持续盯住同一目标时威胁会不断抬高，适合拉长战斗节奏。需要阵容给他进入近身战的时间，避免被风筝；一旦追不上目标，节奏会被明显拖慢。",
+                "warrior_006_chainbreaker" => "反控制型战士，被敌方限制时会积累怒链，把控制和减速转化成攻速、攻击力和反击斩击。适合对抗冰法、拉拽和硬控阵容，但面对无控制阵容时只是中等强度近战。",
                 "mage_001_firemage" => "范围爆发法师，擅长惩罚扎堆敌人，用火焰区域制造高压站位选择。适合配合控制或拉拽打出团战爆点，但自身需要保护。敌方越密集，他的威慑力越明显，也需要队友帮他争取施法空间。",
                 "mage_002_frostmage" => "控场法师，依靠冰霜区域减缓敌人推进，让前排和射手获得更安全的输出窗口。适合防守反打，也能限制突进阵容的节奏，队伍缺少控制时也能补足减速压力。",
                 "mage_003_sandemperor" => "部署型法师，通过沙卫配合自身普攻建立持续火力点，越能站住阵地越有价值。适合中后排稳定压制，但需要避免被快速切入；阵线被打乱时，沙卫价值会下降。",
@@ -1479,6 +1497,8 @@ namespace Fight.Editor
                 "skill_spellblade_ultimate_boundblade" => "在战场留下魔剑领域，持续伤害并牵制附近敌人。",
                 "skill_trollwarlord_active_warlordreach" => "在近身战中临时强化攻击距离和输出能力。",
                 "skill_trollwarlord_ultimate_deathlessfrenzy" => "濒死时进入狂热窗口，短时间避免倒下并保持高压输出。",
+                "skill_chainbreaker_active_breakfree" => "解除自身负面状态并短暂提升攻速，若已有怒链则消耗层数追加重斧斩击。",
+                "skill_chainbreaker_ultimate_unchainedrampage" => "开启时解除自身控制，随后短时间把敌方限制转化为攻击力，并在结束时范围斩击。",
                 "skill_mage_active_emberburst" => "在目标区域引爆火焰，处理聚集敌人。",
                 "skill_mage_ultimate_meteor" => "召唤持续火焰区域，长时间压制敌方站位。",
                 "skill_mage_active_firebolt" => "发射火焰弹，对单个敌人造成稳定伤害。",
@@ -3824,6 +3844,164 @@ namespace Fight.Editor
             skill.description = "Stage-01 demo skill: prevent non-execute lethal damage from reducing health below 1 and treat Fervor attack speed as full stacks for a short window.";
         }
 
+        private static SkillData CreateChainbreakerActiveSkill(bool overwriteExistingContent)
+        {
+            var skill = CreateSkill(
+                "skill_chainbreaker_active_breakfree",
+                "Break Free",
+                SkillSlotType.ActiveSkill,
+                SkillType.Buff,
+                SkillTargetType.Self,
+                0f,
+                0f,
+                0f,
+                8f,
+                1,
+                overwriteExistingContent,
+                out var existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.activationMode = SkillActivationMode.Active;
+            skill.skillType = SkillType.Buff;
+            skill.targetType = SkillTargetType.Self;
+            skill.fallbackTargetType = SkillTargetType.None;
+            skill.castRange = 0f;
+            skill.areaRadius = 0f;
+            skill.cooldownSeconds = 8f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = true;
+            skill.effects.Clear();
+            ResetPassiveSkillData(skill);
+            ResetTemporaryOverride(skill);
+
+            skill.passiveSkill.restrictedStatusMaxStacks = 5;
+            skill.passiveSkill.restrictedStatusStackDurationSeconds = 6f;
+            skill.passiveSkill.restrictedStatusAttackSpeedBonusPerStack = 0.06f;
+            skill.passiveSkill.restrictedStatusSameSourceCooldownSeconds = 0.8f;
+
+            skill.effects.Add(new SkillEffectData
+            {
+                effectType = SkillEffectType.CleanseStatusEffects,
+                targetMode = SkillEffectTargetMode.Caster,
+                cleanseAllNegativeStatuses = true,
+            });
+
+            var attackSpeedEffect = AddApplyStatusEffectsEffect(skill);
+            attackSpeedEffect.targetMode = SkillEffectTargetMode.Caster;
+            attackSpeedEffect.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.AttackSpeedModifier,
+                durationSeconds = 2.5f,
+                magnitude = 0.35f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
+            skill.effects.Add(new SkillEffectData
+            {
+                effectType = SkillEffectType.ConsumeRestrictedStatusStacksDamage,
+                targetMode = SkillEffectTargetMode.Caster,
+                powerMultiplier = 1.2f,
+                bonusPowerMultiplierPerStatusStack = 0.3f,
+                radiusOverride = 2.4f,
+            });
+
+            skill.description = "Stage-01 demo skill: cleanse self, gain short attack speed, and spend Rage Chain stacks for a nearby heavy axe slash.";
+            ResetUltimateDecision(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateChainbreakerUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
+        {
+            var skill = CreateSkill(
+                "skill_chainbreaker_ultimate_unchainedrampage",
+                "Unchained Rampage",
+                SkillSlotType.Ultimate,
+                SkillType.Buff,
+                SkillTargetType.Self,
+                2.8f,
+                3.4f,
+                0f,
+                0f,
+                1,
+                overwriteExistingContent,
+                out existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            ApplyChainbreakerUltimateBaseConfiguration(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData ConfigureChainbreakerUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            ApplyChainbreakerUltimateBaseConfiguration(skill);
+
+            ResetUltimateDecision(skill);
+            skill.ultimateDecision.targetingType = UltimateTargetingType.CurrentTargetOnly;
+            skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;
+            skill.ultimateDecision.primaryCondition.searchRadius = 4.2f;
+            skill.ultimateDecision.primaryCondition.requiredUnitCount = 2;
+            skill.ultimateDecision.secondaryCondition.conditionType = UltimateConditionType.None;
+            skill.ultimateDecision.combineMode = UltimateConditionCombineMode.PrimaryOnly;
+            skill.ultimateDecision.fallback.fallbackType = UltimateFallbackType.LowerPrimaryThreshold;
+            skill.ultimateDecision.fallback.triggerAfterSeconds = 45f;
+            skill.ultimateDecision.fallback.overrideRequiredUnitCount = 1;
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static void ApplyChainbreakerUltimateBaseConfiguration(SkillData skill)
+        {
+            skill.activationMode = SkillActivationMode.Active;
+            skill.skillType = SkillType.Buff;
+            skill.targetType = SkillTargetType.Self;
+            skill.fallbackTargetType = SkillTargetType.None;
+            skill.castRange = 2.8f;
+            skill.areaRadius = 3.4f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = true;
+            skill.effects.Clear();
+            ResetPassiveSkillData(skill);
+            ResetTemporaryOverride(skill);
+
+            skill.effects.Add(new SkillEffectData
+            {
+                effectType = SkillEffectType.CleanseStatusEffects,
+                targetMode = SkillEffectTargetMode.Caster,
+                cleanseAllNegativeStatuses = false,
+            });
+
+            skill.temporaryOverride.durationSeconds = 5.5f;
+            skill.temporaryOverride.convertRestrictedStatusesToAttackPower = true;
+            skill.temporaryOverride.restrictedStatusAttackPowerBonusPerStack = 0.08f;
+            skill.temporaryOverride.restrictedStatusMaxAttackPowerBonus = 0.4f;
+            skill.temporaryOverride.restrictedStatusSameSourceCooldownSeconds = 0.8f;
+            skill.temporaryOverride.restrictedStatusFinisherMaxStacks = 8;
+            skill.temporaryOverride.restrictedStatusFinisherRadius = 3.4f;
+            skill.temporaryOverride.restrictedStatusFinisherBasePowerMultiplier = 1.4f;
+            skill.temporaryOverride.restrictedStatusFinisherBonusPowerMultiplierPerStack = 0.35f;
+            skill.temporaryOverride.visualScaleMultiplier = 1.12f;
+            skill.temporaryOverride.visualTintColor = new Color(1f, 0.48f, 0.24f, 1f);
+            skill.temporaryOverride.visualTintStrength = 0.35f;
+            skill.description = "Stage-01 demo skill: cleanse current control, convert later restrictions into attack power, then finish with an area axe slash.";
+        }
+
+
         private static void AddDefaultEffectsForSkill(SkillData skill, float powerMultiplier)
         {
             switch (skill.skillType)
@@ -3901,7 +4079,8 @@ namespace Fight.Editor
             SkillData skill,
             float durationSeconds = 0f,
             float peakHeight = 0f,
-            float dashDistance = 0f)
+            float dashDistance = 0f,
+            float stopDistance = 0f)
         {
             var effect = new SkillEffectData
             {
@@ -3910,6 +4089,7 @@ namespace Fight.Editor
                 forcedMovementDurationSeconds = durationSeconds,
                 forcedMovementPeakHeight = peakHeight,
                 forcedMovementDistance = dashDistance,
+                radiusOverride = stopDistance,
             };
             skill.effects.Add(effect);
             return effect;
@@ -4484,6 +4664,30 @@ namespace Fight.Editor
             EditorUtility.SetDirty(hero);
         }
 
+        private static void ConfigureChainbreakerBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (hero == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return;
+            }
+
+            hero.basicAttack.damageMultiplier = 1f;
+            hero.basicAttack.attackInterval = 1.08f;
+            hero.basicAttack.rangeOverride = 1.85f;
+            hero.basicAttack.usesProjectile = false;
+            hero.basicAttack.projectileSpeed = 0f;
+            hero.basicAttack.effectType = BasicAttackEffectType.Damage;
+            hero.basicAttack.targetType = BasicAttackTargetType.NearestEnemy;
+            hero.basicAttack.targetPrioritySearchRadius = 0f;
+            EnsureBasicAttackStatusList(hero.basicAttack);
+            ResetSameTargetStacking(hero.basicAttack);
+            ResetBasicAttackOnHitEffect(hero.basicAttack);
+            hero.basicAttack.onHitStatusEffects.Clear();
+            hero.debugNotes = "Stage-01 demo hero for Warrior. Chainbreaker validates restricted-status stack gain, self cleanse, stack-consuming slash, and ultimate restricted-status conversion.";
+            EditorUtility.SetDirty(hero);
+        }
+
+
         private static void ConfigureLongshotBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
         {
             if (hero == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
@@ -5001,6 +5205,10 @@ namespace Fight.Editor
             skill.passiveSkill.killParticipationAttackSpeedBonusPerStack = 0f;
             skill.passiveSkill.killParticipationHealPercentMaxHealth = 0f;
             skill.passiveSkill.killParticipationMaxStacks = 0;
+            skill.passiveSkill.restrictedStatusMaxStacks = 0;
+            skill.passiveSkill.restrictedStatusStackDurationSeconds = 0f;
+            skill.passiveSkill.restrictedStatusAttackSpeedBonusPerStack = 0f;
+            skill.passiveSkill.restrictedStatusSameSourceCooldownSeconds = 0f;
         }
 
         private static void ResetDamageTriggeredStatusCounter(SkillData skill)
@@ -5042,6 +5250,7 @@ namespace Fight.Editor
             skill.damageTriggeredStatusCounter.triggerStatusEffects.Clear();
         }
 
+
         private static void ResetTemporaryOverride(SkillData skill)
         {
             if (skill == null)
@@ -5064,6 +5273,14 @@ namespace Fight.Editor
             skill.temporaryOverride.visualScaleMultiplier = 1f;
             skill.temporaryOverride.visualTintColor = Color.white;
             skill.temporaryOverride.visualTintStrength = 0f;
+            skill.temporaryOverride.convertRestrictedStatusesToAttackPower = false;
+            skill.temporaryOverride.restrictedStatusAttackPowerBonusPerStack = 0f;
+            skill.temporaryOverride.restrictedStatusMaxAttackPowerBonus = 0f;
+            skill.temporaryOverride.restrictedStatusSameSourceCooldownSeconds = 0f;
+            skill.temporaryOverride.restrictedStatusFinisherMaxStacks = 0;
+            skill.temporaryOverride.restrictedStatusFinisherRadius = 0f;
+            skill.temporaryOverride.restrictedStatusFinisherBasePowerMultiplier = 0f;
+            skill.temporaryOverride.restrictedStatusFinisherBonusPowerMultiplierPerStack = 0f;
         }
 
         private static void ResetReactiveGuard(SkillData skill)
@@ -7312,6 +7529,8 @@ namespace Fight.Editor
                 "skill_spellblade_ultimate_boundblade" => "warrior_004_spellblade",
                 "skill_trollwarlord_active_warlordreach" => "warrior_005_trollwarlord",
                 "skill_trollwarlord_ultimate_deathlessfrenzy" => "warrior_005_trollwarlord",
+                "skill_chainbreaker_active_breakfree" => "warrior_006_chainbreaker",
+                "skill_chainbreaker_ultimate_unchainedrampage" => "warrior_006_chainbreaker",
                 "skill_tidehunter_active_undertowcarapace" => "tank_003_tidehunter",
                 "skill_tidehunter_ultimate_tidalrebound" => "tank_003_tidehunter",
                 "skill_mundo_active_brutemetabolism" => "tank_004_mundo",

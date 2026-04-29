@@ -51,6 +51,18 @@ namespace Fight.Battle
                 var destination = spreadDestinations.TryGetValue(target.RuntimeId, out var assignedDestination)
                     ? assignedDestination
                     : GetForcedMovementDestination(anchorPosition, target, effect, distance);
+                if (target.TryConvertIncomingForcedMovement(
+                        source,
+                        sourceSkill,
+                        out _,
+                        out _,
+                        out _,
+                        out _,
+                        out _))
+                {
+                    continue;
+                }
+
                 target.StartForcedMovement(destination, durationSeconds, peakHeight);
 
                 if (source != null)

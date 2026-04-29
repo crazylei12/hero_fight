@@ -31,6 +31,7 @@ namespace Fight.Battle
             BattleSkillSystem.TickDelayedSkillEffects(context, deltaTime, battleCallbacks);
             BattleSkillSystem.TickReturningPathStrikes(context, deltaTime, battleCallbacks);
             BattleSkillSystem.TickRadialSweeps(context, deltaTime, battleCallbacks);
+            BattleKnockUpFollowUpSystem.Flush(context, battleCallbacks);
             ResolveHeroMinimumSeparation(context);
         }
 
@@ -86,6 +87,7 @@ namespace Fight.Battle
                 previousTemporaryLifestealRatio,
                 previousVisualScaleMultiplier,
                 previousVisualTintStrength);
+            BattleSkillSystem.ResolvePendingRestrictedStatusFinishers(context, hero, battleCallbacks);
 
             if (hero.IsDead)
             {
@@ -123,6 +125,11 @@ namespace Fight.Battle
 
             if (hero.IsUnderForcedMovement || hero.IsActionLocked)
             {
+                if (context.Input.enableSkills)
+                {
+                    BattleSkillSystem.TryCastSkill(context, hero, battleCallbacks);
+                }
+
                 return;
             }
 
@@ -131,7 +138,7 @@ namespace Fight.Battle
                 return;
             }
 
-            if (context.Input.enableSkills && hero.CanCastSkills && BattleSkillSystem.TryCastSkill(context, hero, battleCallbacks))
+            if (context.Input.enableSkills && BattleSkillSystem.TryCastSkill(context, hero, battleCallbacks))
             {
                 return;
             }

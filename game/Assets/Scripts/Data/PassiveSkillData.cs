@@ -24,6 +24,10 @@ namespace Fight.Data
         [Min(0f)] public float killParticipationAttackSpeedBonusPerStack = 0f;
         [Range(0f, 1f)] public float killParticipationHealPercentMaxHealth = 0f;
         [Min(0)] public int killParticipationMaxStacks = 0;
+        [Min(0)] public int restrictedStatusMaxStacks = 0;
+        [Min(0f)] public float restrictedStatusStackDurationSeconds = 0f;
+        [Min(0f)] public float restrictedStatusAttackSpeedBonusPerStack = 0f;
+        [Min(0f)] public float restrictedStatusSameSourceCooldownSeconds = 0f;
 
         public bool HasMissingHealthAttackPowerBonus =>
             missingHealthAttackPowerRatio > Mathf.Epsilon
@@ -49,6 +53,10 @@ namespace Fight.Data
             && (killParticipationAttackPowerBonusPerStack > Mathf.Epsilon
                 || killParticipationAttackSpeedBonusPerStack > Mathf.Epsilon
                 || killParticipationHealPercentMaxHealth > Mathf.Epsilon);
+
+        public bool HasRestrictedStatusStacking =>
+            restrictedStatusMaxStacks > 0
+            && restrictedStatusAttackSpeedBonusPerStack > Mathf.Epsilon;
 
         public float ResolvePeriodicSelfHealPercentMaxHealth(float currentHealthRatio)
         {

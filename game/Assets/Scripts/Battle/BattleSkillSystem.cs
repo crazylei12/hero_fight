@@ -175,7 +175,12 @@ namespace Fight.Battle
 
             if (!caster.CanCastSkills)
             {
-                return false;
+                if (TryCastActiveSkill(context, caster, caster.Definition?.activeSkill, battleManager))
+                {
+                    return true;
+                }
+
+                return TryCastUltimate(context, caster, caster.Definition?.ultimateSkill, battleManager);
             }
 
             if (TryCastUltimate(context, caster, caster.Definition?.ultimateSkill, battleManager))
@@ -184,6 +189,57 @@ namespace Fight.Battle
             }
 
             return TryCastActiveSkill(context, caster, caster.Definition?.activeSkill, battleManager);
+        }
+
+        private static bool CanSkillBypassCastRestrictions(SkillData skill)
+        {
+            if (skill == null)
+            {
+                return false;
+            }
+
+            if (skill.temporaryOverride != null && skill.temporaryOverride.HasRestrictedStatusConversion)
+            {
+                return true;
+            }
+
+            if (HasCastRestrictionBypassEffect(skill.effects))
+            {
+                return true;
+            }
+
+            if (skill.variants == null)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < skill.variants.Count; i++)
+            {
+                if (HasCastRestrictionBypassEffect(skill.variants[i]?.effects))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool HasCastRestrictionBypassEffect(IReadOnlyList<SkillEffectData> effects)
+        {
+            if (effects == null)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < effects.Count; i++)
+            {
+                if (effects[i]?.effectType == SkillEffectType.CleanseStatusEffects)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static bool TryCastActiveSkill(BattleContext context, RuntimeHero caster, SkillData skill, IBattleSimulationCallbacks battleManager)
@@ -205,7 +261,7 @@ namespace Fight.Battle
 
             if (skill.activationMode != SkillActivationMode.Active
                 || skill.slotType != SkillSlotType.Ultimate
-                || !caster.CanUseUltimate())
+                || !caster.CanUseUltimate(CanSkillBypassCastRestrictions(skill)))
             {
                 return false;
             }
@@ -386,12 +442,12 @@ namespace Fight.Battle
                 return false;
             }
 
-            if (skill.slotType == SkillSlotType.ActiveSkill && !caster.CanUseActiveSkill())
+            if (skill.slotType == SkillSlotType.ActiveSkill && !caster.CanUseActiveSkill(CanSkillBypassCastRestrictions(skill)))
             {
                 return false;
             }
 
-            if (skill.slotType == SkillSlotType.Ultimate && !caster.CanUseUltimate())
+            if (skill.slotType == SkillSlotType.Ultimate && !caster.CanUseUltimate(CanSkillBypassCastRestrictions(skill)))
             {
                 return false;
             }
@@ -783,6 +839,8 @@ namespace Fight.Battle
                     return FindFirstGlobalTeamTarget(context.Heroes, caster, skill, targetType, includeAllies: false);
                 case SkillTargetType.NearestEnemy:
                     return SelectCurrentOrNearestEnemyTarget(context, caster, resolvedSkill, effectiveCastRange);
+                case SkillTargetType.RandomEnemyInRange:
+                    return SelectRandomEnemyTarget(context, caster, resolvedSkill, effectiveCastRange, excludedSequenceTargets);
                 case SkillTargetType.CurrentEnemyTarget:
                     var currentEnemyTarget = SelectCurrentEnemyTarget(context, caster, resolvedSkill, effectiveCastRange);
                     if (currentEnemyTarget != null || !allowFallbackForPriorityTarget)
@@ -970,6 +1028,44 @@ namespace Fight.Battle
             }
 
             return BattleAiDirector.SelectNearestEnemyTarget(context.Heroes, caster, effectiveCastRange);
+        }
+
+        private static RuntimeHero SelectRandomEnemyTarget(
+            BattleContext context,
+            RuntimeHero caster,
+            ResolvedSkillCast resolvedSkill,
+            float effectiveCastRange,
+            RuntimeCombatActionSequence excludedSequenceTargets)
+        {
+            var candidates = new List<RuntimeHero>();
+            if (context?.Heroes == null || caster == null || resolvedSkill?.Skill == null)
+            {
+                return null;
+            }
+
+            for (var i = 0; i < context.Heroes.Count; i++)
+            {
+                var candidate = context.Heroes[i];
+                if (candidate == null
+                    || excludedSequenceTargets != null && excludedSequenceTargets.HasExecutedTarget(candidate)
+                    || !IsValidTargetForSkill(resolvedSkill, caster, candidate)
+                    || !IsPrimaryTargetStillValidForCastRange(resolvedSkill, caster, candidate, effectiveCastRange))
+                {
+                    continue;
+                }
+
+                candidates.Add(candidate);
+            }
+
+            if (candidates.Count == 0)
+            {
+                return null;
+            }
+
+            var index = context.RandomService != null
+                ? context.RandomService.Range(0, candidates.Count)
+                : 0;
+            return candidates[Mathf.Clamp(index, 0, candidates.Count - 1)];
         }
 
         private static RuntimeHero SelectCurrentEnemyTarget(
@@ -1284,6 +1380,7 @@ namespace Fight.Battle
                 case SkillTargetType.AllEnemies:
                 case SkillTargetType.CurrentEnemyTarget:
                 case SkillTargetType.FarthestEnemyFromSelf:
+                case SkillTargetType.RandomEnemyInRange:
                     return candidate.Side != caster.Side;
                 case SkillTargetType.ThreatenedRangedAllyOrEnemyDensestAnchor:
                     return true;
@@ -2542,11 +2639,14 @@ namespace Fight.Battle
                 return;
             }
 
+            var resolveRestrictionBypassImmediately = consumeCooldown
+                && !caster.CanCastSkills
+                && CanSkillBypassCastRestrictions(skill);
             caster.BeginSkillCast(
                 resolvedSkill,
                 primaryTarget,
                 affectedTargets,
-                windupSeconds,
+                resolveRestrictionBypassImmediately ? 0f : windupSeconds,
                 recoverySeconds,
                 consumeCooldown,
                 suppressActionSequenceTrigger,
@@ -2564,6 +2664,11 @@ namespace Fight.Battle
                 primaryTarget,
                 GetSkillCastAffectedTargetCount(context, caster, resolvedSkill, primaryTarget, affectedTargets),
                 resolvedSkill.VariantKey));
+
+            if (resolveRestrictionBypassImmediately && caster.TryConsumeReadyCombatAction(out var pendingAction))
+            {
+                ResolvePendingSkillCast(context, caster, pendingAction, battleManager);
+            }
         }
 
         private static void ResolveSkillEffects(
@@ -2935,6 +3040,12 @@ namespace Fight.Battle
                 case SkillEffectType.ApplyStatusEffects:
                     ApplyStatusEffectsToTargets(context, caster, skill, effect, effectTargets);
                     break;
+                case SkillEffectType.CleanseStatusEffects:
+                    CleanseStatusEffects(context, caster, effect, effectTargets);
+                    break;
+                case SkillEffectType.ConsumeRestrictedStatusStacksDamage:
+                    ApplyRestrictedStatusStackSlash(context, caster, skill, effect, battleManager);
+                    break;
                 case SkillEffectType.CreateFocusFireCommand:
                     BattleFocusFireCommandSystem.Register(context, caster, skill, primaryTarget, effect);
                     break;
@@ -3084,6 +3195,150 @@ namespace Fight.Battle
             {
                 ApplyStatuses(context, caster, sourceSkill, effect?.statusEffects, targets[i]);
             }
+        }
+
+        private static void CleanseStatusEffects(BattleContext context, RuntimeHero caster, SkillEffectData effect, List<RuntimeHero> targets)
+        {
+            if (targets == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < targets.Count; i++)
+            {
+                var target = targets[i];
+                if (target == null || target.IsDead)
+                {
+                    continue;
+                }
+
+                StatusEffectSystem.RemoveStatuses(
+                    target,
+                    status => effect != null && effect.cleanseAllNegativeStatuses
+                        ? StatusEffectSystem.IsNegativeStatusEffect(status)
+                        : StatusEffectSystem.IsRestrictedStatusEffect(status),
+                    status => PublishStatusRemovedEvent(context, target, status));
+
+                if (target == caster || effect == null || effect.cleanseAllNegativeStatuses)
+                {
+                    target.StopForcedMovement();
+                }
+            }
+        }
+
+        private static void ApplyRestrictedStatusStackSlash(
+            BattleContext context,
+            RuntimeHero caster,
+            SkillData skill,
+            SkillEffectData effect,
+            IBattleSimulationCallbacks battleManager)
+        {
+            if (context == null || caster == null || caster.IsDead || effect == null)
+            {
+                return;
+            }
+
+            var radius = GetEffectRadius(skill, effect);
+            var target = BattleAiDirector.SelectNearestEnemyTarget(context.Heroes, caster, radius);
+            if (target == null)
+            {
+                return;
+            }
+
+            var consumedStacks = caster.ConsumeRestrictedStatusPassiveStacks(
+                out var passiveSkill,
+                out var maxStacks,
+                out _);
+            if (consumedStacks <= 0)
+            {
+                return;
+            }
+
+            if (passiveSkill != null)
+            {
+                context.EventBus?.Publish(new PassiveStackChangedEvent(
+                    caster,
+                    passiveSkill,
+                    consumedStacks,
+                    0,
+                    maxStacks,
+                    0f,
+                    0f,
+                    0f));
+            }
+
+            var slashEffect = new SkillEffectData
+            {
+                effectType = SkillEffectType.DirectDamage,
+                powerMultiplier = Mathf.Max(0f, effect.powerMultiplier)
+                    + Mathf.Max(0, consumedStacks) * Mathf.Max(0f, effect.bonusPowerMultiplierPerStatusStack),
+            };
+            ApplyDamageToTargets(
+                context,
+                caster,
+                skill,
+                slashEffect,
+                new List<RuntimeHero> { target },
+                battleManager);
+        }
+
+        public static void ResolvePendingRestrictedStatusFinishers(
+            BattleContext context,
+            RuntimeHero caster,
+            IBattleSimulationCallbacks battleManager)
+        {
+            if (context == null || caster == null || caster.IsDead)
+            {
+                return;
+            }
+
+            while (caster.TryDequeuePendingRestrictedStatusFinisher(
+                out var sourceSkill,
+                out _,
+                out var radius,
+                out var powerMultiplier))
+            {
+                var targets = CollectAliveEnemiesInRadius(context, caster, caster.CurrentPosition, radius);
+                if (targets.Count <= 0)
+                {
+                    continue;
+                }
+
+                var finisherEffect = new SkillEffectData
+                {
+                    effectType = SkillEffectType.DirectDamage,
+                    powerMultiplier = powerMultiplier,
+                };
+                ApplyDamageToTargets(context, caster, sourceSkill, finisherEffect, targets, battleManager);
+            }
+        }
+
+        private static List<RuntimeHero> CollectAliveEnemiesInRadius(BattleContext context, RuntimeHero caster, Vector3 center, float radius)
+        {
+            var results = new List<RuntimeHero>();
+            if (context?.Heroes == null || caster == null || radius <= Mathf.Epsilon)
+            {
+                return results;
+            }
+
+            center.y = 0f;
+            for (var i = 0; i < context.Heroes.Count; i++)
+            {
+                var candidate = context.Heroes[i];
+                if (candidate == null || candidate.IsDead || candidate.Side == caster.Side)
+                {
+                    continue;
+                }
+
+                var candidatePosition = candidate.CurrentPosition;
+                candidatePosition.y = 0f;
+                if (Vector3.Distance(center, candidatePosition) <= radius)
+                {
+                    results.Add(candidate);
+                }
+            }
+
+            return results;
         }
 
         private static void ApplyForcedMovementToTargets(BattleContext context, RuntimeHero caster, SkillData sourceSkill, SkillEffectData effect, List<RuntimeHero> targets)
@@ -5052,9 +5307,12 @@ namespace Fight.Battle
             }
 
             var dashDistance = effect != null ? Mathf.Max(0f, effect.forcedMovementDistance) : 0f;
+            var stopDistance = effect != null && effect.radiusOverride > Mathf.Epsilon
+                ? effect.radiusOverride
+                : 0.8f;
             var destination = dashDistance > Mathf.Epsilon
                 ? casterPosition + offset.normalized * dashDistance
-                : targetPosition - offset.normalized * 0.8f;
+                : targetPosition - offset.normalized * stopDistance;
             destination.y = 0f;
             return Stage01ArenaSpec.ClampPosition(destination);
         }

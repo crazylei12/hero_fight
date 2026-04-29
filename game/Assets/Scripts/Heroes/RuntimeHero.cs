@@ -76,6 +76,8 @@ namespace Fight.Heroes
 
         private sealed class RuntimeSkillTemporaryOverride
         {
+            private readonly Dictionary<string, float> restrictedStatusConversionTimesBySourceKey = new Dictionary<string, float>();
+
             public RuntimeSkillTemporaryOverride(SkillData sourceSkill, SkillTemporaryOverrideData definition)
             {
                 SourceSkill = sourceSkill;
@@ -104,6 +106,31 @@ namespace Fight.Heroes
 
             public float VisualTintStrength { get; private set; }
 
+            public bool ConvertRestrictedStatusesToAttackPower { get; private set; }
+
+            public int RestrictedStatusStackCount { get; private set; }
+
+            public float RestrictedStatusAttackPowerBonusPerStack { get; private set; }
+
+            public float RestrictedStatusMaxAttackPowerBonus { get; private set; }
+
+            public float RestrictedStatusSameSourceCooldownSeconds { get; private set; }
+
+            public int RestrictedStatusFinisherMaxStacks { get; private set; }
+
+            public float RestrictedStatusFinisherRadius { get; private set; }
+
+            public float RestrictedStatusFinisherBasePowerMultiplier { get; private set; }
+
+            public float RestrictedStatusFinisherBonusPowerMultiplierPerStack { get; private set; }
+
+            public float RestrictedStatusAttackPowerBonusMultiplier =>
+                ConvertRestrictedStatusesToAttackPower
+                    ? Mathf.Min(
+                        Mathf.Max(0f, RestrictedStatusMaxAttackPowerBonus),
+                        RestrictedStatusStackCount * Mathf.Max(0f, RestrictedStatusAttackPowerBonusPerStack))
+                    : 0f;
+
             public void Refresh(SkillTemporaryOverrideData definition)
             {
                 RemainingDurationSeconds = definition != null ? Mathf.Max(0f, definition.durationSeconds) : 0f;
@@ -116,6 +143,16 @@ namespace Fight.Heroes
                 VisualScaleMultiplier = definition != null ? Mathf.Max(1f, definition.visualScaleMultiplier) : 1f;
                 VisualTintColor = definition != null ? definition.visualTintColor : Color.white;
                 VisualTintStrength = definition != null ? Mathf.Clamp01(definition.visualTintStrength) : 0f;
+                ConvertRestrictedStatusesToAttackPower = definition != null && definition.HasRestrictedStatusConversion;
+                RestrictedStatusStackCount = 0;
+                RestrictedStatusAttackPowerBonusPerStack = definition != null ? Mathf.Max(0f, definition.restrictedStatusAttackPowerBonusPerStack) : 0f;
+                RestrictedStatusMaxAttackPowerBonus = definition != null ? Mathf.Max(0f, definition.restrictedStatusMaxAttackPowerBonus) : 0f;
+                RestrictedStatusSameSourceCooldownSeconds = definition != null ? Mathf.Max(0f, definition.restrictedStatusSameSourceCooldownSeconds) : 0f;
+                RestrictedStatusFinisherMaxStacks = definition != null ? Mathf.Max(0, definition.restrictedStatusFinisherMaxStacks) : 0;
+                RestrictedStatusFinisherRadius = definition != null ? Mathf.Max(0f, definition.restrictedStatusFinisherRadius) : 0f;
+                RestrictedStatusFinisherBasePowerMultiplier = definition != null ? Mathf.Max(0f, definition.restrictedStatusFinisherBasePowerMultiplier) : 0f;
+                RestrictedStatusFinisherBonusPowerMultiplierPerStack = definition != null ? Mathf.Max(0f, definition.restrictedStatusFinisherBonusPowerMultiplierPerStack) : 0f;
+                restrictedStatusConversionTimesBySourceKey.Clear();
             }
 
             public void Tick(float deltaTime)
@@ -124,6 +161,70 @@ namespace Fight.Heroes
             }
 
             public bool IsExpired => RemainingDurationSeconds <= Mathf.Epsilon;
+
+            public bool TryConvertRestrictedStatus(
+                string sourceKey,
+                float currentTimeSeconds,
+                out int previousStackCount,
+                out int currentStackCount,
+                out int maxStacks,
+                out float attackPowerBonusMultiplier)
+            {
+                previousStackCount = RestrictedStatusStackCount;
+                currentStackCount = RestrictedStatusStackCount;
+                maxStacks = ResolveRestrictedStatusMaxStacks();
+                attackPowerBonusMultiplier = RestrictedStatusAttackPowerBonusMultiplier;
+                if (!ConvertRestrictedStatusesToAttackPower || maxStacks <= 0)
+                {
+                    return false;
+                }
+
+                if (!CanTriggerFromSource(
+                        restrictedStatusConversionTimesBySourceKey,
+                        sourceKey,
+                        currentTimeSeconds,
+                        RestrictedStatusSameSourceCooldownSeconds))
+                {
+                    return false;
+                }
+
+                if (RestrictedStatusStackCount < maxStacks)
+                {
+                    RestrictedStatusStackCount++;
+                }
+
+                currentStackCount = RestrictedStatusStackCount;
+                attackPowerBonusMultiplier = RestrictedStatusAttackPowerBonusMultiplier;
+                return true;
+            }
+
+            public bool HasRestrictedStatusFinisher =>
+                RestrictedStatusFinisherRadius > Mathf.Epsilon
+                && (RestrictedStatusFinisherBasePowerMultiplier > Mathf.Epsilon
+                    || RestrictedStatusFinisherBonusPowerMultiplierPerStack > Mathf.Epsilon);
+
+            public int RestrictedStatusFinisherStackCount =>
+                RestrictedStatusFinisherMaxStacks > 0
+                    ? Mathf.Min(RestrictedStatusStackCount, RestrictedStatusFinisherMaxStacks)
+                    : RestrictedStatusStackCount;
+
+            public float RestrictedStatusFinisherPowerMultiplier =>
+                RestrictedStatusFinisherBasePowerMultiplier
+                + RestrictedStatusFinisherStackCount * RestrictedStatusFinisherBonusPowerMultiplierPerStack;
+
+            private int ResolveRestrictedStatusMaxStacks()
+            {
+                var byFinisher = Mathf.Max(0, RestrictedStatusFinisherMaxStacks);
+                if (RestrictedStatusAttackPowerBonusPerStack <= Mathf.Epsilon)
+                {
+                    return byFinisher;
+                }
+
+                var byAttackPower = RestrictedStatusMaxAttackPowerBonus > Mathf.Epsilon
+                    ? Mathf.CeilToInt(RestrictedStatusMaxAttackPowerBonus / RestrictedStatusAttackPowerBonusPerStack)
+                    : 0;
+                return Mathf.Max(byFinisher, byAttackPower);
+            }
         }
 
         private sealed class RuntimeCombatFormOverride
@@ -258,8 +359,29 @@ namespace Fight.Heroes
             }
         }
 
+        private sealed class PendingRestrictedStatusFinisher
+        {
+            public PendingRestrictedStatusFinisher(SkillData sourceSkill, int stackCount, float radius, float powerMultiplier)
+            {
+                SourceSkill = sourceSkill;
+                StackCount = Mathf.Max(0, stackCount);
+                Radius = Mathf.Max(0f, radius);
+                PowerMultiplier = Mathf.Max(0f, powerMultiplier);
+            }
+
+            public SkillData SourceSkill { get; }
+
+            public int StackCount { get; }
+
+            public float Radius { get; }
+
+            public float PowerMultiplier { get; }
+        }
+
         private sealed class RuntimePassiveSkillState
         {
+            private readonly Dictionary<string, float> restrictedStatusStackTimesBySourceKey = new Dictionary<string, float>();
+
             public RuntimePassiveSkillState(SkillData sourceSkill)
             {
                 SourceSkill = sourceSkill;
@@ -275,10 +397,89 @@ namespace Fight.Heroes
 
             public float LastReportedPeriodicSelfHealPercentMaxHealth { get; set; } = -1f;
 
+            public int RestrictedStatusStacks { get; private set; }
+
+            public float RestrictedStatusStackRemainingSeconds { get; private set; }
+
             public void InitializePeriodicSelfHealTimer(float intervalSeconds)
             {
                 HasInitializedPeriodicSelfHealTimer = true;
                 PeriodicSelfHealTickRemainingSeconds = Mathf.Max(0.1f, intervalSeconds);
+            }
+
+            public bool TryGainRestrictedStatusStack(
+                PassiveSkillData passiveData,
+                string sourceKey,
+                float currentTimeSeconds,
+                out int previousStackCount,
+                out int currentStackCount,
+                out int maxStacks,
+                out float attackSpeedBonusMultiplier)
+            {
+                previousStackCount = RestrictedStatusStacks;
+                currentStackCount = RestrictedStatusStacks;
+                maxStacks = passiveData != null ? Mathf.Max(0, passiveData.restrictedStatusMaxStacks) : 0;
+                attackSpeedBonusMultiplier = GetRestrictedStatusAttackSpeedBonus(passiveData);
+                if (passiveData == null || !passiveData.HasRestrictedStatusStacking || maxStacks <= 0)
+                {
+                    return false;
+                }
+
+                if (!CanTriggerFromSource(
+                        restrictedStatusStackTimesBySourceKey,
+                        sourceKey,
+                        currentTimeSeconds,
+                        passiveData.restrictedStatusSameSourceCooldownSeconds))
+                {
+                    return false;
+                }
+
+                if (RestrictedStatusStacks < maxStacks)
+                {
+                    RestrictedStatusStacks++;
+                }
+
+                RestrictedStatusStackRemainingSeconds = Mathf.Max(0f, passiveData.restrictedStatusStackDurationSeconds);
+                currentStackCount = RestrictedStatusStacks;
+                attackSpeedBonusMultiplier = GetRestrictedStatusAttackSpeedBonus(passiveData);
+                return true;
+            }
+
+            public int ConsumeRestrictedStatusStacks(PassiveSkillData passiveData)
+            {
+                if (passiveData == null || RestrictedStatusStacks <= 0)
+                {
+                    return 0;
+                }
+
+                var consumed = RestrictedStatusStacks;
+                RestrictedStatusStacks = 0;
+                RestrictedStatusStackRemainingSeconds = 0f;
+                return consumed;
+            }
+
+            public void TickRestrictedStatusStacks(float deltaTime)
+            {
+                if (RestrictedStatusStacks <= 0 || RestrictedStatusStackRemainingSeconds <= Mathf.Epsilon)
+                {
+                    return;
+                }
+
+                RestrictedStatusStackRemainingSeconds = Mathf.Max(0f, RestrictedStatusStackRemainingSeconds - Mathf.Max(0f, deltaTime));
+                if (RestrictedStatusStackRemainingSeconds <= Mathf.Epsilon)
+                {
+                    RestrictedStatusStacks = 0;
+                }
+            }
+
+            public float GetRestrictedStatusAttackSpeedBonus(PassiveSkillData passiveData)
+            {
+                if (passiveData == null || !passiveData.HasRestrictedStatusStacking || RestrictedStatusStacks <= 0)
+                {
+                    return 0f;
+                }
+
+                return RestrictedStatusStacks * Mathf.Max(0f, passiveData.restrictedStatusAttackSpeedBonusPerStack);
             }
 
             public void ResetForSpawn()
@@ -286,6 +487,9 @@ namespace Fight.Heroes
                 HasInitializedPeriodicSelfHealTimer = false;
                 PeriodicSelfHealTickRemainingSeconds = 0f;
                 LastReportedPeriodicSelfHealPercentMaxHealth = -1f;
+                RestrictedStatusStacks = 0;
+                RestrictedStatusStackRemainingSeconds = 0f;
+                restrictedStatusStackTimesBySourceKey.Clear();
             }
         }
 
@@ -425,7 +629,8 @@ namespace Fight.Heroes
 
                 var totalModifierDelta = StatusEffectSystem.GetTotalMagnitude(this, StatusEffectType.AttackPowerModifier)
                     + PassiveAttackPowerBonusMultiplier
-                    + CurrentCombatFormAttackPowerModifier;
+                    + CurrentCombatFormAttackPowerModifier
+                    + CurrentRestrictedStatusConversionAttackPowerBonusMultiplier;
                 return Definition.baseStats.attackPower
                     * AthleteModifier.AttackPowerMultiplier
                     * Mathf.Max(0.1f, 1f + totalModifierDelta)
@@ -552,6 +757,8 @@ namespace Fight.Heroes
 
         public float CurrentCombatFormAttackSpeedModifier => activeCombatFormOverride != null ? activeCombatFormOverride.AttackSpeedModifier : 0f;
 
+        public float CurrentRestrictedStatusConversionAttackPowerBonusMultiplier => GetRestrictedStatusConversionAttackPowerBonusMultiplier();
+
         public float AthleteFinalAttackDefenseMultiplier => AthleteModifier.ResolveFinalAttackDefenseMultiplier(CurrentBattleTimeSeconds);
 
         public SkillData CurrentTemporaryOverrideSourceSkill => GetCurrentTemporaryOverrideSourceSkill();
@@ -574,6 +781,7 @@ namespace Fight.Heroes
         private readonly List<RuntimeContributionRecord> recentDirectHostileDamageContributors = new List<RuntimeContributionRecord>();
         private readonly List<RuntimeContributionRecord> recentSupportContributors = new List<RuntimeContributionRecord>();
         private readonly List<RuntimePassiveSkillState> passiveSkillStates = new List<RuntimePassiveSkillState>();
+        private readonly List<PendingRestrictedStatusFinisher> pendingRestrictedStatusFinishers = new List<PendingRestrictedStatusFinisher>();
         private RuntimeForcedMovement activeForcedMovement;
         private RuntimeCombatActionSequence activeCombatActionSequence;
         private RuntimeCombatFormOverride activeCombatFormOverride;
@@ -606,6 +814,7 @@ namespace Fight.Heroes
             activeForcedMovement = null;
             forcedMovementInterruptTicksRemaining = 0;
             activeTemporarySkillOverrides.Clear();
+            pendingRestrictedStatusFinishers.Clear();
             activeCombatFormOverride = null;
             activeReactiveCounter = null;
             ResetPassiveSkillStatesForSpawn();
@@ -688,6 +897,7 @@ namespace Fight.Heroes
             UpdateStatusDrivenVisualHeightOffset();
             ClampActiveSkillCooldownToStatusCap();
             TickTemporarySkillOverrides(deltaTime);
+            TickRestrictedStatusPassiveStacks(deltaTime);
             TickCombatFormOverride(deltaTime);
             TickReactiveCounter(deltaTime);
             if (HasHardControl)
@@ -1119,6 +1329,7 @@ namespace Fight.Heroes
             ClearThreatTracking();
             ClearContributionHistory();
             activeTemporarySkillOverrides.Clear();
+            pendingRestrictedStatusFinishers.Clear();
             if (activeCombatFormOverride == null || activeCombatFormOverride.ExpiresOnDeath)
             {
                 activeCombatFormOverride = null;
@@ -1178,31 +1389,42 @@ namespace Fight.Heroes
             RuntimeHero appliedBy,
             out RuntimeStatusEffect appliedStatus)
         {
+            appliedStatus = null;
+            if (TryConvertIncomingRestrictedStatus(data, source, sourceSkill, out _, out _, out _, out _, out _))
+            {
+                return false;
+            }
+
             var applied = StatusEffectSystem.TryApplyStatus(this, data, source, sourceSkill, appliedBy, out appliedStatus);
             if (applied)
             {
                 ClampActiveSkillCooldownToStatusCap();
+                TryGainRestrictedStatusPassiveStack(data, source, sourceSkill, out _, out _, out _, out _, out _);
             }
 
             return applied;
         }
 
-        public bool CanUseActiveSkill()
+        public bool CanUseActiveSkill(bool ignoreCastRestrictions = false)
         {
             return Definition != null
                 && Definition.activeSkill != null
                 && Definition.activeSkill.activationMode == SkillActivationMode.Active
                 && ActiveSkillCooldownRemainingSeconds <= 0f
-                && CanCastSkills;
+                && (ignoreCastRestrictions
+                    ? !IsActionLocked && !IsReactiveCounterBlockingSkillCasts
+                    : CanCastSkills);
         }
 
-        public bool CanUseUltimate()
+        public bool CanUseUltimate(bool ignoreCastRestrictions = false)
         {
             return Definition != null
                 && Definition.ultimateSkill != null
                 && Definition.ultimateSkill.activationMode == SkillActivationMode.Active
                 && !HasCastUltimate
-                && CanCastSkills;
+                && (ignoreCastRestrictions
+                    ? !IsActionLocked && !IsReactiveCounterBlockingSkillCasts
+                    : CanCastSkills);
         }
 
         public void StartSkillCooldown(SkillSlotType slotType, float cooldownSeconds)
@@ -1254,6 +1476,162 @@ namespace Fight.Heroes
             }
 
             activeTemporarySkillOverrides.Add(new RuntimeSkillTemporaryOverride(sourceSkill, definition));
+        }
+
+        public void StopForcedMovement()
+        {
+            activeForcedMovement = null;
+            forcedMovementInterruptTicksRemaining = 0;
+            VisualHeightOffset = 0f;
+        }
+
+        public bool TryConvertIncomingForcedMovement(
+            RuntimeHero source,
+            SkillData sourceSkill,
+            out SkillData conversionSkill,
+            out int previousStackCount,
+            out int currentStackCount,
+            out int maxStacks,
+            out float attackPowerBonusMultiplier)
+        {
+            if (TryConvertIncomingRestriction(source, sourceSkill, out conversionSkill, out previousStackCount, out currentStackCount, out maxStacks, out attackPowerBonusMultiplier))
+            {
+                TryGainRestrictedStatusPassiveStackFromHostile(source, sourceSkill, out _, out _, out _, out _, out _);
+                return true;
+            }
+
+            TryGainRestrictedStatusPassiveStackFromHostile(source, sourceSkill, out _, out _, out _, out _, out _);
+            return false;
+        }
+
+        public bool TryConvertIncomingRestrictedStatus(
+            StatusEffectData data,
+            RuntimeHero source,
+            SkillData sourceSkill,
+            out SkillData conversionSkill,
+            out int previousStackCount,
+            out int currentStackCount,
+            out int maxStacks,
+            out float attackPowerBonusMultiplier)
+        {
+            conversionSkill = null;
+            previousStackCount = 0;
+            currentStackCount = 0;
+            maxStacks = 0;
+            attackPowerBonusMultiplier = 0f;
+            if (!StatusEffectSystem.IsRestrictedStatusEffect(data))
+            {
+                return false;
+            }
+
+            if (TryConvertIncomingRestriction(
+                source,
+                sourceSkill,
+                out conversionSkill,
+                out previousStackCount,
+                out currentStackCount,
+                out maxStacks,
+                out attackPowerBonusMultiplier))
+            {
+                TryGainRestrictedStatusPassiveStackFromHostile(source, sourceSkill, out _, out _, out _, out _, out _);
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool TryGainRestrictedStatusPassiveStack(
+            StatusEffectData data,
+            RuntimeHero source,
+            SkillData sourceSkill,
+            out SkillData passiveSkill,
+            out int previousStackCount,
+            out int currentStackCount,
+            out int maxStacks,
+            out float attackSpeedBonusMultiplier)
+        {
+            passiveSkill = null;
+            previousStackCount = 0;
+            currentStackCount = 0;
+            maxStacks = 0;
+            attackSpeedBonusMultiplier = 0f;
+            if (!StatusEffectSystem.IsRestrictedStatusEffect(data))
+            {
+                return false;
+            }
+
+            return TryGainRestrictedStatusPassiveStackFromHostile(
+                source,
+                sourceSkill,
+                out passiveSkill,
+                out previousStackCount,
+                out currentStackCount,
+                out maxStacks,
+                out attackSpeedBonusMultiplier);
+        }
+
+        public int ConsumeRestrictedStatusPassiveStacks(
+            out SkillData passiveSkill,
+            out int maxStacks,
+            out float previousAttackSpeedBonusMultiplier)
+        {
+            passiveSkill = null;
+            maxStacks = 0;
+            previousAttackSpeedBonusMultiplier = 0f;
+            var consumedStacks = 0;
+            SkillData resolvedPassiveSkill = null;
+            var resolvedMaxStacks = 0;
+            var resolvedPreviousAttackSpeedBonusMultiplier = 0f;
+            ForEachPassiveSkill((skill, passiveData) =>
+            {
+                if (consumedStacks > 0
+                    || skill == null
+                    || passiveData == null
+                    || !passiveData.HasRestrictedStatusStacking)
+                {
+                    return;
+                }
+
+                var state = GetPassiveSkillState(skill);
+                if (state == null || state.RestrictedStatusStacks <= 0)
+                {
+                    return;
+                }
+
+                resolvedPassiveSkill = skill;
+                resolvedMaxStacks = Mathf.Max(0, passiveData.restrictedStatusMaxStacks);
+                resolvedPreviousAttackSpeedBonusMultiplier = state.GetRestrictedStatusAttackSpeedBonus(passiveData);
+                consumedStacks = state.ConsumeRestrictedStatusStacks(passiveData);
+            });
+
+            passiveSkill = resolvedPassiveSkill;
+            maxStacks = resolvedMaxStacks;
+            previousAttackSpeedBonusMultiplier = resolvedPreviousAttackSpeedBonusMultiplier;
+            return consumedStacks;
+        }
+
+        public bool TryDequeuePendingRestrictedStatusFinisher(
+            out SkillData sourceSkill,
+            out int stackCount,
+            out float radius,
+            out float powerMultiplier)
+        {
+            sourceSkill = null;
+            stackCount = 0;
+            radius = 0f;
+            powerMultiplier = 0f;
+            if (pendingRestrictedStatusFinishers.Count <= 0)
+            {
+                return false;
+            }
+
+            var finisher = pendingRestrictedStatusFinishers[0];
+            pendingRestrictedStatusFinishers.RemoveAt(0);
+            sourceSkill = finisher.SourceSkill;
+            stackCount = finisher.StackCount;
+            radius = finisher.Radius;
+            powerMultiplier = finisher.PowerMultiplier;
+            return sourceSkill != null && radius > Mathf.Epsilon && powerMultiplier > Mathf.Epsilon;
         }
 
         public bool TryGetCurrentBasicAttackOnHitOverride(
@@ -1579,9 +1957,37 @@ namespace Fight.Heroes
                 runtimeOverride.Tick(deltaTime);
                 if (runtimeOverride.IsExpired)
                 {
+                    QueueRestrictedStatusFinisher(runtimeOverride);
                     activeTemporarySkillOverrides.RemoveAt(i);
                 }
             }
+        }
+
+        private void QueueRestrictedStatusFinisher(RuntimeSkillTemporaryOverride runtimeOverride)
+        {
+            if (runtimeOverride == null || IsDead || !runtimeOverride.HasRestrictedStatusFinisher)
+            {
+                return;
+            }
+
+            pendingRestrictedStatusFinishers.Add(new PendingRestrictedStatusFinisher(
+                runtimeOverride.SourceSkill,
+                runtimeOverride.RestrictedStatusFinisherStackCount,
+                runtimeOverride.RestrictedStatusFinisherRadius,
+                runtimeOverride.RestrictedStatusFinisherPowerMultiplier));
+        }
+
+        private void TickRestrictedStatusPassiveStacks(float deltaTime)
+        {
+            ForEachPassiveSkill((skill, passiveData) =>
+            {
+                if (skill == null || passiveData == null || !passiveData.HasRestrictedStatusStacking)
+                {
+                    return;
+                }
+
+                GetPassiveSkillState(skill)?.TickRestrictedStatusStacks(deltaTime);
+            });
         }
 
         private void TickCombatFormOverride(float deltaTime)
@@ -1736,18 +2142,28 @@ namespace Fight.Heroes
             var totalBonus = 0f;
             ForEachPassiveSkill((skill, passiveData) =>
             {
-                if (passiveData == null || !passiveData.HasKillParticipationTrigger)
+                if (passiveData == null
+                    || !passiveData.HasKillParticipationTrigger
+                    && !passiveData.HasRestrictedStatusStacking)
                 {
                     return;
                 }
 
                 var state = GetPassiveSkillState(skill);
-                if (state == null || state.KillParticipationStacks <= 0)
+                if (state == null)
                 {
                     return;
                 }
 
-                totalBonus += state.KillParticipationStacks * Mathf.Max(0f, passiveData.killParticipationAttackSpeedBonusPerStack);
+                if (passiveData.HasKillParticipationTrigger && state.KillParticipationStacks > 0)
+                {
+                    totalBonus += state.KillParticipationStacks * Mathf.Max(0f, passiveData.killParticipationAttackSpeedBonusPerStack);
+                }
+
+                if (passiveData.HasRestrictedStatusStacking)
+                {
+                    totalBonus += state.GetRestrictedStatusAttackSpeedBonus(passiveData);
+                }
             });
             return totalBonus;
         }
@@ -1963,6 +2379,170 @@ namespace Fight.Heroes
             return bestOverride?.SourceSkill;
         }
 
+        private float GetRestrictedStatusConversionAttackPowerBonusMultiplier()
+        {
+            var totalBonus = 0f;
+            for (var i = 0; i < activeTemporarySkillOverrides.Count; i++)
+            {
+                var runtimeOverride = activeTemporarySkillOverrides[i];
+                if (runtimeOverride == null)
+                {
+                    continue;
+                }
+
+                totalBonus += runtimeOverride.RestrictedStatusAttackPowerBonusMultiplier;
+            }
+
+            return totalBonus;
+        }
+
+        private bool TryConvertIncomingRestriction(
+            RuntimeHero source,
+            SkillData sourceSkill,
+            out SkillData conversionSkill,
+            out int previousStackCount,
+            out int currentStackCount,
+            out int maxStacks,
+            out float attackPowerBonusMultiplier)
+        {
+            conversionSkill = null;
+            previousStackCount = 0;
+            currentStackCount = 0;
+            maxStacks = 0;
+            attackPowerBonusMultiplier = 0f;
+            if (IsDead || !IsHostileSource(source))
+            {
+                return false;
+            }
+
+            for (var i = 0; i < activeTemporarySkillOverrides.Count; i++)
+            {
+                var runtimeOverride = activeTemporarySkillOverrides[i];
+                if (runtimeOverride == null || !runtimeOverride.ConvertRestrictedStatusesToAttackPower)
+                {
+                    continue;
+                }
+
+                if (!runtimeOverride.TryConvertRestrictedStatus(
+                        GetRestrictionSourceKey(source, sourceSkill),
+                        CurrentBattleTimeSeconds,
+                        out previousStackCount,
+                        out currentStackCount,
+                        out maxStacks,
+                        out attackPowerBonusMultiplier))
+                {
+                    continue;
+                }
+
+                conversionSkill = runtimeOverride.SourceSkill;
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool TryGainRestrictedStatusPassiveStackFromHostile(
+            RuntimeHero source,
+            SkillData sourceSkill,
+            out SkillData passiveSkill,
+            out int previousStackCount,
+            out int currentStackCount,
+            out int maxStacks,
+            out float attackSpeedBonusMultiplier)
+        {
+            passiveSkill = null;
+            previousStackCount = 0;
+            currentStackCount = 0;
+            maxStacks = 0;
+            attackSpeedBonusMultiplier = 0f;
+            if (IsDead || !IsHostileSource(source))
+            {
+                return false;
+            }
+
+            var gainedStack = false;
+            SkillData resolvedPassiveSkill = null;
+            var resolvedPreviousStackCount = 0;
+            var resolvedCurrentStackCount = 0;
+            var resolvedMaxStacks = 0;
+            var resolvedAttackSpeedBonusMultiplier = 0f;
+            ForEachPassiveSkill((skill, passiveData) =>
+            {
+                if (gainedStack
+                    || skill == null
+                    || passiveData == null
+                    || !passiveData.HasRestrictedStatusStacking)
+                {
+                    return;
+                }
+
+                var state = GetOrCreatePassiveSkillState(skill);
+                if (state == null
+                    || !state.TryGainRestrictedStatusStack(
+                        passiveData,
+                        GetRestrictionSourceKey(source, sourceSkill),
+                        CurrentBattleTimeSeconds,
+                        out var nextPreviousStackCount,
+                        out var nextCurrentStackCount,
+                        out var nextMaxStacks,
+                        out var nextAttackSpeedBonusMultiplier))
+                {
+                    return;
+                }
+
+                resolvedPassiveSkill = skill;
+                resolvedPreviousStackCount = nextPreviousStackCount;
+                resolvedCurrentStackCount = nextCurrentStackCount;
+                resolvedMaxStacks = nextMaxStacks;
+                resolvedAttackSpeedBonusMultiplier = nextAttackSpeedBonusMultiplier;
+                gainedStack = true;
+            });
+
+            passiveSkill = resolvedPassiveSkill;
+            previousStackCount = resolvedPreviousStackCount;
+            currentStackCount = resolvedCurrentStackCount;
+            maxStacks = resolvedMaxStacks;
+            attackSpeedBonusMultiplier = resolvedAttackSpeedBonusMultiplier;
+            return gainedStack;
+        }
+
+        private bool IsHostileSource(RuntimeHero source)
+        {
+            return source != null && source != this && source.Side != Side;
+        }
+
+        private static string GetRestrictionSourceKey(RuntimeHero source, SkillData sourceSkill)
+        {
+            var sourceId = source != null ? source.RuntimeId : "unknown";
+            var skillId = !string.IsNullOrWhiteSpace(sourceSkill?.skillId) ? sourceSkill.skillId : "default";
+            return $"{sourceId}:{skillId}";
+        }
+
+        private static bool CanTriggerFromSource(
+            Dictionary<string, float> triggerTimesBySourceKey,
+            string sourceKey,
+            float currentTimeSeconds,
+            float cooldownSeconds)
+        {
+            if (triggerTimesBySourceKey == null)
+            {
+                return true;
+            }
+
+            sourceKey = string.IsNullOrWhiteSpace(sourceKey) ? "unknown" : sourceKey;
+            currentTimeSeconds = Mathf.Max(0f, currentTimeSeconds);
+            cooldownSeconds = Mathf.Max(0f, cooldownSeconds);
+            if (cooldownSeconds > Mathf.Epsilon
+                && triggerTimesBySourceKey.TryGetValue(sourceKey, out var lastTriggerTime)
+                && currentTimeSeconds - lastTriggerTime < cooldownSeconds)
+            {
+                return false;
+            }
+
+            triggerTimesBySourceKey[sourceKey] = currentTimeSeconds;
+            return true;
+        }
+
         private SkillData GetCurrentLifestealSourceSkill()
         {
             if (CurrentTemporaryOverrideLifestealRatio > Mathf.Epsilon)
@@ -2023,19 +2603,25 @@ namespace Fight.Heroes
 
             var activeSkill = Definition?.activeSkill;
             if (activeSkill != null
-                && activeSkill.activationMode == SkillActivationMode.Passive
                 && activeSkill.passiveSkill != null)
             {
-                visitor(activeSkill, activeSkill.passiveSkill);
+                if (activeSkill.activationMode == SkillActivationMode.Passive
+                    || activeSkill.passiveSkill.HasRestrictedStatusStacking)
+                {
+                    visitor(activeSkill, activeSkill.passiveSkill);
+                }
             }
 
             var ultimateSkill = Definition?.ultimateSkill;
             if (ultimateSkill != null
                 && ultimateSkill != activeSkill
-                && ultimateSkill.activationMode == SkillActivationMode.Passive
                 && ultimateSkill.passiveSkill != null)
             {
-                visitor(ultimateSkill, ultimateSkill.passiveSkill);
+                if (ultimateSkill.activationMode == SkillActivationMode.Passive
+                    || ultimateSkill.passiveSkill.HasRestrictedStatusStacking)
+                {
+                    visitor(ultimateSkill, ultimateSkill.passiveSkill);
+                }
             }
         }
 

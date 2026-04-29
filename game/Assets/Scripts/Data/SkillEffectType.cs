@@ -14,5 +14,7 @@ namespace Fight.Data
         CreateFocusFireCommand = 9,
         SwapPositionsWithPrimaryTarget = 10,
         ApplyCombatFormOverride = 11,
+        CleanseStatusEffects = 12,
+        ConsumeRestrictedStatusStacksDamage = 13,
     }
 }
