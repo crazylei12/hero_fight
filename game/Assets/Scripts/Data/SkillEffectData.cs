@@ -159,6 +159,7 @@ namespace Fight.Data
         [Min(0f)] public float forcedMovementDistance = 0f;
         [Min(0f)] public float forcedMovementDurationSeconds = 0f;
         [Min(0f)] public float forcedMovementPeakHeight = 0f;
+        public bool repositionOnFarSideOfPrimaryTarget;
         public RadialSweepDirectionMode radialSweepDirection = RadialSweepDirectionMode.Outward;
         [Min(0f)] public float radialSweepStartDelaySeconds = 0f;
         [Min(0f)] public float radialSweepRingWidth = 1f;

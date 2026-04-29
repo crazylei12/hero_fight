@@ -79,6 +79,10 @@ namespace Fight.Data
         [Header("Action Sequence")]
         public CombatActionSequenceData actionSequence = new CombatActionSequenceData();
 
+        [Header("Combo")]
+        public bool tryCastOwnUltimateAfterReposition;
+        [Min(1)] public int insertedUltimateMinimumAffectedTargets = 1;
+
         [Header("Temporary Overrides")]
         public SkillTemporaryOverrideData temporaryOverride = new SkillTemporaryOverrideData();
 

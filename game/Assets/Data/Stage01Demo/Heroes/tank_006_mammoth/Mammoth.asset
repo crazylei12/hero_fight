@@ -1,0 +1,71 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 65b49e23d4a4cda45a9a11e1d7bacd97, type: 3}
+  m_Name: Mammoth
+  m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
+  heroId: tank_006_mammoth
+  displayName: Mammoth
+  description: '主动开团型近战坦克，闪烁到最远敌人身后，用猛犸震聚击飞敌人，再沿回程方向把敌人顶回己方前线。'
+  heroClass: 3
+  tags: 0000000006000000
+  baseStats:
+    maxHealth: 530
+    attackPower: 36
+    defense: 34
+    attackSpeed: 0.88
+    moveSpeed: 4.05
+    criticalChance: 0.05
+    criticalDamageMultiplier: 1.5
+    attackRange: 1.9
+  basicAttack:
+    damageMultiplier: 1
+    attackInterval: 1
+    rangeOverride: 1.9
+    usesProjectile: 0
+    projectileSpeed: 0
+    effectType: 0
+    targetType: 0
+    targetPrioritySearchRadius: 0
+    startingVariantIndex: 0
+    bounce:
+      maxAdditionalTargets: 0
+      searchRadius: 0
+      powerMultiplier: 0
+      bounceVariantKey:
+    sameTargetStacking:
+      enabled: 0
+      maxStacks: 1
+      modifierEffectType: 4
+      magnitudePerStack: 0
+      targetRetentionRange: 0
+      fullStackOverrideStatusEffectType: 0
+    onHitStatusEffects: []
+    variants: []
+  activeSkill: {fileID: 11400000, guid: 08a8ae6343e34dd6b7fb9b040f7f93ce, type: 2}
+  ultimateSkill: {fileID: 11400000, guid: 0a0864ec0a464676be5bcd8c16f52ec0, type: 2}
+  aiTemplateId: tank_default
+  usesSpecialLogic: 0
+  specialLogicNotes:
+  visualConfig:
+    portrait: {fileID: 21300000, guid: cd119fa617ade0845bd2e81235ef823e, type: 3}
+    battlePrefab: {fileID: 8201802764806222458, guid: def196cdcafa40847b8ac793bb99dc63, type: 3}
+    animatorController: {fileID: 0}
+    battlePrefabFacesLeftByDefault: 0
+    projectilePrefab: {fileID: 0}
+    projectileAlignToMovement: 0
+    projectileEulerAngles: {x: 0, y: 0, z: 0}
+    castVfxPrefab: {fileID: 0}
+    hitVfxPrefab: {fileID: 0}
+    basicAttackVariantVisuals: []
+    formVisuals: []
+    castSfx: {fileID: 0}
+  debugNotes: Stage-01 demo hero for Tank.

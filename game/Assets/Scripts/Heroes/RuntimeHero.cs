@@ -1439,6 +1439,21 @@ namespace Fight.Heroes
             HasCastUltimate = true;
         }
 
+        public bool TryConsumeUltimateForImmediateCast()
+        {
+            if (Definition == null
+                || Definition.ultimateSkill == null
+                || Definition.ultimateSkill.activationMode != SkillActivationMode.Active
+                || HasCastUltimate)
+            {
+                return false;
+            }
+
+            StartSkillCooldown(SkillSlotType.Ultimate, 0f);
+            RecordSkillCast(SkillSlotType.Ultimate);
+            return true;
+        }
+
         private void RecordSkillCast(SkillSlotType slotType)
         {
             if (slotType == SkillSlotType.ActiveSkill)

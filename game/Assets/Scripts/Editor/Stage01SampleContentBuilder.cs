@@ -546,6 +546,21 @@ namespace Fight.Editor
             EnsureHeroSkillReferences(blastshield, blastshieldActive, blastshieldUltimateSkill);
             EnsureHeroBattlePrefabReference(blastshield, LoadBattlePrefab("tank_005_blastshield", HeroClass.Tank));
 
+            var mammothActive = CreateMammothActiveSkill(overwriteExistingContent);
+            var mammothUltimateSkill = CreateMammothUltimateSkill(overwriteExistingContent, out var mammothUltimateExisted);
+
+            var mammoth = CreateHero(
+                "tank_006_mammoth",
+                "Mammoth",
+                HeroClass.Tank,
+                530f, 36f, 34f, 0.88f, 4.05f, 0.05f, 1.5f, 1.9f,
+                mammothActive,
+                ConfigureMammothUltimate(mammothUltimateSkill, overwriteExistingContent, mammothUltimateExisted),
+                overwriteExistingContent,
+                HeroTag.Melee, HeroTag.Control);
+            EnsureHeroSkillReferences(mammoth, mammothActive, mammothUltimateSkill);
+            EnsureHeroBattlePrefabReference(mammoth, LoadBattlePrefab("tank_006_mammoth", HeroClass.Tank));
+
             var supportActive = CreateSupportActiveSkill(overwriteExistingContent);
             var supportUltimateSkill = CreateSupportUltimateSkill(overwriteExistingContent, out var supportUltimateExisted);
 
@@ -757,7 +772,7 @@ namespace Fight.Editor
                 warrior, bladesman, berserker, spellblade, trollwarlord, chainbreaker, yasuo,
                 mage, frostmage, sandemperor, lightningmage, astromancer,
                 assassin, tidefin, butcher, loner, demon,
-                tank, shieldwarden, tidehunter, mundo, blastshield,
+                tank, shieldwarden, tidehunter, mundo, blastshield, mammoth,
                 support, windchime, monk, shrinemaiden, chef, commander,
                 marksman, rifleman, venomshooter, boomeranger, sniper, bloodlancer,
             };
@@ -1699,6 +1714,8 @@ namespace Fight.Editor
             skill.minTargetsToCast = minTargetsToCast;
             skill.effects.Clear();
             skill.allowsSelfCast = targetType == SkillTargetType.Self || targetType == SkillTargetType.AllAllies;
+            skill.tryCastOwnUltimateAfterReposition = false;
+            skill.insertedUltimateMinimumAffectedTargets = 1;
             ResetReactiveGuard(skill);
             ResetReactiveCounter(skill);
             ResetActionSequence(skill);
@@ -6970,6 +6987,155 @@ namespace Fight.Editor
             minefield.deployableProxyVfxLocalOffset = new Vector3(0f, 0.08f, 0f);
             minefield.deployableProxyVfxEulerAngles = Vector3.zero;
             minefield.deployableProxyVfxScaleMultiplier = new Vector3(0.55f, 0.55f, 1f);
+        }
+
+        private static SkillData CreateMammothActiveSkill(bool overwriteExistingContent)
+        {
+            var skill = CreateSkill(
+                "skill_mammoth_active_backhaulskewer",
+                "Backhaul Skewer",
+                SkillSlotType.ActiveSkill,
+                SkillType.Dash,
+                SkillTargetType.FarthestEnemyFromSelf,
+                10.5f,
+                0f,
+                0f,
+                8f,
+                1,
+                overwriteExistingContent,
+                out var existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.description = "Stage-01 demo skill: blink to the far side of the farthest valid enemy, optionally insert Mammoth Quake, then knock enemies along the return path back toward the team.";
+            skill.activationMode = SkillActivationMode.Active;
+            skill.skillType = SkillType.Dash;
+            skill.targetType = SkillTargetType.FarthestEnemyFromSelf;
+            skill.fallbackTargetType = SkillTargetType.None;
+            skill.castRange = 10.5f;
+            skill.minimumTargetDistance = 5.5f;
+            skill.areaRadius = 0f;
+            skill.cooldownSeconds = 8f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.tryCastOwnUltimateAfterReposition = true;
+            skill.insertedUltimateMinimumAffectedTargets = 2;
+            skill.effects.Clear();
+            ResetPassiveSkillData(skill);
+            ResetDamageTriggeredStatusCounter(skill);
+            ResetKnockUpFollowUp(skill);
+            ResetTemporaryOverride(skill);
+            ResetUltimateDecision(skill);
+
+            var reposition = AddRepositionEffect(skill, 0f, 0f, 0f, 1.15f);
+            reposition.targetMode = SkillEffectTargetMode.Caster;
+            reposition.repositionOnFarSideOfPrimaryTarget = true;
+
+            var pathDamage = AddDamageEffect(skill, 0.65f);
+            pathDamage.targetMode = SkillEffectTargetMode.DashPathEnemies;
+            pathDamage.radiusOverride = 1.2f;
+
+            var pathKnockback = AddForcedMovementEffect(
+                skill,
+                7.0f,
+                0.55f,
+                0f,
+                ForcedMovementDirectionMode.AwayFromSource);
+            pathKnockback.targetMode = SkillEffectTargetMode.DashPathEnemies;
+            pathKnockback.radiusOverride = 1.2f;
+
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateMammothUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
+        {
+            var skill = CreateSkill(
+                "skill_mammoth_ultimate_mammothquake",
+                "Mammoth Quake",
+                SkillSlotType.Ultimate,
+                SkillType.KnockUp,
+                SkillTargetType.Self,
+                0f,
+                6.5f,
+                0f,
+                0f,
+                1,
+                overwriteExistingContent,
+                out existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            ApplyMammothUltimateBaseConfiguration(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData ConfigureMammothUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            ApplyMammothUltimateBaseConfiguration(skill);
+            ResetUltimateDecision(skill);
+            skill.ultimateDecision.targetingType = UltimateTargetingType.Self;
+            skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;
+            skill.ultimateDecision.primaryCondition.searchRadius = skill.areaRadius;
+            skill.ultimateDecision.primaryCondition.requiredUnitCount = 3;
+            skill.ultimateDecision.secondaryCondition.conditionType = UltimateConditionType.None;
+            skill.ultimateDecision.combineMode = UltimateConditionCombineMode.PrimaryOnly;
+            skill.ultimateDecision.fallback.fallbackType = UltimateFallbackType.LowerPrimaryThreshold;
+            skill.ultimateDecision.fallback.triggerAfterSeconds = 45f;
+            skill.ultimateDecision.fallback.overrideRequiredUnitCount = 2;
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static void ApplyMammothUltimateBaseConfiguration(SkillData skill)
+        {
+            skill.description = "Stage-01 demo skill: gather nearby enemies inward with forced movement, then apply KnockUp without adding direct damage.";
+            skill.activationMode = SkillActivationMode.Active;
+            skill.skillType = SkillType.KnockUp;
+            skill.targetType = SkillTargetType.Self;
+            skill.fallbackTargetType = SkillTargetType.None;
+            skill.castRange = 0f;
+            skill.areaRadius = 6.5f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = true;
+            skill.effects.Clear();
+            ResetPassiveSkillData(skill);
+            ResetDamageTriggeredStatusCounter(skill);
+            ResetKnockUpFollowUp(skill);
+            ResetTemporaryOverride(skill);
+
+            var gather = AddForcedMovementEffect(
+                skill,
+                0f,
+                0.30f,
+                0f,
+                ForcedMovementDirectionMode.TowardSource);
+            gather.targetMode = SkillEffectTargetMode.EnemiesInRadiusAroundCaster;
+            gather.radiusOverride = skill.areaRadius;
+
+            var knockUp = AddApplyStatusEffectsEffect(skill);
+            knockUp.targetMode = SkillEffectTargetMode.EnemiesInRadiusAroundCaster;
+            knockUp.radiusOverride = skill.areaRadius;
+            knockUp.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.KnockUp,
+                durationSeconds = 1.25f,
+                magnitude = 1f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
         }
 
         private static SkillData ConfigureRiflemanUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)

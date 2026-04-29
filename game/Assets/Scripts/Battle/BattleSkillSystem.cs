@@ -2712,9 +2712,17 @@ namespace Fight.Battle
             if (effects != null && effects.Count > 0)
             {
                 var resolutionState = CreateSkillEffectResolutionState(resolvedSkill, caster, primaryTarget);
+                var insertedUltimateResolved = false;
                 for (var i = 0; i < effects.Count; i++)
                 {
-                    ExecuteSkillEffect(context, caster, skill, primaryTarget, affectedTargets, effects[i], resolutionState, battleManager);
+                    var effect = effects[i];
+                    ExecuteSkillEffect(context, caster, skill, primaryTarget, affectedTargets, effect, resolutionState, battleManager);
+                    if (!insertedUltimateResolved
+                        && effect?.effectType == SkillEffectType.RepositionNearPrimaryTarget
+                        && TryResolveInsertedUltimateAfterReposition(context, caster, skill, battleManager))
+                    {
+                        insertedUltimateResolved = true;
+                    }
                 }
             }
             else
@@ -2745,6 +2753,101 @@ namespace Fight.Battle
             {
                 BattleCombatActionSequenceSystem.TryStartSequence(context, caster, skill, primaryTarget);
             }
+        }
+
+        private static bool TryResolveInsertedUltimateAfterReposition(
+            BattleContext context,
+            RuntimeHero caster,
+            SkillData sourceSkill,
+            IBattleSimulationCallbacks battleManager)
+        {
+            if (context == null
+                || caster == null
+                || caster.IsDead
+                || sourceSkill == null
+                || !sourceSkill.tryCastOwnUltimateAfterReposition
+                || battleManager == null
+                || caster.HasHardControl
+                || caster.IsUnderForcedMovement)
+            {
+                return false;
+            }
+
+            var ultimate = caster.Definition?.ultimateSkill;
+            if (ultimate == null
+                || ultimate.activationMode != SkillActivationMode.Active
+                || ultimate.slotType != SkillSlotType.Ultimate
+                || caster.HasCastUltimate)
+            {
+                return false;
+            }
+
+            var resolvedUltimate = ResolveSkillCast(context, ultimate);
+            if (resolvedUltimate == null)
+            {
+                return false;
+            }
+
+            var usesTemplateDecision = UsesUltimateDecisionTemplate(ultimate);
+            var primaryTarget = usesTemplateDecision
+                ? SelectUltimatePrimaryTarget(context, caster, resolvedUltimate)
+                : SelectPrimaryTarget(context, caster, resolvedUltimate);
+            if (!IsPrimaryTargetStillValid(resolvedUltimate, caster, primaryTarget))
+            {
+                return false;
+            }
+
+            if (primaryTarget == null && !ultimate.allowsSelfCast && !AllowsMissingPrimaryTarget(resolvedUltimate))
+            {
+                return false;
+            }
+
+            var affectedTargets = CollectTargets(context, caster, resolvedUltimate, primaryTarget);
+            var affectedTargetCount = GetSkillCastAffectedTargetCount(
+                context,
+                caster,
+                resolvedUltimate,
+                primaryTarget,
+                affectedTargets);
+            if (affectedTargetCount < Mathf.Max(1, sourceSkill.insertedUltimateMinimumAffectedTargets))
+            {
+                return false;
+            }
+
+            if (usesTemplateDecision)
+            {
+                var decisionTrace = EvaluateUltimateDecisionTrace(context, caster, ultimate, primaryTarget, affectedTargets);
+                if (!decisionTrace.Passed)
+                {
+                    return false;
+                }
+            }
+            else if (affectedTargets.Count < Mathf.Max(1, ultimate.minTargetsToCast) || !HasHighValueOpportunity(ultimate, affectedTargets))
+            {
+                return false;
+            }
+
+            if (!caster.TryConsumeUltimateForImmediateCast())
+            {
+                return false;
+            }
+
+            context.RecordUltimateCast(caster.Side);
+            context.EventBus.Publish(new SkillCastEvent(
+                caster,
+                ultimate,
+                primaryTarget,
+                affectedTargetCount,
+                resolvedUltimate.VariantKey));
+            ResolveSkillEffects(
+                context,
+                caster,
+                resolvedUltimate,
+                primaryTarget,
+                affectedTargets,
+                battleManager,
+                allowActionSequenceTrigger: false);
+            return true;
         }
 
         private static void ApplyTemporarySkillOverride(RuntimeHero caster, SkillData skill)
@@ -5310,9 +5413,12 @@ namespace Fight.Battle
             var stopDistance = effect != null && effect.radiusOverride > Mathf.Epsilon
                 ? effect.radiusOverride
                 : 0.8f;
+            var fallbackOffsetDirection = effect != null && effect.repositionOnFarSideOfPrimaryTarget
+                ? 1f
+                : -1f;
             var destination = dashDistance > Mathf.Epsilon
                 ? casterPosition + offset.normalized * dashDistance
-                : targetPosition - offset.normalized * stopDistance;
+                : targetPosition + offset.normalized * stopDistance * fallbackOffsetDirection;
             destination.y = 0f;
             return Stage01ArenaSpec.ClampPosition(destination);
         }
