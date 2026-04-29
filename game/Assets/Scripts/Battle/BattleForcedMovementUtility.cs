@@ -77,7 +77,8 @@ namespace Fight.Battle
                     destination,
                     durationSeconds,
                     peakHeight,
-                    sourceSkill));
+                    sourceSkill,
+                    effect.forcedMovementDirection == ForcedMovementDirectionMode.AwayFromSource));
             }
         }
 

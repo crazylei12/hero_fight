@@ -1482,7 +1482,7 @@ namespace Fight.Editor
                 "warrior_004_spellblade" => "范围压制型战士，依靠剑气和固定魔剑切割战场，让敌人难以舒服站位。适合慢慢挤压阵型，也能在混战中补充稳定范围伤害。队友把敌人留在范围内时收益最高。",
                 "warrior_005_trollwarlord" => "单挑升温型前排，持续盯住同一目标时威胁会不断抬高，适合拉长战斗节奏。需要阵容给他进入近身战的时间，避免被风筝；一旦追不上目标，节奏会被明显拖慢。",
                 "warrior_006_chainbreaker" => "反控制型战士，被敌方限制时会积累怒链，把控制和减速转化成攻速、攻击力和反击斩击。适合对抗冰法、拉拽和硬控阵容，但面对无控制阵容时只是中等强度近战。",
-                "warrior_007_yasuo" => "击飞联动型战士，自身不提供击飞，依赖队友先把敌人打到空中后触发跟进斩击。适合和开团控制组成强组合，但缺少击飞队友时只剩近战突进与常规输出，强度会明显下降。",
+                "warrior_007_yasuo" => "击飞 / 击退联动型战士，自身不提供击飞或击退，依赖队友先制造控制位移后触发跟进斩击。适合和开团控制组成强组合，但缺少击飞 / 击退队友时只剩近战突进与常规输出，强度会明显下降。",
                 "mage_001_firemage" => "范围爆发法师，擅长惩罚扎堆敌人，用火焰区域制造高压站位选择。适合配合控制或拉拽打出团战爆点，但自身需要保护。敌方越密集，他的威慑力越明显，也需要队友帮他争取施法空间。",
                 "mage_002_frostmage" => "控场法师，依靠冰霜区域减缓敌人推进，让前排和射手获得更安全的输出窗口。适合防守反打，也能限制突进阵容的节奏，队伍缺少控制时也能补足减速压力。",
                 "mage_003_sandemperor" => "部署型法师，通过沙卫配合自身普攻建立持续火力点，越能站住阵地越有价值。适合中后排稳定压制，但需要避免被快速切入；阵线被打乱时，沙卫价值会下降。",
@@ -1533,7 +1533,7 @@ namespace Fight.Editor
                 "skill_chainbreaker_active_breakfree" => "解除自身负面状态并短暂提升攻速，若已有怒链则消耗层数追加重斧斩击。",
                 "skill_chainbreaker_ultimate_unchainedrampage" => "开启时解除自身控制，随后短时间把敌方限制转化为攻击力，并在结束时范围斩击。",
                 "skill_yasuo_active_windstep" => "随机锁定范围内一名敌人突进到近战位置，并获得短时护盾。",
-                "skill_yasuo_ultimate_lastbreath" => "被动监听友方击飞，对同批被击飞敌人追加斩击伤害并随机落到其中一名目标附近。",
+                "skill_yasuo_ultimate_lastbreath" => "被动监听友方击飞或击退，对同批被触发敌人追加斩击伤害并随机落到其中一名目标附近。",
                 "skill_mage_active_emberburst" => "在目标区域引爆火焰，处理聚集敌人。",
                 "skill_mage_ultimate_meteor" => "召唤持续火焰区域，长时间压制敌方站位。",
                 "skill_mage_active_firebolt" => "发射火焰弹，对单个敌人造成稳定伤害。",
@@ -4161,7 +4161,7 @@ namespace Fight.Editor
             skill.knockUpFollowUp.landingDistance = 1.25f;
             skill.knockUpFollowUp.landingDurationSeconds = 0f;
             skill.knockUpFollowUp.landingPeakHeight = 0f;
-            skill.description = "Stage-01 demo skill: passive ultimate that listens for allied KnockUp applications, damages every knocked-up enemy in the same batch, then lands near one random knocked-up target.";
+            skill.description = "Stage-01 demo skill: passive ultimate that listens for allied KnockUp or knockback applications, damages every triggered enemy in the same batch, then lands near one random triggered target.";
         }
 
         private static void AddDefaultEffectsForSkill(SkillData skill, float powerMultiplier)
@@ -4869,8 +4869,8 @@ namespace Fight.Editor
             ResetSameTargetStacking(hero.basicAttack);
             ResetBasicAttackOnHitEffect(hero.basicAttack);
             hero.usesSpecialLogic = true;
-            hero.specialLogicNotes = "Uses shared StatusAppliedEvent KnockUp follow-up handling; Yasuo does not create KnockUp himself.";
-            hero.debugNotes = "Stage-01 demo hero for Warrior. Yasuo validates random enemy dash shielding and passive ultimate follow-up from allied KnockUp events.";
+            hero.specialLogicNotes = "Uses shared KnockUp/knockback follow-up handling; Yasuo does not create KnockUp or knockback himself.";
+            hero.debugNotes = "Stage-01 demo hero for Warrior. Yasuo validates random enemy dash shielding and passive ultimate follow-up from allied KnockUp or knockback events.";
             EditorUtility.SetDirty(hero);
         }
 

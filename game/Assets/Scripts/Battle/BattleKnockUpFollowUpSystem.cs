@@ -13,13 +13,15 @@ namespace Fight.Battle
             RuntimeHero target,
             RuntimeHero appliedBy,
             StatusEffectType effectType,
-            SkillData sourceSkill)
+            SkillData sourceSkill,
+            bool isKnockback = false)
         {
             Source = source;
             Target = target;
             AppliedBy = appliedBy;
             EffectType = effectType;
             SourceSkill = sourceSkill;
+            IsKnockback = isKnockback;
         }
 
         public RuntimeHero Source { get; }
@@ -31,6 +33,10 @@ namespace Fight.Battle
         public StatusEffectType EffectType { get; }
 
         public SkillData SourceSkill { get; }
+
+        public bool IsKnockback { get; }
+
+        public string TriggerKind => IsKnockback ? "Knockback" : EffectType.ToString();
     }
 
     public static class BattleKnockUpFollowUpSystem
@@ -39,8 +45,26 @@ namespace Fight.Battle
 
         public static void Capture(BattleContext context, IBattleEvent battleEvent)
         {
-            if (context?.KnockUpFollowUpTriggers == null
-                || battleEvent is not StatusAppliedEvent statusApplied
+            if (context?.KnockUpFollowUpTriggers == null || battleEvent == null)
+            {
+                return;
+            }
+
+            if (battleEvent is StatusAppliedEvent statusApplied)
+            {
+                CaptureKnockUp(context, statusApplied);
+                return;
+            }
+
+            if (battleEvent is ForcedMovementAppliedEvent forcedMovement)
+            {
+                CaptureKnockback(context, forcedMovement);
+            }
+        }
+
+        private static void CaptureKnockUp(BattleContext context, StatusAppliedEvent statusApplied)
+        {
+            if (statusApplied == null
                 || statusApplied.EffectType != StatusEffectType.KnockUp
                 || statusApplied.Source == null
                 || statusApplied.Target == null
@@ -56,6 +80,27 @@ namespace Fight.Battle
                 statusApplied.AppliedBy,
                 statusApplied.EffectType,
                 statusApplied.SourceSkill));
+        }
+
+        private static void CaptureKnockback(BattleContext context, ForcedMovementAppliedEvent forcedMovement)
+        {
+            if (forcedMovement == null
+                || !forcedMovement.CountsAsKnockback
+                || forcedMovement.Source == null
+                || forcedMovement.Target == null
+                || forcedMovement.Target.IsDead
+                || forcedMovement.Source.Side == forcedMovement.Target.Side)
+            {
+                return;
+            }
+
+            context.KnockUpFollowUpTriggers.Add(new RuntimeKnockUpFollowUpTrigger(
+                forcedMovement.Source,
+                forcedMovement.Target,
+                forcedMovement.Source,
+                StatusEffectType.None,
+                forcedMovement.SourceSkill,
+                isKnockback: true));
         }
 
         public static void Flush(BattleContext context, IBattleSimulationCallbacks battleCallbacks)
@@ -129,6 +174,7 @@ namespace Fight.Battle
                 skill,
                 firstTrigger?.Source,
                 firstTrigger?.SourceSkill,
+                firstTrigger?.TriggerKind,
                 targets.Count,
                 landingAnchor,
                 followUp.damagePowerMultiplier));
@@ -175,7 +221,7 @@ namespace Fight.Battle
                 || followUp == null
                 || trigger?.Source == null
                 || trigger.Target == null
-                || trigger.EffectType != followUp.triggerStatusEffectType
+                || !IsEnabledTrigger(followUp, trigger)
                 || trigger.Source == follower
                 || trigger.Source.Side != follower.Side
                 || trigger.Target.Side == follower.Side
@@ -186,6 +232,21 @@ namespace Fight.Battle
             }
 
             return true;
+        }
+
+        private static bool IsEnabledTrigger(KnockUpFollowUpData followUp, RuntimeKnockUpFollowUpTrigger trigger)
+        {
+            if (followUp == null || trigger == null)
+            {
+                return false;
+            }
+
+            if (trigger.IsKnockback)
+            {
+                return followUp.triggerStatusEffectType == StatusEffectType.KnockUp;
+            }
+
+            return trigger.EffectType == followUp.triggerStatusEffectType;
         }
 
         private static RuntimeHero ResolveLandingAnchorAfterDamage(

@@ -361,8 +361,8 @@ namespace Fight.Battle
             var followerName = FormatHeroLabel(followUp.Follower, "Unknown");
             var followUpSkillName = followUp.FollowUpSkill != null ? followUp.FollowUpSkill.displayName : "Knock-up follow-up";
             var triggerSourceName = FormatHeroLabel(followUp.TriggerSource, "ally");
-            var triggerSkillName = followUp.TriggerSkill != null ? followUp.TriggerSkill.displayName : "KnockUp";
-            return $"{followerName}'s {followUpSkillName} followed {triggerSourceName}'s {triggerSkillName}, hitting {followUp.AffectedTargetCount} knocked-up target(s), landing near {FormatHeroLabel(followUp.LandingAnchor)}, damage x{followUp.DamagePowerMultiplier:0.##}.";
+            var triggerSkillName = followUp.TriggerSkill != null ? followUp.TriggerSkill.displayName : followUp.TriggerKind;
+            return $"{followerName}'s {followUpSkillName} followed {triggerSourceName}'s {triggerSkillName} ({followUp.TriggerKind}), hitting {followUp.AffectedTargetCount} controlled target(s), landing near {FormatHeroLabel(followUp.LandingAnchor)}, damage x{followUp.DamagePowerMultiplier:0.##}.";
         }
 
         private static string FormatStatusRemovedLog(StatusRemovedEvent statusRemoved)

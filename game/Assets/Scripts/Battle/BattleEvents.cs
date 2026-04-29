@@ -540,6 +540,7 @@ namespace Fight.Battle
             SkillData followUpSkill,
             RuntimeHero triggerSource,
             SkillData triggerSkill,
+            string triggerKind,
             int affectedTargetCount,
             RuntimeHero landingAnchor,
             float damagePowerMultiplier)
@@ -548,6 +549,7 @@ namespace Fight.Battle
             FollowUpSkill = followUpSkill;
             TriggerSource = triggerSource;
             TriggerSkill = triggerSkill;
+            TriggerKind = string.IsNullOrWhiteSpace(triggerKind) ? "KnockUp" : triggerKind;
             AffectedTargetCount = Mathf.Max(0, affectedTargetCount);
             LandingAnchor = landingAnchor;
             DamagePowerMultiplier = Mathf.Max(0f, damagePowerMultiplier);
@@ -560,6 +562,8 @@ namespace Fight.Battle
         public RuntimeHero TriggerSource { get; }
 
         public SkillData TriggerSkill { get; }
+
+        public string TriggerKind { get; }
 
         public int AffectedTargetCount { get; }
 
@@ -643,7 +647,8 @@ namespace Fight.Battle
             Vector3 destination,
             float durationSeconds,
             float peakHeight,
-            SkillData sourceSkill = null)
+            SkillData sourceSkill = null,
+            bool countsAsKnockback = false)
         {
             Source = source;
             Target = target;
@@ -652,6 +657,7 @@ namespace Fight.Battle
             DurationSeconds = durationSeconds;
             PeakHeight = peakHeight;
             SourceSkill = sourceSkill;
+            CountsAsKnockback = countsAsKnockback;
         }
 
         public RuntimeHero Source { get; }
@@ -667,6 +673,8 @@ namespace Fight.Battle
         public float PeakHeight { get; }
 
         public SkillData SourceSkill { get; }
+
+        public bool CountsAsKnockback { get; }
     }
 
     public enum PassiveSkillValueType

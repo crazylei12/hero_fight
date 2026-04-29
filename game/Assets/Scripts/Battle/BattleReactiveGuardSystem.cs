@@ -243,7 +243,8 @@ namespace Fight.Battle
                     destination,
                     guard.ForcedMovementDurationSeconds,
                     guard.ForcedMovementPeakHeight,
-                    guard.SourceSkill));
+                    guard.SourceSkill,
+                    countsAsKnockback: true));
             }
         }
 
