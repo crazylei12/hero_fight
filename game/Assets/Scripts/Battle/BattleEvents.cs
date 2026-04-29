@@ -543,6 +543,8 @@ namespace Fight.Battle
             string triggerKind,
             int affectedTargetCount,
             RuntimeHero landingAnchor,
+            Vector3 landingDestination,
+            bool usedFallbackLanding,
             float damagePowerMultiplier)
         {
             Follower = follower;
@@ -552,6 +554,8 @@ namespace Fight.Battle
             TriggerKind = string.IsNullOrWhiteSpace(triggerKind) ? "KnockUp" : triggerKind;
             AffectedTargetCount = Mathf.Max(0, affectedTargetCount);
             LandingAnchor = landingAnchor;
+            LandingDestination = landingDestination;
+            UsedFallbackLanding = usedFallbackLanding;
             DamagePowerMultiplier = Mathf.Max(0f, damagePowerMultiplier);
         }
 
@@ -568,6 +572,10 @@ namespace Fight.Battle
         public int AffectedTargetCount { get; }
 
         public RuntimeHero LandingAnchor { get; }
+
+        public Vector3 LandingDestination { get; }
+
+        public bool UsedFallbackLanding { get; }
 
         public float DamagePowerMultiplier { get; }
     }

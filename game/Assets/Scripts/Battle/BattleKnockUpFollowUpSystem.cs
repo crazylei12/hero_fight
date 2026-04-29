@@ -168,22 +168,15 @@ namespace Fight.Battle
                 return;
             }
 
+            var fallbackLandingPosition = Stage01ArenaSpec.ClampPosition(follower.CurrentPosition);
+            fallbackLandingPosition.y = 0f;
             var landingAnchor = SelectRandomTarget(context, targets);
-            context.EventBus.Publish(new KnockUpFollowUpTriggeredEvent(
-                follower,
-                skill,
-                firstTrigger?.Source,
-                firstTrigger?.SourceSkill,
-                firstTrigger?.TriggerKind,
-                targets.Count,
-                landingAnchor,
-                followUp.damagePowerMultiplier));
-            context.EventBus.Publish(new SkillCastEvent(follower, skill, landingAnchor, targets.Count));
+            var damagedTargetCount = 0;
 
             for (var i = 0; i < targets.Count; i++)
             {
                 var target = targets[i];
-                if (target == null || target.IsDead || !target.CanReceiveDamage)
+                if (!IsValidDamageTarget(follower, target))
                 {
                     continue;
                 }
@@ -203,12 +196,30 @@ namespace Fight.Battle
                     damage,
                     DamageSourceKind.Skill,
                     skill);
+                damagedTargetCount++;
             }
 
             landingAnchor = ResolveLandingAnchorAfterDamage(context, follower, targets, landingAnchor);
-            if (landingAnchor != null)
+            var usedFallbackLanding = landingAnchor == null;
+            var landingDestination = usedFallbackLanding
+                ? fallbackLandingPosition
+                : ResolveLandingPosition(context, follower, landingAnchor, followUp.landingDistance);
+            context.EventBus.Publish(new KnockUpFollowUpTriggeredEvent(
+                follower,
+                skill,
+                firstTrigger?.Source,
+                firstTrigger?.SourceSkill,
+                firstTrigger?.TriggerKind,
+                damagedTargetCount,
+                landingAnchor,
+                landingDestination,
+                usedFallbackLanding,
+                followUp.damagePowerMultiplier));
+            context.EventBus.Publish(new SkillCastEvent(follower, skill, landingAnchor, damagedTargetCount));
+
+            if (!follower.IsDead)
             {
-                ApplyLanding(context, follower, skill, landingAnchor, followUp);
+                ApplyLanding(context, follower, skill, landingDestination, followUp);
             }
         }
 
@@ -232,6 +243,12 @@ namespace Fight.Battle
             }
 
             return true;
+        }
+
+        private static bool IsValidDamageTarget(RuntimeHero follower, RuntimeHero target)
+        {
+            return IsValidLandingAnchor(follower, target)
+                && target.CanReceiveDamage;
         }
 
         private static bool IsEnabledTrigger(KnockUpFollowUpData followUp, RuntimeKnockUpFollowUpTrigger trigger)
@@ -299,16 +316,17 @@ namespace Fight.Battle
             BattleContext context,
             RuntimeHero follower,
             SkillData skill,
-            RuntimeHero landingAnchor,
+            Vector3 destination,
             KnockUpFollowUpData followUp)
         {
-            if (context == null || follower == null || landingAnchor == null || followUp == null)
+            if (context == null || follower == null || followUp == null)
             {
                 return;
             }
 
             var startPosition = follower.CurrentPosition;
-            var destination = ResolveLandingPosition(context, follower, landingAnchor, followUp.landingDistance);
+            destination = Stage01ArenaSpec.ClampPosition(destination);
+            destination.y = 0f;
             var durationSeconds = Mathf.Max(0f, followUp.landingDurationSeconds);
             var peakHeight = Mathf.Max(0f, followUp.landingPeakHeight);
             follower.StartForcedMovement(destination, durationSeconds, peakHeight);
