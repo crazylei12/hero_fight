@@ -827,6 +827,8 @@ namespace Fight.Heroes
         private RuntimeHero sameTargetBasicAttackStackTarget;
         private BasicAttackSameTargetStackData activeSameTargetBasicAttackStacking;
         private int sameTargetBasicAttackStackCount;
+        private RuntimeHero pendingTargetSwitchFirstHitTarget;
+        private readonly Dictionary<string, float> targetSwitchFirstHitLastTriggerTimesByTargetId = new Dictionary<string, float>();
         private float pendingActionTriggerRemainingSeconds;
         private float actionLockRemainingSeconds;
         private int forcedMovementInterruptTicksRemaining;
@@ -902,6 +904,7 @@ namespace Fight.Heroes
             ClearCombatActionSequence();
             CurrentTarget = null;
             ResetSameTargetBasicAttackStacks();
+            ClearTargetSwitchFirstHitState();
             IsDead = false;
             CombatEngagedSeconds = 0f;
             NextUltimateDecisionCheckTimeSeconds = 0f;
@@ -1057,10 +1060,39 @@ namespace Fight.Heroes
         {
             if (CurrentTarget != target)
             {
+                ArmTargetSwitchFirstHit(CurrentTarget, target);
                 ResetSameTargetBasicAttackStacks();
             }
 
             CurrentTarget = target;
+        }
+
+        public bool TryConsumeTargetSwitchFirstHit(RuntimeHero target, out BasicAttackTargetSwitchTriggerData triggerData)
+        {
+            triggerData = null;
+            if (target == null || pendingTargetSwitchFirstHitTarget != target)
+            {
+                if (pendingTargetSwitchFirstHitTarget != null && pendingTargetSwitchFirstHitTarget != target)
+                {
+                    pendingTargetSwitchFirstHitTarget = null;
+                }
+
+                return false;
+            }
+
+            var targetSwitchTrigger = Definition?.basicAttack?.targetSwitchTrigger;
+            pendingTargetSwitchFirstHitTarget = null;
+            if (!CanUseTargetSwitchFirstHit(targetSwitchTrigger)
+                || target.IsDead
+                || target.Side == Side
+                || IsTargetSwitchFirstHitOnCooldown(target, targetSwitchTrigger.sameTargetCooldownSeconds))
+            {
+                return false;
+            }
+
+            targetSwitchFirstHitLastTriggerTimesByTargetId[target.RuntimeId] = CurrentBattleTimeSeconds;
+            triggerData = targetSwitchTrigger;
+            return true;
         }
 
         public void RecordSameTargetBasicAttackHit(RuntimeHero target, BasicAttackSameTargetStackData stacking)
@@ -1427,6 +1459,7 @@ namespace Fight.Heroes
             IsDead = true;
             CurrentTarget = null;
             ResetSameTargetBasicAttackStacks();
+            ClearTargetSwitchFirstHitState();
             RespawnRemainingSeconds = Mathf.Max(0f, respawnDelaySeconds);
             CurrentHealth = 0f;
             Deaths++;
@@ -2327,12 +2360,52 @@ namespace Fight.Heroes
             sameTargetBasicAttackStackCount = 0;
         }
 
+        private void ArmTargetSwitchFirstHit(RuntimeHero previousTarget, RuntimeHero nextTarget)
+        {
+            pendingTargetSwitchFirstHitTarget = null;
+            var targetSwitchTrigger = Definition?.basicAttack?.targetSwitchTrigger;
+            if (!CanUseTargetSwitchFirstHit(targetSwitchTrigger)
+                || previousTarget == null
+                || nextTarget == null
+                || previousTarget == nextTarget
+                || previousTarget.Side == Side
+                || nextTarget.Side == Side
+                || IsTargetSwitchFirstHitOnCooldown(nextTarget, targetSwitchTrigger.sameTargetCooldownSeconds))
+            {
+                return;
+            }
+
+            pendingTargetSwitchFirstHitTarget = nextTarget;
+        }
+
+        private void ClearTargetSwitchFirstHitState()
+        {
+            pendingTargetSwitchFirstHitTarget = null;
+            targetSwitchFirstHitLastTriggerTimesByTargetId.Clear();
+        }
+
+        private bool IsTargetSwitchFirstHitOnCooldown(RuntimeHero target, float cooldownSeconds)
+        {
+            if (target == null || cooldownSeconds <= Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            return targetSwitchFirstHitLastTriggerTimesByTargetId.TryGetValue(target.RuntimeId, out var lastTriggerTimeSeconds)
+                && CurrentBattleTimeSeconds - lastTriggerTimeSeconds < cooldownSeconds;
+        }
+
         private static bool CanUseSameTargetBasicAttackStacking(BasicAttackSameTargetStackData stacking)
         {
             return stacking != null
                 && stacking.enabled
                 && stacking.maxStacks > 0
                 && stacking.magnitudePerStack > Mathf.Epsilon;
+        }
+
+        private static bool CanUseTargetSwitchFirstHit(BasicAttackTargetSwitchTriggerData targetSwitchTrigger)
+        {
+            return targetSwitchTrigger != null && targetSwitchTrigger.HasAnyEffect;
         }
 
         private bool GetRejectsExternalPositiveEffects()

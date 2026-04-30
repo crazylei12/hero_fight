@@ -1,0 +1,95 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 65b49e23d4a4cda45a9a11e1d7bacd97, type: 3}
+  m_Name: Blazeroar
+  m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
+  heroId: tank_007_blazeroar
+  displayName: Blazeroar
+  description: "\u6270\u4E71\u578B\u5766\u514B\uFF0C\u5207\u6362\u76EE\u6807\u540E\u7684\u9996\u51FB\u80FD\u77ED\u6682\u7729\u6655\uFF0C\u51FA\u751F\u4E0E\u590D\u6D3B\u65F6\u538B\u4F4E\u654C\u65B9\u653B\u51FB\u529B\uFF0C\u5E76\u5728\u6B8B\u8840\u65F6\u81EA\u7597\u51B2\u950B\u91CD\u56DE\u6218\u7EBF\u3002\u9002\u5408\u6253\u4E71\u654C\u65B9\u8F93\u51FA\u7A97\u53E3\uFF0C\u4F46\u4E0D\u627F\u62C5\u7A33\u5B9A\u4FDD\u62A4\u6216\u9AD8\u7206\u53D1\u6536\u5272\u804C\u8D23\u3002"
+  heroClass: 3
+  tags: 00000000060000000700000004000000
+  baseStats:
+    maxHealth: 520
+    attackPower: 36
+    defense: 34
+    attackSpeed: 0.95
+    moveSpeed: 4.25
+    criticalChance: 0.05
+    criticalDamageMultiplier: 1.5
+    attackRange: 1.8
+  basicAttack:
+    damageMultiplier: 1
+    attackInterval: 1
+    rangeOverride: 1.8
+    usesProjectile: 0
+    projectileSpeed: 0
+    effectType: 0
+    targetType: 0
+    targetPrioritySearchRadius: 0
+    startingVariantIndex: 0
+    bounce:
+      maxAdditionalTargets: 0
+      searchRadius: 0
+      powerMultiplier: 0
+      bounceVariantKey:
+    sameTargetStacking:
+      enabled: 0
+      maxStacks: 1
+      modifierEffectType: 4
+      magnitudePerStack: 0
+      targetRetentionRange: 0
+      fullStackOverrideStatusEffectType: 0
+    onHitEffect:
+      enabled: 0
+      selfCurrentHealthCostRatio: 0
+      minimumSelfHealthAfterCost: 1
+      bonusDamagePowerMultiplier: 0
+      selfHealBasePowerMultiplier: 0
+      selfHealMissingHealthPowerMultiplier: 0
+    targetSwitchTrigger:
+      enabled: 1
+      powerMultiplier: 0.45
+      sameTargetCooldownSeconds: 2.5
+      variantKey: target_switch_roar
+      onHitStatusEffects:
+      - effectType: 1
+        durationSeconds: 0.65
+        magnitude: 1
+        sourceAttackPowerMultiplier: 0
+        targetMaxHealthMultiplier: 0
+        activeSkillCooldownCapSeconds: 0
+        tickIntervalSeconds: 1
+        maxStacks: 1
+        stackGroupKey:
+        statusThemeKey:
+        refreshDurationOnReapply: 1
+    onHitStatusEffects: []
+    variants: []
+  activeSkill: {fileID: 11400000, guid: 3e67ed6fdd1655640869e13d737e91ae, type: 2}
+  ultimateSkill: {fileID: 11400000, guid: e41ea189f87d6e84e8b84bde519932b7, type: 2}
+  aiTemplateId: tank_default
+  usesSpecialLogic: 0
+  specialLogicNotes:
+  visualConfig:
+    portrait: {fileID: 0}
+    battlePrefab: {fileID: 8201802764806222458, guid: def196cdcafa40847b8ac793bb99dc63, type: 3}
+    animatorController: {fileID: 9100000, guid: c0fbc9a82051e94429aa17cc4b2f48e5, type: 2}
+    battlePrefabFacesLeftByDefault: 0
+    projectilePrefab: {fileID: 0}
+    projectileAlignToMovement: 0
+    projectileEulerAngles: {x: 0, y: 0, z: 0}
+    castVfxPrefab: {fileID: 0}
+    hitVfxPrefab: {fileID: 0}
+    basicAttackVariantVisuals: []
+    formVisuals: []
+    castSfx: {fileID: 0}
+  debugNotes: Stage-01 demo hero for Tank.

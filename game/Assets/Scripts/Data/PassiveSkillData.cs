@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Fight.Data
@@ -28,6 +29,9 @@ namespace Fight.Data
         [Min(0f)] public float restrictedStatusStackDurationSeconds = 0f;
         [Min(0f)] public float restrictedStatusAttackSpeedBonusPerStack = 0f;
         [Min(0f)] public float restrictedStatusSameSourceCooldownSeconds = 0f;
+        public bool triggerStatusEffectsOnInitialSpawn;
+        public bool triggerStatusEffectsOnRevive;
+        public List<StatusEffectData> spawnTriggerStatusEffects = new List<StatusEffectData>();
 
         public bool HasMissingHealthAttackPowerBonus =>
             missingHealthAttackPowerRatio > Mathf.Epsilon
@@ -57,6 +61,11 @@ namespace Fight.Data
         public bool HasRestrictedStatusStacking =>
             restrictedStatusMaxStacks > 0
             && restrictedStatusAttackSpeedBonusPerStack > Mathf.Epsilon;
+
+        public bool HasSpawnTriggerStatusEffects =>
+            (triggerStatusEffectsOnInitialSpawn || triggerStatusEffectsOnRevive)
+            && spawnTriggerStatusEffects != null
+            && spawnTriggerStatusEffects.Count > 0;
 
         public float ResolvePeriodicSelfHealPercentMaxHealth(float currentHealthRatio)
         {

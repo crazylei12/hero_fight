@@ -135,8 +135,14 @@ namespace Fight.Battle
                 return;
             }
 
-            attacker.BeginBasicAttack(target, resolvedAttack, windupSeconds, recoverySeconds, consumeAttackCooldown, isActionSequenceStep);
-            context.EventBus.Publish(new AttackPerformedEvent(attacker, target, resolvedAttack.VariantKey));
+            var attackToBegin = resolvedAttack;
+            if (attacker.TryConsumeTargetSwitchFirstHit(target, out var targetSwitchTrigger))
+            {
+                attackToBegin = resolvedAttack.WithTargetSwitchTrigger(targetSwitchTrigger);
+            }
+
+            attacker.BeginBasicAttack(target, attackToBegin, windupSeconds, recoverySeconds, consumeAttackCooldown, isActionSequenceStep);
+            context.EventBus.Publish(new AttackPerformedEvent(attacker, target, attackToBegin.VariantKey));
         }
 
         public static void ResolvePendingAttack(BattleContext context, RuntimeHero attacker, PendingCombatAction pendingAction, IBattleSimulationCallbacks battleCallbacks)

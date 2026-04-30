@@ -75,5 +75,59 @@ namespace Fight.Battle
         public Vector3 LaunchPosition { get; }
 
         public bool AdvanceSequenceOnUse { get; }
+
+        public ResolvedBasicAttack WithTargetSwitchTrigger(BasicAttackTargetSwitchTriggerData triggerData)
+        {
+            if (triggerData == null || !triggerData.HasAnyEffect)
+            {
+                return this;
+            }
+
+            return new ResolvedBasicAttack(
+                string.IsNullOrWhiteSpace(triggerData.variantKey) ? VariantKey : triggerData.variantKey,
+                EffectType,
+                TargetType,
+                triggerData.powerMultiplier > Mathf.Epsilon ? triggerData.powerMultiplier : PowerMultiplier,
+                TargetPrioritySearchRadius,
+                UsesProjectile,
+                ProjectileSpeed,
+                VisualFormKey,
+                MaxAdditionalBounceTargets,
+                BounceSearchRadius,
+                BouncePowerMultiplier,
+                BounceVariantKey,
+                SameTargetStacking,
+                MergeOnHitStatusEffects(OnHitStatusEffects, triggerData.onHitStatusEffects),
+                LaunchPosition,
+                AdvanceSequenceOnUse);
+        }
+
+        private static IReadOnlyList<StatusEffectData> MergeOnHitStatusEffects(
+            IReadOnlyList<StatusEffectData> baseEffects,
+            IReadOnlyList<StatusEffectData> triggerEffects)
+        {
+            if (triggerEffects == null || triggerEffects.Count == 0)
+            {
+                return baseEffects ?? System.Array.Empty<StatusEffectData>();
+            }
+
+            if (baseEffects == null || baseEffects.Count == 0)
+            {
+                return triggerEffects;
+            }
+
+            var mergedEffects = new List<StatusEffectData>(baseEffects.Count + triggerEffects.Count);
+            for (var i = 0; i < baseEffects.Count; i++)
+            {
+                mergedEffects.Add(baseEffects[i]);
+            }
+
+            for (var i = 0; i < triggerEffects.Count; i++)
+            {
+                mergedEffects.Add(triggerEffects[i]);
+            }
+
+            return mergedEffects;
+        }
     }
 }

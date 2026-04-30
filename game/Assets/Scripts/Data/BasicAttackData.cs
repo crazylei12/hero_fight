@@ -70,6 +70,21 @@ namespace Fight.Data
     }
 
     [Serializable]
+    public class BasicAttackTargetSwitchTriggerData
+    {
+        public bool enabled;
+        [Min(0f)] public float powerMultiplier = 1f;
+        [Min(0f)] public float sameTargetCooldownSeconds = 0f;
+        public string variantKey = string.Empty;
+        public List<StatusEffectData> onHitStatusEffects = new List<StatusEffectData>();
+
+        public bool HasAnyEffect =>
+            enabled
+            && (powerMultiplier > Mathf.Epsilon
+                || (onHitStatusEffects != null && onHitStatusEffects.Count > 0));
+    }
+
+    [Serializable]
     public class BasicAttackData
     {
         [Min(0.1f)] public float damageMultiplier = 1f;
@@ -85,6 +100,7 @@ namespace Fight.Data
         public BasicAttackBounceData bounce = new BasicAttackBounceData();
         public BasicAttackSameTargetStackData sameTargetStacking = new BasicAttackSameTargetStackData();
         public BasicAttackOnHitEffectData onHitEffect = new BasicAttackOnHitEffectData();
+        public BasicAttackTargetSwitchTriggerData targetSwitchTrigger = new BasicAttackTargetSwitchTriggerData();
         public List<StatusEffectData> onHitStatusEffects = new List<StatusEffectData>();
         public List<BasicAttackVariantData> variants = new List<BasicAttackVariantData>();
     }

@@ -111,6 +111,7 @@ namespace Fight.Battle
                 {
                     hero.ResetToSpawn();
                     context.EventBus.Publish(new UnitRevivedEvent(hero));
+                    BattlePassiveSpawnTriggerSystem.ApplyRevive(context, hero);
                 }
 
                 return;

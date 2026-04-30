@@ -595,6 +595,23 @@ namespace Fight.Editor
             EnsureHeroSkillReferences(mammoth, mammothActive, mammothUltimateSkill);
             EnsureHeroBattlePrefabReference(mammoth, LoadBattlePrefab("tank_006_mammoth", HeroClass.Tank));
 
+            var blazeroarActive = CreateBlazeroarActiveSkill(overwriteExistingContent);
+            var blazeroarUltimateSkill = CreateBlazeroarUltimateSkill(overwriteExistingContent, out var blazeroarUltimateExisted);
+
+            var blazeroar = CreateHero(
+                "tank_007_blazeroar",
+                "Blazeroar",
+                HeroClass.Tank,
+                520f, 36f, 34f, 0.95f, 4.25f, 0.05f, 1.5f, 1.8f,
+                blazeroarActive,
+                ConfigureBlazeroarUltimate(blazeroarUltimateSkill, overwriteExistingContent, blazeroarUltimateExisted),
+                overwriteExistingContent,
+                out var blazeroarHeroExisted,
+                HeroTag.Melee, HeroTag.Control, HeroTag.AreaDamage, HeroTag.Heal);
+            ConfigureBlazeroarBasicAttack(blazeroar, overwriteExistingContent, blazeroarHeroExisted);
+            EnsureHeroSkillReferences(blazeroar, blazeroarActive, blazeroarUltimateSkill);
+            EnsureHeroBattlePrefabReference(blazeroar, LoadBattlePrefab("tank_007_blazeroar", HeroClass.Tank));
+
             var supportActive = CreateSupportActiveSkill(overwriteExistingContent);
             var supportUltimateSkill = CreateSupportUltimateSkill(overwriteExistingContent, out var supportUltimateExisted);
 
@@ -806,7 +823,7 @@ namespace Fight.Editor
                 warrior, bladesman, berserker, spellblade, trollwarlord, chainbreaker, yasuo,
                 mage, frostmage, sandemperor, lightningmage, astromancer, mirrormage, marisa,
                 assassin, tidefin, butcher, loner, demon,
-                tank, shieldwarden, tidehunter, mundo, blastshield, mammoth,
+                tank, shieldwarden, tidehunter, mundo, blastshield, mammoth, blazeroar,
                 support, windchime, monk, shrinemaiden, chef, commander,
                 marksman, rifleman, venomshooter, boomeranger, sniper, bloodlancer,
             };
@@ -1371,6 +1388,7 @@ namespace Fight.Editor
             EnsureBasicAttackStatusList(hero.basicAttack);
             ResetSameTargetStacking(hero.basicAttack);
             ResetBasicAttackOnHitEffect(hero.basicAttack);
+            ResetTargetSwitchTrigger(hero.basicAttack);
             hero.basicAttack.onHitStatusEffects.Clear();
             hero.basicAttack.bounce.maxAdditionalTargets = 0;
             hero.basicAttack.bounce.searchRadius = 0f;
@@ -1540,6 +1558,7 @@ namespace Fight.Editor
                 "tank_003_tidehunter" => "受击成长型坦克，面对多来源攻击时会逐渐变得更难击穿，适合站在最前面吸收火力。敌方越想集火，他越能拖住节奏，并为后排争取稳定输出时间，很适合作为团队承接第一波火力的支点。",
                 "tank_004_mundo" => "自愈型坦克，依靠持续回复长时间占住前排，在拉锯战中不断消耗敌方输出资源。适合缺少爆发的对局，但害怕被快速集火压倒；拖到后段时会持续逼迫敌方分配火力。",
                 "tank_005_blastshield" => "布雷型坦克，通过盾牌姿态和雷区限制敌方推进，把战场变成不容易穿越的防线。适合防守阵地，也能惩罚贸然突进。敌人越想从正面突破，越容易被区域限制牵制。",
+                "tank_007_blazeroar" => "扰乱型坦克，切换目标后的首击能短暂眩晕，出生与复活时压低敌方攻击力，并在残血时自疗冲锋重回战线。适合打乱敌方输出窗口，但不承担稳定保护或高爆发收割职责。",
                 "support_001_sunpriest" => "治疗型辅助，持续为队友提供治疗与护盾，让前排和核心输出拥有更长的作战时间。适合稳健阵容，但需要避免被刺客优先处理；一旦站位被切散，保护效率会明显下降。",
                 "support_002_windchime" => "反突进辅助，专门保护被威胁的后排，并用领域削弱敌方切入节奏。适合搭配远程核心，在对手强开时提供关键缓冲。她的价值主要体现在阻止敌方第一波切入成功。",
                 "support_003_monk" => "近战守护辅助，站在前线用治疗和群体护盾稳住团队，能和坦克一起承接压力。适合抱团推进，也能让前排阵容更难被突破。当队伍愿意抱团作战时，他能稳定抬高容错。",
@@ -1611,6 +1630,8 @@ namespace Fight.Editor
                 "skill_mundo_ultimate_monstrousrecovery" => "短时间快速自愈，强行延长前排站场时间。",
                 "skill_blastshield_active_shieldbrace" => "架盾进入防守姿态，反制近身普攻并提高承压能力。",
                 "skill_blastshield_ultimate_blastminefield" => "向前方布置雷区，阻止敌人顺利推进。",
+                "skill_blazeroar_active_blazingroar" => "切换目标后的首击眩晕敌人，出生与复活时削弱敌方全体攻击力，主动释放会后撤并压低当前目标输出。",
+                "skill_blazeroar_ultimate_infernorush" => "先回复自身生命，再向当前目标方向冲锋并伤害路径敌人。",
                 "skill_support_active_heal" => "治疗一名友军并附加护盾，稳定队友血线。",
                 "skill_support_ultimate_blessing" => "创造治疗领域，为站在范围内的友军持续恢复。",
                 "skill_windchime_active_echocanopy" => "保护被突进威胁的友军，并对贴近敌人进行反制。",
@@ -5538,6 +5559,16 @@ namespace Fight.Editor
             skill.passiveSkill.restrictedStatusStackDurationSeconds = 0f;
             skill.passiveSkill.restrictedStatusAttackSpeedBonusPerStack = 0f;
             skill.passiveSkill.restrictedStatusSameSourceCooldownSeconds = 0f;
+            skill.passiveSkill.triggerStatusEffectsOnInitialSpawn = false;
+            skill.passiveSkill.triggerStatusEffectsOnRevive = false;
+            if (skill.passiveSkill.spawnTriggerStatusEffects == null)
+            {
+                skill.passiveSkill.spawnTriggerStatusEffects = new List<StatusEffectData>();
+            }
+            else
+            {
+                skill.passiveSkill.spawnTriggerStatusEffects.Clear();
+            }
         }
 
         private static void ResetDamageTriggeredStatusCounter(SkillData skill)
@@ -7533,6 +7564,177 @@ namespace Fight.Editor
             });
         }
 
+        private static SkillData CreateBlazeroarActiveSkill(bool overwriteExistingContent)
+        {
+            var skill = CreateSkill(
+                "skill_blazeroar_active_blazingroar",
+                "Blazing Roar",
+                SkillSlotType.ActiveSkill,
+                SkillType.Dash,
+                SkillTargetType.CurrentEnemyTarget,
+                4.5f,
+                0f,
+                0f,
+                8f,
+                1,
+                overwriteExistingContent,
+                out var existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.description = "Stage-01 demo skill: target-switch first basic attack stun, spawn/revive enemy attack debuff, and active backward roar against the current target.";
+            skill.activationMode = SkillActivationMode.Active;
+            skill.skillType = SkillType.Dash;
+            skill.targetType = SkillTargetType.CurrentEnemyTarget;
+            skill.fallbackTargetType = SkillTargetType.NearestEnemy;
+            skill.castRange = 4.5f;
+            skill.areaRadius = 0f;
+            skill.cooldownSeconds = 8f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+            ResetPassiveSkillData(skill);
+            ResetDamageTriggeredStatusCounter(skill);
+            ResetKnockUpFollowUp(skill);
+            ResetTemporaryOverride(skill);
+            ResetUltimateDecision(skill);
+
+            skill.passiveSkill.triggerStatusEffectsOnInitialSpawn = true;
+            skill.passiveSkill.triggerStatusEffectsOnRevive = true;
+            skill.passiveSkill.spawnTriggerStatusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.AttackPowerModifier,
+                durationSeconds = 4f,
+                magnitude = -0.18f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
+            var retreat = AddRepositionEffect(skill, 0.25f, 0f, 3.0f);
+            retreat.targetMode = SkillEffectTargetMode.Caster;
+            retreat.repositionAwayFromPrimaryTarget = true;
+
+            var targetDebuff = AddApplyStatusEffectsEffect(skill);
+            targetDebuff.targetMode = SkillEffectTargetMode.PrimaryTarget;
+            targetDebuff.statusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.AttackPowerModifier,
+                durationSeconds = 4f,
+                magnitude = -0.30f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateBlazeroarUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
+        {
+            var skill = CreateSkill(
+                "skill_blazeroar_ultimate_infernorush",
+                "Inferno Rush",
+                SkillSlotType.Ultimate,
+                SkillType.Dash,
+                SkillTargetType.CurrentEnemyTarget,
+                8.0f,
+                0f,
+                0f,
+                0f,
+                1,
+                overwriteExistingContent,
+                out existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            ApplyBlazeroarUltimateBaseConfiguration(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData ConfigureBlazeroarUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            ApplyBlazeroarUltimateBaseConfiguration(skill);
+            ResetUltimateDecision(skill);
+            skill.ultimateDecision.targetingType = UltimateTargetingType.CurrentTarget;
+            skill.ultimateDecision.combineMode = UltimateConditionCombineMode.AllMustPass;
+            skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.SelfLowHealth;
+            skill.ultimateDecision.primaryCondition.healthPercentThreshold = 0.45f;
+            skill.ultimateDecision.secondaryCondition.conditionType = UltimateConditionType.EnemyCountInDashPath;
+            skill.ultimateDecision.secondaryCondition.requiredUnitCount = 2;
+            skill.ultimateDecision.fallback.fallbackType = UltimateFallbackType.LowerPrimaryThreshold;
+            skill.ultimateDecision.fallback.triggerAfterSeconds = 45f;
+            skill.ultimateDecision.fallback.overrideHealthPercentThreshold = 0.65f;
+            skill.ultimateDecision.fallback.overrideRequiredUnitCount = 1;
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static void ApplyBlazeroarUltimateBaseConfiguration(SkillData skill)
+        {
+            skill.description = "Stage-01 demo skill: heal self, rush toward the current target, and damage enemies along the locked dash path.";
+            skill.activationMode = SkillActivationMode.Active;
+            skill.skillType = SkillType.Dash;
+            skill.targetType = SkillTargetType.CurrentEnemyTarget;
+            skill.fallbackTargetType = SkillTargetType.NearestEnemy;
+            skill.castRange = 8.0f;
+            skill.areaRadius = 0f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+            ResetPassiveSkillData(skill);
+            ResetDamageTriggeredStatusCounter(skill);
+            ResetKnockUpFollowUp(skill);
+            ResetTemporaryOverride(skill);
+            ResetActionSequence(skill);
+
+            var selfHeal = AddHealEffect(skill, 3.6111112f);
+            selfHeal.targetMode = SkillEffectTargetMode.Caster;
+
+            var rush = AddRepositionEffect(skill, 0.45f, 0f, 7.0f);
+            rush.targetMode = SkillEffectTargetMode.Caster;
+
+            var pathDamage = AddDamageEffect(skill, 3.0f);
+            pathDamage.targetMode = SkillEffectTargetMode.DashPathEnemies;
+            pathDamage.radiusOverride = 1.1f;
+        }
+
+        private static void ConfigureBlazeroarBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (hero == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return;
+            }
+
+            EnsureBasicAttackStatusList(hero.basicAttack);
+            ResetTargetSwitchTrigger(hero.basicAttack);
+            hero.basicAttack.targetSwitchTrigger.enabled = true;
+            hero.basicAttack.targetSwitchTrigger.variantKey = "target_switch_roar";
+            hero.basicAttack.targetSwitchTrigger.powerMultiplier = 0.45f;
+            hero.basicAttack.targetSwitchTrigger.sameTargetCooldownSeconds = 2.5f;
+            hero.basicAttack.targetSwitchTrigger.onHitStatusEffects.Add(new StatusEffectData
+            {
+                effectType = StatusEffectType.Stun,
+                durationSeconds = 0.65f,
+                magnitude = 1f,
+                maxStacks = 1,
+                refreshDurationOnReapply = true,
+            });
+
+            EditorUtility.SetDirty(hero);
+        }
+
         private static SkillData ConfigureRiflemanUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
         {
             if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
@@ -7868,6 +8070,16 @@ namespace Fight.Editor
             {
                 basicAttack.onHitEffect = new BasicAttackOnHitEffectData();
             }
+
+            if (basicAttack.targetSwitchTrigger == null)
+            {
+                basicAttack.targetSwitchTrigger = new BasicAttackTargetSwitchTriggerData();
+            }
+
+            if (basicAttack.targetSwitchTrigger.onHitStatusEffects == null)
+            {
+                basicAttack.targetSwitchTrigger.onHitStatusEffects = new List<StatusEffectData>();
+            }
         }
 
         private static void ResetSameTargetStacking(BasicAttackData basicAttack)
@@ -7900,6 +8112,21 @@ namespace Fight.Editor
             basicAttack.onHitEffect.bonusDamagePowerMultiplier = 0f;
             basicAttack.onHitEffect.selfHealBasePowerMultiplier = 0f;
             basicAttack.onHitEffect.selfHealMissingHealthPowerMultiplier = 0f;
+        }
+
+        private static void ResetTargetSwitchTrigger(BasicAttackData basicAttack)
+        {
+            if (basicAttack == null)
+            {
+                return;
+            }
+
+            EnsureBasicAttackStatusList(basicAttack);
+            basicAttack.targetSwitchTrigger.enabled = false;
+            basicAttack.targetSwitchTrigger.powerMultiplier = 1f;
+            basicAttack.targetSwitchTrigger.sameTargetCooldownSeconds = 0f;
+            basicAttack.targetSwitchTrigger.variantKey = string.Empty;
+            basicAttack.targetSwitchTrigger.onHitStatusEffects.Clear();
         }
 
         private static BattleInputConfig CreateBattleInput(
@@ -8294,6 +8521,8 @@ namespace Fight.Editor
                 "skill_mundo_ultimate_monstrousrecovery" => "tank_004_mundo",
                 "skill_blastshield_active_shieldbrace" => "tank_005_blastshield",
                 "skill_blastshield_ultimate_blastminefield" => "tank_005_blastshield",
+                "skill_blazeroar_active_blazingroar" => "tank_007_blazeroar",
+                "skill_blazeroar_ultimate_infernorush" => "tank_007_blazeroar",
                 _ => null,
             };
         }

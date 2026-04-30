@@ -75,6 +75,11 @@ namespace Fight.Battle
 
                 Context.EventBus.Publish(new UnitSpawnedEvent(Context.Heroes[i]));
             }
+
+            for (var i = 0; i < Context.Heroes.Count; i++)
+            {
+                BattlePassiveSpawnTriggerSystem.ApplyInitialSpawn(Context, Context.Heroes[i]);
+            }
         }
 
         public bool Tick(float deltaTime)
