@@ -167,6 +167,10 @@ namespace Fight.Data
         [Min(0f)] public float returningPathWidth = 0f;
         [Min(0f)] public float returningPathDelaySeconds = 0f;
         [Min(0f)] public float channeledPathMaxTurnDegreesPerSecond = 0f;
+        [Min(0f)] public float channeledPathRecoverySeconds = 0f;
+        [Min(1)] public int multiPathBurstCount = 1;
+        [Min(0f)] public float multiPathBurstSpreadDegrees = 360f;
+        [Min(1)] public int multiPathBurstMaxHitsPerTarget = 1;
         public CombatFormOverrideData formOverride = new CombatFormOverrideData();
         public ForcedMovementDirectionMode forcedMovementDirection = ForcedMovementDirectionMode.AwayFromSource;
         [Min(0f)] public float forcedMovementDistance = 0f;
@@ -174,6 +178,7 @@ namespace Fight.Data
         [Min(0f)] public float forcedMovementPeakHeight = 0f;
         public bool repositionAwayFromPrimaryTarget;
         public bool repositionOnFarSideOfPrimaryTarget;
+        public bool repositionRequiresSafeRetreat;
         public RadialSweepDirectionMode radialSweepDirection = RadialSweepDirectionMode.Outward;
         [Min(0f)] public float radialSweepStartDelaySeconds = 0f;
         [Min(0f)] public float radialSweepRingWidth = 1f;

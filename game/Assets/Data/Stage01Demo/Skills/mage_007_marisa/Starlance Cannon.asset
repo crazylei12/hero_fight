@@ -18,9 +18,9 @@ MonoBehaviour:
   slotType: 1
   activationMode: 0
   skillType: 1
-  targetType: 3
+  targetType: 20
   preferredEnemyHeroClass: 2
-  fallbackTargetType: 15
+  fallbackTargetType: 1
   targetPrioritySearchRadius: 0
   minimumTargetDistance: 0
   targetPriorityRequiredUnitCount: 1
@@ -157,6 +157,10 @@ MonoBehaviour:
     returningPathWidth: 2.4
     returningPathDelaySeconds: 0.85
     channeledPathMaxTurnDegreesPerSecond: 35
+    channeledPathRecoverySeconds: 0.35
+    multiPathBurstCount: 1
+    multiPathBurstSpreadDegrees: 360
+    multiPathBurstMaxHitsPerTarget: 1
     formOverride:
       formKey:
       durationSeconds: 0
@@ -173,6 +177,7 @@ MonoBehaviour:
     forcedMovementPeakHeight: 0
     repositionAwayFromPrimaryTarget: 0
     repositionOnFarSideOfPrimaryTarget: 0
+    repositionRequiresSafeRetreat: 0
     radialSweepDirection: 0
     radialSweepStartDelaySeconds: 0
     radialSweepRingWidth: 1
@@ -269,11 +274,11 @@ MonoBehaviour:
   persistentAreaVfxEulerAngles: {x: 0, y: 0, z: 0}
   skillAreaPresentationType: 0
   ultimateDecision:
-    targetingType: 4
+    targetingType: 0
     minimumSelfHealthPercentToCast: 0
     primaryCondition:
       conditionType: 1
-      searchRadius: 3.2
+      searchRadius: 20
       requiredUnitCount: 3
       healthPercentThreshold: 1
       durationSeconds: 0

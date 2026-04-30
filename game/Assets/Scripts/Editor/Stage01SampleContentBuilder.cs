@@ -1608,7 +1608,7 @@ namespace Fight.Editor
                 "skill_astromancer_ultimate_meteorchoir" => "建立固定群星轰炸区，持续安排带预警的小范围星陨。",
                 "skill_mirrormage_active_mirrorcopy" => "复制范围内最高威胁敌方英雄，生成一个可普攻和释放安全小技能的临时友方分身。",
                 "skill_mirrormage_ultimate_hallofreflections" => "一次性复制多个敌方英雄，短时间制造镜像人数压制。",
-                "skill_marisa_active_broomburst" => "骑扫帚向远离目标的方向短滑，并在身边释放一轮星弹扫射。",
+                "skill_marisa_active_broomburst" => "骑扫帚远离最近威胁，并从落点附近发射六颗短直线路径星弹。",
                 "skill_marisa_ultimate_starlancecannon" => "短暂蓄力后引导直线星辉魔炮，持续贯穿路径上的敌人。",
                 "skill_assassin_active_shadowblink" => "闪现切入关键目标，快速贴近后排。",
                 "skill_assassin_ultimate_smokeveil" => "制造隐蔽窗口，让刺客更安全地切入或脱离。",
@@ -4428,6 +4428,32 @@ namespace Fight.Editor
             return effect;
         }
 
+        private static SkillEffectData AddMultiPathBurstEffect(
+            SkillData skill,
+            float powerMultiplier,
+            float pathLength,
+            float pathWidth,
+            int pathCount,
+            int maxHitsPerTarget,
+            float travelDurationSeconds)
+        {
+            var effect = new SkillEffectData
+            {
+                effectType = SkillEffectType.CreateMultiPathBurst,
+                targetMode = SkillEffectTargetMode.Caster,
+                powerMultiplier = powerMultiplier,
+                durationSeconds = travelDurationSeconds,
+                persistentAreaTargetType = PersistentAreaTargetType.Enemies,
+                returningPathMaxDistance = pathLength,
+                returningPathWidth = pathWidth,
+                multiPathBurstCount = Mathf.Max(1, pathCount),
+                multiPathBurstSpreadDegrees = 360f,
+                multiPathBurstMaxHitsPerTarget = Mathf.Max(1, maxHitsPerTarget),
+            };
+            skill.effects.Add(effect);
+            return effect;
+        }
+
         private static SkillEffectData AddDeployableProxyEffect(
             SkillData skill,
             float powerMultiplier,
@@ -6061,10 +6087,10 @@ namespace Fight.Editor
                 "Broom Burst",
                 SkillSlotType.ActiveSkill,
                 SkillType.Dash,
-                SkillTargetType.CurrentEnemyTarget,
+                SkillTargetType.NearestEnemy,
                 8.8f,
-                3.2f,
-                0.85f,
+                0f,
+                0.38f,
                 6.5f,
                 1,
                 overwriteExistingContent,
@@ -6077,10 +6103,10 @@ namespace Fight.Editor
 
             skill.description = ResolveDefaultSkillDescription(skill.skillId, skill.displayName);
             skill.skillType = SkillType.Dash;
-            skill.targetType = SkillTargetType.CurrentEnemyTarget;
+            skill.targetType = SkillTargetType.NearestEnemy;
             skill.fallbackTargetType = SkillTargetType.NearestEnemy;
             skill.castRange = 8.8f;
-            skill.areaRadius = 3.2f;
+            skill.areaRadius = 0f;
             skill.cooldownSeconds = 6.5f;
             skill.minTargetsToCast = 1;
             skill.allowsSelfCast = false;
@@ -6089,18 +6115,16 @@ namespace Fight.Editor
             var reposition = AddRepositionEffect(skill, 0.42f, 0f, 3.2f, 0f);
             reposition.targetMode = SkillEffectTargetMode.Caster;
             reposition.repositionAwayFromPrimaryTarget = true;
+            reposition.repositionRequiresSafeRetreat = true;
 
-            var starSweep = new SkillEffectData
-            {
-                effectType = SkillEffectType.CreateRadialSweep,
-                targetMode = SkillEffectTargetMode.Caster,
-                powerMultiplier = 0.85f,
-                radiusOverride = 3.2f,
-                durationSeconds = 0.35f,
-                radialSweepRingWidth = 3.2f,
-                persistentAreaTargetType = PersistentAreaTargetType.Enemies,
-            };
-            skill.effects.Add(starSweep);
+            AddMultiPathBurstEffect(
+                skill,
+                powerMultiplier: 0.38f,
+                pathLength: 4.8f,
+                pathWidth: 0.9f,
+                pathCount: 6,
+                maxHitsPerTarget: 2,
+                travelDurationSeconds: 0.16f);
 
             ResetUltimateDecision(skill);
             EditorUtility.SetDirty(skill);
@@ -6114,7 +6138,7 @@ namespace Fight.Editor
                 "Starlance Cannon",
                 SkillSlotType.Ultimate,
                 SkillType.AreaDamage,
-                SkillTargetType.DensestEnemyArea,
+                SkillTargetType.BestEnemyLineFromSelf,
                 20f,
                 2.4f,
                 3.30f,
@@ -6142,9 +6166,9 @@ namespace Fight.Editor
 
             ApplyMarisaUltimateBaseConfiguration(skill);
             ResetUltimateDecision(skill);
-            skill.ultimateDecision.targetingType = UltimateTargetingType.EnemyDensestPosition;
+            skill.ultimateDecision.targetingType = UltimateTargetingType.UseSkillTargetType;
             skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;
-            skill.ultimateDecision.primaryCondition.searchRadius = 3.2f;
+            skill.ultimateDecision.primaryCondition.searchRadius = 20f;
             skill.ultimateDecision.primaryCondition.requiredUnitCount = 3;
             skill.ultimateDecision.primaryCondition.requireTargetInCastRange = true;
             skill.ultimateDecision.combineMode = UltimateConditionCombineMode.PrimaryOnly;
@@ -6157,8 +6181,8 @@ namespace Fight.Editor
         {
             skill.description = ResolveDefaultSkillDescription(skill.skillId, skill.displayName);
             skill.skillType = SkillType.AreaDamage;
-            skill.targetType = SkillTargetType.DensestEnemyArea;
-            skill.fallbackTargetType = SkillTargetType.CurrentEnemyTarget;
+            skill.targetType = SkillTargetType.BestEnemyLineFromSelf;
+            skill.fallbackTargetType = SkillTargetType.NearestEnemy;
             skill.castRange = 20f;
             skill.areaRadius = 2.4f;
             skill.minTargetsToCast = 3;
@@ -6180,6 +6204,7 @@ namespace Fight.Editor
                 returningPathMaxDistance = 20f,
                 returningPathWidth = 2.4f,
                 channeledPathMaxTurnDegreesPerSecond = 35f,
+                channeledPathRecoverySeconds = 0.35f,
                 persistentAreaTargetType = PersistentAreaTargetType.Enemies,
             };
             skill.effects.Add(cannon);

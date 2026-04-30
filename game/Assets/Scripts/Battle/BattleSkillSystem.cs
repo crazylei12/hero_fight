@@ -429,9 +429,15 @@ namespace Fight.Battle
             }
 
             var affectedTargets = CollectTargets(context, caster, resolvedSkill, primaryTarget);
+            var affectedTargetCount = GetSkillCastAffectedTargetCount(
+                context,
+                caster,
+                resolvedSkill,
+                primaryTarget,
+                affectedTargets);
             if (usesTemplateDecision)
             {
-                if (affectedTargets.Count <= 0)
+                if (affectedTargetCount <= 0)
                 {
                     ScheduleNextUltimateAttempt(context, caster);
                     PublishUltimateDecisionEvaluated(
@@ -439,7 +445,7 @@ namespace Fight.Battle
                         caster,
                         skill,
                         primaryTarget,
-                        affectedTargets.Count,
+                        affectedTargetCount,
                         usesTemplateDecision,
                         0,
                         UltimateDecisionOutcome.NoAffectedTargets,
@@ -448,7 +454,7 @@ namespace Fight.Battle
                     return false;
                 }
             }
-            else if (affectedTargets.Count < Mathf.Max(1, skill.minTargetsToCast))
+            else if (affectedTargetCount < Mathf.Max(1, skill.minTargetsToCast))
             {
                 ScheduleNextUltimateAttempt(context, caster);
                 PublishUltimateDecisionEvaluated(
@@ -456,11 +462,11 @@ namespace Fight.Battle
                     caster,
                     skill,
                     primaryTarget,
-                    affectedTargets.Count,
+                    affectedTargetCount,
                     usesTemplateDecision,
                     0,
                     UltimateDecisionOutcome.InsufficientAffectedTargets,
-                    $"affectedTargets={affectedTargets.Count} minTargets={Mathf.Max(1, skill.minTargetsToCast)}",
+                    $"affectedTargets={affectedTargetCount} minTargets={Mathf.Max(1, skill.minTargetsToCast)}",
                     chanceBreakdown);
                 return false;
             }
@@ -476,7 +482,7 @@ namespace Fight.Battle
                         caster,
                         skill,
                         primaryTarget,
-                        affectedTargets.Count,
+                        affectedTargetCount,
                         usesTemplateDecision,
                         decisionTrace.FallbackStage,
                         UltimateDecisionOutcome.DecisionConditionsFailed,
@@ -491,7 +497,7 @@ namespace Fight.Battle
                     caster,
                     skill,
                     primaryTarget,
-                    affectedTargets.Count,
+                    affectedTargetCount,
                     usesTemplateDecision,
                     decisionTrace.FallbackStage,
                     chanceBreakdown.RollPassed ? UltimateDecisionOutcome.RollPassed : UltimateDecisionOutcome.RollFailed,
@@ -515,7 +521,7 @@ namespace Fight.Battle
                         caster,
                         skill,
                         primaryTarget,
-                        affectedTargets.Count,
+                        affectedTargetCount,
                         usesTemplateDecision,
                         0,
                         UltimateDecisionOutcome.LegacyOpportunityFailed,
@@ -530,7 +536,7 @@ namespace Fight.Battle
                     caster,
                     skill,
                     primaryTarget,
-                    affectedTargets.Count,
+                    affectedTargetCount,
                     usesTemplateDecision,
                     0,
                     chanceBreakdown.RollPassed ? UltimateDecisionOutcome.RollPassed : UltimateDecisionOutcome.RollFailed,
@@ -591,8 +597,20 @@ namespace Fight.Battle
                 return false;
             }
 
+            if (RequiresValidSafeRetreat(resolvedSkill)
+                && !CreateSkillEffectResolutionState(context, resolvedSkill, caster, primaryTarget).HasDashPath)
+            {
+                return false;
+            }
+
             var affectedTargets = CollectTargets(context, caster, resolvedSkill, primaryTarget);
-            if (affectedTargets.Count < Mathf.Max(1, skill.minTargetsToCast))
+            var affectedTargetCount = GetSkillCastAffectedTargetCount(
+                context,
+                caster,
+                resolvedSkill,
+                primaryTarget,
+                affectedTargets);
+            if (affectedTargetCount < Mathf.Max(1, skill.minTargetsToCast))
             {
                 return false;
             }
@@ -1097,6 +1115,13 @@ namespace Fight.Battle
                         effectiveCastRange,
                         skill.minimumTargetDistance,
                         excludedSequenceTargets);
+                case SkillTargetType.BestEnemyLineFromSelf:
+                    return SelectBestEnemyLineFromSelfTarget(
+                        context.Heroes,
+                        caster,
+                        resolvedSkill,
+                        effectiveCastRange,
+                        excludedSequenceTargets);
                 case SkillTargetType.DensestEnemyArea:
                     return FindDensestEnemyAnchor(context.Heroes, caster, effectiveCastRange, skill.areaRadius);
                 case SkillTargetType.BackmostEnemy:
@@ -1269,6 +1294,16 @@ namespace Fight.Battle
                 return results;
             }
 
+            if (resolvedSkill.TargetType == SkillTargetType.BestEnemyLineFromSelf)
+            {
+                return CollectBestEnemyLineTargetsFromSelf(
+                    context,
+                    caster,
+                    resolvedSkill,
+                    primaryTarget,
+                    GetSkillSelectionCastRange(skill));
+            }
+
             if (skill.areaRadius <= 0f)
             {
                 if (!IsPrimaryTargetStillValid(resolvedSkill, caster, primaryTarget))
@@ -1360,6 +1395,16 @@ namespace Fight.Battle
             if (primaryTarget == null)
             {
                 return results;
+            }
+
+            if (resolvedSkill.TargetType == SkillTargetType.BestEnemyLineFromSelf)
+            {
+                return CollectBestEnemyLineTargetsFromSelf(
+                    context,
+                    caster,
+                    resolvedSkill,
+                    primaryTarget,
+                    effectiveCastRange);
             }
 
             if (skill.areaRadius <= 0f)
@@ -1583,6 +1628,7 @@ namespace Fight.Battle
                 case SkillTargetType.CurrentEnemyTarget:
                 case SkillTargetType.FarthestEnemyFromSelf:
                 case SkillTargetType.RandomEnemyInRange:
+                case SkillTargetType.BestEnemyLineFromSelf:
                     return candidate.Side != caster.Side;
                 case SkillTargetType.ThreatenedRangedAllyOrEnemyDensestAnchor:
                     return true;
@@ -1773,8 +1819,9 @@ namespace Fight.Battle
                         break;
                     }
 
-                    var enemyCount = CountUnitsInRange(context, caster, primaryTarget, searchRadius, countAllies: false);
-                    summary = $"{label}={condition.conditionType} measured={enemyCount} required={requiredUnitCount} radius={searchRadius:0.##} pass={pass}";
+                    var enemyCount = GetConditionUnitCount(context, caster, skill, primaryTarget, condition, fallback);
+                    var targetModeLabel = ShouldUseBestLineTargetCount(skill) ? "skill-line" : "radius";
+                    summary = $"{label}={condition.conditionType} measured={enemyCount} required={requiredUnitCount} mode={targetModeLabel} radius={searchRadius:0.##} pass={pass}";
                     break;
                 case UltimateConditionType.AllyCountInRange:
                     var allyCount = CountUnitsInRange(context, caster, primaryTarget, searchRadius, countAllies: true);
@@ -1856,7 +1903,7 @@ namespace Fight.Battle
                                    countAllies: false) >= GetPriorityRequiredUnitCount(skill);
                     }
 
-                    return CountUnitsInRange(context, caster, primaryTarget, searchRadius, countAllies: false) >= requiredUnitCount;
+                    return GetConditionUnitCount(context, caster, skill, primaryTarget, condition, fallback) >= requiredUnitCount;
                 case UltimateConditionType.AllyCountInRange:
                     return CountUnitsInRange(context, caster, primaryTarget, searchRadius, countAllies: true) >= requiredUnitCount;
                 case UltimateConditionType.EnemyLowHealthInRange:
@@ -2182,6 +2229,8 @@ namespace Fight.Battle
             {
                 UltimateConditionType.EnemyCountInRange => ShouldUseThreatenedRangedAnchorCount(skill, caster, primaryTarget)
                     ? CountUnitsInRange(context, caster, primaryTarget, GetPrioritySearchRadius(skill), countAllies: false)
+                    : ShouldUseBestLineTargetCount(skill)
+                        ? CountBestLineSkillTargets(context, caster, skill, primaryTarget)
                     : CountUnitsInRange(context, caster, primaryTarget, searchRadius, countAllies: false),
                 UltimateConditionType.AllyCountInRange => CountUnitsInRange(context, caster, primaryTarget, searchRadius, countAllies: true),
                 UltimateConditionType.EnemyLowHealthInRange => CountLowHealthUnitsInRange(context, caster, primaryTarget, searchRadius, includeAllies: false, healthThreshold),
@@ -2192,6 +2241,27 @@ namespace Fight.Battle
                 UltimateConditionType.EnemyCountInDashPath => CountDashPathTargets(context, caster, skill, primaryTarget),
                 _ => 0,
             };
+        }
+
+        private static bool ShouldUseBestLineTargetCount(SkillData skill)
+        {
+            return skill != null && skill.targetType == SkillTargetType.BestEnemyLineFromSelf;
+        }
+
+        private static int CountBestLineSkillTargets(
+            BattleContext context,
+            RuntimeHero caster,
+            SkillData skill,
+            RuntimeHero primaryTarget)
+        {
+            if (context == null || caster == null || skill == null)
+            {
+                return 0;
+            }
+
+            var resolvedSkill = ResolvedSkillCast.FromSkill(skill);
+            var affectedTargets = CollectTargets(context, caster, resolvedSkill, primaryTarget);
+            return GetSkillCastAffectedTargetCount(context, caster, resolvedSkill, primaryTarget, affectedTargets);
         }
 
         private static int CountDashPathTargets(
@@ -2209,7 +2279,7 @@ namespace Fight.Battle
                 return 0;
             }
 
-            var resolutionState = CreateSkillEffectResolutionState(skill, caster, primaryTarget);
+            var resolutionState = CreateSkillEffectResolutionState(context, skill, caster, primaryTarget);
             if (!resolutionState.HasDashPath)
             {
                 return 0;
@@ -2951,7 +3021,7 @@ namespace Fight.Battle
             var effects = GetResolvedSkillEffects(resolvedSkill);
             if (effects != null && effects.Count > 0)
             {
-                var resolutionState = CreateSkillEffectResolutionState(resolvedSkill, caster, primaryTarget);
+                var resolutionState = CreateSkillEffectResolutionState(context, resolvedSkill, caster, primaryTarget);
                 var insertedUltimateResolved = false;
                 for (var i = 0; i < effects.Count; i++)
                 {
@@ -3178,7 +3248,7 @@ namespace Fight.Battle
                 return affectedTargets != null ? affectedTargets.Count : 0;
             }
 
-            var resolutionState = CreateSkillEffectResolutionState(resolvedSkill, caster, primaryTarget);
+            var resolutionState = CreateSkillEffectResolutionState(context, resolvedSkill, caster, primaryTarget);
             var uniqueTargetIds = new HashSet<string>();
 
             for (var i = 0; i < effects.Count; i++)
@@ -3236,6 +3306,20 @@ namespace Fight.Battle
                     continue;
                 }
 
+                if (effect.effectType == SkillEffectType.CreateMultiPathBurst)
+                {
+                    var burstTargets = CollectPotentialMultiPathBurstTargets(context, caster, primaryTarget, effect, resolutionState);
+                    for (var j = 0; j < burstTargets.Count; j++)
+                    {
+                        if (burstTargets[j] != null)
+                        {
+                            uniqueTargetIds.Add(burstTargets[j].RuntimeId);
+                        }
+                    }
+
+                    continue;
+                }
+
                 var effectTargets = ResolveEffectTargets(context, caster, skill, primaryTarget, affectedTargets, effect, resolutionState);
                 for (var j = 0; j < effectTargets.Count; j++)
                 {
@@ -3256,10 +3340,20 @@ namespace Fight.Battle
 
         private static SkillEffectResolutionState CreateSkillEffectResolutionState(SkillData skill, RuntimeHero caster, RuntimeHero primaryTarget)
         {
-            return CreateSkillEffectResolutionState(ResolvedSkillCast.FromSkill(skill), caster, primaryTarget);
+            return CreateSkillEffectResolutionState(null, ResolvedSkillCast.FromSkill(skill), caster, primaryTarget);
+        }
+
+        private static SkillEffectResolutionState CreateSkillEffectResolutionState(BattleContext context, SkillData skill, RuntimeHero caster, RuntimeHero primaryTarget)
+        {
+            return CreateSkillEffectResolutionState(context, ResolvedSkillCast.FromSkill(skill), caster, primaryTarget);
         }
 
         private static SkillEffectResolutionState CreateSkillEffectResolutionState(ResolvedSkillCast resolvedSkill, RuntimeHero caster, RuntimeHero primaryTarget)
+        {
+            return CreateSkillEffectResolutionState(null, resolvedSkill, caster, primaryTarget);
+        }
+
+        private static SkillEffectResolutionState CreateSkillEffectResolutionState(BattleContext context, ResolvedSkillCast resolvedSkill, RuntimeHero caster, RuntimeHero primaryTarget)
         {
             var skill = resolvedSkill?.Skill;
             var dashStartPosition = caster != null ? caster.CurrentPosition : Vector3.zero;
@@ -3273,12 +3367,14 @@ namespace Fight.Battle
                 dashEffect.durationSeconds > Mathf.Epsilon
                     ? dashEffect.durationSeconds
                     : dashEffect.forcedMovementDurationSeconds);
+            var hasDashDestination = TryGetDashDestination(context, caster, primaryTarget, dashEffect, out var dashDestination);
+            var hasDashPath = hasDashDestination && (!dashEffect.repositionRequiresSafeRetreat || Vector3.Distance(dashStartPosition, dashDestination) > Mathf.Epsilon);
 
             return new SkillEffectResolutionState(
                 dashStartPosition,
-                GetDashDestination(dashStartPosition, primaryTarget.CurrentPosition, dashEffect),
+                hasDashDestination ? dashDestination : dashStartPosition,
                 dashDurationSeconds,
-                true);
+                hasDashPath);
         }
 
         private static bool TryGetDashRepositionEffect(SkillData skill, out SkillEffectData dashEffect)
@@ -3305,6 +3401,13 @@ namespace Fight.Battle
             }
 
             return false;
+        }
+
+        private static bool RequiresValidSafeRetreat(ResolvedSkillCast resolvedSkill)
+        {
+            return TryGetDashRepositionEffect(resolvedSkill, out var dashEffect)
+                && dashEffect != null
+                && dashEffect.repositionRequiresSafeRetreat;
         }
 
         private static List<RuntimeHero> ResolveEffectTargets(
@@ -3412,6 +3515,12 @@ namespace Fight.Battle
                 return;
             }
 
+            if (effect?.effectType == SkillEffectType.CreateMultiPathBurst)
+            {
+                ResolveMultiPathBurst(context, caster, skill, effect, primaryTarget, resolutionState, battleManager);
+                return;
+            }
+
             var effectTargets = ResolveEffectTargets(context, caster, skill, primaryTarget, affectedTargets, effect, resolutionState);
             switch (effect.effectType)
             {
@@ -3461,15 +3570,20 @@ namespace Fight.Battle
                     break;
                 case SkillEffectType.CreateChanneledPathDamage:
                     break;
+                case SkillEffectType.CreateMultiPathBurst:
+                    break;
             }
         }
 
         private static bool ShouldDelaySkillEffect(SkillEffectData effect, SkillEffectResolutionState resolutionState)
         {
-            return effect != null
-                && effect.targetMode == SkillEffectTargetMode.DashPathEnemies
-                && resolutionState.HasDashPath
-                && resolutionState.DashDurationSeconds > Mathf.Epsilon;
+            if (effect == null || !resolutionState.HasDashPath || resolutionState.DashDurationSeconds <= Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            return effect.targetMode == SkillEffectTargetMode.DashPathEnemies
+                || effect.effectType == SkillEffectType.CreateMultiPathBurst;
         }
 
         private static void ScheduleDelayedSkillEffect(
@@ -4334,7 +4448,7 @@ namespace Fight.Battle
                 return;
             }
 
-            if (!TryGetChanneledPathDirection(caster, primaryTarget, out var initialDirection))
+            if (!TryGetChanneledPathDirection(context, caster, skill, effect, primaryTarget, out var initialDirection))
             {
                 return;
             }
@@ -4347,7 +4461,10 @@ namespace Fight.Battle
                 return;
             }
 
-            caster.ExtendActionLock(channel.ChargeDurationSeconds + channel.ChannelDurationSeconds + CombatActionTiming.DefaultRecoverySeconds);
+            var recoverySeconds = effect.channeledPathRecoverySeconds > Mathf.Epsilon
+                ? effect.channeledPathRecoverySeconds
+                : CombatActionTiming.DefaultRecoverySeconds;
+            caster.ExtendActionLock(channel.ChargeDurationSeconds + channel.ChannelDurationSeconds + recoverySeconds);
             channel.GetCurrentSegment(out var startPosition, out var endPosition);
             context.ChanneledPathSkills.Add(channel);
             context.EventBus?.Publish(new ChanneledPathSkillStartedEvent(
@@ -4465,6 +4582,13 @@ namespace Fight.Battle
             }
 
             var caster = channel.Caster;
+            if (channel.Skill != null
+                && channel.Skill.targetType == SkillTargetType.BestEnemyLineFromSelf
+                && TryGetChanneledPathDirection(context, caster, channel.Skill, channel.Effect, channel.PrimaryTarget, out var bestLineDirection))
+            {
+                return bestLineDirection;
+            }
+
             var target = IsValidReturningPathTarget(caster, channel.PrimaryTarget, channel.Effect)
                 ? channel.PrimaryTarget
                 : IsValidReturningPathTarget(caster, caster.CurrentTarget, channel.Effect)
@@ -4476,6 +4600,36 @@ namespace Fight.Battle
             }
 
             return desiredDirection;
+        }
+
+        private static bool TryGetChanneledPathDirection(
+            BattleContext context,
+            RuntimeHero caster,
+            SkillData skill,
+            SkillEffectData effect,
+            RuntimeHero primaryTarget,
+            out Vector3 direction)
+        {
+            direction = Vector3.zero;
+            if (skill != null
+                && skill.targetType == SkillTargetType.BestEnemyLineFromSelf
+                && context?.Heroes != null)
+            {
+                var pathLength = GetBestLinePathLength(ResolvedSkillCast.FromSkill(skill), Mathf.Max(0f, skill.castRange), effect);
+                var lineTarget = SelectBestEnemyLineFromSelfTarget(
+                    context.Heroes,
+                    caster,
+                    ResolvedSkillCast.FromSkill(skill),
+                    pathLength,
+                    null,
+                    effect);
+                if (TryGetChanneledPathDirection(caster, lineTarget ?? primaryTarget, out direction))
+                {
+                    return true;
+                }
+            }
+
+            return TryGetChanneledPathDirection(caster, primaryTarget, out direction);
         }
 
         private static bool TryGetChanneledPathDirection(RuntimeHero caster, RuntimeHero primaryTarget, out Vector3 direction)
@@ -4511,6 +4665,264 @@ namespace Fight.Battle
             return CollectReturningPathTargets(context, caster, startPosition, endPosition, pathWidth, effect);
         }
 
+        private static List<RuntimeHero> CollectPotentialMultiPathBurstTargets(
+            BattleContext context,
+            RuntimeHero caster,
+            RuntimeHero primaryTarget,
+            SkillEffectData effect,
+            SkillEffectResolutionState resolutionState)
+        {
+            var results = new List<RuntimeHero>();
+            if (context?.Heroes == null
+                || caster == null
+                || caster.IsDead
+                || effect == null
+                || !TryGetMultiPathBurstOrigin(caster, primaryTarget, effect, resolutionState, out var origin)
+                || !TryGetMultiPathBurstBaseDirection(caster, primaryTarget, origin, out var baseDirection))
+            {
+                return results;
+            }
+
+            var uniqueTargetIds = new HashSet<string>();
+            var pathCount = Mathf.Max(1, effect.multiPathBurstCount);
+            for (var pathIndex = 0; pathIndex < pathCount; pathIndex++)
+            {
+                if (!TryGetMultiPathBurstSegment(effect, origin, baseDirection, pathIndex, pathCount, out var startPosition, out var endPosition, out var pathWidth))
+                {
+                    continue;
+                }
+
+                var pathTargets = CollectReturningPathTargets(context, caster, startPosition, endPosition, pathWidth, effect);
+                for (var targetIndex = 0; targetIndex < pathTargets.Count; targetIndex++)
+                {
+                    var target = pathTargets[targetIndex];
+                    if (target == null || !uniqueTargetIds.Add(target.RuntimeId))
+                    {
+                        continue;
+                    }
+
+                    results.Add(target);
+                }
+            }
+
+            return results;
+        }
+
+        private static void ResolveMultiPathBurst(
+            BattleContext context,
+            RuntimeHero caster,
+            SkillData skill,
+            SkillEffectData effect,
+            RuntimeHero primaryTarget,
+            SkillEffectResolutionState resolutionState,
+            IBattleSimulationCallbacks battleManager)
+        {
+            if (context == null
+                || caster == null
+                || caster.IsDead
+                || skill == null
+                || effect == null
+                || battleManager == null
+                || !TryGetMultiPathBurstOrigin(caster, primaryTarget, effect, resolutionState, out var origin)
+                || !TryGetMultiPathBurstBaseDirection(caster, primaryTarget, origin, out var baseDirection))
+            {
+                return;
+            }
+
+            var pathCount = Mathf.Max(1, effect.multiPathBurstCount);
+            var maxHitsPerTarget = Mathf.Max(1, effect.multiPathBurstMaxHitsPerTarget);
+            var targetHitCounts = new Dictionary<string, int>();
+            var damageTargets = new List<RuntimeHero>(1);
+
+            for (var pathIndex = 0; pathIndex < pathCount; pathIndex++)
+            {
+                if (!TryGetMultiPathBurstSegment(effect, origin, baseDirection, pathIndex, pathCount, out var startPosition, out var endPosition, out var pathWidth))
+                {
+                    continue;
+                }
+
+                var burstPathId = $"{skill.skillId}_burst_{pathIndex:D2}";
+                context.EventBus?.Publish(new ReturningPathStrikeQueuedEvent(
+                    caster,
+                    skill,
+                    burstPathId,
+                    ReturningPathStrikePhase.Outbound,
+                    startPosition,
+                    endPosition,
+                    pathWidth,
+                    0f,
+                    Mathf.Max(0f, effect.durationSeconds)));
+
+                var hitCount = 0;
+                var pathTargets = CollectReturningPathTargets(context, caster, startPosition, endPosition, pathWidth, effect);
+                for (var targetIndex = 0; targetIndex < pathTargets.Count; targetIndex++)
+                {
+                    var target = pathTargets[targetIndex];
+                    if (target == null || target.IsDead)
+                    {
+                        continue;
+                    }
+
+                    targetHitCounts.TryGetValue(target.RuntimeId, out var currentHitCount);
+                    if (currentHitCount >= maxHitsPerTarget)
+                    {
+                        continue;
+                    }
+
+                    targetHitCounts[target.RuntimeId] = currentHitCount + 1;
+                    damageTargets.Clear();
+                    damageTargets.Add(target);
+                    ApplyDamageToTargets(context, caster, skill, effect, damageTargets, battleManager);
+                    hitCount++;
+                }
+
+                context.EventBus?.Publish(new ReturningPathStrikeResolvedEvent(
+                    caster,
+                    skill,
+                    burstPathId,
+                    ReturningPathStrikePhase.Outbound,
+                    startPosition,
+                    endPosition,
+                    pathWidth,
+                    hitCount));
+            }
+        }
+
+        private static bool TryGetMultiPathBurstOrigin(
+            RuntimeHero caster,
+            RuntimeHero primaryTarget,
+            SkillEffectData effect,
+            SkillEffectResolutionState resolutionState,
+            out Vector3 origin)
+        {
+            origin = Vector3.zero;
+            if (effect == null)
+            {
+                return false;
+            }
+
+            if (effect.targetMode == SkillEffectTargetMode.PrimaryTarget && primaryTarget != null && !primaryTarget.IsDead)
+            {
+                origin = primaryTarget.CurrentPosition;
+            }
+            else if (resolutionState.HasDashPath)
+            {
+                origin = resolutionState.DashDestination;
+            }
+            else if (caster != null)
+            {
+                origin = caster.CurrentPosition;
+            }
+            else if (primaryTarget != null)
+            {
+                origin = primaryTarget.CurrentPosition;
+            }
+            else
+            {
+                return false;
+            }
+
+            origin.y = 0f;
+            origin = Stage01ArenaSpec.ClampPosition(origin);
+            return true;
+        }
+
+        private static bool TryGetMultiPathBurstBaseDirection(
+            RuntimeHero caster,
+            RuntimeHero primaryTarget,
+            Vector3 origin,
+            out Vector3 direction)
+        {
+            direction = Vector3.zero;
+            if (primaryTarget != null && !primaryTarget.IsDead)
+            {
+                direction = primaryTarget.CurrentPosition - origin;
+                direction.y = 0f;
+            }
+
+            if (direction.sqrMagnitude <= Mathf.Epsilon && caster?.CurrentTarget != null && !caster.CurrentTarget.IsDead)
+            {
+                direction = caster.CurrentTarget.CurrentPosition - origin;
+                direction.y = 0f;
+            }
+
+            if (direction.sqrMagnitude <= Mathf.Epsilon && caster != null)
+            {
+                direction = caster.Side == TeamSide.Blue ? Vector3.right : Vector3.left;
+            }
+
+            if (direction.sqrMagnitude <= Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            direction.Normalize();
+            return true;
+        }
+
+        private static bool TryGetMultiPathBurstSegment(
+            SkillEffectData effect,
+            Vector3 origin,
+            Vector3 baseDirection,
+            int pathIndex,
+            int pathCount,
+            out Vector3 startPosition,
+            out Vector3 endPosition,
+            out float pathWidth)
+        {
+            startPosition = Vector3.zero;
+            endPosition = Vector3.zero;
+            pathWidth = 0f;
+            if (effect == null || baseDirection.sqrMagnitude <= Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            var pathLength = Mathf.Max(0f, effect.returningPathMaxDistance);
+            pathWidth = effect.returningPathWidth > Mathf.Epsilon
+                ? effect.returningPathWidth
+                : Mathf.Max(0f, effect.radiusOverride);
+            if (pathLength <= Mathf.Epsilon || pathWidth <= Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            var angleDegrees = GetMultiPathBurstAngleDegrees(effect, pathIndex, pathCount);
+            var direction = RotateFlatDirection(baseDirection.normalized, angleDegrees);
+            startPosition = Stage01ArenaSpec.ClampPosition(origin);
+            startPosition.y = 0f;
+            endPosition = Stage01ArenaSpec.ClampPosition(startPosition + direction * pathLength);
+            endPosition.y = 0f;
+            return true;
+        }
+
+        private static float GetMultiPathBurstAngleDegrees(SkillEffectData effect, int pathIndex, int pathCount)
+        {
+            if (pathCount <= 1 || effect == null)
+            {
+                return 0f;
+            }
+
+            var spreadDegrees = Mathf.Max(0f, effect.multiPathBurstSpreadDegrees);
+            if (spreadDegrees >= 359.9f)
+            {
+                return (360f / pathCount) * pathIndex;
+            }
+
+            var step = spreadDegrees / Mathf.Max(1, pathCount - 1);
+            return (-spreadDegrees * 0.5f) + (step * pathIndex);
+        }
+
+        private static Vector3 RotateFlatDirection(Vector3 direction, float angleDegrees)
+        {
+            if (direction.sqrMagnitude <= Mathf.Epsilon)
+            {
+                return Vector3.zero;
+            }
+
+            return Quaternion.Euler(0f, angleDegrees, 0f) * direction.normalized;
+        }
+
         private static bool TryGetChanneledPathSegment(
             RuntimeHero caster,
             RuntimeHero primaryTarget,
@@ -4539,6 +4951,217 @@ namespace Fight.Battle
             endPosition.y = 0f;
             pathWidth = Mathf.Max(0f, effect.returningPathWidth);
             return pathWidth > Mathf.Epsilon;
+        }
+
+        private static RuntimeHero SelectBestEnemyLineFromSelfTarget(
+            IReadOnlyList<RuntimeHero> heroes,
+            RuntimeHero caster,
+            ResolvedSkillCast resolvedSkill,
+            float effectiveCastRange,
+            RuntimeCombatActionSequence excludedSequenceTargets,
+            SkillEffectData preferredEffect = null)
+        {
+            if (heroes == null || caster == null)
+            {
+                return null;
+            }
+
+            var pathLength = GetBestLinePathLength(resolvedSkill, effectiveCastRange, preferredEffect);
+            var pathWidth = GetBestLinePathWidth(resolvedSkill, preferredEffect);
+            if (pathLength <= Mathf.Epsilon || pathWidth <= Mathf.Epsilon)
+            {
+                return BattleAiDirector.SelectDefaultOffensiveEnemyTarget(heroes, caster, effectiveCastRange);
+            }
+
+            RuntimeHero best = null;
+            var bestCount = 0;
+            var bestDistance = float.MaxValue;
+            for (var i = 0; i < heroes.Count; i++)
+            {
+                var candidate = heroes[i];
+                if (!IsValidBestLineCandidate(caster, candidate, pathLength, excludedSequenceTargets))
+                {
+                    continue;
+                }
+
+                if (!TryGetChanneledPathDirection(caster, candidate, out var direction))
+                {
+                    continue;
+                }
+
+                var startPosition = Stage01ArenaSpec.ClampPosition(caster.CurrentPosition);
+                startPosition.y = 0f;
+                var endPosition = Stage01ArenaSpec.ClampPosition(startPosition + direction * pathLength);
+                endPosition.y = 0f;
+                var count = CollectEnemyLineTargets(heroes, caster, startPosition, endPosition, pathWidth, excludedSequenceTargets).Count;
+                var distance = Vector3.Distance(caster.CurrentPosition, candidate.CurrentPosition);
+                if (count < bestCount || (count == bestCount && distance >= bestDistance))
+                {
+                    continue;
+                }
+
+                best = candidate;
+                bestCount = count;
+                bestDistance = distance;
+            }
+
+            return best ?? BattleAiDirector.SelectDefaultOffensiveEnemyTarget(heroes, caster, effectiveCastRange);
+        }
+
+        private static List<RuntimeHero> CollectBestEnemyLineTargetsFromSelf(
+            BattleContext context,
+            RuntimeHero caster,
+            ResolvedSkillCast resolvedSkill,
+            RuntimeHero primaryTarget,
+            float effectiveCastRange)
+        {
+            var results = new List<RuntimeHero>();
+            if (context?.Heroes == null
+                || caster == null
+                || primaryTarget == null
+                || !TryGetChanneledPathDirection(caster, primaryTarget, out var direction))
+            {
+                return results;
+            }
+
+            var pathLength = GetBestLinePathLength(resolvedSkill, effectiveCastRange);
+            var pathWidth = GetBestLinePathWidth(resolvedSkill);
+            if (pathLength <= Mathf.Epsilon || pathWidth <= Mathf.Epsilon)
+            {
+                return results;
+            }
+
+            var startPosition = Stage01ArenaSpec.ClampPosition(caster.CurrentPosition);
+            startPosition.y = 0f;
+            var endPosition = Stage01ArenaSpec.ClampPosition(startPosition + direction * pathLength);
+            endPosition.y = 0f;
+            results = CollectEnemyLineTargets(context.Heroes, caster, startPosition, endPosition, pathWidth, null);
+            if (results.Count <= 1 || results[0] == primaryTarget || !results.Contains(primaryTarget))
+            {
+                return results;
+            }
+
+            results.Remove(primaryTarget);
+            results.Insert(0, primaryTarget);
+            return results;
+        }
+
+        private static float GetBestLinePathLength(
+            ResolvedSkillCast resolvedSkill,
+            float effectiveCastRange,
+            SkillEffectData preferredEffect = null)
+        {
+            if (preferredEffect != null && preferredEffect.returningPathMaxDistance > Mathf.Epsilon)
+            {
+                return preferredEffect.returningPathMaxDistance;
+            }
+
+            var effects = GetResolvedSkillEffects(resolvedSkill);
+            if (effects != null)
+            {
+                for (var i = 0; i < effects.Count; i++)
+                {
+                    var effect = effects[i];
+                    if (effect == null || effect.returningPathMaxDistance <= Mathf.Epsilon)
+                    {
+                        continue;
+                    }
+
+                    if (effect.effectType == SkillEffectType.CreateChanneledPathDamage
+                        || effect.effectType == SkillEffectType.CreateMultiPathBurst)
+                    {
+                        return effect.returningPathMaxDistance;
+                    }
+                }
+            }
+
+            return Mathf.Max(0f, effectiveCastRange);
+        }
+
+        private static float GetBestLinePathWidth(
+            ResolvedSkillCast resolvedSkill,
+            SkillEffectData preferredEffect = null)
+        {
+            if (preferredEffect != null && preferredEffect.returningPathWidth > Mathf.Epsilon)
+            {
+                return preferredEffect.returningPathWidth;
+            }
+
+            var effects = GetResolvedSkillEffects(resolvedSkill);
+            if (effects != null)
+            {
+                for (var i = 0; i < effects.Count; i++)
+                {
+                    var effect = effects[i];
+                    if (effect == null || effect.returningPathWidth <= Mathf.Epsilon)
+                    {
+                        continue;
+                    }
+
+                    if (effect.effectType == SkillEffectType.CreateChanneledPathDamage
+                        || effect.effectType == SkillEffectType.CreateMultiPathBurst)
+                    {
+                        return effect.returningPathWidth;
+                    }
+                }
+            }
+
+            return resolvedSkill?.Skill != null ? Mathf.Max(0f, resolvedSkill.Skill.areaRadius) : 0f;
+        }
+
+        private static List<RuntimeHero> CollectEnemyLineTargets(
+            IReadOnlyList<RuntimeHero> heroes,
+            RuntimeHero caster,
+            Vector3 startPosition,
+            Vector3 endPosition,
+            float pathWidth,
+            RuntimeCombatActionSequence excludedSequenceTargets)
+        {
+            var results = new List<RuntimeHero>();
+            if (heroes == null || caster == null || pathWidth <= Mathf.Epsilon)
+            {
+                return results;
+            }
+
+            var halfWidth = Mathf.Max(0.05f, pathWidth * 0.5f);
+            for (var i = 0; i < heroes.Count; i++)
+            {
+                var candidate = heroes[i];
+                if (candidate == null
+                    || candidate.IsDead
+                    || candidate.Side == caster.Side
+                    || !candidate.CanBeDirectTargeted
+                    || excludedSequenceTargets != null && excludedSequenceTargets.HasExecutedTarget(candidate))
+                {
+                    continue;
+                }
+
+                if (GetDistanceToSegment(candidate.CurrentPosition, startPosition, endPosition) <= halfWidth)
+                {
+                    results.Add(candidate);
+                }
+            }
+
+            return results;
+        }
+
+        private static bool IsValidBestLineCandidate(
+            RuntimeHero caster,
+            RuntimeHero candidate,
+            float pathLength,
+            RuntimeCombatActionSequence excludedSequenceTargets)
+        {
+            if (caster == null
+                || candidate == null
+                || candidate.IsDead
+                || candidate.Side == caster.Side
+                || !candidate.CanBeDirectTargeted
+                || excludedSequenceTargets != null && excludedSequenceTargets.HasExecutedTarget(candidate))
+            {
+                return false;
+            }
+
+            return Vector3.Distance(caster.CurrentPosition, candidate.CurrentPosition) <= pathLength;
         }
 
         private static List<RuntimeHero> CollectReturningPathTargets(
@@ -5852,6 +6475,11 @@ namespace Fight.Battle
             var destination = resolutionState.HasDashPath
                 ? resolutionState.DashDestination
                 : GetDashDestination(startPosition, target.CurrentPosition, effect);
+            if (!resolutionState.HasDashPath && effect != null && effect.repositionRequiresSafeRetreat)
+            {
+                return;
+            }
+
             var durationSeconds = effect != null
                 ? Mathf.Max(0f, effect.durationSeconds > Mathf.Epsilon ? effect.durationSeconds : effect.forcedMovementDurationSeconds)
                 : 0f;
@@ -5865,6 +6493,167 @@ namespace Fight.Battle
                 durationSeconds,
                 peakHeight,
                 sourceSkill));
+        }
+
+        private static bool TryGetDashDestination(
+            BattleContext context,
+            RuntimeHero caster,
+            RuntimeHero target,
+            SkillEffectData effect,
+            out Vector3 destination)
+        {
+            destination = Vector3.zero;
+            if (caster == null || target == null || effect == null)
+            {
+                return false;
+            }
+
+            if (effect.repositionRequiresSafeRetreat)
+            {
+                return TryGetSafeRetreatDashDestination(context, caster, target, effect, out destination);
+            }
+
+            destination = GetDashDestination(caster.CurrentPosition, target.CurrentPosition, effect);
+            return true;
+        }
+
+        private static bool TryGetSafeRetreatDashDestination(
+            BattleContext context,
+            RuntimeHero caster,
+            RuntimeHero threat,
+            SkillEffectData effect,
+            out Vector3 destination)
+        {
+            destination = Vector3.zero;
+            if (caster == null || threat == null || effect == null)
+            {
+                return false;
+            }
+
+            var startPosition = caster.CurrentPosition;
+            startPosition.y = 0f;
+            var threatPosition = threat.CurrentPosition;
+            threatPosition.y = 0f;
+            var dashDistance = Mathf.Max(0f, effect.forcedMovementDistance);
+            if (dashDistance <= Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            var safeDirection = GetTeamSafeDirection(caster.Side);
+            var awayFromThreat = startPosition - threatPosition;
+            awayFromThreat.y = 0f;
+            if (awayFromThreat.sqrMagnitude <= Mathf.Epsilon)
+            {
+                awayFromThreat = safeDirection;
+            }
+
+            var preferredDirection = (awayFromThreat.normalized * 0.7f) + (safeDirection * 0.6f);
+            if (preferredDirection.sqrMagnitude <= Mathf.Epsilon)
+            {
+                preferredDirection = safeDirection;
+            }
+
+            var candidates = BuildSafeRetreatDirectionCandidates(preferredDirection.normalized, safeDirection, awayFromThreat.normalized);
+            var startThreatDistance = Vector3.Distance(startPosition, threatPosition);
+            var bestScore = float.MinValue;
+            var found = false;
+
+            for (var i = 0; i < candidates.Count; i++)
+            {
+                var direction = candidates[i];
+                if (direction.sqrMagnitude <= Mathf.Epsilon)
+                {
+                    continue;
+                }
+
+                direction.Normalize();
+                var candidate = Stage01ArenaSpec.ClampPosition(startPosition + direction * dashDistance);
+                candidate.y = 0f;
+                var travelDistance = Vector3.Distance(startPosition, candidate);
+                if (travelDistance + 0.05f < dashDistance * 0.55f)
+                {
+                    continue;
+                }
+
+                var move = candidate - startPosition;
+                move.y = 0f;
+                if (Vector3.Dot(move, safeDirection) <= 0.05f)
+                {
+                    continue;
+                }
+
+                var candidateThreatDistance = Vector3.Distance(candidate, threatPosition);
+                if (candidateThreatDistance + 0.05f < startThreatDistance)
+                {
+                    continue;
+                }
+
+                if (IsRetreatDestinationBlocked(context, caster, candidate))
+                {
+                    continue;
+                }
+
+                var score = candidateThreatDistance + Vector3.Dot(move.normalized, safeDirection) * 1.5f + travelDistance * 0.2f;
+                if (score <= bestScore)
+                {
+                    continue;
+                }
+
+                bestScore = score;
+                destination = candidate;
+                found = true;
+            }
+
+            return found;
+        }
+
+        private static Vector3 GetTeamSafeDirection(TeamSide side)
+        {
+            return side == TeamSide.Blue ? Vector3.left : Vector3.right;
+        }
+
+        private static List<Vector3> BuildSafeRetreatDirectionCandidates(Vector3 preferredDirection, Vector3 safeDirection, Vector3 awayFromThreat)
+        {
+            var results = new List<Vector3>
+            {
+                preferredDirection,
+                RotateFlatDirection(preferredDirection, 18f),
+                RotateFlatDirection(preferredDirection, -18f),
+                RotateFlatDirection(preferredDirection, 36f),
+                RotateFlatDirection(preferredDirection, -36f),
+                safeDirection,
+                RotateFlatDirection(safeDirection, 24f),
+                RotateFlatDirection(safeDirection, -24f),
+                awayFromThreat,
+            };
+
+            return results;
+        }
+
+        private static bool IsRetreatDestinationBlocked(BattleContext context, RuntimeHero caster, Vector3 destination)
+        {
+            if (context?.Heroes == null || caster == null)
+            {
+                return false;
+            }
+
+            var minimumSpacing = Mathf.Max(0.65f, Stage01ArenaSpec.UnitMinimumSeparationWorldUnits * 0.75f);
+            for (var i = 0; i < context.Heroes.Count; i++)
+            {
+                var candidate = context.Heroes[i];
+                if (candidate == null || candidate == caster || candidate.IsDead)
+                {
+                    continue;
+                }
+
+                if (Vector3.Distance(candidate.CurrentPosition, destination) < minimumSpacing)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static Vector3 GetDashDestination(Vector3 casterPosition, Vector3 targetPosition, SkillEffectData effect)

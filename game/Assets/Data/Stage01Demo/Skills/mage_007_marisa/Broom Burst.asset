@@ -14,11 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
   skillId: skill_marisa_active_broomburst
   displayName: Broom Burst
-  description: "\u9A91\u626B\u5E1A\u5411\u8FDC\u79BB\u76EE\u6807\u7684\u65B9\u5411\u77ED\u6ED1\uFF0C\u5E76\u5728\u8EAB\u8FB9\u91CA\u653E\u4E00\u8F6E\u661F\u5F39\u626B\u5C04\u3002"
+  description: "\u9A91\u626B\u5E1A\u8FDC\u79BB\u6700\u8FD1\u5A01\u80C1\uFF0C\u5E76\u4ECE\u843D\u70B9\u9644\u8FD1\u53D1\u5C04\u516D\u9897\u77ED\u76F4\u7EBF\u8DEF\u5F84\u661F\u5F39\u3002"
   slotType: 0
   activationMode: 0
   skillType: 4
-  targetType: 15
+  targetType: 1
   preferredEnemyHeroClass: 2
   fallbackTargetType: 1
   targetPrioritySearchRadius: 0
@@ -79,7 +79,7 @@ MonoBehaviour:
     landingDurationSeconds: 0
     landingPeakHeight: 0
   castRange: 8.8
-  areaRadius: 3.2
+  areaRadius: 0
   cooldownSeconds: 6.5
   minTargetsToCast: 1
   effects:
@@ -157,6 +157,10 @@ MonoBehaviour:
     returningPathWidth: 0
     returningPathDelaySeconds: 0
     channeledPathMaxTurnDegreesPerSecond: 0
+    channeledPathRecoverySeconds: 0
+    multiPathBurstCount: 1
+    multiPathBurstSpreadDegrees: 360
+    multiPathBurstMaxHitsPerTarget: 1
     formOverride:
       formKey:
       durationSeconds: 0
@@ -173,21 +177,22 @@ MonoBehaviour:
     forcedMovementPeakHeight: 0
     repositionAwayFromPrimaryTarget: 1
     repositionOnFarSideOfPrimaryTarget: 0
+    repositionRequiresSafeRetreat: 1
     radialSweepDirection: 0
     radialSweepStartDelaySeconds: 0
     radialSweepRingWidth: 1
     statusEffects: []
-  - effectType: 7
+  - effectType: 16
     targetMode: 1
-    powerMultiplier: 0.85
+    powerMultiplier: 0.38
     cleanseAllNegativeStatuses: 0
     statusStackQueryEffectType: 0
     statusStackQueryThemeKey:
     minimumRequiredStatusStacks: 0
     bonusPowerMultiplierPerStatusStack: 0
     consumeQueriedStatusesOnHit: 0
-    radiusOverride: 3.2
-    durationSeconds: 0.35
+    radiusOverride: 0
+    durationSeconds: 0.16
     tickIntervalSeconds: 1
     followCaster: 0
     persistentAreaPulseEffectType: 1
@@ -247,10 +252,14 @@ MonoBehaviour:
     cloneInitialActiveSkillDelaySeconds: 0.75
     cloneExpiresWhenOwnerDies: 1
     returningPathStrikePhase: 0
-    returningPathMaxDistance: 0
-    returningPathWidth: 0
+    returningPathMaxDistance: 4.8
+    returningPathWidth: 0.9
     returningPathDelaySeconds: 0
     channeledPathMaxTurnDegreesPerSecond: 0
+    channeledPathRecoverySeconds: 0
+    multiPathBurstCount: 6
+    multiPathBurstSpreadDegrees: 360
+    multiPathBurstMaxHitsPerTarget: 2
     formOverride:
       formKey:
       durationSeconds: 0
@@ -267,9 +276,10 @@ MonoBehaviour:
     forcedMovementPeakHeight: 0
     repositionAwayFromPrimaryTarget: 0
     repositionOnFarSideOfPrimaryTarget: 0
+    repositionRequiresSafeRetreat: 0
     radialSweepDirection: 0
     radialSweepStartDelaySeconds: 0
-    radialSweepRingWidth: 3.2
+    radialSweepRingWidth: 1
     statusEffects: []
   allowsSelfCast: 0
   reactiveGuard:

@@ -732,6 +732,16 @@ namespace Fight.Editor
                 parts.Add($"宽度:{FormatFloat(effect.returningPathWidth)}");
                 parts.Add($"蓄力:{FormatFloat(effect.returningPathDelaySeconds)}");
                 parts.Add($"转向:{FormatFloat(effect.channeledPathMaxTurnDegreesPerSecond)}度/秒");
+                parts.Add($"后摇:{FormatFloat(effect.channeledPathRecoverySeconds)}");
+            }
+
+            if (effect.effectType == SkillEffectType.CreateMultiPathBurst)
+            {
+                parts.Add($"阵营:{FormatEnum(effect.persistentAreaTargetType)}");
+                parts.Add($"距离:{FormatFloat(effect.returningPathMaxDistance)}");
+                parts.Add($"宽度:{FormatFloat(effect.returningPathWidth)}");
+                parts.Add($"路径:{effect.multiPathBurstCount}");
+                parts.Add($"单目标上限:{effect.multiPathBurstMaxHitsPerTarget}");
             }
 
             return string.Join(" / ", parts);
@@ -1005,6 +1015,7 @@ namespace Fight.Editor
                     SkillEffectType.CreateRadialSweep => "创建径向扫波",
                     SkillEffectType.CreateReturningPathStrike => "创建往返路径打击",
                     SkillEffectType.CreateChanneledPathDamage => "创建引导路径伤害",
+                    SkillEffectType.CreateMultiPathBurst => "创建多路径爆发",
                     SkillEffectType.CreateCloneUnit => "创建分身单位",
                     _ => value.ToString(),
                 },

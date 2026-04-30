@@ -18,5 +18,6 @@ namespace Fight.Data
         ConsumeRestrictedStatusStacksDamage = 13,
         CreateCloneUnit = 14,
         CreateChanneledPathDamage = 15,
+        CreateMultiPathBurst = 16,
     }
 }
