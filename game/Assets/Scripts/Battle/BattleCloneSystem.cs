@@ -160,7 +160,7 @@ namespace Fight.Battle
                 && candidate.CanBeDirectTargeted;
         }
 
-        private static int CompareCloneSourceThreat(RuntimeHero left, RuntimeHero right)
+        public static int CompareCloneSourceThreat(RuntimeHero left, RuntimeHero right)
         {
             if (ReferenceEquals(left, right))
             {

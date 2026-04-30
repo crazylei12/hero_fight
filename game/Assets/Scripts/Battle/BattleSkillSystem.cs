@@ -1489,10 +1489,6 @@ namespace Fight.Battle
         private static RuntimeHero SelectHighestThreatCloneSource(IReadOnlyList<RuntimeHero> heroes, RuntimeHero caster, float maxRange)
         {
             RuntimeHero best = null;
-            var bestDamageDealt = float.MinValue;
-            var bestAttackPower = float.MinValue;
-            var bestCurrentHealth = float.MinValue;
-            var bestDistance = float.MaxValue;
             RuntimeHero nearest = null;
             var nearestDistance = float.MaxValue;
             var hasDamageRecord = false;
@@ -1516,33 +1512,20 @@ namespace Fight.Battle
                     continue;
                 }
 
-                var damageDealt = candidate.DamageDealt;
-                var attackPower = candidate.AttackPower;
-                var currentHealth = candidate.CurrentHealth;
                 if (distance < nearestDistance)
                 {
                     nearest = candidate;
                     nearestDistance = distance;
                 }
 
-                if (damageDealt > Mathf.Epsilon)
+                if (candidate.DamageDealt > Mathf.Epsilon)
                 {
                     hasDamageRecord = true;
                 }
 
-                if (damageDealt > bestDamageDealt + Mathf.Epsilon
-                    || Mathf.Abs(damageDealt - bestDamageDealt) <= Mathf.Epsilon
-                    && (attackPower > bestAttackPower + Mathf.Epsilon
-                        || Mathf.Abs(attackPower - bestAttackPower) <= Mathf.Epsilon
-                        && (currentHealth > bestCurrentHealth + Mathf.Epsilon
-                            || Mathf.Abs(currentHealth - bestCurrentHealth) <= Mathf.Epsilon
-                            && distance < bestDistance)))
+                if (best == null || BattleCloneSystem.CompareCloneSourceThreat(candidate, best) < 0)
                 {
                     best = candidate;
-                    bestDamageDealt = damageDealt;
-                    bestAttackPower = attackPower;
-                    bestCurrentHealth = currentHealth;
-                    bestDistance = distance;
                 }
             }
 
