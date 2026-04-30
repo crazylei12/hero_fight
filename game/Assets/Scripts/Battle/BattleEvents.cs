@@ -526,7 +526,8 @@ namespace Fight.Battle
             SkillData sourceSkill = null,
             float remainingHealth = 0f,
             string sourceBasicAttackVariantKey = null,
-            RuntimeDeployableProxy sourceProxy = null)
+            RuntimeDeployableProxy sourceProxy = null,
+            RuntimeHero attributionOwner = null)
         {
             Attacker = attacker;
             Target = target;
@@ -536,6 +537,7 @@ namespace Fight.Battle
             RemainingHealth = remainingHealth;
             SourceBasicAttackVariantKey = sourceBasicAttackVariantKey ?? string.Empty;
             SourceProxy = sourceProxy;
+            AttributionOwner = attributionOwner ?? attacker?.StatOwner;
         }
 
         public RuntimeHero Attacker { get; }
@@ -553,6 +555,8 @@ namespace Fight.Battle
         public string SourceBasicAttackVariantKey { get; }
 
         public RuntimeDeployableProxy SourceProxy { get; }
+
+        public RuntimeHero AttributionOwner { get; }
     }
 
     public sealed class HealAppliedEvent : IBattleEvent
@@ -564,7 +568,8 @@ namespace Fight.Battle
             SkillData sourceSkill = null,
             float resultingHealth = 0f,
             string sourceBasicAttackVariantKey = null,
-            RuntimeDeployableProxy sourceProxy = null)
+            RuntimeDeployableProxy sourceProxy = null,
+            RuntimeHero attributionOwner = null)
         {
             Caster = caster;
             Target = target;
@@ -573,6 +578,7 @@ namespace Fight.Battle
             ResultingHealth = resultingHealth;
             SourceBasicAttackVariantKey = sourceBasicAttackVariantKey ?? string.Empty;
             SourceProxy = sourceProxy;
+            AttributionOwner = attributionOwner ?? caster?.StatOwner;
         }
 
         public RuntimeHero Caster { get; }
@@ -588,6 +594,8 @@ namespace Fight.Battle
         public string SourceBasicAttackVariantKey { get; }
 
         public RuntimeDeployableProxy SourceProxy { get; }
+
+        public RuntimeHero AttributionOwner { get; }
     }
 
     public sealed class SelfHealthCostAppliedEvent : IBattleEvent
@@ -626,7 +634,8 @@ namespace Fight.Battle
             float durationSeconds,
             float magnitude,
             SkillData sourceSkill = null,
-            RuntimeHero appliedBy = null)
+            RuntimeHero appliedBy = null,
+            RuntimeHero attributionOwner = null)
         {
             Source = source;
             Target = target;
@@ -635,11 +644,14 @@ namespace Fight.Battle
             Magnitude = magnitude;
             SourceSkill = sourceSkill;
             AppliedBy = appliedBy ?? source;
+            AttributionOwner = attributionOwner ?? Source?.StatOwner ?? AppliedBy?.StatOwner;
         }
 
         public RuntimeHero Source { get; }
 
         public RuntimeHero AppliedBy { get; }
+
+        public RuntimeHero AttributionOwner { get; }
 
         public RuntimeHero Target { get; }
 
@@ -1084,11 +1096,14 @@ namespace Fight.Battle
         {
             Victim = victim;
             Killer = killer;
+            KillerAttributionOwner = killer?.StatOwner;
         }
 
         public RuntimeHero Victim { get; }
 
         public RuntimeHero Killer { get; }
+
+        public RuntimeHero KillerAttributionOwner { get; }
     }
 
     public sealed class UnitRevivedEvent : IBattleEvent
@@ -1139,6 +1154,25 @@ namespace Fight.Battle
         public RuntimeHero Clone { get; }
 
         public CloneUnitRemovalReason Reason { get; }
+    }
+
+    public sealed class CloneSkillEffectSkippedEvent : IBattleEvent
+    {
+        public CloneSkillEffectSkippedEvent(RuntimeHero clone, SkillData sourceSkill, SkillEffectType skippedEffectType)
+        {
+            Clone = clone;
+            Owner = clone?.CloneOwner;
+            SourceSkill = sourceSkill;
+            SkippedEffectType = skippedEffectType;
+        }
+
+        public RuntimeHero Clone { get; }
+
+        public RuntimeHero Owner { get; }
+
+        public SkillData SourceSkill { get; }
+
+        public SkillEffectType SkippedEffectType { get; }
     }
 
     public sealed class OvertimeStartedEvent : IBattleEvent

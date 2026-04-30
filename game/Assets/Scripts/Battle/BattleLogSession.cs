@@ -180,8 +180,11 @@ namespace Fight.Battle
                 case CloneUnitRemovedEvent cloneRemoved:
                     AddLog(FormatCloneUnitRemovedLog(cloneRemoved));
                     break;
+                case CloneSkillEffectSkippedEvent cloneEffectSkipped:
+                    AddLog(FormatCloneSkillEffectSkippedLog(cloneEffectSkipped));
+                    break;
                 case UnitDiedEvent died:
-                    AddLog($"{FormatHeroLabel(died.Victim)} was killed by {FormatHeroLabel(died.Killer)}.");
+                    AddLog(FormatUnitDiedLog(died));
                     break;
                 case UnitRevivedEvent revived:
                     AddLog($"{FormatHeroLabel(revived.Hero)} revived.");
@@ -251,7 +254,17 @@ namespace Fight.Battle
             var variantSuffix = !string.IsNullOrWhiteSpace(damageApplied.SourceBasicAttackVariantKey)
                 ? $" variant={damageApplied.SourceBasicAttackVariantKey}"
                 : string.Empty;
-            return $"{attackerName} dealt {damageApplied.DamageAmount:0.0} to {FormatHeroLabel(damageApplied.Target)} via {skillName} [{sourceKindLabel}{variantSuffix}]{proxySuffix}, target HP {Mathf.Max(0f, damageApplied.RemainingHealth):0.0}.";
+            var attributionSuffix = FormatAttributionSuffix(damageApplied.Attacker, damageApplied.AttributionOwner);
+            return $"{attackerName} dealt {damageApplied.DamageAmount:0.0} to {FormatHeroLabel(damageApplied.Target)} via {skillName} [{sourceKindLabel}{variantSuffix}]{proxySuffix}{attributionSuffix}, target HP {Mathf.Max(0f, damageApplied.RemainingHealth):0.0}.";
+        }
+
+        private static string FormatAttributionSuffix(RuntimeHero actualUnit, RuntimeHero attributionOwner)
+        {
+            return actualUnit != null
+                && attributionOwner != null
+                && attributionOwner != actualUnit
+                ? $" attributed to {FormatHeroLabel(attributionOwner)}"
+                : string.Empty;
         }
 
         private static string FormatAthleteModifierLog(AthleteModifierResolvedEvent athleteModifier)
@@ -285,7 +298,8 @@ namespace Fight.Battle
             var variantSuffix = !string.IsNullOrWhiteSpace(healApplied.SourceBasicAttackVariantKey)
                 ? $" variant={healApplied.SourceBasicAttackVariantKey}"
                 : string.Empty;
-            return $"{casterName} healed {FormatHeroLabel(healApplied.Target)} for {healApplied.HealAmount:0.0} via {skillName}{variantSuffix}{proxySuffix}, target HP {Mathf.Max(0f, healApplied.ResultingHealth):0.0}.";
+            var attributionSuffix = FormatAttributionSuffix(healApplied.Caster, healApplied.AttributionOwner);
+            return $"{casterName} healed {FormatHeroLabel(healApplied.Target)} for {healApplied.HealAmount:0.0} via {skillName}{variantSuffix}{proxySuffix}{attributionSuffix}, target HP {Mathf.Max(0f, healApplied.ResultingHealth):0.0}.";
         }
 
         private static string FormatSelfHealthCostLog(SelfHealthCostAppliedEvent selfHealthCost)
@@ -382,6 +396,22 @@ namespace Fight.Battle
             return $"{FormatHeroLabel(cloneRemoved.Clone)} clone removed due to {cloneRemoved.Reason}.";
         }
 
+        private static string FormatCloneSkillEffectSkippedLog(CloneSkillEffectSkippedEvent cloneEffectSkipped)
+        {
+            if (cloneEffectSkipped?.Clone == null)
+            {
+                return "Clone skipped an unsafe skill effect.";
+            }
+
+            var ownerSuffix = cloneEffectSkipped.Owner != null
+                ? $" owned by {FormatHeroLabel(cloneEffectSkipped.Owner)}"
+                : string.Empty;
+            var skillName = cloneEffectSkipped.SourceSkill != null
+                ? cloneEffectSkipped.SourceSkill.displayName
+                : "Unknown Skill";
+            return $"{FormatHeroLabel(cloneEffectSkipped.Clone)}{ownerSuffix} skipped unsafe clone skill effect {cloneEffectSkipped.SkippedEffectType} from {skillName}.";
+        }
+
         private static string FormatStatusLog(StatusAppliedEvent statusApplied)
         {
             var sourceName = FormatHeroLabel(statusApplied.Source, "Unknown");
@@ -390,7 +420,19 @@ namespace Fight.Battle
             var applierSuffix = statusApplied.AppliedBy != null && statusApplied.AppliedBy != statusApplied.Source
                 ? $", applied by {appliedByName}"
                 : string.Empty;
-            return $"{sourceName} applied {statusApplied.EffectType} to {FormatHeroLabel(statusApplied.Target)} via {skillName}, duration {statusApplied.DurationSeconds:0.0}s, magnitude {FormatStatusMagnitude(statusApplied.EffectType, statusApplied.Magnitude)}{applierSuffix}.";
+            var attributionSuffix = FormatAttributionSuffix(statusApplied.Source, statusApplied.AttributionOwner);
+            return $"{sourceName} applied {statusApplied.EffectType} to {FormatHeroLabel(statusApplied.Target)} via {skillName}, duration {statusApplied.DurationSeconds:0.0}s, magnitude {FormatStatusMagnitude(statusApplied.EffectType, statusApplied.Magnitude)}{applierSuffix}{attributionSuffix}.";
+        }
+
+        private static string FormatUnitDiedLog(UnitDiedEvent died)
+        {
+            if (died == null)
+            {
+                return "Unit died.";
+            }
+
+            var attributionSuffix = FormatAttributionSuffix(died.Killer, died.KillerAttributionOwner);
+            return $"{FormatHeroLabel(died.Victim)} was killed by {FormatHeroLabel(died.Killer)}{attributionSuffix}.";
         }
 
         private static string FormatKnockUpFollowUpLog(KnockUpFollowUpTriggeredEvent followUp)

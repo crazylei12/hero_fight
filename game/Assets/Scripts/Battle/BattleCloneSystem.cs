@@ -177,16 +177,16 @@ namespace Fight.Battle
                 return -1;
             }
 
-            var attackPowerComparison = right.AttackPower.CompareTo(left.AttackPower);
-            if (attackPowerComparison != 0)
-            {
-                return attackPowerComparison;
-            }
-
             var damageComparison = right.DamageDealt.CompareTo(left.DamageDealt);
             if (damageComparison != 0)
             {
                 return damageComparison;
+            }
+
+            var attackPowerComparison = right.AttackPower.CompareTo(left.AttackPower);
+            if (attackPowerComparison != 0)
+            {
+                return attackPowerComparison;
             }
 
             var healthComparison = right.CurrentHealth.CompareTo(left.CurrentHealth);

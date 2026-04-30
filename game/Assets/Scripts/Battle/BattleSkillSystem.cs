@@ -262,28 +262,16 @@ namespace Fight.Battle
                 return false;
             }
 
-            if (!AreCloneSkillEffectsSafe(skill.effects))
-            {
-                return false;
-            }
-
-            if (skill.variants == null)
-            {
-                return true;
-            }
-
-            for (var i = 0; i < skill.variants.Count; i++)
-            {
-                if (!AreCloneSkillEffectsSafe(skill.variants[i]?.effects))
-                {
-                    return false;
-                }
-            }
-
             return true;
         }
 
-        private static bool AreCloneSkillEffectsSafe(IReadOnlyList<SkillEffectData> effects)
+        private static bool CanCloneUseResolvedActiveSkill(ResolvedSkillCast resolvedSkill)
+        {
+            return CanCloneUseActiveSkill(resolvedSkill?.Skill)
+                && HasCloneSafeEffect(GetResolvedSkillEffects(resolvedSkill));
+        }
+
+        private static bool HasCloneSafeEffect(IReadOnlyList<SkillEffectData> effects)
         {
             if (effects == null || effects.Count <= 0)
             {
@@ -292,13 +280,13 @@ namespace Fight.Battle
 
             for (var i = 0; i < effects.Count; i++)
             {
-                if (IsCloneProhibitedEffect(effects[i]))
+                if (effects[i] != null && !IsCloneProhibitedEffect(effects[i]))
                 {
-                    return false;
+                    return true;
                 }
             }
 
-            return true;
+            return false;
         }
 
         private static bool IsCloneProhibitedEffect(SkillEffectData effect)
@@ -587,6 +575,11 @@ namespace Fight.Battle
             }
 
             var resolvedSkill = ResolveSkillCast(context, skill);
+            if (caster != null && caster.IsClone && !CanCloneUseResolvedActiveSkill(resolvedSkill))
+            {
+                return false;
+            }
+
             var primaryTarget = SelectPrimaryTarget(context, caster, resolvedSkill);
             if (!IsPrimaryTargetStillValid(resolvedSkill, caster, primaryTarget))
             {
@@ -1496,10 +1489,13 @@ namespace Fight.Battle
         private static RuntimeHero SelectHighestThreatCloneSource(IReadOnlyList<RuntimeHero> heroes, RuntimeHero caster, float maxRange)
         {
             RuntimeHero best = null;
-            var bestAttackPower = float.MinValue;
             var bestDamageDealt = float.MinValue;
+            var bestAttackPower = float.MinValue;
             var bestCurrentHealth = float.MinValue;
             var bestDistance = float.MaxValue;
+            RuntimeHero nearest = null;
+            var nearestDistance = float.MaxValue;
+            var hasDamageRecord = false;
 
             if (heroes == null || caster == null)
             {
@@ -1520,26 +1516,49 @@ namespace Fight.Battle
                     continue;
                 }
 
-                var attackPower = candidate.AttackPower;
                 var damageDealt = candidate.DamageDealt;
+                var attackPower = candidate.AttackPower;
                 var currentHealth = candidate.CurrentHealth;
-                if (attackPower > bestAttackPower + Mathf.Epsilon
-                    || Mathf.Abs(attackPower - bestAttackPower) <= Mathf.Epsilon
-                    && (damageDealt > bestDamageDealt + Mathf.Epsilon
-                        || Mathf.Abs(damageDealt - bestDamageDealt) <= Mathf.Epsilon
+                if (distance < nearestDistance)
+                {
+                    nearest = candidate;
+                    nearestDistance = distance;
+                }
+
+                if (damageDealt > Mathf.Epsilon)
+                {
+                    hasDamageRecord = true;
+                }
+
+                if (damageDealt > bestDamageDealt + Mathf.Epsilon
+                    || Mathf.Abs(damageDealt - bestDamageDealt) <= Mathf.Epsilon
+                    && (attackPower > bestAttackPower + Mathf.Epsilon
+                        || Mathf.Abs(attackPower - bestAttackPower) <= Mathf.Epsilon
                         && (currentHealth > bestCurrentHealth + Mathf.Epsilon
                             || Mathf.Abs(currentHealth - bestCurrentHealth) <= Mathf.Epsilon
                             && distance < bestDistance)))
                 {
                     best = candidate;
-                    bestAttackPower = attackPower;
                     bestDamageDealt = damageDealt;
+                    bestAttackPower = attackPower;
                     bestCurrentHealth = currentHealth;
                     bestDistance = distance;
                 }
             }
 
-            return best;
+            if (hasDamageRecord)
+            {
+                return best;
+            }
+
+            var currentTarget = caster.CurrentTarget;
+            if (BattleCloneSystem.CanCloneSource(caster, currentTarget)
+                && Vector3.Distance(caster.CurrentPosition, currentTarget.CurrentPosition) <= maxRange)
+            {
+                return currentTarget;
+            }
+
+            return nearest;
         }
 
         private static bool IsValidTargetForSkill(ResolvedSkillCast resolvedSkill, RuntimeHero caster, RuntimeHero candidate)
@@ -3187,6 +3206,11 @@ namespace Fight.Battle
                     continue;
                 }
 
+                if (caster.IsClone && IsCloneProhibitedEffect(effect))
+                {
+                    continue;
+                }
+
                 if (effect.effectType == SkillEffectType.CreateReturningPathStrike)
                 {
                     var pathTargets = CollectReturningPathTargets(context, caster, primaryTarget, effect);
@@ -3352,6 +3376,11 @@ namespace Fight.Battle
             SkillEffectResolutionState resolutionState,
             IBattleSimulationCallbacks battleManager)
         {
+            if (ShouldSkipCloneSkillEffect(context, caster, skill, effect))
+            {
+                return;
+            }
+
             if (ShouldDelaySkillEffect(effect, resolutionState))
             {
                 ScheduleDelayedSkillEffect(context, caster, skill, primaryTarget, affectedTargets, effect, resolutionState);
@@ -3359,6 +3388,17 @@ namespace Fight.Battle
             }
 
             ExecuteSkillEffectNow(context, caster, skill, primaryTarget, affectedTargets, effect, resolutionState, battleManager);
+        }
+
+        private static bool ShouldSkipCloneSkillEffect(BattleContext context, RuntimeHero caster, SkillData skill, SkillEffectData effect)
+        {
+            if (caster == null || !caster.IsClone || effect == null || !IsCloneProhibitedEffect(effect))
+            {
+                return false;
+            }
+
+            context?.EventBus?.Publish(new CloneSkillEffectSkippedEvent(caster, skill, effect.effectType));
+            return true;
         }
 
         private static void ExecuteSkillEffectNow(

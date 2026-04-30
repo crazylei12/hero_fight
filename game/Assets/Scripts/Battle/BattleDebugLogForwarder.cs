@@ -61,6 +61,9 @@ namespace Fight.Battle
                 case CloneUnitRemovedEvent cloneRemoved:
                     Debug.Log($"[Battle] Clone removed {FormatHeroLabel(cloneRemoved.Clone)} reason={cloneRemoved.Reason}");
                     break;
+                case CloneSkillEffectSkippedEvent cloneEffectSkipped:
+                    Debug.Log($"[Battle] Clone skipped unsafe effect {cloneEffectSkipped.SkippedEffectType} from {FormatSkillLabel(cloneEffectSkipped.SourceSkill)}: {FormatHeroLabel(cloneEffectSkipped.Clone)} owner={FormatHeroLabel(cloneEffectSkipped.Owner)}");
+                    break;
                 case OvertimeStartedEvent _:
                     Debug.Log("[Battle] Overtime started");
                     break;
@@ -81,6 +84,13 @@ namespace Fight.Battle
                 ? hero.Definition.displayName
                 : "UnknownHero";
             return $"{displayName}[{hero.Side}|{hero.RuntimeId}]";
+        }
+
+        private static string FormatSkillLabel(SkillData skill)
+        {
+            return skill != null && !string.IsNullOrWhiteSpace(skill.displayName)
+                ? skill.displayName
+                : "UnknownSkill";
         }
 
         private static string FormatAthleteLabel(AthleteDefinition athlete)
