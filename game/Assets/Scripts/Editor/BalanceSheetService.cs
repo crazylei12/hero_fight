@@ -24,7 +24,7 @@ namespace Fight.Editor
         private const string ReadmeFileName = "README_批量调数说明.md";
 
         private static readonly Regex EffectValueColumnPattern = new Regex(
-            @"^effect(?<effectIndex>\d+)(?<suffix>PowerMultiplier|RadiusOverride|DurationSeconds|TickIntervalSeconds|ForcedMovementDistance|ForcedMovementDurationSeconds|ForcedMovementPeakHeight)$",
+            @"^effect(?<effectIndex>\d+)(?<suffix>PowerMultiplier|TargetMaxHealthMultiplier|RadiusOverride|DurationSeconds|TickIntervalSeconds|ForcedMovementDistance|ForcedMovementDurationSeconds|ForcedMovementPeakHeight)$",
             RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
         private static readonly Regex EffectStatusValueColumnPattern = new Regex(
@@ -203,6 +203,7 @@ namespace Fight.Editor
                     var effect = TryGetSkillEffect(skill, effectIndex);
                     row.Add(BuildSkillEffectLabel(effect));
                     row.Add(FormatFloat(effect?.powerMultiplier));
+                    row.Add(FormatFloat(effect?.targetMaxHealthMultiplier));
                     row.Add(FormatFloat(effect?.radiusOverride));
                     row.Add(FormatFloat(effect?.durationSeconds));
                     row.Add(FormatFloat(effect?.tickIntervalSeconds));
@@ -239,6 +240,7 @@ namespace Fight.Editor
             {
                 columns.Add(new CsvColumn($"effect{effectIndex}Label", $"效果{effectIndex}说明", "只读说明列，帮助识别这个效果是什么。"));
                 columns.Add(new CsvColumn($"effect{effectIndex}PowerMultiplier", $"效果{effectIndex}倍率", "该效果的倍率/强度。"));
+                columns.Add(new CsvColumn($"effect{effectIndex}TargetMaxHealthMultiplier", $"效果{effectIndex}目标最大生命倍率", "该效果按目标实时最大生命值追加计算的倍率，0 表示不用。"));
                 columns.Add(new CsvColumn($"effect{effectIndex}RadiusOverride", $"效果{effectIndex}半径覆盖", "该效果自身的范围半径；0 通常表示沿用技能主半径。"));
                 columns.Add(new CsvColumn($"effect{effectIndex}DurationSeconds", $"效果{effectIndex}持续时间", "该效果的持续时间。"));
                 columns.Add(new CsvColumn($"effect{effectIndex}TickIntervalSeconds", $"效果{effectIndex}跳动间隔", "该效果的周期跳动间隔。"));
@@ -442,6 +444,9 @@ namespace Fight.Editor
                     {
                         case "PowerMultiplier":
                             effect.powerMultiplier = floatValue;
+                            break;
+                        case "TargetMaxHealthMultiplier":
+                            effect.targetMaxHealthMultiplier = floatValue;
                             break;
                         case "RadiusOverride":
                             effect.radiusOverride = floatValue;

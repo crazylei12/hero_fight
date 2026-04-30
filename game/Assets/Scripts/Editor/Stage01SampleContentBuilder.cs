@@ -4266,12 +4266,13 @@ namespace Fight.Editor
             return effect;
         }
 
-        private static SkillEffectData AddHealEffect(SkillData skill, float powerMultiplier)
+        private static SkillEffectData AddHealEffect(SkillData skill, float powerMultiplier, float targetMaxHealthMultiplier = 0f)
         {
             var effect = new SkillEffectData
             {
                 effectType = SkillEffectType.DirectHeal,
                 powerMultiplier = powerMultiplier,
+                targetMaxHealthMultiplier = targetMaxHealthMultiplier,
             };
             skill.effects.Add(effect);
             return effect;
@@ -7724,7 +7725,7 @@ namespace Fight.Editor
             ResetTemporaryOverride(skill);
             ResetActionSequence(skill);
 
-            var selfHeal = AddHealEffect(skill, 3.6111112f);
+            var selfHeal = AddHealEffect(skill, 0f, 0.25f);
             selfHeal.targetMode = SkillEffectTargetMode.Caster;
 
             var rush = AddRepositionEffect(skill, 0.45f, 0f, 7.0f);

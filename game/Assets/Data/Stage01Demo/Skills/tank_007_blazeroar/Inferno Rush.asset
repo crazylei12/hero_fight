@@ -88,7 +88,8 @@ MonoBehaviour:
   effects:
   - effectType: 1
     targetMode: 1
-    powerMultiplier: 3.6111112
+    powerMultiplier: 0
+    targetMaxHealthMultiplier: 0.25
     cleanseAllNegativeStatuses: 0
     statusStackQueryEffectType: 0
     statusStackQueryThemeKey:
@@ -183,6 +184,7 @@ MonoBehaviour:
   - effectType: 3
     targetMode: 1
     powerMultiplier: 1
+    targetMaxHealthMultiplier: 0
     cleanseAllNegativeStatuses: 0
     statusStackQueryEffectType: 0
     statusStackQueryThemeKey:
@@ -277,6 +279,7 @@ MonoBehaviour:
   - effectType: 0
     targetMode: 5
     powerMultiplier: 3
+    targetMaxHealthMultiplier: 0
     cleanseAllNegativeStatuses: 0
     statusStackQueryEffectType: 0
     statusStackQueryThemeKey:

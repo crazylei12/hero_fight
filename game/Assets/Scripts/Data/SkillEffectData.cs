@@ -95,6 +95,7 @@ namespace Fight.Data
         public SkillEffectType effectType = SkillEffectType.DirectDamage;
         public SkillEffectTargetMode targetMode = SkillEffectTargetMode.SkillTargets;
         [Min(0f)] public float powerMultiplier = 1f;
+        [Min(0f)] public float targetMaxHealthMultiplier = 0f;
         public bool cleanseAllNegativeStatuses;
         public StatusEffectType statusStackQueryEffectType = StatusEffectType.None;
         [FormerlySerializedAs("statusStackQueryGroupKey")]

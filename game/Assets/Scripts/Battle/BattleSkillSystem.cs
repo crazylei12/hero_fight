@@ -3680,7 +3680,7 @@ namespace Fight.Battle
                     continue;
                 }
 
-                var amount = HealResolver.ResolveHealAmount(caster, effect.powerMultiplier);
+                var amount = HealResolver.ResolveHealAmount(caster, target, effect);
                 var actualHeal = target.ApplyHealing(amount);
                 if (actualHeal <= 0f)
                 {
