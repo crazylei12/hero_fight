@@ -97,6 +97,15 @@ namespace Fight.Battle
                 case ReturningPathStrikeResolvedEvent returningPathResolved:
                     AddLog(FormatReturningPathStrikeResolvedLog(returningPathResolved));
                     break;
+                case ChanneledPathSkillStartedEvent channeledPathStarted:
+                    AddLog(FormatChanneledPathStartedLog(channeledPathStarted));
+                    break;
+                case ChanneledPathSkillTickEvent channeledPathTick:
+                    AddLog(FormatChanneledPathTickLog(channeledPathTick));
+                    break;
+                case ChanneledPathSkillEndedEvent channeledPathEnded:
+                    AddLog(FormatChanneledPathEndedLog(channeledPathEnded));
+                    break;
                 case DamageAppliedEvent damageApplied:
                     AddLog(FormatDamageLog(damageApplied));
                     break;
@@ -504,6 +513,42 @@ namespace Fight.Battle
             var skillName = returningPathResolved.Skill != null ? returningPathResolved.Skill.displayName : "Returning Path Strike";
             var phaseLabel = returningPathResolved.Phase == ReturningPathStrikePhase.Return ? "return" : "outbound";
             return $"{casterName}'s {skillName} {phaseLabel} strike resolved from ({returningPathResolved.StartPosition.x:0.0}, {returningPathResolved.StartPosition.z:0.0}) to ({returningPathResolved.EndPosition.x:0.0}, {returningPathResolved.EndPosition.z:0.0}), width {returningPathResolved.PathWidth:0.0}, hits {returningPathResolved.HitCount} target(s), strike {returningPathResolved.StrikeId}.";
+        }
+
+        private static string FormatChanneledPathStartedLog(ChanneledPathSkillStartedEvent channeledPathStarted)
+        {
+            if (channeledPathStarted == null)
+            {
+                return "Channeled path skill started.";
+            }
+
+            var casterName = FormatHeroLabel(channeledPathStarted.Caster, "Unknown");
+            var skillName = channeledPathStarted.Skill != null ? channeledPathStarted.Skill.displayName : "Channeled Path";
+            return $"{casterName}'s {skillName} channel {channeledPathStarted.ChannelId} started from ({channeledPathStarted.StartPosition.x:0.0}, {channeledPathStarted.StartPosition.z:0.0}) to ({channeledPathStarted.EndPosition.x:0.0}, {channeledPathStarted.EndPosition.z:0.0}), width {channeledPathStarted.PathWidth:0.0}, charge {channeledPathStarted.ChargeDurationSeconds:0.00}s, channel {channeledPathStarted.ChannelDurationSeconds:0.00}s, ticks {channeledPathStarted.ExpectedTickCount}.";
+        }
+
+        private static string FormatChanneledPathTickLog(ChanneledPathSkillTickEvent channeledPathTick)
+        {
+            if (channeledPathTick == null)
+            {
+                return "Channeled path skill tick resolved.";
+            }
+
+            var casterName = FormatHeroLabel(channeledPathTick.Caster, "Unknown");
+            var skillName = channeledPathTick.Skill != null ? channeledPathTick.Skill.displayName : "Channeled Path";
+            return $"{casterName}'s {skillName} channel {channeledPathTick.ChannelId} tick {channeledPathTick.TickIndex} hit {channeledPathTick.HitCount} target(s) from ({channeledPathTick.StartPosition.x:0.0}, {channeledPathTick.StartPosition.z:0.0}) to ({channeledPathTick.EndPosition.x:0.0}, {channeledPathTick.EndPosition.z:0.0}), width {channeledPathTick.PathWidth:0.0}.";
+        }
+
+        private static string FormatChanneledPathEndedLog(ChanneledPathSkillEndedEvent channeledPathEnded)
+        {
+            if (channeledPathEnded == null)
+            {
+                return "Channeled path skill ended.";
+            }
+
+            var casterName = FormatHeroLabel(channeledPathEnded.Caster, "Unknown");
+            var skillName = channeledPathEnded.Skill != null ? channeledPathEnded.Skill.displayName : "Channeled Path";
+            return $"{casterName}'s {skillName} channel {channeledPathEnded.ChannelId} ended due to {channeledPathEnded.Reason}, resolved ticks {channeledPathEnded.ResolvedTickCount}.";
         }
 
         private static string FormatSkillTemporaryOverrideChangedLog(SkillTemporaryOverrideChangedEvent temporaryOverrideChanged)

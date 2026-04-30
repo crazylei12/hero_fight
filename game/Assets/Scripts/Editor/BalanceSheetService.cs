@@ -725,6 +725,15 @@ namespace Fight.Editor
                 parts.Add($"延迟:{FormatFloat(effect.returningPathDelaySeconds)}");
             }
 
+            if (effect.effectType == SkillEffectType.CreateChanneledPathDamage)
+            {
+                parts.Add($"阵营:{FormatEnum(effect.persistentAreaTargetType)}");
+                parts.Add($"距离:{FormatFloat(effect.returningPathMaxDistance)}");
+                parts.Add($"宽度:{FormatFloat(effect.returningPathWidth)}");
+                parts.Add($"蓄力:{FormatFloat(effect.returningPathDelaySeconds)}");
+                parts.Add($"转向:{FormatFloat(effect.channeledPathMaxTurnDegreesPerSecond)}度/秒");
+            }
+
             return string.Join(" / ", parts);
         }
 
@@ -995,6 +1004,7 @@ namespace Fight.Editor
                     SkillEffectType.CreateDeployableProxy => "创建部署物代理",
                     SkillEffectType.CreateRadialSweep => "创建径向扫波",
                     SkillEffectType.CreateReturningPathStrike => "创建往返路径打击",
+                    SkillEffectType.CreateChanneledPathDamage => "创建引导路径伤害",
                     SkillEffectType.CreateCloneUnit => "创建分身单位",
                     _ => value.ToString(),
                 },

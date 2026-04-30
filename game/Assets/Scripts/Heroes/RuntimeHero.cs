@@ -1222,6 +1222,16 @@ namespace Fight.Heroes
             return true;
         }
 
+        public void ExtendActionLock(float durationSeconds)
+        {
+            if (IsDead || durationSeconds <= Mathf.Epsilon)
+            {
+                return;
+            }
+
+            actionLockRemainingSeconds = Mathf.Max(actionLockRemainingSeconds, durationSeconds);
+        }
+
         public void MarkKill()
         {
             Kills++;

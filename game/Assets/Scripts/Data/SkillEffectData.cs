@@ -166,11 +166,13 @@ namespace Fight.Data
         [Min(0f)] public float returningPathMaxDistance = 0f;
         [Min(0f)] public float returningPathWidth = 0f;
         [Min(0f)] public float returningPathDelaySeconds = 0f;
+        [Min(0f)] public float channeledPathMaxTurnDegreesPerSecond = 0f;
         public CombatFormOverrideData formOverride = new CombatFormOverrideData();
         public ForcedMovementDirectionMode forcedMovementDirection = ForcedMovementDirectionMode.AwayFromSource;
         [Min(0f)] public float forcedMovementDistance = 0f;
         [Min(0f)] public float forcedMovementDurationSeconds = 0f;
         [Min(0f)] public float forcedMovementPeakHeight = 0f;
+        public bool repositionAwayFromPrimaryTarget;
         public bool repositionOnFarSideOfPrimaryTarget;
         public RadialSweepDirectionMode radialSweepDirection = RadialSweepDirectionMode.Outward;
         [Min(0f)] public float radialSweepStartDelaySeconds = 0f;

@@ -398,6 +398,23 @@ namespace Fight.Editor
             EnsureHeroSkillReferences(mirrormage, mirrormageActive, mirrormageUltimateSkill);
             EnsureHeroBattlePrefabReference(mirrormage, LoadBattlePrefab("mage_006_mirrormage", HeroClass.Mage));
 
+            var marisaActive = CreateMarisaActiveSkill(overwriteExistingContent);
+            var marisaUltimateSkill = CreateMarisaUltimateSkill(overwriteExistingContent, out var marisaUltimateExisted);
+
+            var marisa = CreateHero(
+                "mage_007_marisa",
+                "Marisa",
+                HeroClass.Mage,
+                290f, 32f, 8f, 1f / 0.95f, 4.05f, 0.10f, 1.6f, 8.8f,
+                marisaActive,
+                ConfigureMarisaUltimate(marisaUltimateSkill, overwriteExistingContent, marisaUltimateExisted),
+                overwriteExistingContent,
+                out var marisaHeroExisted,
+                HeroTag.Ranged, HeroTag.SustainedDamage, HeroTag.Burst);
+            ConfigureMarisaBasicAttack(marisa, overwriteExistingContent, marisaHeroExisted);
+            EnsureHeroSkillReferences(marisa, marisaActive, marisaUltimateSkill);
+            EnsureHeroBattlePrefabReference(marisa, LoadBattlePrefab("mage_007_marisa", HeroClass.Mage));
+
             CreateArchivedMageFireboltSkill(overwriteExistingContent);
 
             var assassinActive = CreateShadowstepActiveSkill(overwriteExistingContent);
@@ -787,7 +804,7 @@ namespace Fight.Editor
             var demoHeroes = new[]
             {
                 warrior, bladesman, berserker, spellblade, trollwarlord, chainbreaker, yasuo,
-                mage, frostmage, sandemperor, lightningmage, astromancer, mirrormage,
+                mage, frostmage, sandemperor, lightningmage, astromancer, mirrormage, marisa,
                 assassin, tidefin, butcher, loner, demon,
                 tank, shieldwarden, tidehunter, mundo, blastshield, mammoth,
                 support, windchime, monk, shrinemaiden, chef, commander,
@@ -1385,6 +1402,7 @@ namespace Fight.Editor
                 || heroId == "mage_004_lightningmage"
                 || heroId == "mage_005_astromancer"
                 || heroId == "mage_006_mirrormage"
+                || heroId == "mage_007_marisa"
                 || heroId == "marksman_001_longshot"
                 || heroId == "marksman_002_rifleman"
                 || heroId == "marksman_003_venomshooter"
@@ -1412,6 +1430,7 @@ namespace Fight.Editor
                 "mage_004_lightningmage" => AssetDatabase.LoadAssetAtPath<GameObject>(FrostMageProjectilePrefabPath),
                 "mage_005_astromancer" => AssetDatabase.LoadAssetAtPath<GameObject>(AstromancerProjectilePrefabPath),
                 "mage_006_mirrormage" => AssetDatabase.LoadAssetAtPath<GameObject>(FrostMageProjectilePrefabPath),
+                "mage_007_marisa" => AssetDatabase.LoadAssetAtPath<GameObject>(AstromancerProjectilePrefabPath),
                 "marksman_001_longshot" => AssetDatabase.LoadAssetAtPath<GameObject>(LongshotProjectilePrefabPath),
                 "marksman_002_rifleman" => AssetDatabase.LoadAssetAtPath<GameObject>(RiflemanProjectilePrefabPath),
                 "marksman_003_venomshooter" => AssetDatabase.LoadAssetAtPath<GameObject>(LongshotProjectilePrefabPath),
@@ -1431,6 +1450,7 @@ namespace Fight.Editor
                 || heroId == "mage_004_lightningmage"
                 || heroId == "mage_005_astromancer"
                 || heroId == "mage_006_mirrormage"
+                || heroId == "mage_007_marisa"
                 || heroId == "marksman_001_longshot"
                 || heroId == "marksman_002_rifleman"
                 || heroId == "marksman_003_venomshooter"
@@ -1509,6 +1529,7 @@ namespace Fight.Editor
                 "mage_004_lightningmage" => "连锁控制法师，频繁施加感电标记并用雷击打断敌方节奏。适合处理多目标混战，在敌人分散时也能保持持续干扰。队伍需要拖慢敌方技能循环时很有价值，在拉扯战里能不断制造小规模优势。",
                 "mage_005_astromancer" => "预判轰炸法师，技能会先给出落点预警再结算伤害。适合配合队友控制惩罚抱团敌人，命中后收益很高；面对灵活、分散或能快速离开落点的阵容时，输出会明显不稳定。",
                 "mage_006_mirrormage" => "战术型法师，通过复制敌方关键英雄制造短时间人数差，把敌人的输出和小技能转化成己方压力。适合反制单核或高威胁后排，但复制体偏脆，镜法师自身也需要前排保护。",
+                "mage_007_marisa" => "弹幕爆发法师，站在中后排用高速星弹持续压血，靠扫帚短滑调整距离，并用一次性星辉魔炮贯穿敌阵。适合惩罚直线站位，但引导魔炮时需要队友保护，怕被打断或被敌人散开规避。",
                 "assassin_001_shadowstep" => "切入型刺客，依靠闪现和隐蔽窗口绕过前排，优先威胁敌方后排输出。适合快节奏进攻，但进场时机错误会很快陷入危险，需要队伍在正面牵制敌方注意力，最好搭配能制造正面压力的队友。",
                 "assassin_002_tidefin" => "压制型刺客，通过突进与减益持续削弱关键目标，让敌人难以稳定输出或回复。适合盯防核心英雄，也能在混战中补足单点压力，对单核阵容有较强限制作用。",
                 "assassin_003_butcher" => "拉拽型刺客，擅长把后排或孤立目标拖入近身战，再用压制回复的手段扩大击杀窗口。适合打乱阵型，但需要队友跟进集火；如果拉到错误目标，后续压力会变小。",
@@ -1568,6 +1589,8 @@ namespace Fight.Editor
                 "skill_astromancer_ultimate_meteorchoir" => "建立固定群星轰炸区，持续安排带预警的小范围星陨。",
                 "skill_mirrormage_active_mirrorcopy" => "复制范围内最高威胁敌方英雄，生成一个可普攻和释放安全小技能的临时友方分身。",
                 "skill_mirrormage_ultimate_hallofreflections" => "一次性复制多个敌方英雄，短时间制造镜像人数压制。",
+                "skill_marisa_active_broomburst" => "骑扫帚向远离目标的方向短滑，并在身边释放一轮星弹扫射。",
+                "skill_marisa_ultimate_starlancecannon" => "短暂蓄力后引导直线星辉魔炮，持续贯穿路径上的敌人。",
                 "skill_assassin_active_shadowblink" => "闪现切入关键目标，快速贴近后排。",
                 "skill_assassin_ultimate_smokeveil" => "制造隐蔽窗口，让刺客更安全地切入或脱离。",
                 "skill_tidefin_active_tidalpounce" => "扑向目标并施加压制，削弱其持续作战能力。",
@@ -1633,6 +1656,7 @@ namespace Fight.Editor
                 "mage_004_lightningmage" => LightningmagePrefabPath,
                 "mage_005_astromancer" => AstromancerPrefabPath,
                 "mage_006_mirrormage" => FrostMagePrefabPath,
+                "mage_007_marisa" => AstromancerPrefabPath,
                 "marksman_001_longshot" => MarksmanPrefabPath,
                 "marksman_002_rifleman" => RiflemanPrefabPath,
                 "marksman_003_venomshooter" => VenomshooterPrefabPath,
@@ -5196,6 +5220,36 @@ namespace Fight.Editor
             EditorUtility.SetDirty(hero);
         }
 
+        private static void ConfigureMarisaBasicAttack(HeroDefinition hero, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (hero == null || ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return;
+            }
+
+            hero.basicAttack.damageMultiplier = 0.78f;
+            hero.basicAttack.attackInterval = 0.95f;
+            hero.basicAttack.rangeOverride = 8.8f;
+            hero.basicAttack.usesProjectile = true;
+            hero.basicAttack.projectileSpeed = 16f;
+            hero.basicAttack.effectType = BasicAttackEffectType.Damage;
+            hero.basicAttack.targetType = BasicAttackTargetType.NearestEnemy;
+            hero.basicAttack.targetPrioritySearchRadius = 0f;
+            EnsureBasicAttackStatusList(hero.basicAttack);
+            hero.basicAttack.onHitStatusEffects.Clear();
+            hero.basicAttack.variants.Clear();
+            hero.basicAttack.bounce.maxAdditionalTargets = 0;
+            hero.basicAttack.bounce.searchRadius = 0f;
+            hero.basicAttack.bounce.powerMultiplier = 0f;
+            hero.basicAttack.bounce.bounceVariantKey = string.Empty;
+            hero.visualConfig ??= new HeroVisualConfig();
+            hero.visualConfig.projectilePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(AstromancerProjectilePrefabPath);
+            hero.visualConfig.projectileAlignToMovement = true;
+            hero.visualConfig.projectileEulerAngles = Vector3.zero;
+            hero.debugNotes = "Stage-01 demo hero for Mage. Marisa validates ranged star-shot pressure, safe broom repositioning, radial burst damage, and one-shot channeled straight-line cannon damage.";
+            EditorUtility.SetDirty(hero);
+        }
+
         private static SkillData CreateSupportActiveSkill(bool overwriteExistingContent)
         {
             var skill = CreateSkill(
@@ -5967,6 +6021,137 @@ namespace Fight.Editor
                 moveSpeedMultiplier: 0.95f,
                 spawnOffsetDistance: 1.2f,
                 initialActiveSkillDelaySeconds: 1.35f);
+        }
+
+        private static SkillData CreateMarisaActiveSkill(bool overwriteExistingContent)
+        {
+            var skill = CreateSkill(
+                "skill_marisa_active_broomburst",
+                "Broom Burst",
+                SkillSlotType.ActiveSkill,
+                SkillType.Dash,
+                SkillTargetType.CurrentEnemyTarget,
+                8.8f,
+                3.2f,
+                0.85f,
+                6.5f,
+                1,
+                overwriteExistingContent,
+                out var existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            skill.description = ResolveDefaultSkillDescription(skill.skillId, skill.displayName);
+            skill.skillType = SkillType.Dash;
+            skill.targetType = SkillTargetType.CurrentEnemyTarget;
+            skill.fallbackTargetType = SkillTargetType.NearestEnemy;
+            skill.castRange = 8.8f;
+            skill.areaRadius = 3.2f;
+            skill.cooldownSeconds = 6.5f;
+            skill.minTargetsToCast = 1;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+
+            var reposition = AddRepositionEffect(skill, 0.42f, 0f, 3.2f, 0f);
+            reposition.targetMode = SkillEffectTargetMode.Caster;
+            reposition.repositionAwayFromPrimaryTarget = true;
+
+            var starSweep = new SkillEffectData
+            {
+                effectType = SkillEffectType.CreateRadialSweep,
+                targetMode = SkillEffectTargetMode.Caster,
+                powerMultiplier = 0.85f,
+                radiusOverride = 3.2f,
+                durationSeconds = 0.35f,
+                radialSweepRingWidth = 3.2f,
+                persistentAreaTargetType = PersistentAreaTargetType.Enemies,
+            };
+            skill.effects.Add(starSweep);
+
+            ResetUltimateDecision(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData CreateMarisaUltimateSkill(bool overwriteExistingContent, out bool existedBefore)
+        {
+            var skill = CreateSkill(
+                "skill_marisa_ultimate_starlancecannon",
+                "Starlance Cannon",
+                SkillSlotType.Ultimate,
+                SkillType.AreaDamage,
+                SkillTargetType.DensestEnemyArea,
+                20f,
+                2.4f,
+                3.30f,
+                0f,
+                3,
+                overwriteExistingContent,
+                out existedBefore);
+
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            ApplyMarisaUltimateBaseConfiguration(skill);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static SkillData ConfigureMarisaUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
+        {
+            if (ShouldPreserveExistingAsset(overwriteExistingContent, existedBefore))
+            {
+                return skill;
+            }
+
+            ApplyMarisaUltimateBaseConfiguration(skill);
+            ResetUltimateDecision(skill);
+            skill.ultimateDecision.targetingType = UltimateTargetingType.EnemyDensestPosition;
+            skill.ultimateDecision.primaryCondition.conditionType = UltimateConditionType.EnemyCountInRange;
+            skill.ultimateDecision.primaryCondition.searchRadius = 3.2f;
+            skill.ultimateDecision.primaryCondition.requiredUnitCount = 3;
+            skill.ultimateDecision.primaryCondition.requireTargetInCastRange = true;
+            skill.ultimateDecision.combineMode = UltimateConditionCombineMode.PrimaryOnly;
+            ApplyCountFallback(skill, 35f, 2, 50f, 1);
+            EditorUtility.SetDirty(skill);
+            return skill;
+        }
+
+        private static void ApplyMarisaUltimateBaseConfiguration(SkillData skill)
+        {
+            skill.description = ResolveDefaultSkillDescription(skill.skillId, skill.displayName);
+            skill.skillType = SkillType.AreaDamage;
+            skill.targetType = SkillTargetType.DensestEnemyArea;
+            skill.fallbackTargetType = SkillTargetType.CurrentEnemyTarget;
+            skill.castRange = 20f;
+            skill.areaRadius = 2.4f;
+            skill.minTargetsToCast = 3;
+            skill.allowsSelfCast = false;
+            skill.effects.Clear();
+            skill.persistentAreaVfxPrefab = null;
+            skill.persistentAreaVfxScaleMultiplier = 1f;
+            skill.persistentAreaVfxEulerAngles = Vector3.zero;
+            skill.skillAreaPresentationType = SkillAreaPresentationType.None;
+
+            var cannon = new SkillEffectData
+            {
+                effectType = SkillEffectType.CreateChanneledPathDamage,
+                targetMode = SkillEffectTargetMode.SkillTargets,
+                powerMultiplier = 3.30f,
+                durationSeconds = 2.8f,
+                tickIntervalSeconds = 0.35f,
+                returningPathDelaySeconds = 0.85f,
+                returningPathMaxDistance = 20f,
+                returningPathWidth = 2.4f,
+                channeledPathMaxTurnDegreesPerSecond = 35f,
+                persistentAreaTargetType = PersistentAreaTargetType.Enemies,
+            };
+            skill.effects.Add(cannon);
         }
 
         private static SkillData ConfigureShadowstepUltimate(SkillData skill, bool overwriteExistingContent, bool existedBefore)
@@ -8091,6 +8276,8 @@ namespace Fight.Editor
                 "skill_lightningmage_ultimate_stormverdict" => "mage_004_lightningmage",
                 "skill_mirrormage_active_mirrorcopy" => "mage_006_mirrormage",
                 "skill_mirrormage_ultimate_hallofreflections" => "mage_006_mirrormage",
+                "skill_marisa_active_broomburst" => "mage_007_marisa",
+                "skill_marisa_ultimate_starlancecannon" => "mage_007_marisa",
                 "skill_berserker_active_bloodfury" => "warrior_003_berserker",
                 "skill_berserker_ultimate_titanrage" => "warrior_003_berserker",
                 "skill_spellblade_active_riftwave" => "warrior_004_spellblade",

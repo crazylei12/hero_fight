@@ -1,0 +1,80 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 65b49e23d4a4cda45a9a11e1d7bacd97, type: 3}
+  m_Name: Marisa
+  m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.HeroDefinition
+  heroId: mage_007_marisa
+  displayName: Marisa
+  description: "\u5F39\u5E55\u7206\u53D1\u6CD5\u5E08\uFF0C\u7AD9\u5728\u4E2D\u540E\u6392\u7528\u9AD8\u901F\u661F\u5F39\u6301\u7EED\u538B\u8840\uFF0C\u9760\u626B\u5E1A\u77ED\u6ED1\u8C03\u6574\u8DDD\u79BB\uFF0C\u5E76\u7528\u4E00\u6B21\u6027\u661F\u8F89\u9B54\u70AE\u8D2F\u7A7F\u654C\u9635\u3002\u9002\u5408\u60E9\u7F5A\u76F4\u7EBF\u7AD9\u4F4D\uFF0C\u4F46\u5F15\u5BFC\u9B54\u70AE\u65F6\u9700\u8981\u961F\u53CB\u4FDD\u62A4\uFF0C\u6015\u88AB\u6253\u65AD\u6216\u88AB\u654C\u4EBA\u6563\u5F00\u89C4\u907F\u3002"
+  heroClass: 1
+  tags: 010000000300000002000000
+  baseStats:
+    maxHealth: 290
+    attackPower: 32
+    defense: 8
+    attackSpeed: 1.0526316
+    moveSpeed: 4.05
+    criticalChance: 0.1
+    criticalDamageMultiplier: 1.6
+    attackRange: 8.8
+  basicAttack:
+    damageMultiplier: 0.78
+    attackInterval: 0.95
+    rangeOverride: 8.8
+    usesProjectile: 1
+    projectileSpeed: 16
+    effectType: 0
+    targetType: 0
+    targetPrioritySearchRadius: 0
+    startingVariantIndex: 0
+    bounce:
+      maxAdditionalTargets: 0
+      searchRadius: 0
+      powerMultiplier: 0
+      bounceVariantKey:
+    sameTargetStacking:
+      enabled: 0
+      maxStacks: 1
+      modifierEffectType: 4
+      magnitudePerStack: 0
+      targetRetentionRange: 0
+      fullStackOverrideStatusEffectType: 0
+    onHitEffect:
+      enabled: 0
+      selfCurrentHealthCostRatio: 0
+      minimumSelfHealthAfterCost: 1
+      bonusDamagePowerMultiplier: 0
+      selfHealBasePowerMultiplier: 0
+      selfHealMissingHealthPowerMultiplier: 0
+    onHitStatusEffects: []
+    variants: []
+  activeSkill: {fileID: 11400000, guid: 1be79d2b579a2b24c9584b33532913a7, type: 2}
+  ultimateSkill: {fileID: 11400000, guid: 7d91786e813a8f843888be91123c8b83, type: 2}
+  aiTemplateId: mage_default
+  usesSpecialLogic: 0
+  specialLogicNotes:
+  visualConfig:
+    portrait: {fileID: 21300000, guid: df991557309910443a533cb98da7f902, type: 3}
+    battlePrefab: {fileID: 2408836759155730433, guid: f7031a4d517fc8d4c87dfa4d831c16e6, type: 3}
+    animatorController: {fileID: 0}
+    battlePrefabFacesLeftByDefault: 0
+    projectilePrefab: {fileID: 4711167554438472493, guid: be560fe5009d90d498e9006497e84e6f, type: 3}
+    projectileAlignToMovement: 1
+    projectileEulerAngles: {x: 0, y: 0, z: 0}
+    castVfxPrefab: {fileID: 0}
+    hitVfxPrefab: {fileID: 0}
+    basicAttackVariantVisuals: []
+    formVisuals: []
+    castSfx: {fileID: 0}
+  debugNotes: Stage-01 demo hero for Mage. Marisa validates ranged star-shot pressure,
+    safe broom repositioning, radial burst damage, and one-shot channeled straight-line
+    cannon damage.

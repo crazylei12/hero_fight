@@ -34,6 +34,7 @@ namespace Fight.Battle
             BattleSkillSystem.TickDelayedSkillEffects(context, deltaTime, battleCallbacks);
             BattleSkillSystem.TickReturningPathStrikes(context, deltaTime, battleCallbacks);
             BattleSkillSystem.TickRadialSweeps(context, deltaTime, battleCallbacks);
+            BattleSkillSystem.TickChanneledPathSkills(context, deltaTime, battleCallbacks);
             BattleKnockUpFollowUpSystem.Flush(context, battleCallbacks);
             ResolveHeroMinimumSeparation(context);
         }

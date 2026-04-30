@@ -153,6 +153,7 @@ namespace Fight.Battle
             {
                 DamageSourceKind.BasicAttack => counterData.countBasicAttackDamage,
                 DamageSourceKind.Skill => counterData.countSkillDamage,
+                DamageSourceKind.ChanneledPathSkillTick => counterData.countSkillDamage,
                 DamageSourceKind.SkillAreaPulse => counterData.countSkillAreaPulseDamage,
                 DamageSourceKind.StatusEffect => counterData.countStatusEffectDamage,
                 DamageSourceKind.CounterTrigger => counterData.countCounterTriggerDamage,

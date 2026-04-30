@@ -18,6 +18,16 @@ namespace Fight.Battle
         StatusEffect = 4,
         DamageShare = 5,
         CounterTrigger = 6,
+        ChanneledPathSkillTick = 7,
+    }
+
+    public enum ChanneledPathEndReason
+    {
+        Completed = 0,
+        CasterMissing = 1,
+        CasterDead = 2,
+        HardControl = 3,
+        ForcedMovement = 4,
     }
 
     public sealed class BattleStartedEvent : IBattleEvent
@@ -395,6 +405,115 @@ namespace Fight.Battle
         public float PathWidth { get; }
 
         public int HitCount { get; }
+    }
+
+    public sealed class ChanneledPathSkillStartedEvent : IBattleEvent
+    {
+        public ChanneledPathSkillStartedEvent(
+            RuntimeHero caster,
+            SkillData skill,
+            string channelId,
+            Vector3 startPosition,
+            Vector3 endPosition,
+            float pathWidth,
+            float chargeDurationSeconds,
+            float channelDurationSeconds,
+            int expectedTickCount)
+        {
+            Caster = caster;
+            Skill = skill;
+            ChannelId = channelId ?? string.Empty;
+            StartPosition = startPosition;
+            EndPosition = endPosition;
+            PathWidth = pathWidth;
+            ChargeDurationSeconds = chargeDurationSeconds;
+            ChannelDurationSeconds = channelDurationSeconds;
+            ExpectedTickCount = expectedTickCount;
+        }
+
+        public RuntimeHero Caster { get; }
+
+        public SkillData Skill { get; }
+
+        public string ChannelId { get; }
+
+        public Vector3 StartPosition { get; }
+
+        public Vector3 EndPosition { get; }
+
+        public float PathWidth { get; }
+
+        public float ChargeDurationSeconds { get; }
+
+        public float ChannelDurationSeconds { get; }
+
+        public int ExpectedTickCount { get; }
+    }
+
+    public sealed class ChanneledPathSkillTickEvent : IBattleEvent
+    {
+        public ChanneledPathSkillTickEvent(
+            RuntimeHero caster,
+            SkillData skill,
+            string channelId,
+            int tickIndex,
+            Vector3 startPosition,
+            Vector3 endPosition,
+            float pathWidth,
+            int hitCount)
+        {
+            Caster = caster;
+            Skill = skill;
+            ChannelId = channelId ?? string.Empty;
+            TickIndex = tickIndex;
+            StartPosition = startPosition;
+            EndPosition = endPosition;
+            PathWidth = pathWidth;
+            HitCount = hitCount;
+        }
+
+        public RuntimeHero Caster { get; }
+
+        public SkillData Skill { get; }
+
+        public string ChannelId { get; }
+
+        public int TickIndex { get; }
+
+        public Vector3 StartPosition { get; }
+
+        public Vector3 EndPosition { get; }
+
+        public float PathWidth { get; }
+
+        public int HitCount { get; }
+    }
+
+    public sealed class ChanneledPathSkillEndedEvent : IBattleEvent
+    {
+        public ChanneledPathSkillEndedEvent(
+            RuntimeHero caster,
+            SkillData skill,
+            string channelId,
+            ChanneledPathEndReason reason,
+            int resolvedTickCount)
+        {
+            Caster = caster;
+            Skill = skill;
+            ChannelId = channelId ?? string.Empty;
+            Reason = reason;
+            ResolvedTickCount = resolvedTickCount;
+        }
+
+        public RuntimeHero Caster { get; }
+
+        public SkillData Skill { get; }
+
+        public string ChannelId { get; }
+
+        public ChanneledPathEndReason Reason { get; }
+
+        public int ResolvedTickCount { get; }
     }
 
     public sealed class DamageAppliedEvent : IBattleEvent

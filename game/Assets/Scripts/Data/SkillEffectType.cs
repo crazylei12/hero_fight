@@ -17,5 +17,6 @@ namespace Fight.Data
         CleanseStatusEffects = 12,
         ConsumeRestrictedStatusStacksDamage = 13,
         CreateCloneUnit = 14,
+        CreateChanneledPathDamage = 15,
     }
 }

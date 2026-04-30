@@ -2721,6 +2721,44 @@ namespace Fight.Battle
             }
         }
 
+        public static void TickChanneledPathSkills(BattleContext context, float deltaTime, IBattleSimulationCallbacks battleManager)
+        {
+            if (context?.ChanneledPathSkills == null || battleManager == null)
+            {
+                return;
+            }
+
+            for (var i = context.ChanneledPathSkills.Count - 1; i >= 0; i--)
+            {
+                var channel = context.ChanneledPathSkills[i];
+                if (channel == null)
+                {
+                    context.ChanneledPathSkills.RemoveAt(i);
+                    continue;
+                }
+
+                var desiredDirection = ResolveChanneledPathDesiredDirection(context, channel);
+                channel.Advance(deltaTime, desiredDirection, out var pendingTickCount);
+                for (var tickIndex = 0; tickIndex < pendingTickCount; tickIndex++)
+                {
+                    ResolveChanneledPathSkillTick(context, channel, battleManager);
+                }
+
+                if (!channel.IsComplete)
+                {
+                    continue;
+                }
+
+                context.ChanneledPathSkills.RemoveAt(i);
+                context.EventBus?.Publish(new ChanneledPathSkillEndedEvent(
+                    channel.Caster,
+                    channel.Skill,
+                    channel.ChannelId,
+                    channel.EndReason,
+                    channel.ResolvedTickCount));
+            }
+        }
+
         private static void BeginSkillCast(BattleContext context, RuntimeHero caster, SkillData skill, RuntimeHero primaryTarget, List<RuntimeHero> affectedTargets, IBattleSimulationCallbacks battleManager)
         {
             BeginSkillCast(
@@ -3177,6 +3215,20 @@ namespace Fight.Battle
                     continue;
                 }
 
+                if (effect.effectType == SkillEffectType.CreateChanneledPathDamage)
+                {
+                    var channelTargets = CollectChanneledPathTargets(context, caster, primaryTarget, effect);
+                    for (var j = 0; j < channelTargets.Count; j++)
+                    {
+                        if (channelTargets[j] != null)
+                        {
+                            uniqueTargetIds.Add(channelTargets[j].RuntimeId);
+                        }
+                    }
+
+                    continue;
+                }
+
                 var effectTargets = ResolveEffectTargets(context, caster, skill, primaryTarget, affectedTargets, effect, resolutionState);
                 for (var j = 0; j < effectTargets.Count; j++)
                 {
@@ -3331,6 +3383,12 @@ namespace Fight.Battle
                 return;
             }
 
+            if (effect?.effectType == SkillEffectType.CreateChanneledPathDamage)
+            {
+                CreateChanneledPathSkill(context, caster, skill, effect, primaryTarget);
+                return;
+            }
+
             var effectTargets = ResolveEffectTargets(context, caster, skill, primaryTarget, affectedTargets, effect, resolutionState);
             switch (effect.effectType)
             {
@@ -3377,6 +3435,8 @@ namespace Fight.Battle
                     BattleCloneSystem.CreateClones(context, caster, skill, effect, effectTargets);
                     break;
                 case SkillEffectType.CreateReturningPathStrike:
+                    break;
+                case SkillEffectType.CreateChanneledPathDamage:
                     break;
             }
         }
@@ -4239,6 +4299,46 @@ namespace Fight.Battle
             context.RadialSweeps.Add(new RuntimeRadialSweep(caster, skill, effect, center));
         }
 
+        private static void CreateChanneledPathSkill(
+            BattleContext context,
+            RuntimeHero caster,
+            SkillData skill,
+            SkillEffectData effect,
+            RuntimeHero primaryTarget)
+        {
+            if (context?.ChanneledPathSkills == null || caster == null || caster.IsDead || skill == null || effect == null)
+            {
+                return;
+            }
+
+            if (!TryGetChanneledPathDirection(caster, primaryTarget, out var initialDirection))
+            {
+                return;
+            }
+
+            var channel = new RuntimeChanneledPathSkill(caster, skill, effect, primaryTarget, initialDirection);
+            if (channel.ChannelDurationSeconds <= Mathf.Epsilon
+                || channel.PathLength <= Mathf.Epsilon
+                || channel.PathWidth <= Mathf.Epsilon)
+            {
+                return;
+            }
+
+            caster.ExtendActionLock(channel.ChargeDurationSeconds + channel.ChannelDurationSeconds + CombatActionTiming.DefaultRecoverySeconds);
+            channel.GetCurrentSegment(out var startPosition, out var endPosition);
+            context.ChanneledPathSkills.Add(channel);
+            context.EventBus?.Publish(new ChanneledPathSkillStartedEvent(
+                caster,
+                skill,
+                channel.ChannelId,
+                startPosition,
+                endPosition,
+                channel.PathWidth,
+                channel.ChargeDurationSeconds,
+                channel.ChannelDurationSeconds,
+                channel.ExpectedTickCount));
+        }
+
         private static void CreateDeployableProxies(
             BattleContext context,
             RuntimeHero caster,
@@ -4288,6 +4388,134 @@ namespace Fight.Battle
                 strike.EndPosition,
                 strike.PathWidth,
                 targets.Count));
+        }
+
+        private static void ResolveChanneledPathSkillTick(
+            BattleContext context,
+            RuntimeChanneledPathSkill channel,
+            IBattleSimulationCallbacks battleManager)
+        {
+            if (context == null
+                || channel?.Caster == null
+                || channel.Caster.IsDead
+                || channel.Skill == null
+                || channel.Effect == null
+                || battleManager == null)
+            {
+                return;
+            }
+
+            channel.GetCurrentSegment(out var startPosition, out var endPosition);
+            var targets = CollectReturningPathTargets(
+                context,
+                channel.Caster,
+                startPosition,
+                endPosition,
+                channel.PathWidth,
+                channel.Effect);
+            var tickIndex = channel.ResolvedTickCount + 1;
+            ApplyDamageToTargets(
+                context,
+                channel.Caster,
+                channel.Skill,
+                channel.Effect,
+                targets,
+                battleManager,
+                DamageSourceKind.ChanneledPathSkillTick);
+            channel.MarkTickResolved();
+            context.EventBus?.Publish(new ChanneledPathSkillTickEvent(
+                channel.Caster,
+                channel.Skill,
+                channel.ChannelId,
+                tickIndex,
+                startPosition,
+                endPosition,
+                channel.PathWidth,
+                targets.Count));
+        }
+
+        private static Vector3 ResolveChanneledPathDesiredDirection(BattleContext context, RuntimeChanneledPathSkill channel)
+        {
+            if (channel?.Caster == null)
+            {
+                return Vector3.forward;
+            }
+
+            var caster = channel.Caster;
+            var target = IsValidReturningPathTarget(caster, channel.PrimaryTarget, channel.Effect)
+                ? channel.PrimaryTarget
+                : IsValidReturningPathTarget(caster, caster.CurrentTarget, channel.Effect)
+                    ? caster.CurrentTarget
+                    : BattleAiDirector.SelectDefaultOffensiveEnemyTarget(context?.Heroes, caster, Mathf.Max(channel.PathLength, caster.AttackRange));
+            if (target == null || !TryGetChanneledPathDirection(caster, target, out var desiredDirection))
+            {
+                return channel.CurrentDirection;
+            }
+
+            return desiredDirection;
+        }
+
+        private static bool TryGetChanneledPathDirection(RuntimeHero caster, RuntimeHero primaryTarget, out Vector3 direction)
+        {
+            direction = Vector3.zero;
+            if (caster == null || primaryTarget == null)
+            {
+                return false;
+            }
+
+            direction = primaryTarget.CurrentPosition - caster.CurrentPosition;
+            direction.y = 0f;
+            if (direction.sqrMagnitude <= Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            direction.Normalize();
+            return true;
+        }
+
+        private static List<RuntimeHero> CollectChanneledPathTargets(
+            BattleContext context,
+            RuntimeHero caster,
+            RuntimeHero primaryTarget,
+            SkillEffectData effect)
+        {
+            if (!TryGetChanneledPathSegment(caster, primaryTarget, effect, out var startPosition, out var endPosition, out var pathWidth))
+            {
+                return new List<RuntimeHero>();
+            }
+
+            return CollectReturningPathTargets(context, caster, startPosition, endPosition, pathWidth, effect);
+        }
+
+        private static bool TryGetChanneledPathSegment(
+            RuntimeHero caster,
+            RuntimeHero primaryTarget,
+            SkillEffectData effect,
+            out Vector3 startPosition,
+            out Vector3 endPosition,
+            out float pathWidth)
+        {
+            startPosition = Vector3.zero;
+            endPosition = Vector3.zero;
+            pathWidth = 0f;
+            if (caster == null || effect == null || !TryGetChanneledPathDirection(caster, primaryTarget, out var direction))
+            {
+                return false;
+            }
+
+            var pathLength = Mathf.Max(0f, effect.returningPathMaxDistance);
+            if (pathLength <= Mathf.Epsilon)
+            {
+                return false;
+            }
+
+            startPosition = Stage01ArenaSpec.ClampPosition(caster.CurrentPosition);
+            startPosition.y = 0f;
+            endPosition = Stage01ArenaSpec.ClampPosition(startPosition + direction * pathLength);
+            endPosition.y = 0f;
+            pathWidth = Mathf.Max(0f, effect.returningPathWidth);
+            return pathWidth > Mathf.Epsilon;
         }
 
         private static List<RuntimeHero> CollectReturningPathTargets(
@@ -5633,7 +5861,7 @@ namespace Fight.Battle
                 ? 1f
                 : -1f;
             var destination = dashDistance > Mathf.Epsilon
-                ? casterPosition + offset.normalized * dashDistance
+                ? casterPosition + offset.normalized * dashDistance * (effect != null && effect.repositionAwayFromPrimaryTarget ? -1f : 1f)
                 : targetPosition + offset.normalized * stopDistance * fallbackOffsetDirection;
             destination.y = 0f;
             return Stage01ArenaSpec.ClampPosition(destination);
