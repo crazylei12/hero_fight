@@ -16,9 +16,10 @@ namespace Fight.Battle
                 return;
             }
 
+            var contributionSource = ResolveContributionSource(attacker);
             target.RecordDamageTaken(amount);
-            attacker?.RecordDamage(amount);
-            RegisterHostileContribution(context, attacker, target);
+            contributionSource?.RecordDamage(amount);
+            RegisterHostileContribution(context, contributionSource, target);
         }
 
         public static void RecordHealingContribution(BattleContext context, RuntimeHero source, RuntimeHero target, float amount)
@@ -28,18 +29,20 @@ namespace Fight.Battle
                 return;
             }
 
-            source?.RecordHealing(amount);
-            RegisterSupportContribution(context, source, target);
+            var contributionSource = ResolveContributionSource(source);
+            contributionSource?.RecordHealing(amount);
+            RegisterSupportContribution(context, contributionSource, target);
         }
 
         public static void RecordDirectHostileDamageContribution(BattleContext context, RuntimeHero source, RuntimeHero target)
         {
-            if (source == null || target == null || source.Side == target.Side)
+            var contributionSource = ResolveContributionSource(source);
+            if (contributionSource == null || target == null || contributionSource.Side == target.Side)
             {
                 return;
             }
 
-            target.RegisterDirectHostileDamageContribution(source, GetBattleTimeSeconds(context));
+            target.RegisterDirectHostileDamageContribution(contributionSource, GetBattleTimeSeconds(context));
         }
 
         public static void RecordShieldContribution(BattleContext context, RuntimeHero source, RuntimeHero target, float amount)
@@ -49,22 +52,24 @@ namespace Fight.Battle
                 return;
             }
 
-            source?.RecordShielding(amount);
-            RegisterSupportContribution(context, source, target);
+            var contributionSource = ResolveContributionSource(source);
+            contributionSource?.RecordShielding(amount);
+            RegisterSupportContribution(context, contributionSource, target);
         }
 
         public static void RecordStatusContribution(BattleContext context, RuntimeHero source, RuntimeHero target, StatusEffectData status)
         {
-            if (source == null || target == null || status == null)
+            var contributionSource = ResolveContributionSource(source);
+            if (contributionSource == null || target == null || status == null)
             {
                 return;
             }
 
-            if (source.Side != target.Side)
+            if (contributionSource.Side != target.Side)
             {
                 if (IsHostileAssistStatus(status))
                 {
-                    RegisterHostileContribution(context, source, target);
+                    RegisterHostileContribution(context, contributionSource, target);
                 }
 
                 return;
@@ -72,18 +77,19 @@ namespace Fight.Battle
 
             if (IsSupportAssistStatus(status))
             {
-                RegisterSupportContribution(context, source, target);
+                RegisterSupportContribution(context, contributionSource, target);
             }
         }
 
         public static void RecordForcedMovementContribution(BattleContext context, RuntimeHero source, RuntimeHero target)
         {
-            if (source == null || target == null || source.Side == target.Side)
+            var contributionSource = ResolveContributionSource(source);
+            if (contributionSource == null || target == null || contributionSource.Side == target.Side)
             {
                 return;
             }
 
-            RegisterHostileContribution(context, source, target);
+            RegisterHostileContribution(context, contributionSource, target);
         }
 
         public static List<RuntimeHero> ResolveKillParticipants(BattleContext context, RuntimeHero victim, RuntimeHero killer)
@@ -94,6 +100,7 @@ namespace Fight.Battle
                 return participants;
             }
 
+            killer = ResolveContributionSource(killer);
             if (context == null || killer == null || killer.Side == victim.Side)
             {
                 victim.ClearContributionHistory();
@@ -155,6 +162,7 @@ namespace Fight.Battle
 
         private static void RegisterHostileContribution(BattleContext context, RuntimeHero contributor, RuntimeHero target)
         {
+            contributor = ResolveContributionSource(contributor);
             if (contributor == null || target == null || contributor.Side == target.Side)
             {
                 return;
@@ -165,6 +173,7 @@ namespace Fight.Battle
 
         private static void RegisterSupportContribution(BattleContext context, RuntimeHero contributor, RuntimeHero target)
         {
+            contributor = ResolveContributionSource(contributor);
             if (contributor == null || target == null || contributor.Side != target.Side)
             {
                 return;
@@ -176,6 +185,13 @@ namespace Fight.Battle
         private static float GetBattleTimeSeconds(BattleContext context)
         {
             return context?.Clock != null ? Mathf.Max(0f, context.Clock.ElapsedTimeSeconds) : 0f;
+        }
+
+        private static RuntimeHero ResolveContributionSource(RuntimeHero source)
+        {
+            return source != null && source.IsClone && source.CloneOwner != null
+                ? source.CloneOwner
+                : source;
         }
 
         private static bool IsHostileAssistStatus(StatusEffectData status)

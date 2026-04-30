@@ -194,11 +194,29 @@ namespace Fight.Battle
                 return actualDamage;
             }
 
-            var killParticipants = BattleStatsSystem.ResolveKillParticipants(context, target, attacker);
             var endedTemporaryOverrideSkill = target.CurrentTemporaryOverrideSourceSkill;
             var endedTemporaryOverrideLifestealRatio = target.CurrentTemporaryOverrideLifestealRatio;
             var endedTemporaryOverrideVisualScaleMultiplier = target.CurrentVisualScaleMultiplier;
             var endedTemporaryOverrideVisualTintStrength = target.CurrentVisualTintStrength;
+
+            if (target.IsClone)
+            {
+                target.MarkDead(
+                    0f,
+                    status => PublishStatusRemovedEvent(context, target, status));
+                PublishTemporaryOverrideEndedEvent(
+                    context,
+                    target,
+                    endedTemporaryOverrideSkill,
+                    endedTemporaryOverrideLifestealRatio,
+                    endedTemporaryOverrideVisualScaleMultiplier,
+                    endedTemporaryOverrideVisualTintStrength);
+                context.EventBus?.Publish(new UnitDiedEvent(target, attacker));
+                return actualDamage;
+            }
+
+            var killCredit = attacker?.StatOwner;
+            var killParticipants = BattleStatsSystem.ResolveKillParticipants(context, target, killCredit);
             target.MarkDead(
                 context.Input.respawnDelaySeconds,
                 status => PublishStatusRemovedEvent(context, target, status));
@@ -209,7 +227,7 @@ namespace Fight.Battle
                 endedTemporaryOverrideLifestealRatio,
                 endedTemporaryOverrideVisualScaleMultiplier,
                 endedTemporaryOverrideVisualTintStrength);
-            attacker?.MarkKill();
+            killCredit?.MarkKill();
             context.EventBus?.Publish(new UnitDiedEvent(target, attacker));
 
             if (attacker != null)

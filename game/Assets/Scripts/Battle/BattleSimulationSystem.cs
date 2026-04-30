@@ -21,12 +21,15 @@ namespace Fight.Battle
             TickSkillAreas(context, deltaTime, battleCallbacks);
             BattleDeployableProxySystem.Tick(context, deltaTime, battleCallbacks);
             BattleFocusFireCommandSystem.Tick(context, deltaTime);
+            BattleCloneSystem.Tick(context);
 
-            for (var i = 0; i < context.Heroes.Count; i++)
+            var heroCountAtTickStart = context.Heroes.Count;
+            for (var i = 0; i < heroCountAtTickStart; i++)
             {
                 TickHero(context, context.Heroes[i], deltaTime, battleCallbacks);
             }
 
+            BattleCloneSystem.Tick(context);
             BattleReactiveGuardSystem.Tick(context, deltaTime);
             BattleSkillSystem.TickDelayedSkillEffects(context, deltaTime, battleCallbacks);
             BattleSkillSystem.TickReturningPathStrikes(context, deltaTime, battleCallbacks);
@@ -64,6 +67,13 @@ namespace Fight.Battle
         private static void TickHero(BattleContext context, RuntimeHero hero, float deltaTime, IBattleSimulationCallbacks battleCallbacks)
         {
             hero.SetBattleTimeSeconds(context?.Clock != null ? context.Clock.ElapsedTimeSeconds : 0f);
+            if (hero.IsClone
+                && hero.CloneExpiresWhenOwnerDies
+                && (hero.CloneOwner == null || hero.CloneOwner.IsDead))
+            {
+                return;
+            }
+
             var previousPassiveAttackPowerBonus = QuantizeModifierValue(hero.PassiveAttackPowerBonusMultiplier);
             var previousPassiveDefenseBonus = QuantizeModifierValue(hero.PassiveDefenseBonusMultiplier);
             var previousPassiveLifestealRatio = QuantizeModifierValue(hero.PassiveLifestealRatio);
@@ -88,6 +98,11 @@ namespace Fight.Battle
                 previousVisualScaleMultiplier,
                 previousVisualTintStrength);
             BattleSkillSystem.ResolvePendingRestrictedStatusFinishers(context, hero, battleCallbacks);
+
+            if (hero.IsCloneExpired)
+            {
+                return;
+            }
 
             if (hero.IsDead)
             {

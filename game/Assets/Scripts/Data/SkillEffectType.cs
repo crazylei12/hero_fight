@@ -16,5 +16,6 @@ namespace Fight.Data
         ApplyCombatFormOverride = 11,
         CleanseStatusEffects = 12,
         ConsumeRestrictedStatusStacksDamage = 13,
+        CreateCloneUnit = 14,
     }
 }

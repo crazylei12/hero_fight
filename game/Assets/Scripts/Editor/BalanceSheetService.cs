@@ -701,6 +701,13 @@ namespace Fight.Editor
                 parts.Add($"上限:{effect.deployableProxyMaxCount}");
             }
 
+            if (effect.effectType == SkillEffectType.CreateCloneUnit)
+            {
+                parts.Add($"持续:{FormatFloat(effect.cloneDurationSeconds)}");
+                parts.Add($"数量:{effect.cloneSpawnCount}");
+                parts.Add($"上限:{effect.cloneMaxCount}");
+            }
+
             if (effect.effectType == SkillEffectType.CreateRadialSweep)
             {
                 parts.Add($"方向:{FormatEnum(effect.radialSweepDirection)}");
@@ -988,6 +995,7 @@ namespace Fight.Editor
                     SkillEffectType.CreateDeployableProxy => "创建部署物代理",
                     SkillEffectType.CreateRadialSweep => "创建径向扫波",
                     SkillEffectType.CreateReturningPathStrike => "创建往返路径打击",
+                    SkillEffectType.CreateCloneUnit => "创建分身单位",
                     _ => value.ToString(),
                 },
                 SkillEffectTargetMode skillEffectTargetMode => skillEffectTargetMode switch

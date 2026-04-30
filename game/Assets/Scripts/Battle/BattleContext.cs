@@ -90,6 +90,7 @@ namespace Fight.Battle
     {
         private float lastBlueUltimateCastTimeSeconds = float.NegativeInfinity;
         private float lastRedUltimateCastTimeSeconds = float.NegativeInfinity;
+        private int nextCloneSequence;
 
         public BattleContext(BattleInputConfig input, BattleClock clock, BattleScoreSystem scoreSystem, BattleRandomService randomService, BattleEventBus eventBus, List<RuntimeHero> heroes)
         {
@@ -139,6 +140,12 @@ namespace Fight.Battle
         public List<RuntimeFocusFireCommand> FocusFireCommands { get; }
 
         public List<RuntimeKnockUpFollowUpTrigger> KnockUpFollowUpTriggers { get; }
+
+        public int NextCloneSequence()
+        {
+            nextCloneSequence++;
+            return nextCloneSequence;
+        }
 
         public BattleTeamLoadout GetTeamLoadout(TeamSide side)
         {

@@ -390,6 +390,7 @@ namespace Fight.UI
                 SyncHero(context.Heroes[i]);
             }
 
+            CleanupMissingHeroViews(context.Heroes);
             SyncProjectiles(context);
             SyncDeployableProxies(context);
             SyncSkillAreas(context);
@@ -423,7 +424,8 @@ namespace Fight.UI
             var blinkRevealScale = hero.IsDead
                 ? 1f
                 : Mathf.Lerp(blinkRevealStartScale, 1f, blinkRevealProgress);
-            view.VisualRoot.localScale = Vector3.one * ((hero.IsDead ? 0.82f : 1f) * blinkRevealScale * hero.CurrentVisualScaleMultiplier);
+            var cloneScale = hero.IsClone ? 0.9f : 1f;
+            view.VisualRoot.localScale = Vector3.one * ((hero.IsDead ? 0.82f : 1f) * blinkRevealScale * hero.CurrentVisualScaleMultiplier * cloneScale);
 
             if (view.Body != null)
             {
@@ -436,6 +438,11 @@ namespace Fight.UI
                 halo.a = hero.IsDead
                     ? (ShouldHideCorpse(view) ? 0f : 0.18f)
                     : Mathf.Lerp(0.28f, 0.78f, blinkRevealProgress);
+                if (hero.IsClone)
+                {
+                    halo.a *= 0.62f;
+                }
+
                 view.Halo.color = halo;
             }
 
@@ -527,6 +534,62 @@ namespace Fight.UI
             view.UltimateStackText = MakeText("UltimateStackText", view.FootUiRoot, string.Empty, Color.white, UltimateStackTextSortOrder, UltimateIconLocalPosition + new Vector3(0f, 0.002f, 0f), UltimateStackTextBaseCharacterSize);
             SetUltimateStackTextVisible(view, false);
             return view;
+        }
+
+        private void CleanupMissingHeroViews(IReadOnlyList<RuntimeHero> activeHeroes)
+        {
+            if (heroViews.Count <= 0)
+            {
+                return;
+            }
+
+            List<string> staleIds = null;
+            foreach (var pair in heroViews)
+            {
+                if (IsActiveHeroView(pair.Key, activeHeroes))
+                {
+                    continue;
+                }
+
+                staleIds ??= new List<string>();
+                staleIds.Add(pair.Key);
+            }
+
+            if (staleIds == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < staleIds.Count; i++)
+            {
+                var staleId = staleIds[i];
+                if (heroViews.TryGetValue(staleId, out var view) && view?.Root != null)
+                {
+                    Destroy(view.Root);
+                }
+
+                heroViews.Remove(staleId);
+                heroAnimationDrivers.Remove(staleId);
+            }
+        }
+
+        private static bool IsActiveHeroView(string runtimeId, IReadOnlyList<RuntimeHero> activeHeroes)
+        {
+            if (string.IsNullOrWhiteSpace(runtimeId) || activeHeroes == null)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < activeHeroes.Count; i++)
+            {
+                var hero = activeHeroes[i];
+                if (hero != null && string.Equals(hero.RuntimeId, runtimeId, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void SyncUltimateIndicator(RuntimeHero hero, HeroViewState view)

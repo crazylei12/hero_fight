@@ -982,6 +982,46 @@ namespace Fight.Battle
         public RuntimeHero Hero { get; }
     }
 
+    public enum CloneUnitRemovalReason
+    {
+        Expired = 0,
+        Killed = 1,
+        Replaced = 2,
+        OwnerUnavailable = 3,
+    }
+
+    public sealed class CloneUnitSpawnedEvent : IBattleEvent
+    {
+        public CloneUnitSpawnedEvent(RuntimeHero clone, RuntimeHero owner, RuntimeHero source, SkillData sourceSkill)
+        {
+            Clone = clone;
+            Owner = owner;
+            Source = source;
+            SourceSkill = sourceSkill;
+        }
+
+        public RuntimeHero Clone { get; }
+
+        public RuntimeHero Owner { get; }
+
+        public RuntimeHero Source { get; }
+
+        public SkillData SourceSkill { get; }
+    }
+
+    public sealed class CloneUnitRemovedEvent : IBattleEvent
+    {
+        public CloneUnitRemovedEvent(RuntimeHero clone, CloneUnitRemovalReason reason)
+        {
+            Clone = clone;
+            Reason = reason;
+        }
+
+        public RuntimeHero Clone { get; }
+
+        public CloneUnitRemovalReason Reason { get; }
+    }
+
     public sealed class OvertimeStartedEvent : IBattleEvent
     {
     }

@@ -517,11 +517,35 @@ namespace Fight.Heroes
 
         public int SlotIndex { get; }
 
-        public string RuntimeId => $"{Side}_{SlotIndex}_{Definition?.heroId}";
+        public string RuntimeId => string.IsNullOrWhiteSpace(runtimeIdOverride)
+            ? $"{Side}_{SlotIndex}_{Definition?.heroId}"
+            : runtimeIdOverride;
 
         public ResolvedAthleteCombatModifier AthleteModifier { get; }
 
         public AthleteDefinition Athlete => AthleteModifier.Athlete;
+
+        public bool IsClone { get; private set; }
+
+        public RuntimeHero CloneOwner { get; private set; }
+
+        public RuntimeHero CloneSource { get; private set; }
+
+        public SkillData CloneSourceSkill { get; private set; }
+
+        public int CloneSequence { get; private set; }
+
+        public string CloneGroupKey { get; private set; } = string.Empty;
+
+        public float CloneTotalDurationSeconds { get; private set; }
+
+        public float CloneRemainingDurationSeconds { get; private set; }
+
+        public bool CloneExpiresWhenOwnerDies { get; private set; }
+
+        public bool IsCloneExpired => IsClone && CloneRemainingDurationSeconds <= Mathf.Epsilon;
+
+        public RuntimeHero StatOwner => IsClone && CloneOwner != null ? CloneOwner : this;
 
         public Vector3 CurrentPosition { get; set; }
 
@@ -587,7 +611,9 @@ namespace Fight.Heroes
 
         public bool CanReceiveDamage => !StatusEffectSystem.HasBehaviorFlag(this, StatusBehaviorFlags.PreventsDamage);
 
-        public float MaxHealth => Definition != null ? StatusEffectSystem.GetModifiedStat(this, Definition.baseStats.maxHealth * AthleteModifier.MaxHealthMultiplier, StatusEffectType.MaxHealthModifier) : 0f;
+        public float MaxHealth => Definition != null
+            ? StatusEffectSystem.GetModifiedStat(this, Definition.baseStats.maxHealth * AthleteModifier.MaxHealthMultiplier * CloneMaxHealthMultiplier, StatusEffectType.MaxHealthModifier)
+            : 0f;
 
         public float AttackRange
         {
@@ -616,7 +642,9 @@ namespace Fight.Heroes
             }
         }
 
-        public float MoveSpeed => Definition != null ? StatusEffectSystem.GetModifiedStat(this, Definition.baseStats.moveSpeed * AthleteModifier.MoveSpeedMultiplier, StatusEffectType.MoveSpeedModifier) : 0f;
+        public float MoveSpeed => Definition != null
+            ? StatusEffectSystem.GetModifiedStat(this, Definition.baseStats.moveSpeed * AthleteModifier.MoveSpeedMultiplier * CloneMoveSpeedMultiplier, StatusEffectType.MoveSpeedModifier)
+            : 0f;
 
         public float AttackPower
         {
@@ -633,6 +661,7 @@ namespace Fight.Heroes
                     + CurrentRestrictedStatusConversionAttackPowerBonusMultiplier;
                 return Definition.baseStats.attackPower
                     * AthleteModifier.AttackPowerMultiplier
+                    * CloneAttackPowerMultiplier
                     * Mathf.Max(0.1f, 1f + totalModifierDelta)
                     * AthleteFinalAttackDefenseMultiplier;
             }
@@ -650,6 +679,7 @@ namespace Fight.Heroes
                 var totalModifierDelta = StatusEffectSystem.GetTotalMagnitude(this, StatusEffectType.DefenseModifier)
                     + PassiveDefenseBonusMultiplier;
                 return Definition.baseStats.defense
+                    * CloneDefenseMultiplier
                     * Mathf.Max(0.1f, 1f + totalModifierDelta)
                     * AthleteFinalAttackDefenseMultiplier;
             }
@@ -693,6 +723,7 @@ namespace Fight.Heroes
                 var speedMultiplier =
                     StatusEffectSystem.GetMultiplier(this, StatusEffectType.AttackSpeedModifier)
                     * AthleteModifier.AttackSpeedMultiplier
+                    * CloneAttackSpeedMultiplier
                     * Mathf.Max(0.1f, 1f + PassiveAttackSpeedBonusMultiplier + SameTargetBasicAttackSpeedBonusMultiplier + CurrentCombatFormAttackSpeedModifier);
                 var baseAttackSpeed = Mathf.Max(0.01f, Definition.baseStats.attackSpeed);
                 return 1f / (baseAttackSpeed * speedMultiplier);
@@ -786,6 +817,12 @@ namespace Fight.Heroes
         private RuntimeCombatActionSequence activeCombatActionSequence;
         private RuntimeCombatFormOverride activeCombatFormOverride;
         private RuntimeReactiveCounterStance activeReactiveCounter;
+        private string runtimeIdOverride;
+        private float cloneMaxHealthMultiplier = 1f;
+        private float cloneAttackPowerMultiplier = 1f;
+        private float cloneDefenseMultiplier = 1f;
+        private float cloneAttackSpeedMultiplier = 1f;
+        private float cloneMoveSpeedMultiplier = 1f;
         private PendingCombatAction pendingCombatAction;
         private RuntimeHero sameTargetBasicAttackStackTarget;
         private BasicAttackSameTargetStackData activeSameTargetBasicAttackStacking;
@@ -793,6 +830,65 @@ namespace Fight.Heroes
         private float pendingActionTriggerRemainingSeconds;
         private float actionLockRemainingSeconds;
         private int forcedMovementInterruptTicksRemaining;
+
+        private float CloneMaxHealthMultiplier => IsClone ? cloneMaxHealthMultiplier : 1f;
+
+        private float CloneAttackPowerMultiplier => IsClone ? cloneAttackPowerMultiplier : 1f;
+
+        private float CloneDefenseMultiplier => IsClone ? cloneDefenseMultiplier : 1f;
+
+        private float CloneAttackSpeedMultiplier => IsClone ? cloneAttackSpeedMultiplier : 1f;
+
+        private float CloneMoveSpeedMultiplier => IsClone ? cloneMoveSpeedMultiplier : 1f;
+
+        public void ConfigureAsClone(
+            string cloneRuntimeId,
+            int cloneSequence,
+            RuntimeHero owner,
+            RuntimeHero source,
+            SkillData sourceSkill,
+            string cloneGroupKey,
+            float durationSeconds,
+            float maxHealthMultiplier,
+            float attackPowerMultiplier,
+            float defenseMultiplier,
+            float attackSpeedMultiplier,
+            float moveSpeedMultiplier,
+            float initialActiveSkillDelaySeconds,
+            bool expiresWhenOwnerDies)
+        {
+            runtimeIdOverride = string.IsNullOrWhiteSpace(cloneRuntimeId)
+                ? $"{Side}_{SlotIndex}_{Definition?.heroId}_clone"
+                : cloneRuntimeId;
+            CloneSequence = cloneSequence;
+            IsClone = true;
+            CloneOwner = owner;
+            CloneSource = source;
+            CloneSourceSkill = sourceSkill;
+            CloneGroupKey = cloneGroupKey ?? string.Empty;
+            CloneTotalDurationSeconds = Mathf.Max(0f, durationSeconds);
+            CloneRemainingDurationSeconds = CloneTotalDurationSeconds;
+            CloneExpiresWhenOwnerDies = expiresWhenOwnerDies;
+            cloneMaxHealthMultiplier = Mathf.Max(0f, maxHealthMultiplier);
+            cloneAttackPowerMultiplier = Mathf.Max(0f, attackPowerMultiplier);
+            cloneDefenseMultiplier = Mathf.Max(0f, defenseMultiplier);
+            cloneAttackSpeedMultiplier = Mathf.Max(0.05f, attackSpeedMultiplier);
+            cloneMoveSpeedMultiplier = Mathf.Max(0f, moveSpeedMultiplier);
+            CurrentHealth = MaxHealth;
+            ActiveSkillCooldownRemainingSeconds = Mathf.Max(0f, initialActiveSkillDelaySeconds);
+            HasCastUltimate = true;
+            ClearContributionHistory();
+        }
+
+        public void ForceCloneExpired()
+        {
+            if (!IsClone)
+            {
+                return;
+            }
+
+            CloneRemainingDurationSeconds = 0f;
+        }
 
         public void ResetToSpawn()
         {
@@ -886,6 +982,11 @@ namespace Fight.Heroes
                 RespawnRemainingSeconds = Mathf.Max(0f, RespawnRemainingSeconds - deltaTime);
                 CombatEngagedSeconds = 0f;
                 return;
+            }
+
+            if (IsClone)
+            {
+                CloneRemainingDurationSeconds = Mathf.Max(0f, CloneRemainingDurationSeconds - Mathf.Max(0f, deltaTime));
             }
 
             AttackCooldownRemainingSeconds = Mathf.Max(0f, AttackCooldownRemainingSeconds - deltaTime);
@@ -1340,7 +1441,7 @@ namespace Fight.Heroes
 
         public bool ReadyToRevive()
         {
-            return IsDead && RespawnRemainingSeconds <= 0f;
+            return !IsClone && IsDead && RespawnRemainingSeconds <= 0f;
         }
 
         public float ApplyHealing(float amount)
@@ -1419,6 +1520,7 @@ namespace Fight.Heroes
         public bool CanUseUltimate(bool ignoreCastRestrictions = false)
         {
             return Definition != null
+                && !IsClone
                 && Definition.ultimateSkill != null
                 && Definition.ultimateSkill.activationMode == SkillActivationMode.Active
                 && !HasCastUltimate

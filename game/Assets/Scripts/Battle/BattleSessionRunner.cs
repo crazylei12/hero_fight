@@ -174,6 +174,11 @@ namespace Fight.Battle
             for (var i = 0; i < Context.Heroes.Count; i++)
             {
                 var hero = Context.Heroes[i];
+                if (hero == null || hero.IsClone)
+                {
+                    continue;
+                }
+
                 result.heroStats.Add(new HeroBattleStatLine
                 {
                     heroId = hero.Definition != null ? hero.Definition.heroId : string.Empty,

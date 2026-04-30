@@ -1,0 +1,328 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bea5ec4d01f80a948a332187ac325d06, type: 3}
+  m_Name: Mirror Copy
+  m_EditorClassIdentifier: Assembly-CSharp::Fight.Data.SkillData
+  skillId: skill_mirrormage_active_mirrorcopy
+  displayName: Mirror Copy
+  description: "\u590D\u5236\u8303\u56F4\u5185\u6700\u9AD8\u5A01\u80C1\u654C\u65B9\u82F1\u96C4\uFF0C\u751F\u6210\u4E00\u4E2A\u53EF\u666E\u653B\u548C\u91CA\u653E\u5B89\u5168\u5C0F\u6280\u80FD\u7684\u4E34\u65F6\u53CB\u65B9\u5206\u8EAB\u3002"
+  slotType: 0
+  activationMode: 0
+  skillType: 3
+  targetType: 9
+  preferredEnemyHeroClass: 2
+  fallbackTargetType: 1
+  targetPrioritySearchRadius: 0
+  minimumTargetDistance: 0
+  targetPriorityRequiredUnitCount: 1
+  variantSelectionMode: 0
+  variants: []
+  passiveSkill:
+    missingHealthAttackPowerRatio: 0
+    maxAttackPowerBonus: 0
+    lowHealthLifestealThreshold: 0
+    lowHealthLifestealRatio: 0
+    recentDirectHostileSourceWindowSeconds: 0
+    recentDirectHostileSourceDefenseBonusPerSource: 0
+    maxDefenseBonus: 0
+    periodicSelfHealIntervalSeconds: 0
+    periodicSelfHealMidHealthThreshold: 0
+    periodicSelfHealLowHealthThreshold: 0
+    periodicSelfHealHighHealthPercentMaxHealth: 0
+    periodicSelfHealMidHealthPercentMaxHealth: 0
+    periodicSelfHealLowHealthPercentMaxHealth: 0
+    rejectExternalPositiveEffects: 0
+    killParticipationAttackPowerBonusPerStack: 0
+    killParticipationAttackSpeedBonusPerStack: 0
+    killParticipationHealPercentMaxHealth: 0
+    killParticipationMaxStacks: 0
+    restrictedStatusMaxStacks: 0
+    restrictedStatusStackDurationSeconds: 0
+    restrictedStatusAttackSpeedBonusPerStack: 0
+    restrictedStatusSameSourceCooldownSeconds: 0
+  damageTriggeredStatusCounter:
+    enabled: 0
+    countBasicAttackDamage: 1
+    countSkillDamage: 1
+    countSkillAreaPulseDamage: 1
+    countStatusEffectDamage: 1
+    countCounterTriggerDamage: 0
+    triggerThreshold: 3
+    clearCountedStatusesOnTrigger: 1
+    countedStatus:
+      effectType: 0
+      durationSeconds: 1
+      magnitude: 0
+      sourceAttackPowerMultiplier: 0
+      targetMaxHealthMultiplier: 0
+      activeSkillCooldownCapSeconds: 0
+      tickIntervalSeconds: 1
+      maxStacks: 1
+      stackGroupKey:
+      statusThemeKey:
+      refreshDurationOnReapply: 1
+    triggerStatusEffects: []
+  knockUpFollowUp:
+    enabled: 0
+    triggerStatusEffectType: 11
+    damagePowerMultiplier: 1
+    landingDistance: 1.25
+    landingDurationSeconds: 0
+    landingPeakHeight: 0
+  castRange: 10.200001
+  areaRadius: 0
+  cooldownSeconds: 12
+  minTargetsToCast: 1
+  effects:
+  - effectType: 14
+    targetMode: 0
+    powerMultiplier: 0
+    cleanseAllNegativeStatuses: 0
+    statusStackQueryEffectType: 0
+    statusStackQueryThemeKey:
+    minimumRequiredStatusStacks: 0
+    bonusPowerMultiplierPerStatusStack: 0
+    consumeQueriedStatusesOnHit: 0
+    radiusOverride: 0
+    durationSeconds: 0
+    tickIntervalSeconds: 1
+    followCaster: 0
+    persistentAreaPulseEffectType: 1
+    persistentAreaTargetType: 0
+    triggerFollowUpAreaOnTargetDeath: 0
+    followUpAreaRadius: 0
+    followUpAreaPowerMultiplier: 0
+    followUpAreaStatusEffects: []
+    followUpAreaCanChain: 1
+    followUpAreaLimitTriggerOncePerUnitPerExecution: 1
+    areaVfxPrefabOverride: {fileID: 0}
+    areaVfxScaleMultiplierOverride: 0
+    areaVfxEulerAnglesOverride: {x: 0, y: 0, z: 0}
+    pulseCreatesDelayedAreaImpact: 0
+    delayedAreaImpactDelaySeconds: 0
+    delayedAreaImpactRadiusOverride: 0
+    delayedAreaImpactPowerMultiplier: 0
+    delayedAreaImpactVfxPrefab: {fileID: 0}
+    delayedAreaImpactVfxScaleMultiplierOverride: 0
+    delayedAreaImpactVfxEulerAnglesOverride: {x: 0, y: 0, z: 0}
+    deployableProxySpawnMode: 0
+    deployableProxyTriggerMode: 0
+    deployableProxyStrikeRadius: 0
+    deployableProxyTriggerRadius: 0
+    deployableProxyEffectRadius: 0
+    deployableProxySpawnOffsetDistance: 0
+    deployableProxySpawnCount: 1
+    deployableProxyPersistUntilTriggered: 0
+    deployableProxyRandomForwardMinDistance: 0
+    deployableProxyRandomForwardMaxDistance: 0
+    deployableProxyRandomForwardWidth: 0
+    deployableProxyRandomForwardMinSpacing: 0
+    deployableProxyMaxCount: 0
+    deployableProxyReplaceOldestWhenLimitReached: 1
+    deployableProxyImmediateStrikeOnSpawn: 0
+    deployableProxyPowerMultiplierScale: 1
+    deployableProxyAttackIntervalSeconds: 0
+    deployableProxyAttackRange: 0
+    deployableProxyProjectileSpeedOverride: 0
+    deployableProxyStartingVariantIndex: 0
+    deployableProxySpawnVfxPrefab: {fileID: 0}
+    deployableProxyLoopVfxPrefab: {fileID: 0}
+    deployableProxyRemovalVfxPrefab: {fileID: 0}
+    deployableProxyVfxLocalOffset: {x: 0, y: 0, z: 0}
+    deployableProxyVfxEulerAngles: {x: 0, y: 0, z: 0}
+    deployableProxyVfxScaleMultiplier: {x: 1, y: 1, z: 1}
+    cloneDurationSeconds: 6.5
+    cloneSpawnCount: 1
+    cloneMaxCount: 1
+    cloneReplaceOldestWhenLimitReached: 1
+    cloneSpawnOffsetDistance: 1.15
+    cloneMaxHealthMultiplier: 0.42
+    cloneAttackPowerMultiplier: 0.42
+    cloneDefenseMultiplier: 0.55
+    cloneAttackSpeedMultiplier: 0.85
+    cloneMoveSpeedMultiplier: 0.95
+    cloneInitialActiveSkillDelaySeconds: 1.15
+    cloneExpiresWhenOwnerDies: 1
+    returningPathStrikePhase: 0
+    returningPathMaxDistance: 0
+    returningPathWidth: 0
+    returningPathDelaySeconds: 0
+    formOverride:
+      formKey:
+      durationSeconds: 0
+      expiresOnDeath: 1
+      overrideUsesProjectile: 0
+      usesProjectile: 0
+      attackRangeOverride: 0
+      projectileSpeedOverride: 0
+      attackPowerModifier: 0
+      attackSpeedModifier: 0
+    forcedMovementDirection: 0
+    forcedMovementDistance: 0
+    forcedMovementDurationSeconds: 0
+    forcedMovementPeakHeight: 0
+    repositionOnFarSideOfPrimaryTarget: 0
+    radialSweepDirection: 0
+    radialSweepStartDelaySeconds: 0
+    radialSweepRingWidth: 1
+    statusEffects: []
+  allowsSelfCast: 0
+  reactiveGuard:
+    enabled: 0
+    durationSeconds: 0
+    triggerRadius: 0
+    effectRadius: 0
+    maxTriggerCount: 1
+    forcedMovementDistance: 0
+    forcedMovementDurationSeconds: 0
+    forcedMovementPeakHeight: 0
+    healProtectedHeroPerSuccessfulKnockUp: 0
+    onTriggerStatusEffects: []
+    guardLoopVfxPrefab: {fileID: 0}
+    guardLoopVfxLocalOffset: {x: 0, y: 0, z: 0}
+    guardLoopVfxLocalScale: {x: 1, y: 1, z: 1}
+    guardLoopVfxEulerAngles: {x: 0, y: 0, z: 0}
+    triggerVfxPrefab: {fileID: 0}
+    triggerVfxLocalOffset: {x: 0, y: 0, z: 0}
+    triggerVfxLocalScale: {x: 1, y: 1, z: 1}
+    triggerVfxEulerAngles: {x: 0, y: 0, z: 0}
+  reactiveCounter:
+    enabled: 0
+    durationSeconds: 0
+    blocksBasicAttacks: 1
+    blocksSkillCasts: 1
+    triggerOnBasicAttackDamage: 1
+    requireNonProjectileBasicAttack: 1
+    sourceTriggerCooldownSeconds: 0
+    counterDamagePowerMultiplier: 0
+    forcedMovementDistance: 0
+    forcedMovementDurationSeconds: 0
+    forcedMovementPeakHeight: 0
+    onTriggerStatusEffects: []
+  selfCurrentHealthCostRatio: 0
+  minimumSelfHealthAfterCost: 1
+  actionSequence:
+    enabled: 0
+    payloadType: 0
+    repeatMode: 0
+    repeatCount: 1
+    durationSeconds: 1
+    intervalSeconds: 0.25
+    windupSeconds: 0
+    recoverySeconds: 0
+    temporaryBasicAttackRangeOverride: 0
+    temporarySkillCastRangeOverride: 0
+    targetRefreshMode: 1
+    interruptFlags: 3
+  tryCastOwnUltimateAfterReposition: 0
+  insertedUltimateMinimumAffectedTargets: 1
+  temporaryOverride:
+    durationSeconds: 0
+    lifestealMode: 0
+    lifestealRatio: 0
+    overrideBasicAttackOnHitEffect: 0
+    basicAttackOnHitBonusDamagePowerMultiplier: 0
+    basicAttackOnHitSelfHealBasePowerMultiplier: 0
+    basicAttackOnHitSelfHealMissingHealthPowerMultiplier: 0
+    visualScaleMultiplier: 1
+    visualTintColor: {r: 1, g: 1, b: 1, a: 1}
+    visualTintStrength: 0
+    convertRestrictedStatusesToAttackPower: 0
+    restrictedStatusAttackPowerBonusPerStack: 0
+    restrictedStatusMaxAttackPowerBonus: 0
+    restrictedStatusSameSourceCooldownSeconds: 0
+    restrictedStatusFinisherMaxStacks: 0
+    restrictedStatusFinisherRadius: 0
+    restrictedStatusFinisherBasePowerMultiplier: 0
+    restrictedStatusFinisherBonusPowerMultiplierPerStack: 0
+  targetIndicatorVfxPrefab: {fileID: 0}
+  castImpactVfxPrefab: {fileID: 0}
+  castImpactVfxLocalOffset: {x: 0, y: 0, z: 0}
+  castImpactVfxEulerAngles: {x: 0, y: 0, z: 0}
+  castImpactVfxScaleMultiplier: {x: 1, y: 1, z: 1}
+  castImpactVfxAlignToTargetDirection: 0
+  castImpactVfxScaleWithSkillArea: 0
+  castImpactVfxAreaDiameterScaleMultiplier: 1
+  castProjectileVfxPrefab: {fileID: 0}
+  playCastProjectileOnSkillCast: 0
+  castProjectileVfxFlightDurationSeconds: 0.36
+  castProjectileVfxScaleMultiplier: {x: 1, y: 1, z: 1}
+  dashTravelVfxPrefab: {fileID: 0}
+  dashTravelVfxLocalOffset: {x: 0, y: 0, z: 0}
+  dashTravelVfxForwardOffset: 0
+  dashTravelVfxEulerAngles: {x: 0, y: 0, z: 0}
+  dashTravelVfxScaleMultiplier: {x: 1, y: 1, z: 1}
+  dashTravelVfxPathWidthScaleMultiplier: 1
+  persistentAreaVfxPrefab: {fileID: 0}
+  persistentAreaVfxScaleMultiplier: 1
+  persistentAreaVfxEulerAngles: {x: 0, y: 0, z: 0}
+  skillAreaPresentationType: 0
+  ultimateDecision:
+    targetingType: 0
+    minimumSelfHealthPercentToCast: 0
+    primaryCondition:
+      conditionType: 0
+      searchRadius: 0
+      requiredUnitCount: 1
+      healthPercentThreshold: 1
+      durationSeconds: 0
+      highValueTargetType: 0
+      heroClassFilter: 2
+      statusEffectTypeFilter: 0
+      statusThemeKey:
+      minimumStatusStacks: 1
+      requireTargetInCastRange: 1
+    secondaryCondition:
+      conditionType: 0
+      searchRadius: 0
+      requiredUnitCount: 1
+      healthPercentThreshold: 1
+      durationSeconds: 0
+      highValueTargetType: 0
+      heroClassFilter: 2
+      statusEffectTypeFilter: 0
+      statusThemeKey:
+      minimumStatusStacks: 1
+      requireTargetInCastRange: 1
+    fallback:
+      fallbackType: 0
+      triggerAfterSeconds: 0
+      overrideRequiredUnitCount: 0
+      overrideHealthPercentThreshold: -1
+      secondaryTriggerAfterSeconds: 0
+      secondaryOverrideRequiredUnitCount: 0
+      secondaryOverrideHealthPercentThreshold: -1
+      alternatePrimaryCondition:
+        conditionType: 0
+        searchRadius: 0
+        requiredUnitCount: 1
+        healthPercentThreshold: 1
+        durationSeconds: 0
+        highValueTargetType: 0
+        heroClassFilter: 2
+        statusEffectTypeFilter: 0
+        statusThemeKey:
+        minimumStatusStacks: 1
+        requireTargetInCastRange: 1
+      alternateSecondaryCondition:
+        conditionType: 0
+        searchRadius: 0
+        requiredUnitCount: 1
+        healthPercentThreshold: 1
+        durationSeconds: 0
+        highValueTargetType: 0
+        heroClassFilter: 2
+        statusEffectTypeFilter: 0
+        statusThemeKey:
+        minimumStatusStacks: 1
+        requireTargetInCastRange: 1
+    combineMode: 0

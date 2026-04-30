@@ -242,9 +242,138 @@ namespace Fight.Battle
             return false;
         }
 
+        private static bool CanCloneUseActiveSkill(SkillData skill)
+        {
+            if (skill == null
+                || skill.slotType != SkillSlotType.ActiveSkill
+                || skill.activationMode != SkillActivationMode.Active)
+            {
+                return false;
+            }
+
+            if (skill.temporaryOverride != null && skill.temporaryOverride.HasAnyOverride)
+            {
+                return false;
+            }
+
+            if (skill.passiveSkill != null
+                && (skill.passiveSkill.HasKillParticipationTrigger || skill.passiveSkill.HasRestrictedStatusStacking))
+            {
+                return false;
+            }
+
+            if (!AreCloneSkillEffectsSafe(skill.effects))
+            {
+                return false;
+            }
+
+            if (skill.variants == null)
+            {
+                return true;
+            }
+
+            for (var i = 0; i < skill.variants.Count; i++)
+            {
+                if (!AreCloneSkillEffectsSafe(skill.variants[i]?.effects))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static bool AreCloneSkillEffectsSafe(IReadOnlyList<SkillEffectData> effects)
+        {
+            if (effects == null || effects.Count <= 0)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < effects.Count; i++)
+            {
+                if (IsCloneProhibitedEffect(effects[i]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static bool IsCloneProhibitedEffect(SkillEffectData effect)
+        {
+            if (effect == null)
+            {
+                return true;
+            }
+
+            switch (effect.effectType)
+            {
+                case SkillEffectType.CreateCloneUnit:
+                case SkillEffectType.CreateDeployableProxy:
+                case SkillEffectType.ApplyCombatFormOverride:
+                case SkillEffectType.ConsumeRestrictedStatusStacksDamage:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private static bool RequiresCloneTemplateTarget(SkillData skill)
+        {
+            if (skill == null)
+            {
+                return false;
+            }
+
+            if (HasCloneCreateEffect(skill.effects))
+            {
+                return true;
+            }
+
+            if (skill.variants == null)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < skill.variants.Count; i++)
+            {
+                if (HasCloneCreateEffect(skill.variants[i]?.effects))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool HasCloneCreateEffect(IReadOnlyList<SkillEffectData> effects)
+        {
+            if (effects == null)
+            {
+                return false;
+            }
+
+            for (var i = 0; i < effects.Count; i++)
+            {
+                if (effects[i]?.effectType == SkillEffectType.CreateCloneUnit)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private static bool TryCastActiveSkill(BattleContext context, RuntimeHero caster, SkillData skill, IBattleSimulationCallbacks battleManager)
         {
             if (skill == null || skill.activationMode != SkillActivationMode.Active)
+            {
+                return false;
+            }
+
+            if (caster != null && caster.IsClone && !CanCloneUseActiveSkill(skill))
             {
                 return false;
             }
@@ -438,6 +567,11 @@ namespace Fight.Battle
             }
 
             if (skill.activationMode != SkillActivationMode.Active)
+            {
+                return false;
+            }
+
+            if (caster != null && caster.IsClone && !CanCloneUseActiveSkill(skill))
             {
                 return false;
             }
@@ -957,6 +1091,11 @@ namespace Fight.Battle
                 case SkillTargetType.ThreatenedRangedAllyOrEnemyDensestAnchor:
                     return SelectThreatenedRangedAllyOrEnemyAnchor(context, caster, skill, effectiveCastRange);
                 case SkillTargetType.HighestDamageEnemyInRange:
+                    if (RequiresCloneTemplateTarget(skill))
+                    {
+                        return SelectHighestThreatCloneSource(context.Heroes, caster, effectiveCastRange);
+                    }
+
                     return BattleAiDirector.SelectHighestDamageEnemyTarget(context.Heroes, caster, effectiveCastRange);
                 case SkillTargetType.FarthestEnemyFromSelf:
                     return BattleAiDirector.SelectFarthestEnemyFromSelfTarget(
@@ -1318,6 +1457,12 @@ namespace Fight.Battle
                 return false;
             }
 
+            if (RequiresCloneTemplateTarget(skill)
+                && !BattleCloneSystem.CanCloneSource(caster, primaryTarget))
+            {
+                return false;
+            }
+
             if (resolvedSkill.TargetType == SkillTargetType.Self)
             {
                 return true;
@@ -1348,6 +1493,55 @@ namespace Fight.Battle
             return IsValidTargetForSkill(ResolvedSkillCast.FromSkill(skill), caster, candidate);
         }
 
+        private static RuntimeHero SelectHighestThreatCloneSource(IReadOnlyList<RuntimeHero> heroes, RuntimeHero caster, float maxRange)
+        {
+            RuntimeHero best = null;
+            var bestAttackPower = float.MinValue;
+            var bestDamageDealt = float.MinValue;
+            var bestCurrentHealth = float.MinValue;
+            var bestDistance = float.MaxValue;
+
+            if (heroes == null || caster == null)
+            {
+                return null;
+            }
+
+            for (var i = 0; i < heroes.Count; i++)
+            {
+                var candidate = heroes[i];
+                if (!BattleCloneSystem.CanCloneSource(caster, candidate))
+                {
+                    continue;
+                }
+
+                var distance = Vector3.Distance(caster.CurrentPosition, candidate.CurrentPosition);
+                if (distance > maxRange)
+                {
+                    continue;
+                }
+
+                var attackPower = candidate.AttackPower;
+                var damageDealt = candidate.DamageDealt;
+                var currentHealth = candidate.CurrentHealth;
+                if (attackPower > bestAttackPower + Mathf.Epsilon
+                    || Mathf.Abs(attackPower - bestAttackPower) <= Mathf.Epsilon
+                    && (damageDealt > bestDamageDealt + Mathf.Epsilon
+                        || Mathf.Abs(damageDealt - bestDamageDealt) <= Mathf.Epsilon
+                        && (currentHealth > bestCurrentHealth + Mathf.Epsilon
+                            || Mathf.Abs(currentHealth - bestCurrentHealth) <= Mathf.Epsilon
+                            && distance < bestDistance)))
+                {
+                    best = candidate;
+                    bestAttackPower = attackPower;
+                    bestDamageDealt = damageDealt;
+                    bestCurrentHealth = currentHealth;
+                    bestDistance = distance;
+                }
+            }
+
+            return best;
+        }
+
         private static bool IsValidTargetForSkill(ResolvedSkillCast resolvedSkill, RuntimeHero caster, RuntimeHero candidate)
         {
             var skill = resolvedSkill?.Skill;
@@ -1357,6 +1551,12 @@ namespace Fight.Battle
             }
 
             var targetType = resolvedSkill.TargetType;
+            if (RequiresCloneTemplateTarget(skill)
+                && !BattleCloneSystem.CanCloneSource(caster, candidate))
+            {
+                return false;
+            }
+
             switch (targetType)
             {
                 case SkillTargetType.Self:
@@ -3173,6 +3373,9 @@ namespace Fight.Battle
                 case SkillEffectType.CreateDeployableProxy:
                     CreateDeployableProxies(context, caster, skill, effect, effectTargets, battleManager);
                     break;
+                case SkillEffectType.CreateCloneUnit:
+                    BattleCloneSystem.CreateClones(context, caster, skill, effect, effectTargets);
+                    break;
                 case SkillEffectType.CreateReturningPathStrike:
                     break;
             }
@@ -4829,6 +5032,12 @@ namespace Fight.Battle
                 return false;
             }
 
+            if (RequiresCloneTemplateTarget(skill)
+                && !BattleCloneSystem.CanCloneSource(caster, candidate))
+            {
+                return false;
+            }
+
             if (candidate.Side == caster.Side && ShouldRejectPositiveSkillTarget(skill, caster, candidate))
             {
                 return false;
@@ -4888,6 +5097,12 @@ namespace Fight.Battle
                     continue;
                 }
 
+                if (RequiresCloneTemplateTarget(skill)
+                    && !BattleCloneSystem.CanCloneSource(caster, candidate))
+                {
+                    continue;
+                }
+
                 if (includeAllies && ShouldRejectPositiveSkillTarget(skill, caster, candidate))
                 {
                     continue;
@@ -4939,7 +5154,8 @@ namespace Fight.Battle
                 || effect.effectType == SkillEffectType.ApplyStatusEffects
                 || effect.effectType == SkillEffectType.CreateFocusFireCommand
                 || effect.effectType == SkillEffectType.ApplyForcedMovement
-                || effect.effectType == SkillEffectType.SwapPositionsWithPrimaryTarget;
+                || effect.effectType == SkillEffectType.SwapPositionsWithPrimaryTarget
+                || effect.effectType == SkillEffectType.CreateCloneUnit;
         }
 
         private static bool IsDirectTargetAllowed(SkillData skill, RuntimeHero caster, RuntimeHero candidate)

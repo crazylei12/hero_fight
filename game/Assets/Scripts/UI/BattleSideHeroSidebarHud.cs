@@ -428,7 +428,7 @@ namespace Fight.UI
             for (var i = 0; i < context.Heroes.Count; i++)
             {
                 var hero = context.Heroes[i];
-                if (hero != null && hero.Side == side)
+                if (hero != null && !hero.IsClone && hero.Side == side)
                 {
                     buffer.Add(hero);
                 }

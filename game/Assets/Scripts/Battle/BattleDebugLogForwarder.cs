@@ -55,6 +55,12 @@ namespace Fight.Battle
                 case ScoreChangedEvent scoreChanged:
                     Debug.Log($"[Battle] Score Blue {scoreChanged.BlueKills} - {scoreChanged.RedKills} Red");
                     break;
+                case CloneUnitSpawnedEvent cloneSpawned:
+                    Debug.Log($"[Battle] Clone spawned {FormatHeroLabel(cloneSpawned.Clone)} from {FormatHeroLabel(cloneSpawned.Source)} by {FormatHeroLabel(cloneSpawned.Owner)}");
+                    break;
+                case CloneUnitRemovedEvent cloneRemoved:
+                    Debug.Log($"[Battle] Clone removed {FormatHeroLabel(cloneRemoved.Clone)} reason={cloneRemoved.Reason}");
+                    break;
                 case OvertimeStartedEvent _:
                     Debug.Log("[Battle] Overtime started");
                     break;

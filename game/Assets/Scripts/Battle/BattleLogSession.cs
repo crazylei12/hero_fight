@@ -165,6 +165,12 @@ namespace Fight.Battle
                 case DeployableProxyPulseEvent deployableProxyPulse:
                     AddLog(FormatDeployableProxyPulseLog(deployableProxyPulse));
                     break;
+                case CloneUnitSpawnedEvent cloneSpawned:
+                    AddLog(FormatCloneUnitSpawnedLog(cloneSpawned));
+                    break;
+                case CloneUnitRemovedEvent cloneRemoved:
+                    AddLog(FormatCloneUnitRemovedLog(cloneRemoved));
+                    break;
                 case UnitDiedEvent died:
                     AddLog($"{FormatHeroLabel(died.Victim)} was killed by {FormatHeroLabel(died.Killer)}.");
                     break;
@@ -343,6 +349,28 @@ namespace Fight.Battle
             }
 
             return $"{FormatHeroLabel(proxy.Owner)} triggered deployable proxy {proxy.ProxyId} pulse at ({proxy.CurrentPosition.x:0.0}, {proxy.CurrentPosition.z:0.0}) affecting {deployableProxyPulse.AffectedTargetCount} target(s).";
+        }
+
+        private static string FormatCloneUnitSpawnedLog(CloneUnitSpawnedEvent cloneSpawned)
+        {
+            if (cloneSpawned?.Clone == null)
+            {
+                return "Clone unit spawned.";
+            }
+
+            var duration = cloneSpawned.Clone.CloneTotalDurationSeconds;
+            var skillName = cloneSpawned.SourceSkill != null ? cloneSpawned.SourceSkill.displayName : "clone skill";
+            return $"{FormatHeroLabel(cloneSpawned.Owner)} mirrored {FormatHeroLabel(cloneSpawned.Source)} into {FormatHeroLabel(cloneSpawned.Clone)} via {skillName} for {duration:0.0}s.";
+        }
+
+        private static string FormatCloneUnitRemovedLog(CloneUnitRemovedEvent cloneRemoved)
+        {
+            if (cloneRemoved?.Clone == null)
+            {
+                return "Clone unit removed.";
+            }
+
+            return $"{FormatHeroLabel(cloneRemoved.Clone)} clone removed due to {cloneRemoved.Reason}.";
         }
 
         private static string FormatStatusLog(StatusAppliedEvent statusApplied)
